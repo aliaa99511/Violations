@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <!-- <link rel="stylesheet" href="https://js.arcgis.com/4.26/esri/themes/light/main.css"> -->
+  </head>
+
+  <body>
+    <div class="quarryForm" id="quarryForm">
+      <div
+        id="identify"
+        page-name="QuarryForm"
+        site-name="Recorder"
+        hidden
+      ></div>
+      <div class="mainContainer">
+        <div class="contentContainer">
+          <div class="formContent">
+            <div class="formBox">
+              <div class="formBoxHeader">
+                <p class="formBoxTitle">
+                  <span class="formNumber">1</span> بيانات المخالف
+                </p>
+              </div>
+              <div class="formElements">
+                <div class="row">
+                  <div class="col-md-6">
+                    <div class="form-group customFormGroup">
+                      <label for="violatorName" class="customLabel"
+                        >اسم المخالف</label
+                      >
+                      <input
+                        class="form-control customInput violatorName"
+                        id="violatorName"
+                        type="text"
+                        placeholder="ادخل اسم المخالف"
+                      />
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="form-group customFormGroup">
+                      <label for="violatorNationalId" class="customLabel"
+                        >الرقم القومي للمخالف</label
+                      >
+                      <input
+                        class="form-control customInput violatorNationalId"
+                        id="violatorNationalId"
+                        type="text"
+                        maxlength="14"
+                        placeholder="ادخل الرقم القومي الخاص بالمخالف"
+                      />
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="form-group customFormGroup">
+                      <label for="violationGov" class="customLabel"
+                        >المحافظة</label
+                      >
+                      <div class="selectBox">
+                        <!-- <input list="violationGov" placeholder="المحافظة"> -->
+                        <select
+                          class="form-control violationGov"
+                          id="violationGov"
+                        >
+                          <option value="" disabled selected hidden>
+                            المحافظة
+                          </option>
+                        </select>
+                        <i class="fa-solid fa-sort-down"></i>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="form-group customFormGroup">
+                      <label for="violationArea" class="customLabel"
+                        >منطقة الضبط</label
+                      >
+                      <div class="selectBox">
+                        <select
+                          class="form-control violationArea"
+                          id="violationArea"
+                        >
+                          <option value="" disabled selected hidden>
+                            منطقة الضبط
+                          </option>
+                        </select>
+                        <i class="fa-solid fa-sort-down"></i>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="form-group customFormGroup">
+                      <label for="companyName" class="customLabel"
+                        >الشركة المخالفة التابع لها</label
+                      >
+                      <input
+                        class="form-control customInput companyName"
+                        id="companyName"
+                        type="text"
+                        placeholder="ادخل اسم الشركة التابع لها المخالف"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="formBox">
+              <div class="formBoxHeader">
+                <p class="formBoxTitle">
+                  <span class="formNumber">2</span> بيانات المخالفة
+                </p>
+              </div>
+              <div class="formElements">
+                <div class="row">
+                  <div class="col-md-6">
+                    <div class="form-group customFormGroup">
+                      <label for="violationType" class="customLabel"
+                        >نوع المخالفة</label
+                      >
+                      <div class="selectBox">
+                        <select
+                          class="form-control violationType"
+                          id="violationType"
+                        >
+                          <option value="" disabled selected hidden>
+                            نوع المخالفة
+                          </option>
+                        </select>
+                        <i class="fa-solid fa-sort-down"></i>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-6 BonesBox">
+                    <div class="form-group customFormGroup">
+                      <label for="BonesCount" class="customLabel"
+                        >عدد البونات</label
+                      >
+                      <input
+                        class="form-control customInput BonesCount"
+                        id="BonesCount"
+                        type="text"
+                        placeholder="ادخل عدد البونات"
+                      />
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="form-group customFormGroup">
+                      <label for="violationRawType" class="customLabel"
+                        >نوع الخام</label
+                      >
+                      <div class="selectBox">
+                        <select
+                          class="form-control violationRawType"
+                          id="violationRawType"
+                        >
+                          <option value="" disabled selected hidden>
+                            نوع الخام
+                          </option>
+                        </select>
+                        <i class="fa-solid fa-sort-down"></i>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="form-group customFormGroup">
+                      <label for="violationDate" class="customLabel"
+                        >تاريخ الضبط</label
+                      >
+                      <div class="inputIconBox">
+                        <input
+                          class="form-control customInput inputDate violationDate"
+                          id="violationDate"
+                          type="text"
+                          placeholder="MM-DD-YYYY"
+                        />
+                        <i class="fa-solid fa-calendar-days"></i>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="form-group customFormGroup">
+                      <label for="violationTime" class="customLabel"
+                        >وقت الضبط</label
+                      >
+                      <div class="inputIconBox">
+                        <input
+                          class="form-control customInput timeInput violationTime"
+                          id="violationTime"
+                          type="time"
+                          placeholder="14:43 PM"
+                        />
+                        <i class="fa-solid fa-clock"></i>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="form-group customFormGroup">
+                      <label for="quarryType" class="customLabel"
+                        >نوع المحجر</label
+                      >
+                      <div class="selectBox">
+                        <select class="form-control quarryType" id="quarryType">
+                          <option value="" disabled selected hidden>
+                            نوع المحجر
+                          </option>
+                        </select>
+                        <i class="fa-solid fa-sort-down"></i>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="form-group customFormGroup">
+                      <label for="quarryCode" class="customLabel"
+                        >رقم المحجر</label
+                      >
+                      <input
+                        class="form-control customInput quarryCode"
+                        id="quarryCode"
+                        type="text"
+                        placeholder="ادخل رقم المحجر"
+                      />
+                    </div>
+                  </div>
+                  <div class="col-12">
+                    <div class="form-group customFormGroup">
+                      <label class="customLabel">ضبط معدات</label>
+                      <div class="toolsBox quarryToolsBox">
+                        <div class="addNewToolBtn">
+                          <div class="addNewToolText">
+                            <i class="fa-solid fa-plus"></i>
+                            <span>إضافة أخرى</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-12 addToolHiddenBox">
+                    <div class="row">
+                      <div class="col-md-6">
+                        <div class="form-group">
+                          <input
+                            class="form-control customInput toolName"
+                            id="toolName"
+                            type="text"
+                            placeholder="ادخل اسم المعدة المراد إضافتها"
+                          />
+                        </div>
+                      </div>
+                      <div class="col-md-5">
+                        <div class="buttonsBox">
+                          <div class="btnStyle confirmBtn" id="submitNewTool">
+                            إضافة
+                          </div>
+                          <div class="btnStyle cancelBtn" id="cancelNewTool">
+                            مسح
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="formBox">
+              <div class="formBoxHeader">
+                <p class="formBoxTitle">
+                  <span class="formNumber">3</span> الأبعاد والإحداثيات
+                </p>
+              </div>
+              <div class="formElements">
+                <div class="row">
+                  <div class="col-md-6">
+                    <div class="form-group customFormGroup">
+                      <div class="feildInfoBox">
+                        <label for="violationDepth" class="customLabel"
+                          >العمق/الإرتفاع</label
+                        >
+                        <span>بالمتر</span>
+                      </div>
+                      <input
+                        class="form-control customInput violationDepth"
+                        id="violationDepth"
+                        type="text"
+                        placeholder="ادخل العمق/الإرتفاع بالمتر"
+                      />
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="form-group customFormGroup">
+                      <div class="feildInfoBox">
+                        <label for="AreaSpace" class="customLabel"
+                          >مساحة المحجر</label
+                        >
+                        <span>بالمتر المربع</span>
+                      </div>
+                      <input
+                        class="form-control customInput AreaSpace"
+                        id="AreaSpace"
+                        type="text"
+                        placeholder="ادخل مساحة المحجر بالمتر المربع"
+                      />
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="form-group customFormGroup">
+                      <div class="feildInfoBox">
+                        <label for="distanceToNearQuarry" class="customLabel"
+                          >المسافة لأقرب محجر</label
+                        >
+                        <span>كيلو متر</span>
+                      </div>
+                      <input
+                        class="form-control customInput distanceToNearQuarry"
+                        id="distanceToNearQuarry"
+                        type="text"
+                        placeholder="ادخل المسافة لأقرب محجر بالكيلو متر"
+                      />
+                    </div>
+                  </div>
+                  <div class="col-12">
+                    <div class="form-group customFormGroup">
+                      <label class="customLabel">الإحداثيات</label>
+                      <div class="coordinatesTable" id="coordinatesTable">
+                        <table class="table table-bordered">
+                          <tr>
+                            <th scope="col">م</th>
+                            <th scope="col">شرقيات (E)</th>
+                            <th scope="col">شماليات (N)</th>
+                            <th data-attr-ignore></th>
+                          </tr>
+                          <tr class="hideRow">
+                            <th>1</th>
+                            <td>
+                              <input
+                                type="text"
+                                minlength="2"
+                                maxlength="2"
+                                required
+                              />
+                              <input type="text" maxlength="3" required />
+                              <input type="text" maxlength="3" required />
+                            </td>
+                            <td>
+                              <input
+                                type="text"
+                                minlength="2"
+                                maxlength="2"
+                                required
+                              />
+                              <input type="text" maxlength="3" required />
+                              <input type="text" maxlength="3" required />
+                            </td>
+                            <td></td>
+                          </tr>
+                          <tr>
+                            <th>2</th>
+                            <td>
+                              <input
+                                type="text"
+                                minlength="2"
+                                maxlength="2"
+                                required
+                              />
+                              <input type="text" maxlength="3" required />
+                              <input type="text" maxlength="3" required />
+                            </td>
+                            <td>
+                              <input
+                                type="text"
+                                minlength="2"
+                                maxlength="2"
+                                required
+                              />
+                              <input type="text" maxlength="3" required />
+                              <input type="text" maxlength="3" required />
+                            </td>
+                            <td></td>
+                          </tr>
+                          <tr>
+                            <th>3</th>
+                            <td>
+                              <input
+                                type="text"
+                                minlength="2"
+                                maxlength="2"
+                                required
+                              />
+                              <input type="text" maxlength="3" required />
+                              <input type="text" maxlength="3" required />
+                            </td>
+                            <td>
+                              <input
+                                type="text"
+                                minlength="2"
+                                maxlength="2"
+                                required
+                              />
+                              <input type="text" maxlength="3" required />
+                              <input type="text" maxlength="3" required />
+                            </td>
+                            <td></td>
+                          </tr>
+                          <tr>
+                            <th>4</th>
+                            <td>
+                              <input
+                                type="text"
+                                minlength="2"
+                                maxlength="2"
+                                required
+                              />
+                              <input type="text" maxlength="3" required />
+                              <input type="text" maxlength="3" required />
+                            </td>
+                            <td>
+                              <input
+                                type="text"
+                                minlength="2"
+                                maxlength="2"
+                                required
+                              />
+                              <input type="text" maxlength="3" required />
+                              <input type="text" maxlength="3" required />
+                            </td>
+                            <td></td>
+                          </tr>
+                        </table>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-12 AddNewPointBox">
+                    <div class="AddPoint" id="AddPoint">
+                      <i class="fas fa-plus table-add"></i>إضافة نقطة جديدة
+                    </div>
+                    <div class="showOnMap">عرض على الخريطة</div>
+                  </div>
+                  <div class="col-12 ShowOnMapBox">
+                    <div class="form-group customFormGroup">
+                      <label class="customLabel">الموقع على الخريطة</label>
+                      <div class="coordinatesMap" id="coordinatesMap">
+                        <!-- <script src="https://js.arcgis.com/4.26/init.js"></script>
+                                           <script>
+                                                let myMap = new Map();
+                                                console.log(myMap);
+                                                // let view = new MapView({
+                                                //     container: "coordinatesMap",
+                                                //     map: myMap,
+                                                //     zoom: 6,
+                                                //     center: [30.82763671874111, 26.657277674210142],
+                                                //     cursor: "pointer",
+                                                // });
+                                            </script> -->
+                        <style>
+                          .embed-container {
+                            position: relative;
+                            padding-bottom: 0;
+                            height: 100%;
+                            max-width: 100%;
+                          }
+                          .embed-container iframe,
+                          .embed-container object,
+                          .embed-container iframe {
+                            position: absolute;
+                            top: 0;
+                            left: 0;
+                            width: 100%;
+                            height: 100%;
+                          }
+                          small {
+                            position: absolute;
+                            z-index: 40;
+                            bottom: 0;
+                            margin-bottom: -15px;
+                          }
+                        </style>
+                        <!-- <div class="embed-container">
+                                                <iframe width="500" height="400" frameborder="0" scrolling="no" marginheight="0" marginwidth="0" title="World Bank Map" src="//www.arcgis.com/apps/Embed/index.html?webmap=051417efba8a4a14ac04ef195beb3b05&extent=30.2713,28.8684,31.9578,29.6817&home=true&zoom=true&previewImage=false&scale=true&legendlayers=true&basemap_gallery=true&disable_scroll=false&theme=light"></iframe>
+                                            </div> -->
+
+                        <!-- <div class="embed-container">
+                                                <iframe width="500" height="400" frameborder="0" scrolling="no" marginheight="0" marginwidth="0" title="World Bank Map" src="//www.arcgis.com/apps/Embed/index.html?webmap=051417efba8a4a14ac04ef195beb3b05&extent=28.1922,27.4372,32.5538,29.0798&zoom=true&previewImage=false&scale=true&disable_scroll=true&theme=light&marker=29;25;;pin%20pin;;test%20polygon"></iframe>
+                                            </div> -->
+                        <div class="embed-container">
+                          <iframe
+                            width="500"
+                            height="400"
+                            frameborder="0"
+                            scrolling="no"
+                            marginheight="0"
+                            marginwidth="0"
+                            title="World Bank Map"
+                            src="//www.arcgis.com/apps/Embed/index.html?webmap=051417efba8a4a14ac04ef195beb3b05&extent=26.6843,26.2561,33.4299,29.5516&zoom=true&previewImage=false&scale=true&disable_scroll=true&theme=light&marker=29;25;"
+                          ></iframe>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="formBox">
+              <div class="formBoxHeader">
+                <p class="formBoxTitle">
+                  <span class="formNumber">4</span> وصف المخالفة
+                </p>
+              </div>
+              <div class="formElements">
+                <div class="row">
+                  <div class="col-md-6">
+                    <div class="form-group customFormGroup">
+                      <label for="attachViolationFiles" class="customLabel"
+                        >إرفاق تقرير مصور</label
+                      >
+                      <div class="fileBox" id="dropContainer">
+                        <div class="inputFileBox">
+                          <img
+                            src="/Style Library/MiningViolations/images/fileIcon.svg"
+                            alt="File Icon"
+                          />
+                          <p class="dragDropFilesLabel">
+                            قم بالسحب والإفلات لرفع الملف , أو
+                            <a href="#!" class="attachFileLink"
+                              >استعراض ملفاتي</a
+                            >
+                          </p>
+                          <input
+                            type="file"
+                            class="customInput attachFilesInput attachViolationFiles form-control"
+                            id="attachViolationFiles"
+                            accept="image/gif,image/svg,image/jpg,image/jpeg,image/png,.doc,.docx,.pdf,.xls,.xlsx,.pptx"
+                            multiple
+                          />
+                        </div>
+                      </div>
+                      <div class="dropFilesArea" id="dropFilesArea"></div>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="form-group customFormGroup">
+                      <label for="violationDescription" class="customLabel"
+                        >وصف المخالفة</label
+                      >
+                      <textarea
+                        class="form-control violationDescription customTextArea"
+                        id="violationDescription"
+                        placeholder="ادخل الوصف الخاص بالمخالفة"
+                      ></textarea>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="formBox">
+              <div class="formBoxHeader">
+                <p class="formBoxTitle">
+                  <span class="formNumber">5</span> رأي قائد القطاع
+                </p>
+              </div>
+              <div class="formElements">
+                <div class="row">
+                  <div class="col-12">
+                    <div class="form-group customFormGroup">
+                      <textarea
+                        class="form-control sectorManegrOpinion customTextArea"
+                        id="sectorManegrOpinion"
+                        placeholder="رأي السيد قائد القطاع"
+                      ></textarea>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="formBox">
+              <div class="formBoxHeader">
+                <p class="formBoxTitle">
+                  <span class="formNumber">6</span> أعضاء لجنة الضبط
+                </p>
+              </div>
+              <div class="formElements">
+                <div class="row">
+                  <div class="col-md-4">
+                    <div class="form-group customFormGroup">
+                      <label class="customLabel">القائم بالضبط</label>
+                      <div class="committeeBox recorder">
+                        <div class="committeeData"></div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-4">
+                    <div class="form-group customFormGroup">
+                      <label class="customLabel">عضو لجنة</label>
+                      <div class="committeeBox committeeMember">
+                        <div class="committeeSearch">
+                          <label for="committeeMemberSelect" class="customLabel"
+                            >اختر عضو اللجنة</label
+                          >
+                          <div class="selectBox">
+                            <select
+                              class="form-control committeeMemberSelect"
+                              id="committeeMemberSelect"
+                            >
+                              <option value="" disabled selected hidden>
+                                عضو اللجنة
+                              </option>
+                            </select>
+                            <i class="fa-solid fa-sort-down"></i>
+                          </div>
+                          <!-- <div class="buttonsBox">
+                                                    <div class="btnStyle confirmBtn addCommitteeMember" id="addCommitteeMember">بحث</div>
+                                                </div> -->
+                        </div>
+                        <div class="committeeData">
+                          <div class="reSelectMember">إعادة اختيار عضو اخر</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-4">
+                    <div class="form-group customFormGroup">
+                      <label class="customLabel">قائد القطاع</label>
+                      <div class="committeeBox sectorManager">
+                        <div class="committeeData"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="formButtonsBox">
+            <div class="col-12">
+              <div class="buttonsBox centerButtonsBox">
+                <div
+                  class="btnStyle confirmBtn submitQuarryViolation"
+                  id="submitQuarryViolation"
+                >
+                  تأكيد
+                </div>
+                <div
+                  class="btnStyle cancelBtn cancelQuarryViolation"
+                  id="cancelQuarryViolation"
+                >
+                  إلغاء
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+
+  <body>
+    <div class="PendingViolations" id="PendingViolations">
+      <div
+        id="identify"
+        page-name="PendingViolations"
+        site-name="ViolationsBranch"
+        hidden
+      ></div>
+      <div class="mainContainer">
+        <div class="contentContainer">
+          <div class="filterBox greenFilterBox">
+            <div class="row">
+              <div class="col-6 col-sm-4 col-lg-4">
+                <div class="form-group customFormGroup">
+                  <label for="violationZone" class="customLabel greenLabel"
+                    >المنطقة
+                  </label>
+                  <div class="selectBox smallSelectBox">
+                    <select
+                      class="form-control violationZone greenSelect"
+                      id="violationZone"
+                    >
+                      <option value="" disabled selected hidden>
+                        منطقة الضبط
+                      </option>
+                    </select>
+                    <i class="fa-solid fa-sort-down"></i>
+                  </div>
+                </div>
+              </div>
+              <div class="col-6 col-sm-4 col-lg-4">
+                <div class="form-group customFormGroup">
+                  <label for="TypeofViolation" class="customLabel greenLabel"
+                    >نوع المخالفة
+                  </label>
+                  <div class="selectBox smallSelectBox">
+                    <select
+                      class="form-control TypeofViolation greenSelect"
+                      id="TypeofViolation"
+                    >
+                      <option data-id="0" value="" disabled selected hidden>
+                        الكل
+                      </option>
+                    </select>
+                    <i class="fa-solid fa-sort-down"></i>
+                  </div>
+                </div>
+              </div>
+              <div class="col-6 col-sm-2 col-lg-4 FilterationBtnsBox">
+                <div class="buttonsBox">
+                  <div class="btnStyle searchBtn searchGreenBtn">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                  </div>
+                  <div class="btnStyle printBtn">
+                    طباعة التقرير
+                    <i class="fa-solid fa-print"></i>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="dashBoardTable">
+            <table
+              id="PendingViolation"
+              class="table tableWithIcons greenTable"
+            ></table>
+          </div>
+
+          <div
+            id="paginationID"
+            class="paginationBox"
+            current=""
+            total=""
+            style="display: flex"
+          ></div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
