@@ -1,0 +1,38 @@
+.PreLoader {
+    @include customLoaders;
+    background: $white;
+    span {
+        @include customLoaderAnimation;
+        &.greenLoader{
+            background: $customGreen;
+        }
+        &.blueLoader{
+            background: $customBlue;
+        }
+    }
+}
+
+.overlay {
+    @include customLoaders;
+    background: rgba($color: #000000, $alpha: 0.7);
+    span {
+        background: $white;
+        @include customLoaderAnimation;
+    }
+}
+
+@keyframes scale {
+    0%,
+    40%,
+    100% {
+        transform: scaleY(0.05);
+    }
+    20% {
+        transform: scaleY(1);
+    }
+}
+
+.active {
+    visibility: visible;
+    opacity: 1;
+}

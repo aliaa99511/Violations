@@ -1,0 +1,102 @@
+.buttonsBox {
+    @include flexRow;
+    .btnStyle {
+        @include flexRow;
+        justify-content: center;
+        height: 58px;
+        padding: 1rem 3rem;
+        border: 2px solid transparent;
+        border-radius: 5px;
+        background-color: $white;
+        font-size: 13px;
+        font-family: CairoB;
+        margin-inline-end: 0.5rem;
+        cursor: pointer;
+        &:last-child {
+            margin-inline-end: 0;
+        }
+        // &.specialBtn{
+        //     width: calc(100% / 2);
+        // }
+        &.confirmBtn {
+            border: 2px solid $customBlue;
+            color: $customBlue;
+        }
+        &.confirmBtnGreen {
+            border: 2px solid $customGreen;
+            color: $customGreen;
+        }
+        &.cancelBtn {
+            border: 2px solid #666;
+            color: #666;
+        }
+        &#AcceptDetailsPopup {
+            font: normal normal bold 13px/24px Cairo;
+            letter-spacing: 0px;
+            color: #015642;
+            background: #FFFFFF 0% 0% no-repeat padding-box;
+            border: 2px solid #015642;
+            border-radius: 5px;
+        }
+        &.searchBtn {
+            background-color: $customBlue;
+            color: $white;
+            height: 40px !important;
+            width: 40px;
+            padding: 0rem 1rem;
+            font-size: 15px;
+            font-family: Cairo;
+            border-radius: 3px;
+        }
+        &.resetBtn {
+            background-color: transparent;
+            color: $customBlue;
+            border: 1px solid $customBlue;
+            height: 40px !important;
+            width: 40px;
+            padding: 0rem 1rem;
+            font-size: 15px;
+            font-family: Cairo;
+            border-radius: 3px;
+        }
+
+        &.printBtn {
+            background-color: $customBlue;
+            color: $white;
+            height: 40px !important;
+            width: 150px;
+            padding: 0rem 1rem;
+            font-size: 13px;
+            font-family: Cairo;
+            border-radius: 2px;
+            @include flexRow;
+            justify-content: space-between;
+            display: none;
+            // i {
+            //     // margin-right: 36px;
+            // }
+        }
+        &.popupBtn {
+            height: 45px;
+        }
+    }
+    &.centerButtonsBox {
+        justify-content: center;
+    }
+    &.spaceBetweenButtonsBox {
+        justify-content: space-between;
+    }
+}
+
+.Spinner {
+    margin-inline-end: 0.25rem;
+}
+
+@keyframes rotation {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}

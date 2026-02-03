@@ -1,0 +1,36 @@
+.filterBox {
+    border-radius: 5px;
+    opacity: 1;
+    margin-bottom: 1rem;
+    padding: 0.75rem 1rem !important;
+    .customLabel{
+        margin-bottom: 0.25rem;
+    }
+    .FilterationBtnsBox{
+        @include flexRow;
+        align-items: flex-end;
+        .buttonsBox{
+            width:100%;
+            justify-content: right;
+        }
+        .searchBtn {
+            &.searchGreenBtn {
+                background: $customGreen;
+            }
+        }
+        .resetBtn {
+            &.resetGreenBtn {
+                background: transparent;
+                border: 1px solid $customGreen;
+                color: $customGreen;
+            }
+        }
+    }
+
+    &.blueFilterBox{
+        background-color: #EEF1F6 !important;
+    }
+    &.greenFilterBox{
+        background-color: #F1F5F2 !important;
+    }
+}

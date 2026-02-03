@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <!-- <link rel="stylesheet" href="/Style Library/MiningViolations/CSS/main.css" /> -->
+  </head>
+
+  <body>
+    <div class="ViolationsLog" id="ViolationsLog">
+      <div
+        id="identify"
+        page-name="RejectedViolationsRecordsLog"
+        site-name="ViolationsRecorder"
+        hidden
+      ></div>
+      <div class="mainContainer">
+        <div class="contentContainer">
+          <div class="filterBox blueFilterBox">
+            <div class="row">
+              <div class="col-6 col-md-4">
+                <div class="form-group customFormGroup">
+                  <label for="violationCategory" class="customLabel"
+                    >تصنيف المخالفة
+                  </label>
+                  <div class="selectBox smallSelectBox">
+                    <select
+                      class="form-control violationCategory"
+                      id="violationCategory"
+                    >
+                      <option value="" disabled selected hidden>
+                        جميع المخالفات
+                      </option>
+                      <!-- <option value="all">الكل</option> -->
+                    </select>
+                    <i class="fa-solid fa-sort-down"></i>
+                  </div>
+                </div>
+              </div>
+              <div class="col-6 col-md-4">
+                <div class="form-group customFormGroup">
+                  <label for="TypeofViolation" class="customLabel"
+                    >نوع المخالفة
+                  </label>
+                  <div class="selectBox smallSelectBox">
+                    <select
+                      class="form-control TypeofViolation"
+                      id="TypeofViolation"
+                    >
+                      <option data-id="0" value="0" disabled selected hidden>
+                        الكل
+                      </option>
+                      <!-- <option data-id="all" value="جميع المخالفات">الكل</option> -->
+                    </select>
+                    <i class="fa-solid fa-sort-down"></i>
+                  </div>
+                </div>
+              </div>
+              <div class="col-6 col-sm-3">
+                <div class="form-group customFormGroup">
+                  <label for="violationSearch" class="customLabel greenLabel"
+                    >البحث عن مخالفة
+                  </label>
+                  <div class="selectBox smallSelectBox">
+                    <input
+                      id="violationSearch"
+                      type="text"
+                      class="form-control"
+                      placeholder="البحث"
+                    />
+                  </div>
+                </div>
+              </div>
+              <div class="col-6 col-md-1 FilterationBtnsBox">
+                <div class="buttonsBox pt-3">
+                  <div class="btnStyle searchBtn">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                  </div>
+                  <div class="btnStyle printBtn">
+                    طباعة التقرير
+                    <i class="fa-solid fa-print"></i>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="dashBoardTable">
+            <div class="btnContainer">
+              <div id="exportBtn" class="outlineBlueBtn exportBtn">
+                تصدير
+                <i class="fa-solid fa-download"></i>
+              </div>
+            </div>
+            <table
+              id="rejectedViolationsRecords"
+              class="table tableWithIcons blueTable"
+            ></table>
+          </div>
+
+          <!-- <div id="paginationBox" class="paginationBox"></div> -->
+          <div
+            id="paginationID"
+            class="paginationBox"
+            current=""
+            total=""
+            style="display: flex"
+          ></div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

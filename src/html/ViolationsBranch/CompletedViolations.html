@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+
+  <body>
+    <div class="completedViolations" id="completedViolations">
+      <div
+        id="identify"
+        page-name="completedViolations"
+        site-name="ViolationsBranch"
+        hidden
+      ></div>
+      <div class="mainContainer">
+        <div class="contentContainer">
+          <div class="filterBox greenFilterBox">
+            <div class="row">
+              <div class="col-6 col-sm-4 col-lg-4">
+                <div class="form-group customFormGroup">
+                  <label for="violationCode" class="customLabel greenLabel"
+                    >رقم المخالفة</label
+                  >
+                  <input
+                    class="form-control customInput violationCode"
+                    id="violationCode"
+                    type="text"
+                    placeholder="ادخل رقم المخالفة"
+                  />
+                </div>
+              </div>
+              <div class="col-6 col-md-4">
+                <div class="form-group customFormGroup">
+                  <label for="petitionStatus" class="customLabel greenLabel"
+                    >حالة الالتماس
+                  </label>
+                  <div class="selectBox smallSelectBox">
+                    <select
+                      class="form-control petitionStatus greenSelect"
+                      id="petitionStatus"
+                    >
+                      <option value="" disabled selected hidden>الكل</option>
+                    </select>
+                    <i class="fa-solid fa-sort-down"></i>
+                  </div>
+                </div>
+              </div>
+              <div class="col-6 col-md-4 FilterationBtnsBox">
+                <div class="buttonsBox pt-3">
+                  <div class="btnStyle searchBtn searchGreenBtn">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                  </div>
+                  <div class="btnStyle printBtn">
+                    طباعة التقرير
+                    <i class="fa-solid fa-print"></i>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="dashBoardTable">
+            <div class="btnContainer">
+              <div id="exportBtn" class="outlineGreenBtn exportBtn">
+                تصدير
+                <i class="fa-solid fa-download"></i>
+              </div>
+            </div>
+            <table
+              id="oldViolation"
+              class="table tableWithIcons greenTable"
+            ></table>
+          </div>
+
+          <div
+            id="paginationID"
+            class="paginationBox"
+            current=""
+            total=""
+            style="display: flex"
+          ></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal -->
+    <!-- <div class="modal track-history-modal fade" id="trackHistoryModal" tabindex="-1" aria-labelledby="trackHistory"
+        aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title-style">
+                        تتبع المخالفة رقم <span class="ms-3 modal-violation-code"></span>
+                    </h5>
+                </div>
+                <div class="modal-body">
+                    <div class="track-history-table-node">
+                        <table id="trackHistoryTable" class="track-history-table display" style="width:100%">
+                            <thead>
+                                <tr class="data-header">
+                                    <th>م</th>
+                                    <th>الإجراء</th>
+                                    <th>تاريخ الإجراء</th>
+                                    <th>القائم بالإجراء</th>
+                                    <th>ملاحظات</th>
+                                </tr>
+                            </thead>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div> -->
+  </body>
+</html>

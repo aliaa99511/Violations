@@ -1,0 +1,136 @@
+.table {
+    
+    
+    tbody{
+        tr:nth-child(even) {
+            background-color: #f0f4f2;
+        }
+        tr{
+            td {
+                .controls {
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: center;
+                    align-items: center;
+                    position: relative;
+                    .ellipsisButton {
+                        color: #ACACAC;
+                        width: 100%;
+                        display: flex;
+                        flex-direction: row;
+                        justify-content: center;
+                        cursor: pointer;
+                        padding-right: 10px;
+                    }
+                    .hiddenListBox {
+                        position: absolute;
+                        top: -11px;
+                        left: 100%;
+                        z-index: 1;
+                        display: none;
+                        .arrow {
+                            position: absolute;
+                            width: 11px;
+                            height: 11px;
+                            top: 12px;
+                            left: -5px;
+                            background-color: #fff;
+                            transform: rotate(-45deg);
+                            border-top: 1px solid rgba(112, 112, 112, .29);
+                            border-left: 1px solid rgba(112, 112, 112, .29);
+                        }
+                        .controlsList {
+                            background-color: $white;
+                            box-shadow: 2px 3px 5px rgba(0, 0, 0, 0.2);
+                            min-width: 180px;
+                            border: 1px solid rgb(112, 112, 112, 0.29);
+                            border-radius: 3px;
+                            padding-right: 0px;
+                            li {
+                                position: relative;
+                                transition: all 0.4s ease-in-out;
+                                white-space: nowrap;
+                                &::after {
+                                    content: "";
+                                    position: absolute;
+                                    bottom: 0;
+                                    right: 50%;
+                                    transform: translateX(50%);
+                                    width: 100%;
+                                    height: 1px;
+                                    background-color: #F5F5F5;
+                                }
+                                &:last-child::after {
+                                    display: none;
+                                }
+                                a {
+                                    text-decoration: none;
+                                    color: #211E1E;
+                                    @include flexRow;
+                                    justify-content: center;
+                                    width: 100%;
+                                    height: 100%;
+                                    padding: 0.6rem 0.75rem;
+                                    transition: all 0.4s ease-in-out;
+                                    &.deleteRecord {
+                                        color: $customBlue;
+                                    }
+                                    &.RejectedViolations {
+                                        color: #990000;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    &.blueTable {
+        tr{
+            td {
+                .controls {
+                    .ellipsisButton {
+                        color: $customBlue;
+                    }
+                }
+            }
+        }
+    }
+    &.greenTable {
+        tr{
+            td {
+                .controls {
+                    .ellipsisButton {
+                        color: $customGreen;
+                    }
+                }
+            }
+        }
+    }
+}
+
+.toTopDDL{
+    top: auto !important;
+    bottom: -30px;
+    .arrow {
+        top: auto !important;
+        bottom: 30px;
+    }
+}
+.disabledLi{
+    opacity: 0.5;
+    a{
+        pointer-events: none !important;
+    }
+}
+// &:nth-last-child(-n + 3){
+//     .hiddenListBox{
+//         top: auto;
+//         bottom: -30px;
+//         .arrow {
+//             top: auto;
+//             bottom: 30px;
+//         }
+//     }
+// }

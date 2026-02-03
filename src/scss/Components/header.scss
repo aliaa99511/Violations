@@ -1,0 +1,124 @@
+.header {
+    height: 70px;
+    padding: 1rem 2rem;
+    .headerContent {
+        @include flexRow;
+        height: 100%;
+        justify-content: space-between;
+        .headerContentLogo {
+            @include flexRow;
+            height: 100%;
+            justify-content: flex-end;
+        }
+        .userDetails{
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            justify-content: center;
+            .userDetailsImg {
+                width: 38px;
+                height: 38px;
+                border-radius: 50%;
+                overflow: hidden;
+                img {
+                    width: 100%;
+                    height: 100%;
+                    object-fit: cover;
+                }
+            }
+            .userDetailsData {
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+            }
+            .userName{
+                font-size: 15px;
+                font-family: CairoB;
+                margin-bottom: 0 !important;
+            }
+
+            .userSector{
+                font-family: Cairo;
+                font-size: 12px;
+                margin-bottom: 0;
+            }
+
+            .userEmail{
+                margin-bottom: 0 !important;
+                font-family: Cairo;
+                font-size: 9px;
+            }
+            
+        }
+    }
+    .headerLogo {
+        height: 100%;
+        text-decoration: none;
+        @include flexRow;
+        padding-inline-end: 1.5rem;
+        position: relative;
+        .logoImageBox {
+            height: 100%;
+            margin-inline-end: 0.75rem;
+            img {
+                max-height: 100%
+            }
+        }
+        .companyDataBox {
+            @include flexCol;
+            .companyName {
+                color: #083A77;
+                font-size: 15px;
+                font-family: CairoB;
+                margin-bottom: 0 !important;
+            }
+            .companyField {
+                font-size: 12px;
+                color: #0C0C0C;
+                font-family: Cairo;
+                margin-bottom: 0;
+            }
+        }
+        &::after {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 2px;
+            height: 90%;
+            background-color: #F3F3F3;
+        }
+    }
+    .violationsLogo {
+        height: 100%;
+        text-decoration: none;
+        @include flexRow;
+        padding-inline-start: 1.5rem;
+        .violationsImageBox {
+            height: 100%;
+            margin-inline-end: 0.75rem;
+            img {
+                max-height: 100%
+            }
+        }
+        .violationsNameBox {
+            .violationsName {
+                font-size: 18px;
+                font-family: CairoB;
+                color: $customBlue;
+                margin-bottom: 0 !important;
+            }
+        }
+    }
+    &.greenHeader{
+        .userName, .userSector, .userEmail {
+            color: $customGreen;
+        }
+    }
+    &.blueHeader{
+        .userName, .userSector, .userEmail {
+            color: $customBlue;
+        }
+    }
+}

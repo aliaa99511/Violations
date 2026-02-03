@@ -1,0 +1,190 @@
+.committeeBox {
+  //   border: 2px solid #efefef;
+  border-radius: 5px;
+  //   padding: 1.75rem 1rem;
+  position: relative;
+  //   min-height: 190px;
+  @include flexCol;
+  justify-content: center;
+  &::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 50%;
+    transform: translateX(50%);
+    width: 60%;
+    height: 6px;
+    background-color: $customBlue;
+    border-radius: 0 0 8px 8px;
+  }
+  .committeeData {
+    text-align: center;
+
+    .committeePersonName {
+      font-size: 15px;
+      color: $customBlue;
+      font-family: CairoB;
+      margin-bottom: 0.75rem;
+    }
+    .committeePersonRank {
+      font-size: 13px;
+      color: #000;
+      font-family: Cairo;
+      margin-bottom: 0.75rem;
+    }
+    .committeePersonJop {
+      font-size: 13px;
+      color: #000;
+      font-family: Cairo;
+      margin-bottom: 0;
+    }
+  }
+  &.committeeMember {
+    position: relative;
+    // padding: 0.75rem 1rem;
+    // height: 190px;
+    .committeeData {
+      display: none;
+      overflow: auto;
+      .membersDataBox {
+        @include flexCol;
+        min-height: 60px;
+        .memberData {
+          @include flexRow;
+          justify-content: center;
+          margin-bottom: 0.5rem;
+          &:last-child {
+            margin-bottom: 0;
+          }
+          .committeePersonName,
+          .committeePersonRank,
+          .committeePersonJop {
+            font-size: 15px !important;
+            margin: 0;
+          }
+          .committeePersonRank {
+            margin-inline-end: 0.25rem;
+          }
+          .committeePersonJop {
+            margin-inline-start: 0.25rem;
+          }
+        }
+      }
+      .reSelectMember {
+        position: absolute;
+        background-color: #083a77;
+        color: #fff;
+        bottom: 0;
+        width: 100%;
+        right: 0;
+        padding: 0.5rem;
+        font-size: 14px;
+        font-family: CairoSB;
+        border-radius: 10px 10px 0 0;
+        cursor: pointer;
+        visibility: hidden;
+        opacity: 0;
+        transition: all 0.4s ease-in-out;
+      }
+      &::-webkit-scrollbar {
+        width: 6px;
+        background: transparent;
+      }
+      &::-webkit-scrollbar-thumb {
+        border-radius: 5px;
+        background: #bdbdbd;
+        border: 1px solid #bdbdbd;
+      }
+    }
+    &:hover {
+      .reSelectMember {
+        visibility: visible;
+        opacity: 1;
+      }
+    }
+    .committeeSearch {
+      width: 100%;
+      height: 100%;
+      @include flexCol;
+      justify-content: center;
+      .searchBox {
+        width: 100%;
+        position: relative;
+        height: 70px;
+        // margin-bottom: 1rem;
+        .customInput {
+          width: 100%;
+          height: 100%;
+          padding-inline-end: 2rem;
+        }
+        i {
+          position: absolute;
+          top: 50%;
+          transform: translateY(-50%);
+          left: 16px;
+          color: #483f42;
+        }
+      }
+      .selectBox {
+        // height: 80px;
+        height: 180px;
+        width: 100%;
+        padding: 8px;
+        // margin-bottom: 0.5rem;
+        select {
+          padding: 0.25rem !important;
+          option {
+            margin-bottom: 0.25rem;
+            transition: all 0.4s ease-in-out;
+            border-radius: 2px;
+            padding: 1px 8px;
+            border-bottom: 1px solid #8080801a;
+            &:last-child {
+              margin-bottom: 0;
+            }
+            &:checked {
+              background-color: #bdbdbd;
+              color: #000;
+            }
+            &:hover {
+              background-color: $customBlue;
+              color: $white;
+            }
+          }
+          &::-webkit-scrollbar {
+            width: 6px;
+            background: transparent;
+          }
+          &::-webkit-scrollbar-thumb {
+            border-radius: 5px;
+            background: #bdbdbd;
+            border: 1px solid #bdbdbd;
+          }
+        }
+        i {
+          display: none;
+        }
+      }
+      .submitSelectedMembers {
+        @include flexRow;
+        justify-content: center;
+        .submitSelectedMembersBtn {
+          @include flexRow;
+          justify-content: center;
+          min-width: 120px;
+          padding: 0.5rem 1rem;
+          background-color: $customBlue;
+          border-radius: 3px;
+          color: $white;
+          font-size: 13px;
+          font-family: CairoSB;
+          cursor: pointer;
+        }
+      }
+      .btnStyle {
+        height: 40px;
+        width: 100%;
+      }
+    }
+  }
+}

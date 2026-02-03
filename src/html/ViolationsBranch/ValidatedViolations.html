@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -19,25 +19,42 @@
         <div class="contentContainer">
           <div class="filterBox greenFilterBox">
             <div class="row">
-              <div class="col-6 col-sm-4 col-lg-3">
+              <div class="col-6 col-md-3">
                 <div class="form-group customFormGroup">
-                  <label for="violationZone" class="customLabel greenLabel"
-                    >المنطقة
+                  <label for="violationSector" class="customLabel greenLabel"
+                    >القطاع
                   </label>
                   <div class="selectBox smallSelectBox">
                     <select
-                      class="form-control violationZone greenSelect"
-                      id="violationZone"
+                      class="form-control violationSector greenSelect"
+                      id="violationSector"
                     >
-                      <option value="" disabled selected hidden>
-                        جميع المناطق
-                      </option>
+                      <option value="0" disabled selected hidden>الكل</option>
                     </select>
                     <i class="fa-solid fa-sort-down"></i>
                   </div>
                 </div>
               </div>
-              <div class="col-6 col-sm-4 col-lg-3">
+              <div class="col-6 col-md-3">
+                <div class="form-group customFormGroup">
+                  <label for="violationCategory" class="customLabel greenLabel"
+                    >تصنيف المخالفة
+                  </label>
+                  <div class="selectBox smallSelectBox">
+                    <select
+                      class="form-control violationCategory greenSelect"
+                      id="violationCategory"
+                    >
+                      <option value="" disabled selected hidden>
+                        جميع المخالفات
+                      </option>
+                      <!-- <option value="all">الكل</option> -->
+                    </select>
+                    <i class="fa-solid fa-sort-down"></i>
+                  </div>
+                </div>
+              </div>
+              <div class="col-6 col-md-3">
                 <div class="form-group customFormGroup">
                   <label for="TypeofViolation" class="customLabel greenLabel"
                     >نوع المخالفة
@@ -50,20 +67,21 @@
                       <option data-id="0" value="0" disabled selected hidden>
                         الكل
                       </option>
+                      <!-- <option data-id="all" value="الكل">الكل</option> -->
                     </select>
                     <i class="fa-solid fa-sort-down"></i>
                   </div>
                 </div>
               </div>
-              <div class="col-6 col-sm-4 col-lg-3">
+              <div class="col-6 col-md-3">
                 <div class="form-group customFormGroup">
-                  <label for="PaymentStatus" class="customLabel greenLabel"
+                  <label for="ViolationStatus" class="customLabel greenLabel"
                     >حالة المخالفة
                   </label>
                   <div class="selectBox smallSelectBox">
                     <select
-                      class="form-control PaymentStatus greenSelect"
-                      id="PaymentStatus"
+                      class="form-control ViolationStatus greenSelect"
+                      id="ViolationStatus"
                     >
                       <option value="" disabled selected hidden>الكل</option>
                     </select>
@@ -71,8 +89,134 @@
                   </div>
                 </div>
               </div>
-              <div class="col-6 col-sm-2 col-lg-3 FilterationBtnsBox">
-                <div class="buttonsBox">
+              <div class="col-6 col-md-3">
+                <div class="form-group customFormGroup">
+                  <label for="violationZone" class="customLabel greenLabel"
+                    >المنطقة
+                  </label>
+                  <div class="selectBox smallSelectBox">
+                    <input
+                      id="violationZone"
+                      type="text"
+                      class="form-control"
+                      placeholder="ادخل المنطقة"
+                    />
+                  </div>
+                </div>
+              </div>
+              <div class="col-6 col-md-3">
+                <div class="form-group customFormGroup">
+                  <label for="violationSearch" class="customLabel greenLabel"
+                    >البحث عن مخالفة
+                  </label>
+                  <div class="selectBox smallSelectBox">
+                    <input
+                      id="violationSearch"
+                      type="text"
+                      class="form-control"
+                      placeholder="البحث"
+                    />
+                  </div>
+                </div>
+              </div>
+              <div class="col-6 col-md-3">
+                <div class="form-group customFormGroup">
+                  <label for="violatorName" class="customLabel greenLabel"
+                    >اسم المخالف
+                  </label>
+                  <div class="selectBox smallSelectBox">
+                    <input
+                      id="violatorName"
+                      type="text"
+                      class="form-control"
+                      placeholder="ادخل اسم المخالف"
+                    />
+                  </div>
+                </div>
+              </div>
+              <div class="col-6 col-md-3">
+                <div class="form-group customFormGroup">
+                  <label for="nationalID" class="customLabel greenLabel"
+                    >الرقم القومي للمخالف
+                  </label>
+                  <div class="selectBox smallSelectBox">
+                    <input
+                      id="nationalID"
+                      type="text"
+                      class="form-control"
+                      placeholder="ادخل الرقم القومي"
+                    />
+                  </div>
+                </div>
+              </div>
+              <div class="col-6 col-md-3">
+                <div class="form-group customFormGroup">
+                  <label for="violationCode" class="customLabel greenLabel"
+                    >رقم المخالفة
+                  </label>
+                  <div class="selectBox smallSelectBox">
+                    <input
+                      id="violationCode"
+                      type="text"
+                      class="form-control"
+                      placeholder="ادخل رقم المخالفة"
+                    />
+                  </div>
+                </div>
+              </div>
+              <div class="col-6 col-md-3">
+                <div class="form-group customFormGroup">
+                  <label for="theCode" class="customLabel greenLabel"
+                    >رقم المحجر \ عربة \ معدة
+                  </label>
+                  <div class="selectBox smallSelectBox">
+                    <input
+                      id="theCode"
+                      type="text"
+                      class="form-control"
+                      placeholder="ادخل الرقم"
+                    />
+                  </div>
+                </div>
+              </div>
+              <div class="col-6 col-md-3">
+                <div class="form-group customFormGroup">
+                  <label for="createdFrom" class="customLabel greenLabel"
+                    >من</label
+                  >
+                  <div class="inputIconBox">
+                    <input
+                      class="form-control customInput inputDate createdFrom"
+                      id="createdFrom"
+                      type="text"
+                      placeholder="DD-MM-YYYY"
+                    />
+                    <i class="fa-solid fa-calendar-days"></i>
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-6 col-md-3">
+                <div class="form-group customFormGroup">
+                  <label for="createdTo" class="customLabel greenLabel"
+                    >إلى
+                  </label>
+                  <div class="inputIconBox">
+                    <input
+                      id="createdTo"
+                      type="text"
+                      class="form-control customInput inputDate createdTo"
+                      placeholder="DD-MM-YYYY"
+                    />
+                    <i class="fa-solid fa-calendar-days"></i>
+                  </div>
+                </div>
+              </div>
+              <div class="col-6 col-md-1 FilterationBtnsBox">
+                <div class="buttonsBox pt-3">
+                  <div class="btnStyle resetBtn resetGreenBtn">
+                    <i class="fa-solid fa-rotate-left"></i>
+                  </div>
                   <div class="btnStyle searchBtn searchGreenBtn">
                     <i class="fa-solid fa-magnifying-glass"></i>
                   </div>
@@ -86,6 +230,12 @@
           </div>
 
           <div class="dashBoardTable">
+            <div class="btnContainer">
+              <div id="exportBtn" class="outlineGreenBtn exportBtn">
+                تصدير
+                <i class="fa-solid fa-download"></i>
+              </div>
+            </div>
             <table
               id="ValidatedViolation"
               class="table tableWithIcons greenTable"
@@ -99,6 +249,42 @@
             total=""
             style="display: flex"
           ></div>
+        </div>
+      </div>
+    </div>
+    <div
+      class="modal track-history-modal fade"
+      id="trackHistoryModal"
+      tabindex="-1"
+      aria-labelledby="trackHistory"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title-style">
+              تتبع المخالفة رقم <span class="ms-3 modal-violation-code"></span>
+            </h5>
+          </div>
+          <div class="modal-body">
+            <div class="track-history-table-node">
+              <table
+                id="trackHistoryTable"
+                class="track-history-table display"
+                style="width: 100%"
+              >
+                <thead>
+                  <tr class="data-header">
+                    <th>م</th>
+                    <th>الإجراء</th>
+                    <th>تاريخ الإجراء</th>
+                    <th>القائم بالإجراء</th>
+                    <th>ملاحظات</th>
+                  </tr>
+                </thead>
+              </table>
+            </div>
+          </div>
         </div>
       </div>
     </div>

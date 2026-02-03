@@ -1,0 +1,136 @@
+.attachBox,
+.petitionsAttachBox,
+.violationAttachBox {
+  width: 100%;
+  height: 115px;
+  @include flexRow;
+  overflow-x: auto;
+  .attachment {
+    min-width: 105px;
+    max-width: 105px;
+    height: 100%;
+    margin-inline-end: 0.5rem;
+    @include flexCol;
+    background-color: $white;
+    border: 1px solid #dfdfdf;
+    border-radius: 5px;
+    padding: 0.5rem;
+    text-decoration: none;
+    &:last-child {
+      margin-inline-end: 0;
+    }
+    .attachImgBox {
+      @include flexRow;
+      justify-content: center;
+      width: 100%;
+      height: 75%;
+      margin-bottom: 0.5rem;
+      // border: 1px solid #DFDFDF;
+      // border-radius: 5px;
+      padding: 0.25rem;
+      img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+      }
+    }
+    .attachDataBox {
+      @include flexRow;
+      justify-content: space-between;
+      .attachName {
+        margin-bottom: 0 !important;
+        color: #484848;
+        font-size: 13px;
+        font-family: CairoSB;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        width: 75%;
+      }
+      span {
+        color: rgba(1, 86, 66, 0.6);
+      }
+    }
+  }
+  &::-webkit-scrollbar {
+    width: 6px;
+    height: 2px;
+    background: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: #efefef;
+    border: 1px solid #efefef;
+    border-radius: 5px;
+  }
+  .noAttachments {
+    @include flexRow;
+    justify-content: center;
+    font-size: 13px;
+    font-family: CairoB;
+    background-color: #efefef;
+    width: 100%;
+    height: 100%;
+    // border: 1px solid #DFDFDF;
+    border-radius: 5px;
+    margin-bottom: 0;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-family: CairoB;
+    background-color: #efefef;
+    width: 100%;
+    height: 100%;
+    border-radius: 5px;
+    margin-bottom: 0;
+    margin-left: 5px;
+  }
+}
+.attchedFile {
+  @include flexRow;
+  justify-content: space-between;
+  width: 100%;
+  height: 50px;
+  background-color: #efefef;
+  border-radius: 5px;
+  padding: 1rem;
+  font-size: 13px;
+  font-family: CairoSB;
+  color: #0c0c0c !important;
+  text-decoration: none !important;
+  margin-bottom: 1rem;
+  transition: all 0.4s ease-in-out;
+  .attachDetailsBox {
+    @include flexRow;
+    width: 90%;
+    img {
+      margin-inline-end: 0.5rem;
+    }
+    .attchedFileName {
+      margin-bottom: 0;
+      width: 80%;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      overflow: hidden;
+    }
+  }
+  span {
+    // width: 25%;
+    color: rgba(1, 86, 66, 0.6);
+  }
+}
+
+.noAttachedFiles {
+  margin-bottom: 1rem;
+  @include flexRow;
+  justify-content: center;
+  width: 100%;
+  height: 50px;
+  background-color: #efefef;
+  border-radius: 5px;
+  padding: 1rem;
+  font-size: 13px;
+  font-family: CairoSB;
+  color: #0c0c0c !important;
+}

@@ -1,0 +1,37 @@
+.selectBox {
+    position: relative;
+    height: 56px;
+    select {
+        height: 100%;
+        @include customFormElements;
+        &:focus {
+            border: 2px solid $customBlue !important;
+        }
+        option {
+            font-size: 14px;
+            font-family: CairoSB;
+            cursor: pointer;
+        }
+        &.greenSelect {
+            &:focus {
+                border: 1px solid $customGreen !important;
+            }
+        }
+    }
+    i {
+        position: absolute;
+        top: 50%;
+        left: 16px;
+        transform: translateY(-50%);
+        color: #9A999B;
+        margin-top: -4px;
+        font-size: 18px;
+    }
+    &.smallSelectBox {
+        height: 42px;
+        select {
+            border-radius: 2px;
+            padding: 0.25rem 1rem !important;
+        }
+    }
+}

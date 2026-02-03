@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -12,33 +12,50 @@
     <div class="ViolationsLog" id="ViolationsLog">
       <div
         id="identify"
-        page-name="ViolationsLog"
-        site-name="Recorder"
+        page-name="PendingViolationsRecordsLog"
+        site-name="ViolationsRecorder"
         hidden
       ></div>
       <div class="mainContainer">
         <div class="contentContainer">
           <div class="filterBox blueFilterBox">
             <div class="row">
-              <div class="col-6 col-lg-4">
+              <div class="col-6 col-md-3">
                 <div class="form-group customFormGroup">
-                  <label for="violationZone" class="customLabel"
-                    >المنطقة
+                  <label for="violationSector" class="customLabel greenLabel"
+                    >القطاع
                   </label>
                   <div class="selectBox smallSelectBox">
                     <select
-                      class="form-control violationZone"
-                      id="violationZone"
+                      class="form-control violationSector greenSelect"
+                      id="violationSector"
                     >
-                      <option value="" disabled selected hidden>
-                        جميع المناطق
-                      </option>
+                      <option value="0" disabled selected hidden>الكل</option>
                     </select>
                     <i class="fa-solid fa-sort-down"></i>
                   </div>
                 </div>
               </div>
-              <div class="col-6 col-lg-4">
+              <div class="col-6 col-md-3">
+                <div class="form-group customFormGroup">
+                  <label for="violationCategory" class="customLabel"
+                    >تصنيف المخالفة
+                  </label>
+                  <div class="selectBox smallSelectBox">
+                    <select
+                      class="form-control violationCategory"
+                      id="violationCategory"
+                    >
+                      <option value="" disabled selected hidden>
+                        جميع المخالفات
+                      </option>
+                      <!-- <option value="all">الكل</option> -->
+                    </select>
+                    <i class="fa-solid fa-sort-down"></i>
+                  </div>
+                </div>
+              </div>
+              <div class="col-6 col-md-3">
                 <div class="form-group customFormGroup">
                   <label for="TypeofViolation" class="customLabel"
                     >نوع المخالفة
@@ -51,13 +68,136 @@
                       <option data-id="0" value="0" disabled selected hidden>
                         الكل
                       </option>
+                      <!-- <option data-id="all" value="الكل">الكل</option> -->
                     </select>
                     <i class="fa-solid fa-sort-down"></i>
                   </div>
                 </div>
               </div>
-              <div class="col-6 col-lg-4 FilterationBtnsBox">
-                <div class="buttonsBox">
+              <div class="col-6 col-md-3">
+                <div class="form-group customFormGroup">
+                  <label for="violationZone" class="customLabel"
+                    >المنطقة
+                  </label>
+                  <div class="selectBox smallSelectBox">
+                    <input
+                      id="violationZone"
+                      type="text"
+                      class="form-control"
+                      placeholder="ادخل المنطقة"
+                    />
+                  </div>
+                </div>
+              </div>
+              <div class="col-6 col-md-3">
+                <div class="form-group customFormGroup">
+                  <label for="violationSearch" class="customLabel"
+                    >البحث عن مخالفة
+                  </label>
+                  <div class="selectBox smallSelectBox">
+                    <input
+                      id="violationSearch"
+                      type="text"
+                      class="form-control"
+                      placeholder="البحث"
+                    />
+                  </div>
+                </div>
+              </div>
+              <div class="col-6 col-md-3">
+                <div class="form-group customFormGroup">
+                  <label for="violatorName" class="customLabel"
+                    >اسم المخالف
+                  </label>
+                  <div class="selectBox smallSelectBox">
+                    <input
+                      id="violatorName"
+                      type="text"
+                      class="form-control"
+                      placeholder="ادخل اسم المخالف"
+                    />
+                  </div>
+                </div>
+              </div>
+              <div class="col-6 col-md-3">
+                <div class="form-group customFormGroup">
+                  <label for="nationalID" class="customLabel"
+                    >الرقم القومي للمخالف
+                  </label>
+                  <div class="selectBox smallSelectBox">
+                    <input
+                      id="nationalID"
+                      type="text"
+                      class="form-control"
+                      placeholder="ادخل الرقم القومي"
+                    />
+                  </div>
+                </div>
+              </div>
+              <div class="col-6 col-md-3">
+                <div class="form-group customFormGroup">
+                  <label for="violationCode" class="customLabel"
+                    >رقم المخالفة
+                  </label>
+                  <div class="selectBox smallSelectBox">
+                    <input
+                      id="violationCode"
+                      type="text"
+                      class="form-control"
+                      placeholder="ادخل رقم المخالفة"
+                    />
+                  </div>
+                </div>
+              </div>
+              <div class="col-6 col-md-3">
+                <div class="form-group customFormGroup">
+                  <label for="theCode" class="customLabel"
+                    >رقم المحجر \ عربة \ معدة
+                  </label>
+                  <div class="selectBox smallSelectBox">
+                    <input
+                      id="theCode"
+                      type="text"
+                      class="form-control"
+                      placeholder="ادخل الرقم"
+                    />
+                  </div>
+                </div>
+              </div>
+              <div class="col-6 col-md-3">
+                <div class="form-group customFormGroup">
+                  <label for="createdFrom" class="customLabel">من</label>
+                  <div class="inputIconBox">
+                    <input
+                      class="form-control customInput inputDate createdFrom"
+                      id="createdFrom"
+                      type="text"
+                      placeholder="DD-MM-YYYY"
+                    />
+                    <i class="fa-solid fa-calendar-days"></i>
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-6 col-md-3">
+                <div class="form-group customFormGroup">
+                  <label for="createdTo" class="customLabel">إلى </label>
+                  <div class="inputIconBox">
+                    <input
+                      id="createdTo"
+                      type="text"
+                      class="form-control customInput inputDate createdTo"
+                      placeholder="DD-MM-YYYY"
+                    />
+                    <i class="fa-solid fa-calendar-days"></i>
+                  </div>
+                </div>
+              </div>
+              <div class="col-6 col-md-1 FilterationBtnsBox">
+                <div class="buttonsBox pt-3">
+                  <div class="btnStyle resetBtn">
+                    <i class="fa-solid fa-rotate-left"></i>
+                  </div>
                   <div class="btnStyle searchBtn">
                     <i class="fa-solid fa-magnifying-glass"></i>
                   </div>
@@ -71,11 +211,19 @@
           </div>
 
           <div class="dashBoardTable">
+            <div class="btnContainer">
+              <div id="exportBtn" class="outlineBlueBtn exportBtn">
+                تصدير
+                <i class="fa-solid fa-download"></i>
+              </div>
+            </div>
             <table
               id="ViolationsRecord"
               class="table tableWithIcons blueTable"
             ></table>
           </div>
+
+          <!-- <iframe src="/Reports/powerbi/Violation1962023" style="width:100%;height:800px"></iframe> -->
 
           <!-- <div id="paginationBox" class="paginationBox"></div> -->
           <div

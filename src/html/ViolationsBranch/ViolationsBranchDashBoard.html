@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -8,89 +8,82 @@
   </head>
 
   <body>
-    <div class="ExistingViolations" id="ExistingViolations">
+    <div class="BranchDashBoard" id="BranchDashBoard">
       <div
         id="identify"
         page-name="DashBoard"
         site-name="ViolationsBranch"
         hidden
       ></div>
-      <div class="mainContainer">
-        <div class="contentContainer">
-          <div class="filterBox greenFilterBox">
-            <div class="row">
-              <div class="col-6 col-sm-4 col-lg-3">
-                <div class="form-group customFormGroup">
-                  <label for="violationZone" class="customLabel greenLabel"
-                    >المنطقة
-                  </label>
-                  <div class="selectBox smallSelectBox">
-                    <select
-                      class="form-control violationZone greenSelect"
-                      id="violationZone"
-                    >
-                      <option value="" disabled selected hidden>
-                        منطقة الضبط
-                      </option>
-                    </select>
-                    <i class="fa-solid fa-sort-down"></i>
-                  </div>
-                </div>
-              </div>
-              <div class="col-6 col-sm-4 col-lg-3">
-                <div class="form-group customFormGroup">
-                  <label for="TypeofViolation" class="customLabel greenLabel"
-                    >نوع المخالفة
-                  </label>
-                  <div class="selectBox smallSelectBox">
-                    <select
-                      class="form-control TypeofViolation greenSelect"
-                      id="TypeofViolation"
-                    >
-                      <option value="" disabled selected hidden>الكل</option>
-                    </select>
-                    <i class="fa-solid fa-sort-down"></i>
-                  </div>
-                </div>
-              </div>
-              <div class="col-6 col-sm-4 col-lg-3">
-                <div class="form-group customFormGroup">
-                  <label for="StatusViolation" class="customLabel greenLabel"
-                    >الحالة
-                  </label>
-                  <div class="selectBox smallSelectBox">
-                    <select
-                      class="form-control StatusViolation greenSelect"
-                      id="StatusViolation"
-                    >
-                      <option value="" disabled selected hidden>الكل</option>
-                    </select>
-                    <i class="fa-solid fa-sort-down"></i>
-                  </div>
-                </div>
-              </div>
-              <div class="col-6 col-sm-2 col-lg-3 FilterationBtnsBox">
-                <div class="buttonsBox">
-                  <div class="btnStyle searchBtn searchGreenBtn">
-                    <i class="fa-solid fa-magnifying-glass"></i>
-                  </div>
-                  <div class="btnStyle printBtn">
-                    طباعة التقرير
-                    <i class="fa-solid fa-print"></i>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
 
-          <div class="dashBoardTable">
-            <table
-              id="CasesLogTable"
-              class="table tableWithIcons greenTable"
-            ></table>
-          </div>
-        </div>
+      <div class="Bi_container">
+        <iframe
+          class="frameBi"
+          src="/Reports/powerbi/PowerBIDashboard?rs:Command=Render&rc:Toolbar=false&navContentPaneEnabled=false&rs:navContentPaneEnabled=false"
+        ></iframe>
       </div>
+
+      <!-- <div class="mainContainer">
+            <div class="contentContainer"> -->
+      <!-- <iframe src="http://admin.miningsector.lcl:20985/Reports/powerbi/PowerBIDashboard?rs:Command=Render&rc:Toolbar=false&navContentPaneEnabled=false&rs:navContentPaneEnabled=false"></iframe> -->
+
+      <!-- <div class="filterBox greenFilterBox">
+                    <div class="row">
+                        <div class="col-6 col-sm-4 col-lg-3">
+                            <div class="form-group customFormGroup">
+                                <label for="violationZone" class="customLabel greenLabel">المنطقة </label>
+                                <div class="selectBox smallSelectBox">
+                                    <select class="form-control violationZone greenSelect" id="violationZone">
+                                        <option value="" disabled selected hidden>منطقة الضبط</option>
+                                    </select>
+                                    <i class="fa-solid fa-sort-down"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-sm-4 col-lg-3">
+                            <div class="form-group customFormGroup ">
+                                <label for="TypeofViolation" class="customLabel greenLabel">نوع المخالفة
+                                </label>
+                                <div class="selectBox smallSelectBox">
+                                    <select class="form-control TypeofViolation greenSelect" id="TypeofViolation">
+                                        <option value="" disabled selected hidden>الكل</option>
+                                    </select>
+                                    <i class="fa-solid fa-sort-down"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-sm-4 col-lg-3">
+                            <div class="form-group customFormGroup ">
+                                <label for="StatusViolation" class="customLabel greenLabel">الحالة
+                                </label>
+                                <div class="selectBox smallSelectBox">
+                                    <select class="form-control StatusViolation greenSelect" id="StatusViolation">
+                                        <option value="" disabled selected hidden>الكل</option>
+                                    </select>
+                                    <i class="fa-solid fa-sort-down"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6  col-sm-2 col-lg-3 FilterationBtnsBox">
+                            <div class="buttonsBox pt-3">
+                                <div class="btnStyle searchBtn searchGreenBtn">
+                                    <i class="fa-solid fa-magnifying-glass"></i>
+                                </div>
+                                <div class="btnStyle printBtn">
+                                    طباعة التقرير
+                                    <i class="fa-solid fa-print"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div> -->
+
+      <!-- <div class="dashBoardTable">
+                    <table id="CasesLogTable" class="table tableWithIcons greenTable"></table>
+                </div> -->
+
+      <!-- </div>
+        </div> -->
     </div>
   </body>
 </html>

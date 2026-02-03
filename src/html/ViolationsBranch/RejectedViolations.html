@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -19,25 +19,23 @@
         <div class="contentContainer">
           <div class="filterBox greenFilterBox">
             <div class="row">
-              <div class="col-6 col-sm-4 col-lg-3">
+              <div class="col-6 col-sm-4">
                 <div class="form-group customFormGroup">
-                  <label for="violationZone" class="customLabel greenLabel"
-                    >المنطقة
+                  <label for="violationSector" class="customLabel greenLabel"
+                    >القطاع
                   </label>
                   <div class="selectBox smallSelectBox">
                     <select
-                      class="form-control violationZone greenSelect"
-                      id="violationZone"
+                      class="form-control violationSector greenSelect"
+                      id="violationSector"
                     >
-                      <option value="" disabled selected hidden>
-                        منطقة الضبط
-                      </option>
+                      <option value="0" disabled selected hidden>الكل</option>
                     </select>
                     <i class="fa-solid fa-sort-down"></i>
                   </div>
                 </div>
               </div>
-              <div class="col-6 col-sm-4 col-lg-3">
+              <div class="col-6 col-sm-4">
                 <div class="form-group customFormGroup">
                   <label for="TypeofViolation" class="customLabel greenLabel"
                     >نوع المخالفة
@@ -55,6 +53,21 @@
                   </div>
                 </div>
               </div>
+              <div class="col-6 col-sm-3">
+                <div class="form-group customFormGroup">
+                  <label for="violationSearch" class="customLabel greenLabel"
+                    >البحث عن مخالفة
+                  </label>
+                  <div class="selectBox smallSelectBox">
+                    <input
+                      id="violationSearch"
+                      type="text"
+                      class="form-control"
+                      placeholder="البحث"
+                    />
+                  </div>
+                </div>
+              </div>
               <!-- <div class="col-6 col-sm-4 col-lg-3">
                             <div class="form-group customFormGroup ">
                                 <label for="StatusViolation" class="customLabel greenLabel">الحالة
@@ -67,8 +80,8 @@
                                 </div>
                             </div>
                         </div> -->
-              <div class="col-6 col-sm-2 col-lg-3 FilterationBtnsBox">
-                <div class="buttonsBox">
+              <div class="col-6 col-md-1 FilterationBtnsBox">
+                <div class="buttonsBox pt-3">
                   <div class="btnStyle searchBtn searchGreenBtn">
                     <i class="fa-solid fa-magnifying-glass"></i>
                   </div>
@@ -82,6 +95,12 @@
           </div>
 
           <div class="dashBoardTable">
+            <div class="btnContainer">
+              <div id="exportBtn" class="outlineGreenBtn exportBtn">
+                تصدير
+                <i class="fa-solid fa-download"></i>
+              </div>
+            </div>
             <table
               id="RejectedViolation"
               class="table tableWithIcons greenTable"

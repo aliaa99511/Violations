@@ -1,0 +1,28 @@
+.customTextArea{
+    @include customFormElements;
+    resize: none;
+    &:focus{
+        border: 2px solid $customBlue !important;
+    }
+    &.violationDescription {
+        height: 115px;
+    }
+    &.committeeMember{
+        height: 189px;
+    }
+    &.sectorManegrOpinion{
+        height: 95px;
+    }
+    &.rejectReason{
+        height: 150px;
+        &:focus{
+            border: 2px solid $customGreen !important;
+        }
+    }
+    &.petitionComments{
+        height: 100px;
+        &:focus{
+            border: 2px solid $customGreen !important;
+        }
+    }
+}

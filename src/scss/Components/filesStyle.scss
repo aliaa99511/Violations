@@ -1,0 +1,32 @@
+.file{
+    @include flexRow;
+    justify-content: space-between;
+    padding: 0.25rem 0.5rem;
+    margin-bottom: 0.25rem;
+    &:last-child{
+        margin-bottom: 0;
+    }
+    .fileName{
+        font-size: 13px;
+        font-family: CairoB;
+        color: $customBlue;
+        margin-bottom: 0;
+        margin-inline-end: 0.5rem;
+        max-width:85%;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .deleteFile{
+        @include flexRow;
+        justify-content: center;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background-color: red;
+        color: $white;
+        font-size: 10px;
+        font-family: CairoB;
+        cursor: pointer;
+    }
+}

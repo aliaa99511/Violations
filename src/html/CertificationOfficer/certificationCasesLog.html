@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+
+  <body>
+    <div class="ViolationsCases" id="ViolationsCases">
+      <div
+        id="identify"
+        page-name="CertificationCasesLog"
+        site-name="CertificationOfficer"
+        hidden
+      ></div>
+      <div class="mainContainer">
+        <div class="contentContainer">
+          <div class="filterBox greenFilterBox">
+            <div class="row">
+              <div class="col-6 col-md-4">
+                <div class="form-group customFormGroup">
+                  <label for="violationCode" class="customLabel"
+                    >رقم القضية</label
+                  >
+                  <input
+                    class="form-control customInput violationCode"
+                    id="caseNumber"
+                    type="text"
+                    placeholder="ادخل رقم القضية"
+                  />
+                </div>
+              </div>
+              <div class="col-6 col-md-4">
+                <div class="form-group customFormGroup">
+                  <label for="CaseStatus" class="customLabel greenLabel"
+                    >الحالة
+                  </label>
+                  <div class="selectBox smallSelectBox">
+                    <select
+                      class="form-control CaseStatus greenSelect"
+                      id="CaseStatus"
+                    >
+                      <option value="" disabled selected hidden>الكل</option>
+                    </select>
+                    <i class="fa-solid fa-sort-down"></i>
+                  </div>
+                </div>
+              </div>
+              <div class="col-6 col-md-4 FilterationBtnsBox">
+                <div class="buttonsBox pt-3">
+                  <div class="btnStyle searchBtn searchGreenBtn">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                  </div>
+                  <div class="btnStyle printBtn">
+                    طباعة التقرير
+                    <i class="fa-solid fa-print"></i>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="dashBoardTable">
+            <div class="btnContainer">
+              <div id="exportBtn" class="outlineGreenBtn exportBtn">
+                تصدير
+                <i class="fa-solid fa-download"></i>
+              </div>
+            </div>
+            <table
+              id="CertificationCasesLogTable"
+              class="table tableWithIcons greenTable casesTable"
+            ></table>
+          </div>
+
+          <div
+            id="paginationID"
+            class="paginationBox"
+            current=""
+            total=""
+            style="display: flex"
+          ></div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,15 @@
+.customLabel {
+    color: #707070;
+    font-size: 12px;
+    font-family: CairoSB;
+    margin-bottom: 0.5rem;
+    &.greenLabel {
+        color: $customGreen;
+    }
+}
+.redAstric{
+    margin-inline-start: 0.25rem;
+    margin-inline-end: 0.25rem;
+    color: red;
+    font-family:CairoB;
+}

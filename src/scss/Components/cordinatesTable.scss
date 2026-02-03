@@ -1,0 +1,122 @@
+.coordinatesTable {
+  width: 100%;
+  .table {
+    border: 1px solid #dfd9d9;
+    &.disabled {
+      background-color: #efefef !important;
+      tr {
+        th {
+          color: $customBlue;
+          width: 50% !important;
+        }
+      }
+    }
+    tr {
+      border-bottom: none;
+      &:first-child {
+        th {
+          height: 56px;
+          text-align: center;
+          vertical-align: middle;
+          &:nth-child(3) {
+            border-left: none;
+          }
+          &:last-child {
+            border-right: none;
+          }
+        }
+      }
+      &:last-child {
+        border-bottom: 1px solid #dfd9d9;
+      }
+      th {
+        &:first-child {
+          width: 55px;
+          text-align: center;
+          vertical-align: middle;
+        }
+      }
+      td {
+        padding: 0;
+        direction: ltr;
+        vertical-align: middle;
+        input {
+          height: 63px;
+          border: none;
+          outline: none;
+          border-left: 1px solid #dfd9d9;
+          text-align: center;
+          &:nth-child(1) {
+            width: 26% !important;
+            border-left: none;
+          }
+          &:nth-child(2) {
+            width: 26%;
+          }
+          &:nth-child(3) {
+            width: 45%;
+          }
+          &.disabled {
+            background-color: #efefef !important;
+          }
+        }
+        .deleteCoordinate {
+          width: 40px;
+          height: 40px;
+          @include flexRow;
+          justify-content: center;
+          background: rgba(255 0 0 / 80%);
+          color: $white;
+          border-radius: 50%;
+          margin: 0 0.5rem;
+          cursor: pointer;
+        }
+        &:nth-child(3) {
+          border-left: none;
+        }
+        &:nth-child(4) {
+          border-right: none;
+        }
+      }
+    }
+  }
+  .noCoordinates {
+    @include flexRow;
+    justify-content: center;
+    font-size: 13px;
+    font-family: CairoB;
+    background-color: #efefef;
+    width: 100%;
+    height: 120px;
+    // border: 1px solid #DFDFDF;
+    border-radius: 5px;
+    margin-bottom: 0;
+  }
+}
+
+.AddNewPointBox {
+  margin-bottom: 1.5rem;
+  @include flexRow;
+  .AddPoint {
+    width: 80%;
+    border: 2px dashed $customBlue;
+    @include customCoordBtns;
+    margin-inline-end: 1rem;
+    font-size: 17px;
+    i {
+      margin-inline-end: 0.5rem;
+    }
+    &:hover {
+      text-decoration: none;
+    }
+  }
+  .showOnMap {
+    width: 20%;
+    border: 2px solid $customBlue;
+    @include customCoordBtns;
+    font-size: 13px;
+    &:hover {
+      text-decoration: none;
+    }
+  }
+}

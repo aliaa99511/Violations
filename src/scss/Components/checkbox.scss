@@ -1,0 +1,117 @@
+.tool {
+  @include flexRow;
+  width: calc((100% / 4) - 1rem);
+  margin-inline-end: 1rem;
+  margin-bottom: 1rem;
+  label {
+    height: 56px;
+    width: 100%;
+    padding: 1rem;
+    position: relative;
+    cursor: pointer;
+    @include flexRow;
+    justify-content: center;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    z-index: 1;
+    transition: all 0.4s ease-in-out;
+
+    input {
+      position: absolute;
+      opacity: 0;
+      cursor: pointer;
+      &:checked ~ .checkmark {
+        border: 2px solid $customBlue;
+      }
+      &:checked ~ .checktext {
+        color: $customBlue;
+        font-family: CairoB;
+      }
+    }
+    .checkmark {
+      position: absolute;
+      top: 0;
+      right: 0;
+      height: 100%;
+      width: 100%;
+      background-color: $white;
+      border: 2px solid #efefef;
+      border-radius: 5px;
+      z-index: -1;
+      transition: all 0.3s ease-in-out;
+    }
+    .checktext {
+      text-align: center;
+      color: #424045;
+      font-size: 13px;
+      font-family: CairoSB;
+      transition: all 0.4s ease-in-out;
+    }
+    &:hover {
+      input ~ .checkmark {
+        border: 2px solid $customBlue;
+      }
+      input ~ .checktext {
+        color: $customBlue;
+        font-family: CairoB;
+      }
+    }
+  }
+  &:nth-child(4n) {
+    // label{
+    //     width: 100%;
+    // }
+    width: calc(100% / 4);
+    margin-inline-end: 0;
+  }
+  &.popupTool {
+    label {
+      cursor: default;
+      input {
+        cursor: default;
+      }
+      .checkmark {
+        background-color: #efefef;
+        border: none;
+      }
+      .checktext {
+        color: #0c0c0c;
+      }
+      &:hover {
+        input ~ .checkmark {
+          border: none;
+        }
+        input ~ .checktext {
+          color: #0c0c0c;
+          font-family: CairoSB;
+        }
+      }
+    }
+  }
+  .toolCount {
+    width: 20%;
+    text-align: center;
+    transition: all 0.4s ease-in-out;
+    background: #083a77;
+    color: #fff;
+    margin-inline-start: 2px;
+    border: 2px solid #083a77 !important;
+    padding: 0.25rem !important;
+    display: none;
+    &::placeholder {
+      color: rgba(255 255 255 / 80%);
+      font-size: 12px;
+      // white-space: pre-wrap;
+      @include flexRow;
+      justify-content: center;
+    }
+  }
+}
+.tool.tools-show {
+  width: fit-content;
+  label {
+    min-width: fit-content;
+  }
+}

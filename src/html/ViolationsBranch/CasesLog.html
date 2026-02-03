@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -8,7 +8,7 @@
   </head>
 
   <body>
-    <div class="ExistingViolations" id="ExistingViolations">
+    <div class="ViolationsCases" id="ViolationsCases">
       <div
         id="identify"
         page-name="CasesLog"
@@ -19,49 +19,28 @@
         <div class="contentContainer">
           <div class="filterBox greenFilterBox">
             <div class="row">
-              <div class="col-6 col-sm-4 col-lg-3">
+              <div class="col-6 col-md-4">
                 <div class="form-group customFormGroup">
-                  <label for="violationZone" class="customLabel greenLabel"
-                    >المنطقة
-                  </label>
-                  <div class="selectBox smallSelectBox">
-                    <select
-                      class="form-control violationZone greenSelect"
-                      id="violationZone"
-                    >
-                      <option value="" disabled selected hidden>
-                        منطقة الضبط
-                      </option>
-                    </select>
-                    <i class="fa-solid fa-sort-down"></i>
-                  </div>
+                  <label for="violationCode" class="customLabel greenLabel"
+                    >رقم القضية</label
+                  >
+                  <input
+                    class="form-control customInput violationCode"
+                    id="CaseNumber"
+                    type="text"
+                    placeholder="ادخل رقم القضية"
+                  />
                 </div>
               </div>
-              <div class="col-6 col-sm-4 col-lg-3">
+              <div class="col-6 col-md-4">
                 <div class="form-group customFormGroup">
-                  <label for="TypeofViolation" class="customLabel greenLabel"
-                    >نوع المخالفة
-                  </label>
-                  <div class="selectBox smallSelectBox">
-                    <select
-                      class="form-control TypeofViolation greenSelect"
-                      id="TypeofViolation"
-                    >
-                      <option value="" disabled selected hidden>الكل</option>
-                    </select>
-                    <i class="fa-solid fa-sort-down"></i>
-                  </div>
-                </div>
-              </div>
-              <div class="col-6 col-sm-4 col-lg-3">
-                <div class="form-group customFormGroup">
-                  <label for="StatusViolation" class="customLabel greenLabel"
+                  <label for="CaseStatus" class="customLabel greenLabel"
                     >الحالة
                   </label>
                   <div class="selectBox smallSelectBox">
                     <select
-                      class="form-control StatusViolation greenSelect"
-                      id="StatusViolation"
+                      class="form-control CaseStatus greenSelect"
+                      id="CaseStatus"
                     >
                       <option value="" disabled selected hidden>الكل</option>
                     </select>
@@ -69,8 +48,8 @@
                   </div>
                 </div>
               </div>
-              <div class="col-6 col-sm-2 col-lg-3 FilterationBtnsBox">
-                <div class="buttonsBox">
+              <div class="col-6 col-md-4 FilterationBtnsBox">
+                <div class="buttonsBox pt-3">
                   <div class="btnStyle searchBtn searchGreenBtn">
                     <i class="fa-solid fa-magnifying-glass"></i>
                   </div>
@@ -84,11 +63,25 @@
           </div>
 
           <div class="dashBoardTable">
+            <div class="btnContainer">
+              <div id="exportBtn" class="outlineGreenBtn exportBtn">
+                تصدير
+                <i class="fa-solid fa-download"></i>
+              </div>
+            </div>
             <table
               id="CasesLogTable"
-              class="table tableWithIcons greenTable"
+              class="table tableWithIcons greenTable casesTable"
             ></table>
           </div>
+
+          <div
+            id="paginationID"
+            class="paginationBox"
+            current=""
+            total=""
+            style="display: flex"
+          ></div>
         </div>
       </div>
     </div>

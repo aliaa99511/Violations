@@ -1,0 +1,173 @@
+table.table {
+    width: 100% !important;
+    border-bottom: 0px !important;
+    thead {
+        th {
+            text-align: right !important;
+            font-family: CairoB;
+            font-size: 13px;
+            color: $customBlue;
+            border: none;
+            vertical-align: middle;
+            padding: 1.25rem 1rem;
+            &:first-child {
+                border-top-right-radius: 3px !important;
+                border-bottom-right-radius: 3px !important;
+            }
+            &:last-child {
+                border-top-left-radius: 3px !important;
+                border-bottom-left-radius: 3px !important;
+            }
+        }
+    }
+    tbody {
+        tr {
+            td {
+                // height: 40px;
+                vertical-align: middle;
+                color: #0C0C0C;
+                font-size: 13px;
+                border-bottom: none;
+                padding: 1rem;
+                &:first-child {
+                    border-top-right-radius: 3px !important;
+                    border-bottom-right-radius: 3px !important;
+                }
+                &:last-child {
+                    border-top-left-radius: 3px !important;
+                    border-bottom-left-radius: 3px !important;
+                }
+                .statusBox{
+                    .statusIcon{
+                        margin-inline-end: 0.25rem;
+                    }
+                    &.pendingStatus{
+                        color: #D27C2E;
+                    }
+                    &.warningStatus{
+                        color: #B64142;
+                    }
+                    &.killedStatus{
+                        color: #666;
+                    }
+                    &.refferedStatus{
+                        color: #666;
+                    }
+                    &.closedStatus{
+                        color: #207735;
+                    }
+                    &.acceptWithEditStatus{
+                        color: #0754B2;
+                    }
+                }
+                .petitionIconBox{
+                    color: #F69629;
+                    font-size: 18px;
+                }
+                &.dataTables_empty{
+                    font-family: CairoB;
+                }
+            }
+        }
+    }
+    tr.odd {
+        background-color: $white;
+    }
+    &.blueTable {
+        thead {
+            background: #EFEFEF;
+        }
+        tr.even {
+            background: #EEF1F6;
+        }
+    }
+    &.greenTable {
+        thead {
+            background: #EFEFEF;
+            th {
+                color: $customGreen !important;
+            }
+        }
+        tr.even {
+            background: $lightGreen;
+        }
+    }
+}
+.prevVioltionsCountBox{
+    @include flexRow;
+    justify-content: flex-end;
+    margin: 0 0 0.75rem 0;
+    font-size: 14px;
+    font-family: CairoB;
+    .prevCountText{
+        position: relative;
+        padding:0.2rem 0.75rem 0.2rem 0.5rem;
+        // margin-inline-end: 0.25rem;
+        // padding-inline-start: 0.5rem;
+        &::before{
+            content: "";
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            right: 0;
+            width: 2px;
+            height: 100%;
+        }
+    }
+    .prevViolationCount{
+        margin-inline-start: 0.25rem;
+        margin-inline-end: 0.25rem;
+    }
+
+    &.bluePrevViolationsBox{
+        color: $customBlue;
+        .prevCountText{
+            &::before{
+                background-color: $customBlue;
+            }
+        }
+    }
+    &.greenPrevViolationsBox{
+        color: $customGreen;
+        .prevCountText{
+            &::before{
+                background-color: $customGreen;
+            }
+        }
+    }
+}
+.track-history-table-node{
+    .dataTables_length,
+    .dataTables_filter,
+    .dataTables_info{
+        display: none;
+    }
+    .track-history-table{
+        padding: 0px 34px;
+        border: 0px !important;
+        .data-header{
+            th{
+                border: 0;
+                text-align: right;
+                font-size: 15px;
+                color: #0C0C0C;
+                font-weight: bold;
+                padding-right: 0;
+                &::before,
+                &::after{
+                    display: none;
+                }
+            }
+        }
+        tbody{
+            tr{
+                td{
+                    box-shadow: unset !important;
+                    font-size: 12px;
+                    padding: 29px 0px;
+                    font-weight: bold;
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,36 @@
+// .BranchDashBoard {
+//   .contentContainer {
+//     height: calc(100vh - (295px + 3rem)) !important;
+//     iframe {
+//       width: 100% !important;
+//       height: 100% !important;
+//     }
+//   }
+// }
+////////////////////////
+.Bi_container {
+  background-color: $white;
+  border-radius: 10px;
+  margin: 1.5rem 1rem;
+  //   padding: 2rem 1.5rem;
+  padding-top: 0rem;
+  .frameBi {
+    width: 100%;
+    height: 186vh;
+  }
+}
+
+@media (max-width: 1399.98px) {
+  .Bi_container {
+    .frameBi {
+      height: 186vh;
+    }
+  }
+}
+@media (min-width: 1399.98px) {
+  .Bi_container {
+    .frameBi {
+      height: 186vh;
+    }
+  }
+}
