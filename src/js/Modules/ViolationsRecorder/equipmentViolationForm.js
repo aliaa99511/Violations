@@ -813,7 +813,7 @@ equipmentViolation.validateForm = (e) => {
                       ? otherViolationDetails.membersNamesText
                       : "-",
                   SectorMembers: SectorMembers,
-                  Sector: UserId,
+                  Sector: 0,
                 };
                 equipmentViolation.submitNewViolation(e, ViolationData);
               }
@@ -973,8 +973,8 @@ equipmentViolation.GetCoordinates = () => {
         NumberArr.push(Temp[0] + " " + Temp[1] + " " + Temp[2] + " ");
         DecimalArr.push(
           parseFloat(Temp[0]) +
-            parseFloat(Temp[1]) / 60 +
-            parseFloat(Temp[2]) / 3600
+          parseFloat(Temp[1]) / 60 +
+          parseFloat(Temp[2]) / 3600
         );
       }
     });

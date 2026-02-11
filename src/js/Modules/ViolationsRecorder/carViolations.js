@@ -793,7 +793,7 @@ carViolation.validateForm = (e) => {
                             // CommiteeMember: otherViolationDetails?.committeeMembersId?.length > 0 ? otherViolationDetails.committeeMembersId : [],
                             CommiteeMember: otherViolationDetails.membersNamesText != "" ? otherViolationDetails.membersNamesText : "-",
                             SectorMembers: SectorMembers,
-                            Sector: UserId,
+                            Sector: 0,
                         }
                         carViolation.submitNewViolation(carViolationData)
                     }

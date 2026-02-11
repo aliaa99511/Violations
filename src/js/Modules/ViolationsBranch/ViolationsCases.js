@@ -55,7 +55,7 @@ violationsCases.getViolationsCases = () => {
       );
       violationsCases.pageIndex = ItemsData.CurrentPage;
     })
-    .catch((err) => {});
+    .catch((err) => { });
 };
 
 violationsCases.setPaginations = (TotalPages, RowsPerPage) => {
@@ -71,30 +71,37 @@ violationsCases.ViolationsCasesTable = (Cases) => {
       let caseViolation = caseRecord?.Violation;
       let createdDate = functions.getFormatedDate(caseRecord.Created);
       data.push([
-        `<div class="violationCode noWrapContent" data-caseid="${caseRecord.ID}" data-violationid="${caseRecord.ViolationId}" data-taskid="${caseRecord.TaskId}" data-casestatus="${caseRecord.Status}" data-casenumber="${caseRecord.CaseNumber}" data-violationcode="${caseRecord.ViolationCode}" data-oldprice="${caseViolation?.TotalOldPrice}" data-newprice="${caseViolation?.TotalPriceDue}">${caseRecord.ViolationCode}</div>`,
-         `<div class='controls'>
-                    <div class='ellipsisButton'>
-                        <i class='fa-solid fa-ellipsis-vertical'></i>
-                    </div>
-                    <div class="hiddenListBox">
-                        <div class='arrow'></div>
-                        <ul class='list-unstyled controlsList'>
-                            <li><a href="#" class="itemDetails">المزيد من التفاصيل</a></li>
-                          
-                        </ul>
-                    </div>
-                </div`,
-        `<div class="violationReffereDate noWrapContent">${functions.getFormatedDate(
-          caseRecord.RefferedDate
-        )}</div>`,
-        `<div class="caseNumber">${
-          caseRecord.CaseNumber != "" ? caseRecord.CaseNumber : "-----"
-        }</div>`,
+        `<div class="violationCode noWrapContent" 
+              data-caseid="${caseRecord.ID}" 
+              data-violationid="${caseRecord.ViolationId}" 
+              data-taskid="${caseRecord.TaskId}" 
+              data-casestatus="${caseRecord.Status}" 
+              data-casenumber="${caseRecord.CaseNumber}" 
+              data-violationcode="${caseRecord.ViolationCode}" 
+              data-oldprice="${caseViolation?.TotalOldPrice}" 
+              data-newprice="${caseViolation?.TotalPriceDue}"
+              >
+              ${caseRecord.ViolationCode}
+        </div>`,
+        `<div class='controls'>
+            <div class='ellipsisButton'>
+                <i class='fa-solid fa-ellipsis-vertical'></i>
+            </div>
+            <div class="hiddenListBox">
+                <div class='arrow'></div>
+                <ul class='list-unstyled controlsList'>
+                    <li><a href="#" class="itemDetails">المزيد من التفاصيل</a></li>
+                  
+                </ul>
+            </div>
+        </div>`,
+        `<div class="violationReffereDate noWrapContent">${functions.getFormatedDate(caseRecord.RefferedDate)}</div>`,
+        `<div class="caseNumber">${caseRecord.CaseNumber != "" ? caseRecord.CaseNumber : "-----"}</div>`,
         `<div class="caseStatus">${caseRecord.Status}</div>`,
         `<div class="caseAttachments"><a href="#!">المرفقات</a></div>`,
         // `<div class="caseStatus">${createdDate}</div>`,
         // `<div class="caseComments">${caseRecord.Comments != ""?caseRecord.Comments:"-----"}</div>`,
-       
+
       ]);
     });
   }
@@ -382,7 +389,7 @@ violationsCases.FindCaseById = (CaseID, popupType = "") => {
         caseData = null;
       }
     })
-    .catch((err) => {});
+    .catch((err) => { });
 };
 
 violationsCases.addCaseNumberPopup = (CaseID, ViolationID, ViolationCode) => {
@@ -569,8 +576,8 @@ violationsCases.editCasePrice = (
                                     <div class="form-group customFormGroup">
                                         <label for="oldViolationPrice" class="customLabel">المبلغ القديم (مبلغ المخالفة)</label>
                                         <input class="form-control disabled customInput oldViolationPrice" id="oldViolationPrice" type="text" value="${functions.splitBigNumbersByComma(
-                                          TotalViolationPrice
-                                        )}" disabled>
+    TotalViolationPrice
+  )}" disabled>
                                     </div> 
                                 </div>
                                 <div class="col-md-6">
@@ -754,8 +761,8 @@ violationsCases.payCasePrice = (
                                     <div class="form-group customFormGroup">
                                         <label for="violationCasePrice" class="customLabel">المبلغ المطلوب سداده</label>
                                         <input class="form-control disabled customInput violationCasePrice" id="violationCasePrice" type="text" value="${functions.splitBigNumbersByComma(
-                                          TotalViolationPrice
-                                        )}" disabled>
+    TotalViolationPrice
+  )}" disabled>
                                     </div>
                                 </div>
                                 <div class="col-12">
@@ -1205,7 +1212,7 @@ violationsCases.editCaseAPIResponse = (
         functions.warningAlert("هناك خطأ في إرسال بيانات الطلب");
       }
     })
-    .catch((err) => {});
+    .catch((err) => { });
 };
 
 violationsCases.addNewCaseAttachmentRecord = (
@@ -1246,7 +1253,7 @@ violationsCases.addNewCaseAttachmentRecord = (
         functions.warningAlert("هناك خطأ في إرسال بيانات الطلب");
       }
     })
-    .catch((err) => {});
+    .catch((err) => { });
 };
 
 violationsCases.uploadCaseAttachments = (
@@ -1299,8 +1306,8 @@ violationsCases.changeTaskStatusAfterPayCase = (
         return response.json();
       }
     })
-    .then((data) => {})
-    .catch((err) => {});
+    .then((data) => { })
+    .catch((err) => { });
 };
 
 violationsCases.getCaseAttachmentsByCaseId = (CaseId, caseNumber) => {
@@ -1382,18 +1389,16 @@ violationsCases.drawCaseAttachmentsPopupTable = (
       let attachedFilesData = attchRecord.Attachments;
       data.push([
         `<div class="attachCount">${counter}</div>`,
-        `<div class="attachFiles" data-fileslength="${
-          attachedFilesData.length
+        `<div class="attachFiles" data-fileslength="${attachedFilesData.length
         }">${violationsCases.drawAttachmentsInTable(attachedFilesData)}</div>`,
         `<div class="attachUploadPhase">${attchRecord.UploadPhase}</div>`,
         `<div class="attachUploadDate">${functions.getFormatedDate(
           attchRecord.Created,
           "DD-MM-YYYY hh:mm A"
         )}</div>`,
-        `<div class="attachComments">${
-          attchRecord.Comments != ""
-            ? attchRecord.Comments /*+" <a href='#!'>عرض المزيد</a>"*/
-            : "----"
+        `<div class="attachComments">${attchRecord.Comments != ""
+          ? attchRecord.Comments /*+" <a href='#!'>عرض المزيد</a>"*/
+          : "----"
         }</div>`,
       ]);
       counter++;
@@ -1490,27 +1495,25 @@ violationsCases.getCaseDetails = (caseData) => {
                                 <div class="col-md-4">
                                     <div class="form-group customFormGroup">
                                         <label for="caseNumber" class="customLabel">رقم القضية</label>
-                                        <input class="form-control customInput caseNumber" id="caseNumber" type="text" value="${
-                                          caseData.CaseNumber != ""
-                                            ? caseData.CaseNumber
-                                            : "----"
-                                        }" disabled>
+                                        <input class="form-control customInput caseNumber" id="caseNumber" type="text" value="${caseData.CaseNumber != ""
+      ? caseData.CaseNumber
+      : "----"
+    }" disabled>
                                     </div>
                                 </div>
                                 <div class="col-md-4">
                                     <div class="form-group customFormGroup">
                                         <label for="refferedDate" class="customLabel">تاريخ الإحالة</label>
                                         <input class="form-control customInput refferedDate" id="refferedDate" type="text" value="${functions.getFormatedDate(
-                                          caseData.RefferedDate
-                                        )}" disabled>
+      caseData.RefferedDate
+    )}" disabled>
                                     </div>
                                 </div>
                                 <div class="col-md-4">
                                     <div class="form-group customFormGroup">
                                         <label for="caseNumber" class="customLabel">الحالة</label>
-                                        <input class="form-control customInput caseNumber" id="caseNumber" type="text" value="${
-                                          caseData.Status
-                                        }" disabled>
+                                        <input class="form-control customInput caseNumber" id="caseNumber" type="text" value="${caseData.Status
+    }" disabled>
                                     </div>
                                 </div>
                             </div>
@@ -1525,15 +1528,14 @@ violationsCases.getCaseDetails = (caseData) => {
                         </div>
                         <div class="formElements">
                             <div class="row">
-                                ${
-                                  violationOffenderType == "Quarry"
-                                    ? violationsCases.caseQuarryDetails(
-                                        caseViolation
-                                      )
-                                    : violationsCases.caseVehicleDetails(
-                                        caseViolation
-                                      )
-                                }
+                                ${violationOffenderType == "Quarry"
+      ? violationsCases.caseQuarryDetails(
+        caseViolation
+      )
+      : violationsCases.caseVehicleDetails(
+        caseViolation
+      )
+    }
                             </div>
                         </div>
                     </div>
@@ -1560,88 +1562,80 @@ violationsCases.caseQuarryDetails = (violationData) => {
         <div class="col-md-4">
             <div class="form-group customFormGroup">
                 <label for="violationCode" class="customLabel">رقم المخالفة</label>
-                <input class="form-control customInput violationCode" id="violationCode" type="text" value="${
-                  violationData.ViolationCode
-                }" disabled>
+                <input class="form-control customInput violationCode" id="violationCode" type="text" value="${violationData.ViolationCode
+    }" disabled>
             </div>
         </div>
         <div class="col-md-4">
             <div class="form-group customFormGroup">
                 <label for="violatorName" class="customLabel">إسم المخالف</label>
-                <input class="form-control customInput violatorName" id="violatorName" type="text" value="${
-                  violationData.ViolatorName
-                }" disabled>
+                <input class="form-control customInput violatorName" id="violatorName" type="text" value="${violationData.ViolatorName
+    }" disabled>
             </div>
         </div>
         <div class="col-md-4">
             <div class="form-group customFormGroup">
                 <label for="violatorCompany" class="customLabel">الشركة المخالفة التابع لها</label>
-                <input class="form-control customInput violatorCompany" id="violatorCompany" type="text" value="${
-                  violationData.ViolatorCompany != ""
-                    ? violationData.ViolatorCompany
-                    : "----"
-                }" disabled>
+                <input class="form-control customInput violatorCompany" id="violatorCompany" type="text" value="${violationData.ViolatorCompany != ""
+      ? violationData.ViolatorCompany
+      : "----"
+    }" disabled>
             </div>
         </div>
         <div class="col-md-4">
             <div class="form-group customFormGroup">
                 <label for="violationType" class="customLabel">نوع المخالفة</label>
-                <input class="form-control customInput violationType" id="violationType" type="text" value="${
-                  violationData.ViolationTypes.Title
-                }" disabled>
+                <input class="form-control customInput violationType" id="violationType" type="text" value="${violationData.ViolationTypes.Title
+    }" disabled>
             </div>
         </div>
         <div class="col-md-4">
             <div class="form-group customFormGroup">
                 <label for="materialType" class="customLabel">نوع الخام</label>
-                <input class="form-control customInput materialType" id="materialType" type="text" value="${
-                  violationData.Material != null
-                    ? violationData.Material.Title
-                    : "----"
-                }" disabled>
+                <input class="form-control customInput materialType" id="materialType" type="text" value="${violationData.Material != null
+      ? violationData.Material.Title
+      : "----"
+    }" disabled>
             </div>
         </div>
         <div class="col-md-4">
             <div class="form-group customFormGroup">
                 <label for="violationGov" class="customLabel">المحافظة</label>
-                <input class="form-control customInput violationGov" id="violationGov" type="text" value="${
-                  violationData.Governrates != null
-                    ? violationData.Governrates.Title
-                    : "----"
-                }" disabled>
+                <input class="form-control customInput violationGov" id="violationGov" type="text" value="${violationData.Governrates != null
+      ? violationData.Governrates.Title
+      : "----"
+    }" disabled>
             </div>
         </div>
         <div class="col-md-4">
             <div class="form-group customFormGroup">
                 <label for="violationZone" class="customLabel">منطقة الضبط</label>
-                <input class="form-control customInput violationZone" id="violationZone" type="text" value="${
-                  violationData.ViolationsZone
-                }" disabled>
+                <input class="form-control customInput violationZone" id="violationZone" type="text" value="${violationData.ViolationsZone
+    }" disabled>
             </div>
         </div>
         <div class="col-md-4">
             <div class="form-group customFormGroup">
                 <label for="violationDate" class="customLabel">تاريخ الضبط</label>
                 <input class="form-control customInput violationDate" id="violationDate" type="text" value="${functions.getFormatedDate(
-                  violationData.ViolationDate
-                )}" disabled>
+      violationData.ViolationDate
+    )}" disabled>
             </div>
         </div>
         <div class="col-md-4">
             <div class="form-group customFormGroup">
                 <label for="violationTime" class="customLabel">وقت الضبط</label>
                 <input class="form-control customInput violationTime" id="violationTime" type="text" value="${functions.getFormatedDate(
-                  violationData.ViolationTime,
-                  "hh:mm A"
-                )}" disabled>
+      violationData.ViolationTime,
+      "hh:mm A"
+    )}" disabled>
             </div>
         </div>
         <div class="col-md-4">
             <div class="form-group customFormGroup">
                 <label for="violationPrice" class="customLabel">المبلغ المقدر في المخالفة</label>
-                <input class="form-control customInput violationPrice" id="violationPrice" type="text" value="${
-                  violationData.TotalPriceDue
-                }" disabled>
+                <input class="form-control customInput violationPrice" id="violationPrice" type="text" value="${violationData.TotalPriceDue
+    }" disabled>
             </div>
         </div>
     `;
@@ -1652,96 +1646,87 @@ violationsCases.caseVehicleDetails = (violationData) => {
         <div class="col-md-4">
             <div class="form-group customFormGroup">
                 <label for="violationCode" class="customLabel">رقم المخالفة</label>
-                <input class="form-control customInput violationCode" id="violationCode" type="text" value="${
-                  violationData.ViolationCode
-                }" disabled>
+                <input class="form-control customInput violationCode" id="violationCode" type="text" value="${violationData.ViolationCode
+    }" disabled>
             </div>
         </div>
         <div class="col-md-4">
             <div class="form-group customFormGroup">
                 <label for="violatorName" class="customLabel">إسم المخالف</label>
-                <input class="form-control customInput violatorName" id="violatorName" type="text" value="${
-                  violationData.ViolatorName
-                }" disabled>
+                <input class="form-control customInput violatorName" id="violatorName" type="text" value="${violationData.ViolatorName
+    }" disabled>
             </div>
         </div>
         <div class="col-md-4">
             <div class="form-group customFormGroup">
                 <label for="violatorCompany" class="customLabel">الشركة المخالفة التابع لها</label>
-                <input class="form-control customInput violatorCompany" id="violatorCompany" type="text" value="${
-                  violationData.ViolatorCompany != ""
-                    ? violationData.ViolatorCompany
-                    : "----"
-                }" disabled>
+                <input class="form-control customInput violatorCompany" id="violatorCompany" type="text" value="${violationData.ViolatorCompany != ""
+      ? violationData.ViolatorCompany
+      : "----"
+    }" disabled>
             </div>
         </div>
         <div class="col-md-4">
             <div class="form-group customFormGroup">
                 <label for="carNumber" class="customLabel">رقم العربة</label>
-                <input class="form-control customInput carNumber" id="carNumber" type="text" value="${
-                  violationData.CarNumber
-                }" disabled>
+                <input class="form-control customInput carNumber" id="carNumber" type="text" value="${violationData.CarNumber
+    }" disabled>
             </div>
         </div>
         <div class="col-md-4">
             <div class="form-group customFormGroup">
                 <label for="vehicleType" class="customLabel">نوع العربة</label>
-                <input class="form-control customInput vehicleType" id="vehicleType" type="text" value="${
-                  violationData.VehicleType
-                }" disabled>
+                <input class="form-control customInput vehicleType" id="vehicleType" type="text" value="${violationData.VehicleType
+    }" disabled>
             </div>
         </div>
         <div class="col-md-4">
             <div class="form-group customFormGroup">
                 <label for="materialType" class="customLabel">نوع الخام</label>
-                <input class="form-control customInput materialType" id="materialType" type="text" value="${
-                  violationData.Material != null
-                    ? violationData.Material.Title
-                    : "----"
-                }" disabled>
+                <input class="form-control customInput materialType" id="materialType" type="text" value="${violationData.Material != null
+      ? violationData.Material.Title
+      : "----"
+    }" disabled>
             </div>
         </div>
         <div class="col-md-4">
             <div class="form-group customFormGroup">
                 <label for="violationGov" class="customLabel">المحافظة</label>
-                <input class="form-control customInput violationGov" id="violationGov" type="text" value="${
-                  violationData.Governrates != null
-                    ? violationData.Governrates.Title
-                    : "----"
-                }" disabled>
+                <input class="form-control customInput violationGov" id="violationGov" type="text" value="${violationData.Governrates != null
+      ? violationData.Governrates.Title
+      : "----"
+    }" disabled>
             </div>
         </div>
         <div class="col-md-4">
             <div class="form-group customFormGroup">
                 <label for="violationZone" class="customLabel">منطقة الضبط</label>
-                <input class="form-control customInput violationZone" id="violationZone" type="text" value="${
-                  violationData.ViolationsZone
-                }" disabled>
+                <input class="form-control customInput violationZone" id="violationZone" type="text" value="${violationData.ViolationsZone
+    }" disabled>
             </div>
         </div>
         <div class="col-md-4">
             <div class="form-group customFormGroup">
                 <label for="violationDate" class="customLabel">تاريخ الضبط</label>
                 <input class="form-control customInput violationDate" id="violationDate" type="text" value="${functions.getFormatedDate(
-                  violationData.ViolationDate
-                )}" disabled>
+      violationData.ViolationDate
+    )}" disabled>
             </div>
         </div>
         <div class="col-md-4">
             <div class="form-group customFormGroup">
                 <label for="violationTime" class="customLabel">وقت الضبط</label>
                 <input class="form-control customInput violationTime" id="violationTime" type="text" value="${functions.getFormatedDate(
-                  violationData.ViolationTime,
-                  "hh:mm A"
-                )}" disabled>
+      violationData.ViolationTime,
+      "hh:mm A"
+    )}" disabled>
             </div>
         </div>
         <div class="col-md-4">
             <div class="form-group customFormGroup">
                 <label for="violationPrice" class="customLabel">المبلغ المقدر في المخالفة</label>
-                <input class="form-control customInput violationPrice" id="violationPrice" type="text" value="${
-                  violationData.TotalPriceDue
-                }" disabled>
+                <input class="form-control customInput violationPrice" id="violationPrice" type="text" value="${violationData.TotalPriceDue
+    }" disabled>
             </div>
         </div>
     `;

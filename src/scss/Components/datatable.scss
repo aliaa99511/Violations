@@ -1,6 +1,7 @@
 table.table {
     width: 100% !important;
     border-bottom: 0px !important;
+
     thead {
         th {
             text-align: right !important;
@@ -10,16 +11,19 @@ table.table {
             border: none;
             vertical-align: middle;
             padding: 1.25rem 1rem;
+
             &:first-child {
                 border-top-right-radius: 3px !important;
                 border-bottom-right-radius: 3px !important;
             }
+
             &:last-child {
                 border-top-left-radius: 3px !important;
                 border-bottom-left-radius: 3px !important;
             }
         }
     }
+
     tbody {
         tr {
             td {
@@ -29,82 +33,110 @@ table.table {
                 font-size: 13px;
                 border-bottom: none;
                 padding: 1rem;
+
                 &:first-child {
                     border-top-right-radius: 3px !important;
                     border-bottom-right-radius: 3px !important;
                 }
+
                 &:last-child {
                     border-top-left-radius: 3px !important;
                     border-bottom-left-radius: 3px !important;
                 }
-                .statusBox{
-                    .statusIcon{
+
+                .statusBox {
+                    .statusIcon {
                         margin-inline-end: 0.25rem;
                     }
-                    &.pendingStatus{
+
+                    &.pendingStatus {
                         color: #D27C2E;
                     }
-                    &.warningStatus{
+
+                    &.warningStatus {
                         color: #B64142;
                     }
-                    &.killedStatus{
+
+                    &.killedStatus {
                         color: #666;
                     }
-                    &.refferedStatus{
+
+                    &.refferedStatus {
                         color: #666;
                     }
-                    &.closedStatus{
+
+                    &.closedStatus {
                         color: #207735;
                     }
-                    &.acceptWithEditStatus{
+
+                    &.acceptWithEditStatus {
+                        color: #0754B2;
+                    }
+
+                    &.modifiedStatus {
+                        color: #3A9349;
+                    }
+
+                    &.approvedCancelStatus {
                         color: #0754B2;
                     }
                 }
-                .petitionIconBox{
+
+                .petitionIconBox {
                     color: #F69629;
                     font-size: 18px;
                 }
-                &.dataTables_empty{
+
+                &.dataTables_empty {
                     font-family: CairoB;
                 }
             }
         }
     }
+
     tr.odd {
         background-color: $white;
     }
+
     &.blueTable {
         thead {
             background: #EFEFEF;
         }
+
         tr.even {
             background: #EEF1F6;
         }
     }
+
     &.greenTable {
         thead {
             background: #EFEFEF;
+
             th {
                 color: $customGreen !important;
             }
         }
+
         tr.even {
             background: $lightGreen;
         }
     }
 }
-.prevVioltionsCountBox{
+
+.prevVioltionsCountBox {
     @include flexRow;
     justify-content: flex-end;
     margin: 0 0 0.75rem 0;
     font-size: 14px;
     font-family: CairoB;
-    .prevCountText{
+
+    .prevCountText {
         position: relative;
-        padding:0.2rem 0.75rem 0.2rem 0.5rem;
+        padding: 0.2rem 0.75rem 0.2rem 0.5rem;
+
         // margin-inline-end: 0.25rem;
         // padding-inline-start: 0.5rem;
-        &::before{
+        &::before {
             content: "";
             position: absolute;
             top: 50%;
@@ -114,54 +146,64 @@ table.table {
             height: 100%;
         }
     }
-    .prevViolationCount{
+
+    .prevViolationCount {
         margin-inline-start: 0.25rem;
         margin-inline-end: 0.25rem;
     }
 
-    &.bluePrevViolationsBox{
+    &.bluePrevViolationsBox {
         color: $customBlue;
-        .prevCountText{
-            &::before{
+
+        .prevCountText {
+            &::before {
                 background-color: $customBlue;
             }
         }
     }
-    &.greenPrevViolationsBox{
+
+    &.greenPrevViolationsBox {
         color: $customGreen;
-        .prevCountText{
-            &::before{
+
+        .prevCountText {
+            &::before {
                 background-color: $customGreen;
             }
         }
     }
 }
-.track-history-table-node{
+
+.track-history-table-node {
+
     .dataTables_length,
     .dataTables_filter,
-    .dataTables_info{
+    .dataTables_info {
         display: none;
     }
-    .track-history-table{
+
+    .track-history-table {
         padding: 0px 34px;
         border: 0px !important;
-        .data-header{
-            th{
+
+        .data-header {
+            th {
                 border: 0;
                 text-align: right;
                 font-size: 15px;
                 color: #0C0C0C;
                 font-weight: bold;
                 padding-right: 0;
+
                 &::before,
-                &::after{
+                &::after {
                     display: none;
                 }
             }
         }
-        tbody{
-            tr{
-                td{
+
+        tbody {
+            tr {
+                td {
                     box-shadow: unset !important;
                     font-size: 12px;
                     padding: 29px 0px;

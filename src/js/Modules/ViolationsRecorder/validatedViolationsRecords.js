@@ -46,7 +46,7 @@ validatedViolationsRecords.getViolations = (
         "Paid After Reffered",
         "Saved",
       ],
-      Sector: UserId,
+      Sector: 0,
       ViolationType: validatedViolationsRecords.dataObj.ViolationType,
       OffenderType: validatedViolationsRecords.dataObj.OffenderType,
       IsNew: true,
@@ -133,40 +133,35 @@ validatedViolationsRecords.dashBoardTable = (violationsData) => {
         `<div class="violationArName">${functions.getViolationArabicName(
           taskViolation.OffenderType
         )}</div>`,
-        `<div class="violationCode">${
-          taskViolation.OffenderType == "Vehicle"
-            ? taskViolation.CarNumber
-            : taskViolation.QuarryCode != ""
+        `<div class="violationCode">${taskViolation.OffenderType == "Vehicle"
+          ? taskViolation.CarNumber
+          : taskViolation.QuarryCode != ""
             ? taskViolation.QuarryCode
             : "---"
         }</div>`,
-        `<div class="companyName">${
-          taskViolation.ViolatorCompany != ""
-            ? taskViolation.ViolatorCompany
-            : "-"
+        `<div class="companyName">${taskViolation.ViolatorCompany != ""
+          ? taskViolation.ViolatorCompany
+          : "-"
         }</div>`,
-        `<div class="violationType" data-typeid="${
-          taskViolation.OffenderType == "Quarry"
-            ? taskViolation.ViolationTypes.ID
-            : 0
+        `<div class="violationType" data-typeid="${taskViolation.OffenderType == "Quarry"
+          ? taskViolation.ViolationTypes.ID
+          : 0
         }">${functions.getViolationArabicName(
           taskViolation.OffenderType,
           taskViolation?.ViolationTypes?.Title
         )}</div>`,
         `<div class="violationZone">${taskViolation.ViolationsZone}</div>`,
         `${validatedViolationsRecords.getViolationStatus(record.Status)}`,
-        `${
-          taskViolation?.IsPetition
-            ? functions.getPetitionsStatus(
-                taskViolation?.Petition?.GridData?.[0]?.Status
-              ) || "-"
-            : "-"
+        `${taskViolation?.IsPetition
+          ? functions.getPetitionsStatus(
+            taskViolation?.Petition?.GridData?.[0]?.Status
+          ) || "-"
+          : "-"
         }`,
-        `${
-          functions.getFormatedDate(record.ReconciliationExpiredDate) ==
+        `${functions.getFormatedDate(record.ReconciliationExpiredDate) ==
           "01-01-2001"
-            ? "-"
-            : functions.getFormatedDate(record.ReconciliationExpiredDate)
+          ? "-"
+          : functions.getFormatedDate(record.ReconciliationExpiredDate)
         }`,
         `${createdDate}`,
       ]);
@@ -230,39 +225,103 @@ validatedViolationsRecords.dashBoardTable = (violationsData) => {
 validatedViolationsRecords.getViolationStatus = (ViolationStatus) => {
   let statusHtml = ``;
   switch (ViolationStatus) {
+    case "Pending":
     case "Confirmed": {
       statusHtml = `<div class="statusBox pendingStatus">
-              <i class="statusIcon fa-regular fa-clock"></i>
-              <span>قيد الإنتظار</span>
-          </div>`;
+                <i class="statusIcon fa-regular fa-clock"></i>
+                <span class="statusText">قيد الانتظار</span>
+            </div>`;
       break;
     }
     case "Exceeded": {
       statusHtml = `<div class="statusBox warningStatus">
-              <img class="statusIcon" src="/Style Library/MiningViolations/images/tringleIcon.svg" alt="warning">
-              <span>تجاوز مدة السداد</span>
-          </div>`;
+                <img class="statusIcon" src="/Style Library/MiningViolations/images/tringleIcon.svg" alt="warning">
+                <span class="statusText">تجاوز مدة السداد</span>
+            </div>`;
       break;
     }
     case "Saved": {
       statusHtml = `<div class="statusBox killedStatus">
-              <i class="statusIcon fa-solid fa-ban"></i> 
-              <span>حفظ بعد الإحالة</span>
-          </div>`;
+                <i class="statusIcon fa-solid fa-ban"></i> 
+                <span class="statusText">محفوظة</span>
+            </div>`;
       break;
     }
     case "Paid After Reffered": {
       statusHtml = `<div class="statusBox closedStatus">
-              <i class="statusIcon fa-regular fa-circle-check"></i>
-              <span>سداد بعد الإحالة</span>
-          </div>`;
+                <i class="statusIcon fa-regular fa-circle-check"></i>
+                <span class="statusText">سداد بعد الإحالة</span>
+            </div>`;
       break;
     }
     case "Paid": {
       statusHtml = `<div class="statusBox closedStatus">
-              <i class="statusIcon fa-regular fa-circle-check"></i>
-              <span>تم السداد</span>
-          </div>`;
+                <i class="statusIcon fa-regular fa-circle-check"></i>
+                <span class="statusText">تم السداد</span>
+            </div>`;
+      break;
+    }
+    case "UnderPayment": {
+      statusHtml = `<div class="statusBox warningStatus">
+                <img class="statusIcon" src="/Style Library/MiningViolations/images/tringleIcon.svg" alt="warning">
+                <span class="statusText">قيد السداد</span>
+            </div>`;
+      break;
+    }
+    case "Approved": {
+      statusHtml = `<div class="statusBox closedStatus">
+                <i class="statusIcon fa-regular fa-circle-check"></i>
+                <span class="statusText">تم الموافقة</span>
+            </div>`;
+      break;
+    }
+    case "Rejected": {
+      statusHtml = `<div class="statusBox killedStatus">
+                <i class="statusIcon fa-solid fa-ban"></i> 
+                <span class="statusText">مرفوضة</span>
+            </div>`;
+      break;
+    }
+    case "Reffered": {
+      statusHtml = `<div class="statusBox pendingStatus">
+                <i class="statusIcon fa-regular fa-paper-plane"></i>
+                <span class="statusText">تم الإحالة</span>
+            </div>`;
+      break;
+    }
+    case "UnderReview": {
+      statusHtml = `<div class="statusBox pendingStatus">
+                <i class="statusIcon fa-regular fa-eye"></i>
+                <span class="statusText">قيد انتظار السداد</span>
+            </div>`;
+      break;
+    }
+    case "ExternalReviewed": {
+      statusHtml = `<div class="statusBox pendingStatus">
+                <i class="statusIcon fa-regular fa-external-link"></i>
+                <span class="statusText">خارجية</span>
+            </div>`;
+      break;
+    }
+    case "Completed": {
+      statusHtml = `<div class="statusBox closedStatus">
+                <i class="statusIcon fa-regular fa-circle-check"></i>
+                <span class="statusText">مكتملة</span>
+            </div>`;
+      break;
+    }
+    case "Cancelled": {
+      statusHtml = `<div class="statusBox killedStatus">
+                <i class="statusIcon fa-solid fa-ban"></i> 
+                <span class="statusText">ملغاه</span>
+            </div>`;
+      break;
+    }
+    default: {
+      statusHtml = `<div class="statusBox pendingStatus">
+                <i class="statusIcon fa-regular fa-question-circle"></i>
+                <span class="statusText">${ViolationStatus || "---"}</span>
+            </div>`;
       break;
     }
   }

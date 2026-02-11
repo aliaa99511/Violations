@@ -19,14 +19,14 @@ rejectedViolationsRecords.getViolations = () => {
       ColName: "created",
       SortOrder: "desc",
       Status: "Rejected",
-      Sector:UserId,
+      Sector: 0,
       ViolationType: rejectedViolationsRecords.dataObj.ViolationType,
       OffenderType: rejectedViolationsRecords.dataObj.OffenderType,
       GlobalSearch: $("#violationSearch").val(),
     },
   };
- 
-  functions.requester("/_layouts/15/Uranium.Violations.SharePoint/Tasks.aspx/Search",{ request })
+
+  functions.requester("/_layouts/15/Uranium.Violations.SharePoint/Tasks.aspx/Search", { request })
     .then((response) => {
       if (response.ok) {
         return response.json();
@@ -45,7 +45,7 @@ rejectedViolationsRecords.getViolations = () => {
           violationsData = [];
         }
       }
-      rejectedViolationsRecords.setPaginations(ItemsData.TotalPageCount,ItemsData.RowsPerPage);
+      rejectedViolationsRecords.setPaginations(ItemsData.TotalPageCount, ItemsData.RowsPerPage);
       rejectedViolationsRecords.dashBoardTable(violationsData);
       rejectedViolationsRecords.dataObj.destroyTable = true;
       // rejectedViolationsRecords.pageIndex = ItemsData.CurrentPage;
@@ -68,19 +68,19 @@ rejectedViolationsRecords.dashBoardTable = (violationsData) => {
   if (violationsData.length > 0) {
     violationsData.forEach(record => {
       taskViolation = record.Violation;
-      let createdDate =functions.getFormatedDate(record.Created);
+      let createdDate = functions.getFormatedDate(record.Created);
       let editLink;
       console.log(taskViolation.OffenderType);
       if (taskViolation.OffenderType == "Quarry") {
-        editLink = "/ViolationsRecorder/Pages/quarryViolationForm.aspx?taskId="+record.ID
-      }else if(taskViolation.OffenderType == "Vehicle"){
-        editLink = "/ViolationsRecorder/Pages/CarViolationForm.aspx?taskId="+record.ID
-      }else{
-        editLink = "/ViolationsRecorder/Pages/EquipmentViolationForm.aspx?taskId="+record.ID
+        editLink = "/ViolationsRecorder/Pages/quarryViolationForm.aspx?taskId=" + record.ID
+      } else if (taskViolation.OffenderType == "Vehicle") {
+        editLink = "/ViolationsRecorder/Pages/CarViolationForm.aspx?taskId=" + record.ID
+      } else {
+        editLink = "/ViolationsRecorder/Pages/EquipmentViolationForm.aspx?taskId=" + record.ID
       }
-        data.push([
-          `<div class="violationId" data-violationid="${record.ViolationId}" data-taskid="${record.ID}" data-offendertype="${taskViolation.OffenderType}">${taskViolation.ViolationCode}</div>`,
-          `<div class='controls'>
+      data.push([
+        `<div class="violationId" data-violationid="${record.ViolationId}" data-taskid="${record.ID}" data-offendertype="${taskViolation.OffenderType}">${taskViolation.ViolationCode}</div>`,
+        `<div class='controls'>
                 <div class='ellipsisButton'>
                     <i class='fa-solid fa-ellipsis-vertical'></i>
                 </div>
@@ -93,15 +93,15 @@ rejectedViolationsRecords.dashBoardTable = (violationsData) => {
                     </ul>
                 </div>
             </div`,
-          `<div class="violationArName">${functions.getViolationArabicName(taskViolation.OffenderType)}</div>`,
-          `<div class="violationCode">${taskViolation.OffenderType == "Vehicle" ? taskViolation.CarNumber:taskViolation.QuarryCode != ""?taskViolation.QuarryCode:"---"}</div>`,
-          `<div class="companyName">${taskViolation.ViolatorCompany != ""?taskViolation.ViolatorCompany:"-"}</div>`,
-          `<div class="violationType" data-typeid="${taskViolation.OffenderType == "Quarry"?taskViolation.ViolationTypes.ID:0}">${functions.getViolationArabicName(taskViolation.OffenderType, taskViolation?.ViolationTypes?.Title)}</div>`,
-          `<div class="violationZone">${taskViolation.ViolationsZone}</div>`,
-          `${functions.getFormatedDate(taskViolation.ViolationDate)}`,
-          `${createdDate}`,
-          
-        ]);
+        `<div class="violationArName">${functions.getViolationArabicName(taskViolation.OffenderType)}</div>`,
+        `<div class="violationCode">${taskViolation.OffenderType == "Vehicle" ? taskViolation.CarNumber : taskViolation.QuarryCode != "" ? taskViolation.QuarryCode : "---"}</div>`,
+        `<div class="companyName">${taskViolation.ViolatorCompany != "" ? taskViolation.ViolatorCompany : "-"}</div>`,
+        `<div class="violationType" data-typeid="${taskViolation.OffenderType == "Quarry" ? taskViolation.ViolationTypes.ID : 0}">${functions.getViolationArabicName(taskViolation.OffenderType, taskViolation?.ViolationTypes?.Title)}</div>`,
+        `<div class="violationZone">${taskViolation.ViolationsZone}</div>`,
+        `${functions.getFormatedDate(taskViolation.ViolationDate)}`,
+        `${createdDate}`,
+
+      ]);
     });
   }
   let Table = functions.tableDeclare(
@@ -127,7 +127,7 @@ rejectedViolationsRecords.dashBoardTable = (violationsData) => {
     $(".hiddenListBox").hide(300);
     $(e.currentTarget).siblings(".hiddenListBox").toggle(300);
   });
-  
+
   let violationlog = Table.rows().nodes().to$();
   $.each(violationlog, (index, record) => {
     let jQueryRecord = $(record);
@@ -136,24 +136,24 @@ rejectedViolationsRecords.dashBoardTable = (violationsData) => {
     let OffenderType = jQueryRecord.find(".violationId").data("offendertype");
 
     jQueryRecord.find(".controls").children(".hiddenListBox").find(".itemDetails").on("click", (e) => {
-        $(".overlay").addClass("active");
-        rejectedViolationsRecords.findViolationByID(e,taskID);
-      });
+      $(".overlay").addClass("active");
+      rejectedViolationsRecords.findViolationByID(e, taskID);
+    });
     jQueryRecord.find(".controls").children(".hiddenListBox").find(".printViolationDetails").on("click", (e) => {
-        $(".overlay").addClass("active");
-        rejectedViolationsRecords.findViolationByID(e,taskID, true);
-      });
+      $(".overlay").addClass("active");
+      rejectedViolationsRecords.findViolationByID(e, taskID, true);
+    });
   });
   functions.hideTargetElement(".controls", ".hiddenListBox");
 };
-rejectedViolationsRecords.findViolationByID = (event,taskID,print=false) => {
+rejectedViolationsRecords.findViolationByID = (event, taskID, print = false) => {
   let request = {
     Id: taskID,
   };
   functions.requester(
-      "/_layouts/15/Uranium.Violations.SharePoint/Tasks.aspx/FindbyId",
-      request
-    )
+    "/_layouts/15/Uranium.Violations.SharePoint/Tasks.aspx/FindbyId",
+    request
+  )
     .then((response) => {
       if (response.ok) {
         return response.json();
@@ -166,14 +166,14 @@ rejectedViolationsRecords.findViolationByID = (event,taskID,print=false) => {
       let printBox;
       let rejectReason;
       if (data != null) {
-        rejectReason=data.d.Comment;
+        rejectReason = data.d.Comment;
         violationData = data.d.Violation;
         violationOffenderType = violationData.OffenderType;
         if (violationOffenderType == "Quarry") {
-          Content = DetailsPopup.quarryDetailsPopupContent(violationData,"المرفوضة");
+          Content = DetailsPopup.quarryDetailsPopupContent(violationData, "المرفوضة");
           printBox = `<div class="printBox" id="printJS-form">${Content}</div>`;
-        } else if(violationOffenderType == "Vehicle") {
-          Content = DetailsPopup.vehicleDetailsPopupContent(violationData,"المرفوضة");
+        } else if (violationOffenderType == "Vehicle") {
+          Content = DetailsPopup.vehicleDetailsPopupContent(violationData, "المرفوضة");
           printBox = `<div class="printBox" id="printJS-form">${Content}</div>`;
           let vehicleType = violationData.VehicleType;
           if (vehicleType == "عربة بمقطورة") {
@@ -181,19 +181,19 @@ rejectedViolationsRecords.findViolationByID = (event,taskID,print=false) => {
           } else {
             $(".TrailerNumberBox").hide();
           }
-        }else if(violationOffenderType == "Equipment"){
-          Content = DetailsPopup.equipmentDetailsPopupContent(violationData,"المرفوضة");
+        } else if (violationOffenderType == "Equipment") {
+          Content = DetailsPopup.equipmentDetailsPopupContent(violationData, "المرفوضة");
           printBox = `<div class="printBox" id="printJS-form">${Content}</div>`;
         }
-        functions.declarePopup(["generalPopupStyle", "detailsPopup", "blueHeaderPopup"],printBox);
-        $(".printBtn").on("click",(e)=>{
+        functions.declarePopup(["generalPopupStyle", "detailsPopup", "blueHeaderPopup"], printBox);
+        $(".printBtn").on("click", (e) => {
           functions.PrintDetails(e)
         })
-        if(print){
+        if (print) {
           functions.PrintDetails(event)
         }
         $(".detailsPopupForm").addClass("rejectedViolationsRecordsLog")
-        $(".detailsPopupForm").find(".CommiteeMembersBox").show().find(".formElements").css("border-bottom","none")
+        $(".detailsPopupForm").find(".CommiteeMembersBox").show().find(".formElements").css("border-bottom", "none")
         $(".rejectReasonBox").show().find(".rejectReason").val(rejectReason)
       } else {
         violationData = null;
@@ -221,7 +221,7 @@ rejectedViolationsRecords.filterViolationsLog = (e) => {
     rejectedViolationsRecords.dataObj.ViolationType = Number($("#TypeofViolation").children("option:selected").data("id"));
     rejectedViolationsRecords.dataObj.destroyTable = true;
     rejectedViolationsRecords.dataObj.pageIndex = pagination.currentPage
-    rejectedViolationsRecords.getViolations(rejectedViolationsRecords.dataObj.pageIndex,true,OffenderTypeVal,ViolationTypeVal);
+    rejectedViolationsRecords.getViolations(rejectedViolationsRecords.dataObj.pageIndex, true, OffenderTypeVal, ViolationTypeVal);
   }
 };
 

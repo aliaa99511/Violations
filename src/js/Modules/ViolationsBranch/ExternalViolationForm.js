@@ -1,10 +1,7 @@
-import Swal from "sweetalert2";
 import functions from "../../Shared/functions";
 import sharedApis from "../../Shared/sharedApiCall";
 
 let externalViolationForm = {};
-var urlParams = new URLSearchParams(window.location.search);
-var editViolationId;
 
 externalViolationForm.violatorDetails = () => {
     let vaildViolator = false;
@@ -60,11 +57,12 @@ externalViolationForm.violationDetails = () => {
             if (violationDate && violationDate !== "") {
                 if (caseNumber && caseNumber.trim() !== "") {
                     violationsData = {
-                        offenderType: offenderTypeId,
+                        offenderType: offenderType,
                         offenderTypeText: offenderType,
+                        offenderTypeId: offenderTypeId,
                         violationType: violationTypeId,
                         violationTypeText: violationType,
-                        violationDate: violationDate, // Just the date without time
+                        violationDate: violationDate,
                         caseNumber: caseNumber.trim(),
                         rawViolationDate: violationDate
                     };
@@ -91,6 +89,8 @@ externalViolationForm.violationDetails = () => {
 
 externalViolationForm.formActions = () => {
     let numberOfDaysBefore = functions.getViolationStartDate(3);
+
+    // Use the same date formatting function as quarryViolation
     functions.inputDateFormat(
         ".inputDate",
         numberOfDaysBefore,
@@ -98,13 +98,21 @@ externalViolationForm.formActions = () => {
         "dd/mm/yyyy"
     );
 
-    // Initialize date picker
+    // Initialize datepicker with day-month-year format
     $(".inputDate").datepicker({
         dateFormat: "dd-mm-yy",
         changeMonth: true,
         changeYear: true,
         yearRange: "-100:+0",
         onSelect: function (dateText) {
+            let dateParts = dateText.split("-");
+            if (dateParts.length === 3) {
+                let day = dateParts[0].padStart(2, '0');
+                let month = dateParts[1].padStart(2, '0');
+                let year = dateParts[2];
+                let formattedDate = `${day}-${month}-${year}`;
+                $(this).val(formattedDate);
+            }
             $(this).trigger('change');
         }
     });
@@ -121,18 +129,26 @@ externalViolationForm.formActions = () => {
 
     // Cancel button
     $("#cancelExternalViolation").on("click", (e) => {
-        window.location.href = "/ViolationsBranch/Pages/ExternalViolationsList.aspx";
+        window.location.href = "/ViolationsBranch/Pages/ExternalViolationLog.aspx";
     });
 
-    // File upload handling
     let filesExtension = [
-        "gif", "svg", "jpg", "jpeg", "png",
-        "doc", "docx", "pdf", "xls", "xlsx", "pptx"
+        "gif",
+        "svg",
+        "jpg",
+        "jpeg",
+        "png",
+        "doc",
+        "docx",
+        "pdf",
+        "xls",
+        "xlsx",
+        "pptx",
     ];
-
     $(".dropFilesArea").hide();
 
     let violationFiles;
+    let countOfFiles;
     $(".attachViolationFiles").on("change", (e) => {
         violationFiles = $(e.currentTarget)[0].files;
 
@@ -148,17 +164,14 @@ externalViolationForm.formActions = () => {
             $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").append(`
                 <div class="file">
                     <p class="fileName">${violationFiles[i].name}</p>
-                    <span class="deleteFile" data-index="${i}">
-                        <i class="fa-sharp fa-solid fa-x"></i>
-                    </span>
+                    <span class="deleteFile" data-index="${i}"><i class="fa-sharp fa-solid fa-x"></i></span>
                 </div>
             `);
         }
-
         $(".deleteFile").on("click", (event) => {
+            $(event.currentTarget).val("");
             let index = $(event.currentTarget).closest(".file").index();
             $(event.currentTarget).closest(".file").remove();
-
             let fileBuffer = new DataTransfer();
             for (let i = 0; i < violationFiles.length; i++) {
                 if (index !== i) {
@@ -166,62 +179,33 @@ externalViolationForm.formActions = () => {
                 }
             }
             violationFiles = fileBuffer.files;
+            countOfFiles = violationFiles.length;
 
-            if (violationFiles.length == 0) {
-                $(event.currentTarget)
-                    .parents(".fileBox")
-                    .siblings(".dropFilesArea")
-                    .hide();
-            }
-        });
-
-        // Validate file extensions
-        for (let i = 0; i < violationFiles.length; i++) {
-            let fileSplited = violationFiles[i].name.split(".");
-            let fileExt = fileSplited[fileSplited.length - 1].toLowerCase();
-            if ($.inArray(fileExt, filesExtension) == -1) {
-                functions.warningAlert("من فضلك أدخل الملفات بالامتدادات المسموح بها فقط");
+            if (countOfFiles == 0) {
+                // $(e.currentTarget).closest(".dropFilesArea").hide()
                 $(e.currentTarget)
                     .parents(".fileBox")
                     .siblings(".dropFilesArea")
                     .hide();
+            }
+        });
+        for (let i = 0; i < violationFiles.length; i++) {
+            let fileSplited = violationFiles[i].name.split(".");
+            let fileExt = fileSplited[fileSplited.length - 1].toLowerCase();
+            if ($.inArray(fileExt, filesExtension) == -1) {
+                functions.warningAlert(
+                    "من فضلك أدخل الملفات بالامتدادات المسموح بها فقط"
+                );
+                $(e.currentTarget)
+                    .parents(".fileBox")
+                    .siblings(".dropFilesArea")
+                    .hide();
+                // violationFiles = fileBuffer
                 $(e.currentTarget).val("");
-                break;
             }
         }
     });
 
-    // Enable drag and drop
-    let dropContainer = document.getElementById('dropContainer');
-    if (dropContainer) {
-        dropContainer.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            dropContainer.style.borderColor = '#007bff';
-        });
-
-        dropContainer.addEventListener('dragleave', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            dropContainer.style.borderColor = '#ccc';
-        });
-
-        dropContainer.addEventListener('drop', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            dropContainer.style.borderColor = '#ccc';
-
-            let files = e.dataTransfer.files;
-            if (files.length > 0) {
-                let dataTransfer = new DataTransfer();
-                for (let i = 0; i < files.length; i++) {
-                    dataTransfer.items.add(files[i]);
-                }
-                $("#attachViolationFiles")[0].files = dataTransfer.files;
-                $("#attachViolationFiles").trigger('change');
-            }
-        });
-    }
 };
 
 externalViolationForm.getOffenderTypes = () => {
@@ -269,96 +253,131 @@ externalViolationForm.getProsecutions = () => {
 externalViolationForm.validateForm = (e) => {
     e.preventDefault();
 
-    let ViolationData = {};
+    $(".customInput").removeClass("error");
+    $(".selectBox select").removeClass("error");
+
     let violatorDetails = externalViolationForm.violatorDetails();
     let violationDetails = externalViolationForm.violationDetails();
 
-    if (violatorDetails != false && violationDetails != false) {
-        // Format the date properly for SharePoint
-        let formattedDate = "";
-        if (violationDetails.rawViolationDate) {
-            let dateParts = violationDetails.rawViolationDate.split("-");
-            if (dateParts.length === 3) {
-                formattedDate = `${dateParts[2]}-${dateParts[1]}-${dateParts[0]}`;
-                formattedDate += "T00:00:00"; // Default time since time field is removed
+    if (violatorDetails && violationDetails) {
+        const violationDateInput = $("#violationDate").val();
+
+        // Parse the date in DD/MM/YYYY format and convert to DD-MM-YYYY
+        const dateParts = violationDateInput.split("/");
+        if (dateParts.length === 3) {
+            const day = dateParts[0].padStart(2, '0');
+            const month = dateParts[1].padStart(2, '0');
+            const year = dateParts[2];
+
+            // Format as DD-MM-YYYY (same format used in quarryViolation)
+            const formattedDate = `${day}-${month}-${year}`;
+
+            // Then convert to MM-DD-YYYY for API (same logic as quarryViolation)
+            const violationDateArr = formattedDate.split("-");
+            const apiDate = `${violationDateArr[1]}-${violationDateArr[0]}-${violationDateArr[2]}`;
+
+            let offenderType = $("#offenderType").children("option:selected").val();
+
+            const ViolationData = {
+                Title: "New External Violation",
+                Governrate: violatorDetails.violationGov,
+                ViolationsZone: violatorDetails.violationsZone,
+                ViolatorName: violatorDetails.violatorName,
+                ViolatoCode: violatorDetails.violatorName,
+                CaseNumber: violationDetails.caseNumber,
+                AssignedProsecution: violatorDetails.assignedProsecution,
+                ViolationDate: apiDate,
+                OffenderType: offenderType,
+                ViolatorCompany: violatorDetails.companyName || "",
+                ViolationType: violationDetails.violationType,
+                IsExternalRecord: true
+            };
+
+            // Add loading state and disable button like quarryViolation
+            functions.disableButton(e);
+            externalViolationForm.submitNewViolation(e, ViolationData);
+        } else {
+            // Try alternative format (in case user entered DD-MM-YYYY directly)
+            const altDateParts = violationDateInput.split("-");
+            if (altDateParts.length === 3) {
+                const day = altDateParts[0].padStart(2, '0');
+                const month = altDateParts[1].padStart(2, '0');
+                const year = altDateParts[2];
+
+                // Convert to MM-DD-YYYY for API
+                const apiDate = `${month}-${day}-${year}`;
+
+                let offenderType = $("#offenderType").children("option:selected").val();
+
+                const ViolationData = {
+                    Title: "New External Violation",
+                    Governrate: violatorDetails.violationGov,
+                    ViolationsZone: violatorDetails.violationsZone,
+                    ViolatorName: violatorDetails.violatorName,
+                    ViolatoCode: violatorDetails.violatorName,
+                    CaseNumber: violationDetails.caseNumber,
+                    AssignedProsecution: violatorDetails.assignedProsecution,
+                    ViolationDate: apiDate,
+                    OffenderType: offenderType,
+                    ViolatorCompany: violatorDetails.companyName || "",
+                    ViolationType: violationDetails.violationType,
+                    IsExternalRecord: true
+                };
+
+                // Add loading state and disable button like quarryViolation
+                functions.disableButton(e);
+                externalViolationForm.submitNewViolation(e, ViolationData);
+            } else {
+                functions.warningAlert("تاريخ غير صحيح. استخدم الصيغة DD/MM/YYYY", "#violationDate");
             }
         }
-
-        // Prepare data for API
-        ViolationData = {
-            // For editing
-            ID: urlParams.get("taskId") !== null ? parseInt(editViolationId) : 0,
-
-            // Required fields for external violation
-            Title: "مخالفة خارجية",
-            Governrate: parseInt(violatorDetails.violationGov),
-            ViolationsZone: violatorDetails.violationsZone,
-            ViolatorName: violatorDetails.violatorName,
-            ViolatorCompany: violatorDetails.companyName,
-            CaseNumber: violationDetails.caseNumber,
-            AssignedProsecution: violatorDetails.assignedProsecution,
-            PublicProsecution: violatorDetails.assignedProsecution,
-            ViolationDate: formattedDate,
-            OffenderType: parseInt(violationDetails.offenderType),
-            ViolationType: parseInt(violationDetails.violationType),
-            IsExternalRecord: true,
-            Status: "قيد المعالجة"
-        };
-
-        console.log("Submitting data:", ViolationData);
-
-        externalViolationForm.submitNewViolation(e, ViolationData);
     }
 };
 
 externalViolationForm.submitNewViolation = (e, ViolationData) => {
+    // Show loading overlay like quarryViolation
     $(".overlay").addClass("active");
 
-    let request = {
-        Data: ViolationData,
-        IsEdit: urlParams.get("taskId") !== null
+    const request = {
+        request: {
+            Data: ViolationData
+        }
     };
-
-    console.log("API Request:", request);
 
     functions.requester(
         "/_layouts/15/Uranium.Violations.SharePoint/Violations.aspx/Save",
         request
     )
-        .then((response) => {
-            if (response.ok) {
-                return response.json();
-            }
-            throw new Error('Network response was not ok');
+        .then(response => {
+            if (!response.ok) throw new Error("Network response was not ok");
+            return response.json();
         })
-        .then((data) => {
-            console.log("Save response:", data);
+        .then(data => {
+            if (data?.d?.Status) {
+                const ViolationId = data.d.Result.Id;
+                const files = $("#attachViolationFiles")[0].files;
 
-            if (data.d && data.d.Status) {
-                let ViolationId = data.d.Result.Id;
-
-                // Upload attachments if there are any
-                let files = $("#attachViolationFiles")[0].files;
-                if (files && files.length > 0) {
+                // Like quarryViolation, check if there are files to upload
+                if (files?.length > 0) {
+                    // Keep overlay active while uploading attachments
                     externalViolationForm.uploadAttachment(ViolationId, "Violations");
                 } else {
                     $(".overlay").removeClass("active");
                     functions.sucessAlert(
-                        urlParams.get("taskId") ? "تم تعديل مخالفة خارجية بنجاح" : "تم إضافة مخالفة خارجية جديدة بنجاح",
+                        "تم إضافة مخالفة خارجية جديدة بنجاح",
                         false,
-                        "/ViolationsBranch/Pages/ExternalViolationsList.aspx"
+                        "/ViolationsBranch/Pages/ExternalViolationLog.aspx"
                     );
                 }
             } else {
                 $(".overlay").removeClass("active");
-                let errorMsg = data.d && data.d.Message ? data.d.Message : "حدث خطأ ما, لم يتم إضافة المخالفة";
-                functions.warningAlert(errorMsg);
+                functions.warningAlert(data?.d?.Message || "حدث خطأ أثناء الحفظ");
             }
         })
-        .catch((err) => {
+        .catch(err => {
             $(".overlay").removeClass("active");
-            console.error("Save error:", err);
-            functions.warningAlert("خطأ في إرسال البيانات لقاعدة البيانات: " + err.message);
+            console.error(err);
+            functions.warningAlert("خطأ في إرسال البيانات: " + err.message);
         });
 };
 
@@ -367,13 +386,12 @@ externalViolationForm.uploadAttachment = (NewViolationID, ListName) => {
     let Data = new FormData();
     Data.append("itemId", NewViolationID);
     Data.append("listName", ListName);
-    Data.append("Method", urlParams.get("taskId") !== null ? "Edit" : "New");
-
-    let files = $("#attachViolationFiles")[0].files;
-    for (let i = 0; i < files.length; i++) {
-        Data.append("file" + i, files[i]);
+    // Data.append("Method", urlParams.get("taskId") !== null ? "Edit" : "",)
+    let count = 0;
+    let i;
+    for (i = 0; i < $("#attachViolationFiles")[0].files.length; i++) {
+        Data.append("file" + i, $("#attachViolationFiles")[0].files[i]);
     }
-
     $.ajax({
         type: "POST",
         url: "/_layouts/15/Uranium.Violations.SharePoint/Attachments.aspx/Upload",
@@ -382,180 +400,86 @@ externalViolationForm.uploadAttachment = (NewViolationID, ListName) => {
         data: Data,
         success: (data) => {
             $(".overlay").removeClass("active");
-            try {
-                let response = JSON.parse(data);
-                if (response.d && response.d.Status) {
-                    functions.sucessAlert(
-                        urlParams.get("taskId") ? "تم تعديل مخالفة خارجية بنجاح" : "تم إضافة مخالفة خارجية جديدة بنجاح",
-                        false,
-                        "/ViolationsBranch/Pages/ExternalViolationsList.aspx"
-                    );
-                } else {
-                    functions.warningAlert("حدث خطأ أثناء رفع الملفات");
-                }
-            } catch (e) {
-                functions.warningAlert("خطأ في استجابة الخادم");
-            }
+            functions.sucessAlert(
+                "تم إضافة مخالفة خارجية جديدة بنجاح",
+                // urlParams.get("taskId") ? "تم تعديل مخالفة خارجية بنجاح" : "تم إضافة مخالفة خارجية جديدة بنجاح",
+                false,
+                "/ViolationsBranch/Pages/ExternalViolationLog.aspx"
+            );
         },
         error: (err) => {
+            functions.warningAlert("خطأ في إرسال البيانات لقاعدة البيانات");
             $(".overlay").removeClass("active");
-            functions.warningAlert("خطأ في إرسال الملفات");
-            console.error(err.responseText);
-        }
+            console.log(err.responseText);
+        },
     });
 };
 
-externalViolationForm.editViolation = () => {
-    if (urlParams.get("taskId") !== null) {
-        $(".PreLoader").addClass("active");
+// externalViolationForm.uploadAttachment = (NewViolationID, ListName) => {
+//     $(".overlay").addClass("active");
 
-        functions.requester(
-            "/_layouts/15/Uranium.Violations.SharePoint/Tasks.aspx/FindbyId",
-            {
-                Id: urlParams.get("taskId"),
-            }
-        )
-            .then((response) => {
-                if (response.ok) {
-                    return response.json();
-                }
-                throw new Error('Network response was not ok');
-            })
-            .then((data) => {
-                console.log("Edit data loaded:", data);
+//     let Data = new FormData();
+//     Data.append("itemId", NewViolationID);
+//     Data.append("listName", ListName);
+//     Data.append("Method", "New"); // Consistent with quarryViolation
 
-                if (data.d && data.d.Violation) {
-                    let violationData = data.d.Violation;
-                    editViolationId = data.d.ViolationId;
+//     let files = $("#attachViolationFiles")[0].files;
 
-                    // Populate form fields with existing data
-                    $("#violatorName").val(violationData.ViolatorName || "");
-                    $("#companyName").val(violationData.ViolatorCompany || "");
-                    $("#violationsZone").val(violationData.ViolationsZone || "");
-                    $("#caseNumber").val(violationData.CaseNumber || "");
+//     // Add files to FormData like quarryViolation
+//     for (let i = 0; i < files.length; i++) {
+//         Data.append("file" + i, files[i]);
+//     }
 
-                    // Set dropdown values - wait for dropdowns to be populated
-                    setTimeout(() => {
-                        // Set governorate
-                        if (violationData.Governrate) {
-                            $(`#violationGov option[data-id="${violationData.Governrate}"]`).prop('selected', true);
-                        }
-
-                        // Set prosecution - now using value only (no data-id)
-                        if (violationData.AssignedProsecution) {
-                            let prosecutionOption = $(`#assignedProsecution option[value="${violationData.AssignedProsecution}"]`);
-                            if (prosecutionOption.length > 0) {
-                                prosecutionOption.prop('selected', true);
-                            } else {
-                                // If not found in dropdown, add it as a new option
-                                $("#assignedProsecution").append(`
-                                    <option value="${violationData.AssignedProsecution}" selected>
-                                        ${violationData.AssignedProsecution}
-                                    </option>
-                                `);
-                            }
-                        }
-
-                        // Set offender type
-                        if (violationData.OffenderType) {
-                            $(`#offenderType option[data-id="${violationData.OffenderType}"]`).prop('selected', true);
-                        }
-
-                        // Set violation type
-                        if (violationData.ViolationType) {
-                            $(`#violationType option[data-id="${violationData.ViolationType}"]`).prop('selected', true);
-                        }
-                    }, 500);
-
-                    // Set date
-                    if (violationData.ViolationDate) {
-                        try {
-                            let date = new Date(violationData.ViolationDate);
-                            if (!isNaN(date.getTime())) {
-                                let formattedDate = date.getDate().toString().padStart(2, '0') + '-' +
-                                    (date.getMonth() + 1).toString().padStart(2, '0') + '-' +
-                                    date.getFullYear();
-                                $("#violationDate").val(formattedDate);
-                            }
-                        } catch (e) {
-                            console.error("Error parsing date:", e);
-                        }
-                    }
-
-                    // Load existing attachments if any
-                    if (data.d.Attachments && data.d.Attachments.length > 0) {
-                        externalViolationForm.loadExistingAttachments(data.d.Attachments);
-                    }
-                } else {
-                    functions.warningAlert("لم يتم العثور على بيانات المخالفة");
-                }
-
-                $(".PreLoader").removeClass("active");
-            })
-            .catch((error) => {
-                $(".PreLoader").removeClass("active");
-                console.error("Error loading violation data:", error);
-                functions.warningAlert("حدث خطأ أثناء تحميل بيانات المخالفة");
-            });
-    }
-};
-
-externalViolationForm.loadExistingAttachments = (attachments) => {
-    if (attachments && attachments.length > 0) {
-        $(".dropFilesArea").show().empty();
-
-        attachments.forEach((attachment, index) => {
-            $(".dropFilesArea").append(`
-                <div class="file existing-attachment" data-filename="${attachment.FileName}">
-                    <p class="fileName">${attachment.FileName}</p>
-                    <span class="existing-file-indicator" title="ملف مرفق مسبقاً">
-                        <i class="fa-solid fa-check-circle" style="color: #28a745;"></i>
-                    </span>
-                </div>
-            `);
-        });
-
-        // Show a message that existing files cannot be deleted from here
-        $(".dropFilesArea").append(`
-            <div class="existing-files-note" style="font-size: 12px; color: #666; margin-top: 10px;">
-                ملاحظة: الملفات الموجودة مرفوعة بالفعل في النظام ولا يمكن حذفها من هنا
-            </div>
-        `);
-    }
-};
+//     $.ajax({
+//         type: "POST",
+//         url: "/_layouts/15/Uranium.Violations.SharePoint/Attachments.aspx/Upload",
+//         processData: false,
+//         contentType: false,
+//         data: Data,
+//         success: (data) => {
+//             $(".overlay").removeClass("active");
+//             try {
+//                 let response = JSON.parse(data);
+//                 if (response.d && response.d.Status) {
+//                     functions.sucessAlert(
+//                         "تم إضافة مخالفة خارجية جديدة بنجاح",
+//                         false,
+//                         "/ViolationsBranch/Pages/ExternalViolationLog.aspx"
+//                     );
+//                 } else {
+//                     functions.warningAlert("حدث خطأ أثناء رفع الملفات");
+//                 }
+//             } catch (e) {
+//                 functions.warningAlert("خطأ في استجابة الخادم");
+//             }
+//         },
+//         error: (err) => {
+//             $(".overlay").removeClass("active");
+//             functions.warningAlert("خطأ في إرسال الملفات");
+//             console.error(err.responseText);
+//         }
+//     });
+// };
 
 externalViolationForm.init = () => {
     $(document).ready(function () {
         externalViolationForm.formActions();
-
-        // Show loading
         $(".PreLoader").addClass("active");
 
-        // Load all dropdowns consistently
+        // Load all dropdowns in correct order
         Promise.all([
             sharedApis.getGovernrates("#violationGov"),
-            sharedApis.getViolationType("#violationType"),
             sharedApis.getOffenderType("#offenderType"),
-            sharedApis.getProsecutions("#assignedProsecution") // Using the updated version
+            externalViolationForm.getViolationTypes(),
+            externalViolationForm.getProsecutions()
         ])
             .then(() => {
-                console.log("All dropdowns loaded successfully");
-
-                // Check for edit mode
-                if (urlParams.get("taskId") !== null) {
-                    externalViolationForm.editViolation();
-                }
-
                 $(".PreLoader").removeClass("active");
             })
             .catch((error) => {
-                console.error("Error loading dropdowns:", error);
                 $(".PreLoader").removeClass("active");
-                functions.warningAlert("حدث خطأ أثناء تحميل البيانات الأساسية");
             });
     });
 };
-// Initialize the form
-externalViolationForm.init();
 
 export default externalViolationForm;

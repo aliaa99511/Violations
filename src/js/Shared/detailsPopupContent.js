@@ -17,10 +17,13 @@ DetailsPopup.quarryDetailsPopupContent = (violationData, LogName = "") => {
     );
     let ViolationCode =
         violationData.ViolationCode != "" ? violationData.ViolationCode : "-----";
-    let Equipments = DetailsPopup.getViolationEquipments(
-        violationData.Equipments,
-        violationData.Equipments_Count,
-    );
+    // Fix: Check if Equipments exists before using it
+    let Equipments = violationData.Equipments ?
+        DetailsPopup.getViolationEquipments(
+            violationData.Equipments,
+            violationData.Equipments_Count
+        ) :
+        '<div class="noEquipments">لم يتم إضافة معدات مضبوطة</div>';
     let Coordinates = DetailsPopup.getViolationCoords(
         violationData.CoordinatesDegrees,
     );
@@ -1398,45 +1401,39 @@ DetailsPopup.vehicleDetailsPopupContent = (violationData, LogName = "") => {
     $(".overlay").removeClass("active");
     return popupHtml;
 };
-
 DetailsPopup.getViolationEquipments = (Equipments, EquipmentsCount) => {
-    let Equipcount;
-    // let toolsBoxClass= OffenderType == "Quarry"?"quarryToolsBox":"carToolsBox"
     let equipmentsHtml = $(`
-            <div>
-                <div class="toolsBox quarryToolsBox"></div>
-            </div>
+        <div>
+            <div class="toolsBox quarryToolsBox"></div>
+        </div>
     `);
-    if (Equipments.length > 0) {
-        Equipments.forEach((Equipment, index) => {
-            let EquipmentId = Equipment.ID;
 
-            if (EquipmentsCount != undefined) {
-                Equipcount = EquipmentsCount[index]?.count;
-            } else {
-                Equipcount = "-";
+    // Check if Equipments exists and is an array
+    if (Equipments && Array.isArray(Equipments) && Equipments.length > 0) {
+        Equipments.forEach((Equipment, index) => {
+            let Equipcount = "-";
+
+            // Check if EquipmentsCount exists and has data for this index
+            if (EquipmentsCount && EquipmentsCount[index]) {
+                Equipcount = EquipmentsCount[index]?.count || "-";
             }
-            // for(let [id,value] in EquipmentsCount){
-            //
-            //
-            // }
-            // let EquipmentData = Equipment
+
             equipmentsHtml.find(".quarryToolsBox").append(`
-                    <div class="tool tools-show popupTool">
-                        <label class="customelabel checkboxLabel" for="${Equipment.Title}">
-                            <input type="checkbox" class="toolInput checkboxInput" value="${Equipment.Title}" name="${Equipment.Title}" id="${Equipment.Title}" disabled>
-                            <span class="checkmark"></span>
-                            <span class="checktext">${Equipment.Title} [${Equipcount}]</span>
-                        </label>
-                    </div>
+                <div class="tool tools-show popupTool">
+                    <label class="customelabel checkboxLabel" for="${Equipment.Title}">
+                        <input type="checkbox" class="toolInput checkboxInput" value="${Equipment.Title}" name="${Equipment.Title}" id="${Equipment.Title}" disabled>
+                        <span class="checkmark"></span>
+                        <span class="checktext">${Equipment.Title} [${Equipcount}]</span>
+                    </label>
+                </div>
             `);
-            //   <span class="checktext">${Equipment.Title} [${EquipmentsCount[index]?.count}]</span>
         });
     } else {
         equipmentsHtml.find(".quarryToolsBox").append(`
-          <p class="noEquipments">لم يتم إضافة معدات مضبوطة</p>
-      `);
+            <p class="noEquipments">لم يتم إضافة معدات مضبوطة</p>
+        `);
     }
+
     return equipmentsHtml.html();
 };
 DetailsPopup.getViolationCoords = (Coordinates) => {
@@ -1746,7 +1743,7 @@ DetailsPopup.printPaymentForm = (TaskData) => {
                                                 <div class="row">
                                                     <div class="col-md-4">
                                                         <div class="form-group customFormGroup">
-                                                            <label for="violatorName" class="customLabel">الكمية (للمتر المكعب /الطن)</label>
+                                                            <label for="violatorName" class="customLabel">الكمية (${violationData?.MaterialUnit === "طن" ? "طن" : violationData?.MaterialUnit === "متر مكعب" ? "للمتر المكعب" : "للمتر المكعب / الطن"})</label>
                                                             <input class="form-control customInput violatorName" id="violatorName" type="text" value="${violationData?.TotalQuantity !=
             ""
             ? violationData?.TotalQuantity
@@ -1756,7 +1753,7 @@ DetailsPopup.printPaymentForm = (TaskData) => {
                                                     </div>
                                                     <div class="col-md-4">
                                                         <div class="form-group customFormGroup">
-                                                            <label for="violatorName" class="customLabel">قيمة الوحدة (للمتر المكعب /الطن)</label>
+                                                            <label for="violatorName" class="customLabel">قيمة الوحدة (${violationData?.MaterialUnit === "طن" ? "طن" : violationData?.MaterialUnit === "متر مكعب" ? "للمتر المكعب" : "للمتر المكعب / الطن"})</label>
                                                             <input class="form-control customInput violatorName" id="violatorName" type="text" value="${violationData?.MaterialUnit !=
             ""
             ? violationData?.MaterialUnit
@@ -1809,7 +1806,7 @@ DetailsPopup.printPaymentForm = (TaskData) => {
                                                     </div>
                                                     <div class="col-md-4">
                                                         <div class="form-group customFormGroup">
-                                                            <label class="customLabel" for="royaltyPrice">قيمة الإتاوة</label>
+                                                            <label class="customLabel" for="royaltyPrice">قيمة الإتاوة (${violationData?.MaterialUnit === "طن" ? "طن" : violationData?.MaterialUnit === "متر مكعب" ? "للمتر المكعب" : "للمتر المكعب / الطن"})</label>
                                                             <div class="inputIconBox">
                                                                 <input class="form-control customInput royaltyPrice" id="royaltyPrice" type="text" value="${violationData?.LawRoyalty >
             0

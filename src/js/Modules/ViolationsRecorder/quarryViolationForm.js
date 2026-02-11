@@ -658,7 +658,7 @@ quarryViolation.formActions = () => {
         .show()
         .empty();
     }
-    
+
     for (let i = 0; i < violationFiles.length; i++) {
       $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").append(`
                 <div class="file">
@@ -886,10 +886,10 @@ quarryViolation.validateForm = (e) => {
   let SectorMembers = $(".membersText").val();
 
   let violationDateArr = violationDetails.violationDate.split("/");
-  let violationDate =  `${violationDateArr[1]}-${violationDateArr[0]}-${violationDateArr[2]}`;
+  let violationDate = `${violationDateArr[1]}-${violationDateArr[0]}-${violationDateArr[2]}`;
   let violationTimeArr = violationDetails.violationTime.split("/");
-  let violationTime =  `${violationTimeArr[1]}-${violationTimeArr[0]}-${violationTimeArr[2]}`;
- 
+  let violationTime = `${violationTimeArr[1]}-${violationTimeArr[0]}-${violationTimeArr[2]}`;
+
   if (SectorMembers != "") {
     if (violatorDetails != false) {
       if (violationDetails != false) {
@@ -902,9 +902,9 @@ quarryViolation.validateForm = (e) => {
               if (otherViolationDetails != false) {
                 ViolationData = {
                   // Edit violation 
-                  ID: urlParams.get("taskId") !== null? editViolationId : "",
-                  IsEdit: urlParams.get("taskId") !== null? true : false,
-                  
+                  ID: urlParams.get("taskId") !== null ? editViolationId : "",
+                  IsEdit: urlParams.get("taskId") !== null ? true : false,
+
                   // End edit violation
                   Title: "New Quarry Violation",
                   OffenderType: "Quarry",
@@ -948,7 +948,7 @@ quarryViolation.validateForm = (e) => {
                       ? otherViolationDetails.membersNamesText
                       : "-",
                   SectorMembers: SectorMembers,
-                  Sector: UserId,
+                  Sector: 0,
                 };
                 quarryViolation.submitNewViolation(e, ViolationData);
               }
@@ -1010,7 +1010,7 @@ quarryViolation.uploadAttachment = (NewViolationID, ListName) => {
   let Data = new FormData();
   Data.append("itemId", NewViolationID);
   Data.append("listName", ListName);
-  Data.append("Method",  urlParams.get("taskId") !== null? "Edit" : "",)
+  Data.append("Method", urlParams.get("taskId") !== null ? "Edit" : "",)
   let count = 0;
   let i;
   for (i = 0; i < $("#attachViolationFiles")[0].files.length; i++) {
@@ -1106,8 +1106,8 @@ quarryViolation.GetCoordinates = () => {
         NumberArr.push(Temp[0] + " " + Temp[1] + " " + Temp[2] + " ");
         DecimalArr.push(
           parseFloat(Temp[0]) +
-            parseFloat(Temp[1]) / 60 +
-            parseFloat(Temp[2]) / 3600
+          parseFloat(Temp[1]) / 60 +
+          parseFloat(Temp[2]) / 3600
         );
       }
     });
@@ -1259,9 +1259,9 @@ quarryViolation.editViolation = () => {
         }
       })
       .then((data) => {
-          let violationData = data.d.Violation;
-          editViolationId = data.d.ViolationId
-          functions.commonEditData(violationData, data.d.ViolationId, 4);
+        let violationData = data.d.Violation;
+        editViolationId = data.d.ViolationId
+        functions.commonEditData(violationData, data.d.ViolationId, 4);
         $("#BonesCount")
           .val(violationData.BonsNumber)
           .trigger("change");

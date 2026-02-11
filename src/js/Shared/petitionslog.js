@@ -28,6 +28,7 @@ petitionsLog.getPetitions = (Status = "All") => {
           ViolationId: 0,
           ViolationCode: petitionsLog.ViolationCode,
           Status: PetitionStatusVal,
+          IsPetition: true,
           OffenderType: $("#violationCategory").val()
             ? $("#violationCategory").val()
             : "",
@@ -124,7 +125,7 @@ petitionsLog.ValidatedPetitionsTable = (Petitions, destroyTable) => {
         `<div class="violationArName">${functions.getViolationArabicName(
           petitionViolation.OffenderType,
         )}</div>`,
-        `${petitionsLog.getPetitionStatusIcon(Petition?.Status)}`,
+        `${functions.getPetitionsStatus(Petition?.Status)}`,
 
         // `${functions.getFormatedDate(Petition?.Created)}`,
       ]);
@@ -650,7 +651,6 @@ petitionsLog.findPetitionsByID = (petitionID, exDate) => {
     })
     .catch((err) => { });
 };
-
 petitionsLog.getPetitionsAttachmentsById = (petitionsId) => {
   let request = {
     id: petitionsId,
@@ -691,35 +691,6 @@ petitionsLog.getPetitionsAttachmentsById = (petitionsId) => {
     error: (xhr) => { },
   });
 };
-
-petitionsLog.getPetitionStatusIcon = (PetitionStatus) => {
-  let statusHtml = ``;
-  switch (PetitionStatus) {
-    case "قيد الإنتظار":
-    case "التماس قيد الإنتظار": {
-      statusHtml = `<div class="statusBox pendingStatus">
-                            <i class="statusIcon fa-regular fa-clock"></i>
-                            <span>${PetitionStatus}</span>
-                        </div>`;
-      break;
-    }
-    case "التماس مرفوض": {
-      statusHtml = `<div class="statusBox warningStatus">
-                            <i class="statusIcon fa-regular fa-circle-xmark"></i>
-                            <span>${PetitionStatus}</span>
-                        </div>`;
-      break;
-    }
-    case "التماس مقبول": {
-      statusHtml = `<div class="statusBox closedStatus">
-                            <i class="statusIcon fa-regular fa-circle-check"></i>
-                            <span>${PetitionStatus}</span>
-                        </div>`;
-      break;
-    }
-  }
-  return statusHtml;
-};
 // if (ValidatedViolation.length > 0) {
 //     ValidatedViolation.forEach(record => {
 // let date = functions.getFormatedDate(record.ReconciliationExpiredDate)
@@ -734,6 +705,8 @@ petitionsLog.getPetitionStatusIcon = (PetitionStatus) => {
 // } else {
 //     ExpiredDate = "-"
 // }
+
+///////////////////////
 
 petitionsLog.approvePetition = (
   petitionID,
@@ -871,10 +844,10 @@ petitionsLog.approvePetition = (
   );
 
   // let petitionComments = $("#addPetitionComments").val()
-  // let oldPriceInput = Number($("#priceBeforePetition").val().replace(",", ""));
   let oldPriceInput = $("#priceBeforePetition").val().replace(/\,/g, "");
   oldPriceInput = Number(oldPriceInput);
-  let newPriceInput = $("#priceAfterPetition").val();
+  let newPriceInput = $("#priceAfterPetition").val().replace(/\,/g, "");
+  newPriceInput = Number(newPriceInput);
   let oldDateInput = $("#dateBeforePetition").val();
   let newDateInput = $("#dateAfterPetition").val();
   let filesExtension = [
@@ -966,27 +939,67 @@ petitionsLog.approvePetition = (
     newDateInput = $(e.currentTarget).val();
   });
 
-  $(".approvePetitionBtn").on("click", (e) => {
+  $(document).off("click", "#approvePetitionBtn");
+  $(document).on("click", "#approvePetitionBtn", function (e) {
+    console.log("hi");
+
     $(".overlay").addClass("active");
+
+    let priceValue = $("#priceAfterPetition").val();
+    let dateValue = $("#dateAfterPetition").val();
+
+    priceValue = priceValue ? priceValue.replace(/,/g, "").trim() : "";
+    dateValue = dateValue ? dateValue.trim() : "";
+
+    console.log("price:", priceValue);
+    console.log("date:", dateValue);
+
+    let hasPrice = priceValue.length > 0;
+    let hasDate = dateValue.length > 0;
+
+    if (!hasPrice && !hasDate) {
+      functions.warningAlert(
+        "من فضلك أدخل المبلغ الجديد أو التاريخ الجديد على الأقل"
+      );
+      $(".overlay").removeClass("active");
+      return;
+    }
+
+    let numericPrice = hasPrice ? Number(priceValue) : null;
+
+    if (hasPrice && numericPrice > oldPriceInput) {
+      functions.warningAlert(
+        "من فضلك قم بإدخال المبلغ الجديد لا يتجاوز المبلغ المحدد في المخالفة"
+      );
+      $(".overlay").removeClass("active");
+      return;
+    }
+
+    if (!allAttachments || allAttachments.length === 0) {
+      functions.warningAlert(
+        "من فضلك قم بإرفاق مؤيدات الموافقة على الالتماس"
+      );
+      $(".overlay").removeClass("active");
+      return;
+    }
+
     let oldDateNewFormat =
-      oldDateInput.split("-")[1] +
-      "-" +
-      oldDateInput.split("-")[0] +
-      "-" +
-      oldDateInput.split("-")[2];
-    let newDateFormat = newDateInput;
-    let isBiggerDate =
-      moment(newDateFormat).isAfter(moment(oldDateNewFormat)) ||
-      moment(newDateFormat).isSame(moment(oldDateNewFormat));
-    request = {
+      oldDateInput !== "-"
+        ? oldDateInput.split("-")[1] +
+        "-" +
+        oldDateInput.split("-")[0] +
+        "-" +
+        oldDateInput.split("-")[2]
+        : "";
+
+    let request = {
       request: {
         Data: {
           ID: violationTaskID,
           ViolationId: violationID,
-          TotalPriceDue: Number(newPriceInput),
-          ReconciliationOldExpiredDate:
-            oldDateInput == "-" ? "" : oldDateNewFormat,
-          ReconciliationExpiredDate: newDateInput,
+          TotalPriceDue: numericPrice,
+          ReconciliationOldExpiredDate: oldDateNewFormat,
+          ReconciliationExpiredDate: hasDate ? dateValue : null,
           Violation: {
             LawRoyalty: null,
             QuarryMaterialValue: null,
@@ -995,107 +1008,143 @@ petitionsLog.approvePetition = (
         },
       },
     };
-    // request = {
-    //   request: {
-    //     Data: {
-    //       ID: violationTaskID,
-    //       ViolationId: violationID,
-    //       ActualAmountPaid: Number(oldPriceInput),
-    //       TotalPriceDue: Number(newPriceInput),
-    //       ReconciliationOldExpiredDate:
-    //         oldDateInput == "-" ? "" : oldDateNewFormat,
-    //       ReconciliationExpiredDate: newDateInput,
-    //     },
-    //   },
-    // };
 
-    if (newPriceInput === "" || newDateInput == "") {
-      functions.warningAlert(
-        "من فضلك قم بإدخال قيمة واحدة على الأقل من قيم المبلغ أو التاريخ وبشكل صحيح",
-      );
-      $(".overlay").removeClass("active");
-    } else if (newPriceInput != "" && newDateInput != "") {
-      // remove condition on date must be > than old date (newDateInput != "" && isBiggerDate)
-      if (newDateInput != "") {
-        if (newPriceInput != "" && newPriceInput <= oldPriceInput) {
-          if (allAttachments != undefined && allAttachments.length > 0) {
-            petitionsLog.changePetitionStatus(
-              e,
-              petitionID,
-              violationID,
-              request,
-              petitionComments,
-              "قبول مع التعديل",
-            );
-          } else {
-            functions.warningAlert(
-              "من فضلك قم بإرفاق المستند الخاص بقبول الالتماس",
-            );
-            $(".overlay").removeClass("active");
-          }
-        } else {
-          functions.warningAlert(
-            "من فضلك قم بإدخال المبلغ الجديد لا يتجاوز المبلغ المحدد في المخالفة",
-          );
-          $(".overlay").removeClass("active");
-        }
-      } else {
-        functions.warningAlert(
-          "من فضلك قم بتحديد التاريخ الجديد للمصالحة لا يقل عن التاريخ المحدد في المخالفة",
-        );
-        $(".overlay").removeClass("active");
-      }
-    } else if (newPriceInput != "" && newDateInput == "") {
-      if (newPriceInput <= oldPriceInput) {
-        if (allAttachments != undefined && allAttachments.length > 0) {
-          $(".overlay").addClass("active");
-          petitionsLog.changePetitionStatus(
-            e,
-            petitionID,
-            violationID,
-            request,
-            petitionComments,
-            "قبول مع التعديل",
-          );
-        } else {
-          functions.warningAlert(
-            "من فضلك قم بإرفاق مؤيدات الموافقة على الالتماس",
-          );
-          $(".overlay").removeClass("active");
-        }
-      } else {
-        functions.warningAlert(
-          "من فضلك قم بإدخال المبلغ الجديد لا يتجاوز المبلغ المحدد في المخالفة",
-        );
-        $(".overlay").removeClass("active");
-      }
-    } else if (newDateInput != "" && newPriceInput == "") {
-      // remove condition on date must be > than old date [if (isBiggerDate replaced by newDateInput != "")]
-      if (newDateInput != "") {
-        if (allAttachments != undefined && allAttachments.length > 0) {
-          $(".overlay").addClass("active");
-          petitionsLog.changePetitionStatus(
-            e,
-            petitionID,
-            violationID,
-            request,
-            petitionComments,
-            "قبول مع التعديل",
-          );
-        } else {
-          functions.warningAlert(
-            "من فضلك قم بإرفاق مؤيدات الموافقة على الالتماس",
-          );
-          $(".overlay").removeClass("active");
-        }
-      } else {
-        functions.warningAlert(
-          "من فضلك قم بتحديد التاريخ الجديد للمصالحة لا يقل عن التاريخ المحدد في المخالفة",
-        );
-        $(".overlay").removeClass("active");
-      }
-    }
+    petitionsLog.changePetitionStatus(
+      e,
+      petitionID,
+      violationID,
+      request,
+      petitionComments,
+      "قبول مع التعديل"
+    );
   });
+
+
+
+
+  // $(".approvePetitionBtn").on("click", (e) => {
+  //   $(".overlay").addClass("active");
+  //   let oldDateNewFormat =
+  //     oldDateInput.split("-")[1] +
+  //     "-" +
+  //     oldDateInput.split("-")[0] +
+  //     "-" +
+  //     oldDateInput.split("-")[2];
+  //   let newDateFormat = newDateInput;
+  //   let isBiggerDate =
+  //     moment(newDateFormat).isAfter(moment(oldDateNewFormat)) ||
+  //     moment(newDateFormat).isSame(moment(oldDateNewFormat));
+  //   request = {
+  //     request: {
+  //       Data: {
+  //         ID: violationTaskID,
+  //         ViolationId: violationID,
+  //         TotalPriceDue: Number(newPriceInput),
+  //         ReconciliationOldExpiredDate:
+  //           oldDateInput == "-" ? "" : oldDateNewFormat,
+  //         ReconciliationExpiredDate: newDateInput,
+  //         Violation: {
+  //           LawRoyalty: null,
+  //           QuarryMaterialValue: null,
+  //           TotalEquipmentsPrice: null,
+  //         },
+  //       },
+  //     },
+  //   };
+  //   // request = {
+  //   //   request: {
+  //   //     Data: {
+  //   //       ID: violationTaskID,
+  //   //       ViolationId: violationID,
+  //   //       ActualAmountPaid: Number(oldPriceInput),
+  //   //       TotalPriceDue: Number(newPriceInput),
+  //   //       ReconciliationOldExpiredDate:
+  //   //         oldDateInput == "-" ? "" : oldDateNewFormat,
+  //   //       ReconciliationExpiredDate: newDateInput,
+  //   //     },
+  //   //   },
+  //   // };
+
+  //   if (newPriceInput == "" || newDateInput == "") {
+  //     functions.warningAlert(
+  //       "من فضلك قم بإدخال قيمة واحدة على الأقل من قيم المبلغ أو التاريخ وبشكل صحيح",
+  //     );
+  //     $(".overlay").removeClass("active");
+  //   } else if (newPriceInput != "" && newDateInput != "") {
+  //     // Add proper validation for both fields
+  //     if (newPriceInput <= oldPriceInput) {
+  //       if (allAttachments != undefined && allAttachments.length > 0) {
+  //         petitionsLog.changePetitionStatus(
+  //           e,
+  //           petitionID,
+  //           violationID,
+  //           request,
+  //           petitionComments,
+  //           "قبول مع التعديل",
+  //         );
+  //       } else {
+  //         functions.warningAlert(
+  //           "من فضلك قم بإرفاق المستند الخاص بقبول الالتماس",
+  //         );
+  //         $(".overlay").removeClass("active");
+  //       }
+  //     } else {
+  //       functions.warningAlert(
+  //         "من فضلك قم بإدخال المبلغ الجديد لا يتجاوز المبلغ المحدد في المخالفة",
+  //       );
+  //       $(".overlay").removeClass("active");
+  //     }
+  //   } else if (newPriceInput != "" && newDateInput == "") {
+  //     if (newPriceInput <= oldPriceInput) {
+  //       if (allAttachments != undefined && allAttachments.length > 0) {
+  //         $(".overlay").addClass("active");
+  //         petitionsLog.changePetitionStatus(
+  //           e,
+  //           petitionID,
+  //           violationID,
+  //           request,
+  //           petitionComments,
+  //           "قبول مع التعديل",
+  //         );
+  //       } else {
+  //         functions.warningAlert(
+  //           "من فضلك قم بإرفاق مؤيدات الموافقة على الالتماس",
+  //         );
+  //         $(".overlay").removeClass("active");
+  //       }
+  //     } else {
+  //       functions.warningAlert(
+  //         "من فضلك قم بإدخال المبلغ الجديد لا يتجاوز المبلغ المحدد في المخالفة",
+  //       );
+  //       $(".overlay").removeClass("active");
+  //     }
+  //   } else if (newDateInput != "" && newPriceInput == "") {
+  //     // remove condition on date must be > than old date [if (isBiggerDate replaced by newDateInput != "")]
+  //     if (newDateInput != "") {
+  //       if (allAttachments != undefined && allAttachments.length > 0) {
+  //         $(".overlay").addClass("active");
+  //         petitionsLog.changePetitionStatus(
+  //           e,
+  //           petitionID,
+  //           violationID,
+  //           request,
+  //           petitionComments,
+  //           "قبول مع التعديل",
+  //         );
+  //       } else {
+  //         functions.warningAlert(
+  //           "من فضلك قم بإرفاق مؤيدات الموافقة على الالتماس",
+  //         );
+  //         $(".overlay").removeClass("active");
+  //       }
+  //     } else {
+  //       functions.warningAlert(
+  //         "من فضلك قم بتحديد التاريخ الجديد للمصالحة لا يقل عن التاريخ المحدد في المخالفة",
+  //       );
+  //       $(".overlay").removeClass("active");
+  //     }
+  //   }
+  // });
 };
 petitionsLog.approveAndCancelPetition = (
   petitionID,
@@ -1188,7 +1237,6 @@ petitionsLog.approveAndCancelPetition = (
     );
   });
 };
-
 petitionsLog.changePetitionStatus = (
   e,
   petitionID,
@@ -1217,10 +1265,11 @@ petitionsLog.changePetitionStatus = (
     })
     .then((data) => {
       if (data.d.Status) {
-        petitionsLog.editPetition(e, petitionID, requestData);
+        // First API call successful, now make second API call
+        petitionsLog.editPetition(e, petitionID, violationID, requestData);
       } else {
         $(".overlay").removeClass("active");
-        functions.warningAlert("حدث خطأ ما, لم بتم إضافة المخالفة");
+        functions.warningAlert("حدث خطأ ما, لم يتم تحديث حالة الالتماس");
       }
     })
     .catch((err) => {
@@ -1228,8 +1277,7 @@ petitionsLog.changePetitionStatus = (
       functions.warningAlert("خطأ في إرسال البيانات لقاعدة البيانات");
     });
 };
-
-petitionsLog.editPetition = (e, petitionID, requestData) => {
+petitionsLog.editPetition = (e, petitionID, violationID, requestData) => {
   functions
     .requester(
       "/_layouts/15/Uranium.Violations.SharePoint/Tasks.aspx/Save",
@@ -1244,26 +1292,24 @@ petitionsLog.editPetition = (e, petitionID, requestData) => {
       if (requestData?.request?.Data?.Status == "Cancelled") {
         $(".overlay").removeClass("active");
         functions.sucessAlert("تم قبول وإلغاء الالتماس بنجاح ");
-      } else if (
-        data.d.Status &&
-        !requestData?.request?.Data?.Status == "Cancelled"
-      ) {
-        // petitionsLog.uploadPetitionAttachment(petitionID, "Petitions", "#addPetitionAttach", "Approve")
+      } else if (data.d.Status) {
+        // Second API call successful, now upload attachments
         petitionsLog.addNewPetitionAttachment(
           petitionID,
           "Petitions",
           "accepted",
         );
       } else {
-        functions.warningAlert("هناك خطأ في إرسال بيانات الطلب");
         $(".overlay").removeClass("active");
+        functions.warningAlert("هناك خطأ في إرسال بيانات تعديل المهمة");
       }
     })
     .catch((err) => {
       console.log("editPetition err", err);
+      $(".overlay").removeClass("active");
+      functions.warningAlert("خطأ في الاتصال بالخادم");
     });
 };
-
 petitionsLog.rejectPetition = (petitionId, violationID, violationCode) => {
   $(".overlay").removeClass("active");
   let popupHtml = `
@@ -1286,19 +1332,6 @@ petitionsLog.rejectPetition = (petitionId, violationID, violationCode) => {
                                         <textarea class="form-control rejectPetitionComments petitionComments customTextArea" id="rejectPetitionComments" placeholder="من فضلك قم بإدخال سبب الرفض"></textarea>
                                     </div>
                                 </div>
-                                <!-- <div class="col-12">
-                                    <div class="form-group customFormGroup">
-                                        <label for="rejectPetitionAttach" class="customLabel">إرفاق المؤيدات</label>
-                                        <div class="fileBox" id="dropContainer">
-                                            <div class="inputFileBox">
-                                                <img src="/Style Library/MiningViolations/images/fileIcon.svg" alt="File Icon">
-                                                <p class="dragDropFilesLabel">قم بالسحب والإفلات لرفع الملف , أو <a href="#!" class="attachFileLink">استعراض ملفاتي</a></p>
-                                                <input type="file" class="customInput attachFilesInput rejectPetitionAttach form-control" id="rejectPetitionAttach" accept="image/gif,image/svg,image/jpg,image/jpeg,image/png,.doc,.docx,.pdf,.xls,.xlsx,.pptx" multiple>
-                                            </div>
-                                        </div>
-                                        <div class="dropFilesArea" id="dropFilesArea"></div>
-                                    </div>
-                                </div> -->
                             </div>
                         </div>
                     </div>
@@ -1322,106 +1355,32 @@ petitionsLog.rejectPetition = (petitionId, violationID, violationCode) => {
     popupHtml,
   );
   let petitionRejectReason = $("#rejectPetitionComments").val();
-  let filesExtension = [
-    "gif",
-    "svg",
-    "jpg",
-    "jpeg",
-    "png",
-    "doc",
-    "docx",
-    "pdf",
-    "xls",
-    "xlsx",
-    "pptx",
-  ];
-  let allAttachments;
-  let countOfFiles;
   let request = {};
 
-  $("#rejectPetitionAttach").on("change", (e) => {
-    allAttachments = $(e.currentTarget)[0].files;
-    if (allAttachments.length > 0) {
-      $(e.currentTarget)
-        .parents(".fileBox")
-        .siblings(".dropFilesArea")
-        .show()
-        .empty();
-    }
-    for (let i = 0; i < allAttachments.length; i++) {
-      $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").append(`
-                <div class="file">
-                    <p class="fileName">${allAttachments[i].name}</p>
-                    <span class="deleteFile" data-index="${i}"><i class="fa-sharp fa-solid fa-x"></i></span>
-                </div>
-            `);
-    }
-    $(".deleteFile").on("click", (event) => {
-      let index = $(event.currentTarget).closest(".file").index();
-      $(event.currentTarget).closest(".file").remove();
-      let fileBuffer = new DataTransfer();
-      for (let i = 0; i < allAttachments.length; i++) {
-        if (index !== i) {
-          fileBuffer.items.add(allAttachments[i]);
-        }
-      }
-      allAttachments = fileBuffer.files;
-
-      countOfFiles = allAttachments.length;
-      if (countOfFiles == 0) {
-        $(e.currentTarget)
-          .parents(".fileBox")
-          .siblings(".dropFilesArea")
-          .hide();
-      }
-    });
-    for (let i = 0; i < allAttachments.length; i++) {
-      let fileSplited = allAttachments[i].name.split(".");
-      let fileExt = fileSplited[fileSplited.length - 1].toLowerCase();
-      if ($.inArray(fileExt, filesExtension) == -1) {
-        functions.warningAlert(
-          "من فضلك أدخل الملفات بالامتدادات المسموح بها فقط",
-        );
-        $(e.currentTarget)
-          .parents(".fileBox")
-          .siblings(".dropFilesArea")
-          .hide();
-        $(e.currentTarget).val("");
-      }
-    }
-  });
   $("#rejectPetitionComments").on("keyup", (e) => {
     petitionRejectReason = $(e.currentTarget).val().trim();
   });
+
   $(".rejectPetitionBtn").on("click", (e) => {
     if (petitionRejectReason != "") {
-      if (allAttachments != null && allAttachments.length > 0) {
-        $(".overlay").addClass("active");
-        request = {
-          Request: {
-            ID: petitionId,
-            Title: "تم رفض الالتماس",
-            ViolationId: violationID,
-            Status: "التماس مرفوض",
-            Comments: petitionRejectReason,
-          },
-        };
+      $(".overlay").addClass("active");
+      request = {
+        Request: {
+          ID: petitionId,
+          Title: "تم رفض الالتماس",
+          ViolationId: violationID,
+          Status: "التماس مرفوض",
+          Comments: petitionRejectReason,
+        },
+      };
 
-        petitionsLog.rejectPetitionAPI(
-          request,
-          petitionId,
-          "#rejectPetitionAttach",
-        );
-      } else {
-        functions.warningAlert("من فضلك قم بإرفاق مستند الالتماس");
-      }
+      petitionsLog.rejectPetitionAPI(request, petitionId);
     } else {
       functions.warningAlert("من فضلك قم بإدخال سبب رفض الالتماس");
     }
   });
 };
-
-petitionsLog.rejectPetitionAPI = (request, petitionId, attachInput) => {
+petitionsLog.rejectPetitionAPI = (request, petitionId) => {
   functions
     .requester(
       "/_layouts/15/Uranium.Violations.SharePoint/Petitions.aspx/Save",
@@ -1433,14 +1392,13 @@ petitionsLog.rejectPetitionAPI = (request, petitionId, attachInput) => {
       }
     })
     .then((data) => {
-      petitionsLog.uploadPetitionAttachment(
-        petitionId,
-        "Petitions",
-        attachInput,
-        "Reject",
-      );
+      $(".overlay").removeClass("active");
+      functions.sucessAlert("تم رفض الالتماس المقدم");
     })
-    .catch((err) => { });
+    .catch((err) => {
+      $(".overlay").removeClass("active");
+      functions.warningAlert("حدث خطأ أثناء رفض الالتماس");
+    });
 };
 petitionsLog.uploadPetitionAttachment = (
   petitionId,
@@ -1473,7 +1431,6 @@ petitionsLog.uploadPetitionAttachment = (
     error: (err) => { },
   });
 };
-
 petitionsLog.addNewPetitionAttachment = (
   petitionID,
   ListName,
@@ -1564,7 +1521,6 @@ petitionsLog.filterPetitionsLog = (e) => {
     petitionsLog.getPetitions();
   }
 };
-
 petitionsLog.resetFilter = (e) => {
   e.preventDefault();
   $("#violationCode").val("");

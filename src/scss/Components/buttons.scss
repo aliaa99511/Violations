@@ -1,5 +1,6 @@
 .buttonsBox {
     @include flexRow;
+
     .btnStyle {
         @include flexRow;
         justify-content: center;
@@ -12,9 +13,11 @@
         font-family: CairoB;
         margin-inline-end: 0.5rem;
         cursor: pointer;
+
         &:last-child {
             margin-inline-end: 0;
         }
+
         // &.specialBtn{
         //     width: calc(100% / 2);
         // }
@@ -22,14 +25,22 @@
             border: 2px solid $customBlue;
             color: $customBlue;
         }
+
         &.confirmBtnGreen {
             border: 2px solid $customGreen;
             color: $customGreen;
         }
+
+        &.confirmBtnBlue {
+            border: 2px solid $customBlue;
+            color: $customBlue;
+        }
+
         &.cancelBtn {
             border: 2px solid #666;
             color: #666;
         }
+
         &#AcceptDetailsPopup {
             font: normal normal bold 13px/24px Cairo;
             letter-spacing: 0px;
@@ -38,6 +49,7 @@
             border: 2px solid #015642;
             border-radius: 5px;
         }
+
         &.searchBtn {
             background-color: $customBlue;
             color: $white;
@@ -48,6 +60,7 @@
             font-family: Cairo;
             border-radius: 3px;
         }
+
         &.resetBtn {
             background-color: transparent;
             color: $customBlue;
@@ -76,13 +89,16 @@
             //     // margin-right: 36px;
             // }
         }
+
         &.popupBtn {
             height: 45px;
         }
     }
+
     &.centerButtonsBox {
         justify-content: center;
     }
+
     &.spaceBetweenButtonsBox {
         justify-content: space-between;
     }
@@ -96,6 +112,7 @@
     0% {
         transform: rotate(0deg);
     }
+
     100% {
         transform: rotate(360deg);
     }

@@ -5,33 +5,60 @@
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Document</title>
+    <title>المخالفات قيد السداد</title>
 </head>
 
 <body>
-    <div class="ExternalViolationLog" id="ExternalViolationLogContainer">
-        <div id="identify" page-name="ExternalViolationLog" site-name="ViolationsBranch" hidden></div>
+
+    <div class="pendingPaymentLog" id="pendingPaymentLogContainer">
+        <div id="identify" page-name="pendingPaymentLog" site-name="ViolationsBranch" hidden></div>
         <div class="mainContainer">
             <div class="contentContainer">
                 <div class="filterBox greenFilterBox">
                     <div class="row">
                         <div class="col-6 col-md-3">
                             <div class="form-group customFormGroup">
-                                <label for="violationCode" class="customLabel greenLabel">رقم المخالفة
+                                <label for="violationSector" class="customLabel greenLabel">القطاع
                                 </label>
                                 <div class="selectBox smallSelectBox">
-                                    <input id="violationCode" type="text" class="form-control"
-                                        placeholder="ادخل رقم المخالفة" />
+                                    <select class="form-control violationSector greenSelect" id="violationSector">
+                                        <option value="0" disabled selected hidden>الكل</option>
+                                    </select>
+                                    <i class="fa-solid fa-sort-down"></i>
                                 </div>
                             </div>
                         </div>
                         <div class="col-6 col-md-3">
                             <div class="form-group customFormGroup">
-                                <label for="caseNumber" class="customLabel greenLabel">رقم القضية
+                                <label for="violationCategory" class="customLabel greenLabel">تصنيف المخالفة
                                 </label>
                                 <div class="selectBox smallSelectBox">
-                                    <input id="caseNumber" type="text" class="form-control"
-                                        placeholder="ادخل رقم القضية" />
+                                    <select class="form-control violationCategory" id="violationCategory">
+                                        <option value="" disabled selected hidden>الكل</option>
+                                    </select>
+                                    <i class="fa-solid fa-sort-down"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="form-group customFormGroup">
+                                <label for="TypeofViolation" class="customLabel greenLabel">نوع المخالفة
+                                </label>
+                                <div class="selectBox smallSelectBox">
+                                    <select class="form-control TypeofViolation greenSelect" id="TypeofViolation">
+                                        <option data-id="0" value="0" disabled selected hidden>
+                                            الكل
+                                        </option>
+                                    </select>
+                                    <i class="fa-solid fa-sort-down"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="form-group customFormGroup">
+                                <label for="violationSearch" class="customLabel greenLabel">بحث...</label>
+                                <div class="selectBox smallSelectBox">
+                                    <input id="violationSearch" type="text" class="form-control" placeholder="البحث" />
                                 </div>
                             </div>
                         </div>
@@ -62,7 +89,7 @@
                                 <div class="btnStyle resetBtn resetGreenBtn">
                                     <i class="fa-solid fa-rotate-left"></i>
                                 </div>
-                                <div class="btnStyle searchBtn searchGreenBtn">
+                                <div class="btnStyle searchBtn searchGreenBtn" type="button">
                                     <i class="fa-solid fa-magnifying-glass"></i>
                                 </div>
 
@@ -82,7 +109,7 @@
                             <i class="fa-solid fa-download"></i>
                         </div>
                     </div>
-                    <table id="ExternalViolationLog" class="table tableWithIcons greenTable"></table>
+                    <table id="PendingPaymentLog" class="table tableWithIcons greenTable"></table>
                 </div>
 
                 <div id="paginationID" class="paginationBox" current="" total="" style="display: flex"></div>

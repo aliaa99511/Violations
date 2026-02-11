@@ -4,7 +4,7 @@ import functions from "./functions";
 let confirmPopup = {};
 
 
-confirmPopup.updateTaskStatusPopup = (violationTaskID,violationCode,violationId,Type,TotalPrice = 0,offenderType="")=>{
+confirmPopup.updateTaskStatusPopup = (violationTaskID, violationCode, violationId, Type, TotalPrice = 0, offenderType = "") => {
     $(".overlay").removeClass("active");
     let popupHtml = ``
     let popupTitle = ``;
@@ -18,8 +18,8 @@ confirmPopup.updateTaskStatusPopup = (violationTaskID,violationCode,violationId,
     //     popupTitle = `إعدام المخالفة رقم (${violationCode})`
     //     popupMessage = `هل حقاً تريد إعدام المخالفة رقم (${violationCode}) ؟`;
     // }
-    
-    if(Type == "Approve"){
+
+    if (Type == "Approve") {
         popupTitle = `قبول المخالفة رقم (${violationCode})`
         popupMessage = `هل حقاً تريد تأكيد قبول المخالفة رقم (${violationCode}) ؟`;
     }
@@ -47,15 +47,15 @@ confirmPopup.updateTaskStatusPopup = (violationTaskID,violationCode,violationId,
             </div>
         </div>
     `;
-    functions.declarePopup(["generalPopupStyle", "greenPopup", "statusPopup"],popupHtml);
+    functions.declarePopup(["generalPopupStyle", "greenPopup", "statusPopup"], popupHtml);
 
-    $(".confirmEditStatus").on("click",(e)=>{
+    $(".confirmEditStatus").on("click", (e) => {
         e.preventDefault()
         $(".overlay").addClass("active");
-        confirmPopup.confirmTaskStatus(violationTaskID,violationId,Type,TotalPrice,offenderType)
+        confirmPopup.confirmTaskStatus(violationTaskID, violationId, Type, TotalPrice, offenderType)
     })
 }
-confirmPopup.confirmTaskStatus = (violationTaskID,violationId,Type,TotalPrice = 0,offenderType="")=>{
+confirmPopup.confirmTaskStatus = (violationTaskID, violationId, Type, TotalPrice = 0, offenderType = "") => {
     let request;
     let sucessMessage = "";
     let Title = "";
@@ -75,49 +75,49 @@ confirmPopup.confirmTaskStatus = (violationTaskID,violationId,Type,TotalPrice = 
     //         }
     //     }
     // }
-    if(Type == "Kill"){
+    if (Type == "Kill") {
         sucessMessage = "تم إعدام الطلب"
-        Title="تم إعدام الطلب"
+        Title = "تم إعدام الطلب"
         request = {
-            Data:{
-                ID:violationTaskID,
+            Data: {
+                ID: violationTaskID,
                 Title: Title,
                 Status: "Confirmed",
-                ViolationId:violationId,
+                ViolationId: violationId,
                 PaymentStatus: "معدومة",
             }
         }
     }
-    if(Type == "Approve"){
+    if (Type == "Approve") {
         sucessMessage = "تم الموافقة على الطلب"
-        Title="تم الموافقة على الطلب"
+        Title = "تم الموافقة على الطلب"
         request = {
-            Data:{
-                ID:violationTaskID,
+            Data: {
+                ID: violationTaskID,
                 Title: Title,
                 Status: "Approved",
-                ViolationId:violationId,
+                ViolationId: violationId,
                 PaymentStatus: "قيد الإنتظار",
             }
         }
     }
-    functions.requester("/_layouts/15/Uranium.Violations.SharePoint/Tasks.aspx/Save", {request})
-    .then((response) => {
-      if (response.ok) {
-        return response.json();
-      }
-    })
-    .then((data) => {
-        // if(Type == "Reffer"){
-        //     confirmPopup.addNewCase(violationId,sucessMessage)
-        // }else{
+    functions.requester("/_layouts/15/Uranium.Violations.SharePoint/Tasks.aspx/Save", { request })
+        .then((response) => {
+            if (response.ok) {
+                return response.json();
+            }
+        })
+        .then((data) => {
+            // if(Type == "Reffer"){
+            //     confirmPopup.addNewCase(violationId,sucessMessage)
+            // }else{
             $(".overlay").removeClass("active");
             functions.sucessAlert(sucessMessage);
-        // }
-    })
-    .catch((err) => {
-      console.log(err);
-    });
+            // }
+        })
+        .catch((err) => {
+            console.log(err);
+        });
 };
 
 // confirmPopup.addNewCase = (violationId,Message) => {

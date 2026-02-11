@@ -5,7 +5,7 @@ import pagination from "../../Shared/Pagination";
 let PendingViolations = {};
 PendingViolations.pageIndex = 1;
 PendingViolations.destroyTable = false;
-// let destroyTable = false
+
 PendingViolations.getPendingViolations = (
   pageIndex = 1,
   destroyTable = false,
@@ -17,7 +17,10 @@ PendingViolations.getPendingViolations = (
   ),
   ViolationGeneralSearch = ""
 ) => {
-  const theCode = $("#violationCategory").val() == "Quarry" ? { QuarryCode: $("#theCode").val() } : { CarNumber: $("#theCode").val() }
+  const theCode = $("#violationCategory").val() == "Quarry"
+    ? { QuarryCode: $("#theCode").val() }
+    : { CarNumber: $("#theCode").val() };
+
   let request = {
     Data: {
       ...theCode,
@@ -83,10 +86,7 @@ PendingViolations.getPendingViolations = (
 
 PendingViolations.setPaginations = (TotalPages, RowsPerPage) => {
   pagination.draw("#paginationID", TotalPages, RowsPerPage);
-
   pagination.start("#paginationID", PendingViolations.getPendingViolations);
-  // pagination.reset()
-  // pagination.scrollToElement(el, length)
   pagination.activateCurrentPage();
 };
 
@@ -115,8 +115,7 @@ PendingViolations.PendingviolationTable = (Pendingviolation, destroyTable) => {
           `<div class="violationArName">${functions.getViolationArabicName(
             taskViolation.OffenderType
           )}</div>`,
-          `<div class="violationCode" data-offendertype="${taskViolation.OffenderType
-          }">${taskViolation.OffenderType == "Vehicle"
+          `<div class="violationCode" data-offendertype="${taskViolation.OffenderType}">${taskViolation.OffenderType == "Vehicle"
             ? taskViolation.CarNumber
             : taskViolation.QuarryCode != ""
               ? taskViolation.QuarryCode
@@ -204,7 +203,7 @@ PendingViolations.PendingviolationTable = (Pendingviolation, destroyTable) => {
         .find(".controls")
         .children(".hiddenListBox")
         .find(".controlsList").append(`
-            <li><a href="#" class="ApprovedViolation"">قبول المخالفة</a></li> 
+            <li><a href="#" class="ApprovedViolation">قبول المخالفة</a></li> 
             <li><a href="#" class="RejectedViolations">رفض المخالفة</a></li>   
         `);
       jQueryRecord

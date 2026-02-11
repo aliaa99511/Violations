@@ -29,6 +29,12 @@ import petitionsLog from "./Shared/petitionslog";
 import pagination from "./Shared/Pagination";
 import sideMenuFunctions from "./Modules/sideMenu";
 import externalViolationForm from "./Modules/ViolationsBranch/ExternalViolationForm";
+import pendingPayment from "./Modules/ViolationsBranch/PendingPaymentLog";
+import vehicleViolationReferral from "./Modules/ViolationsBranch/CarViolationReferral";
+import quarryViolationReferral from "./Modules/ViolationsBranch/QuarryViolationReferral";
+import quarryViolationReferralRecords from "./Modules/ViolationsRecorder/QuarryViolationReferralRecords";
+import vehicleViolationReferralRecords from "./Modules/ViolationsRecorder/CarViolationReferralRecords";
+import ExternalViolationLog from "./Modules/ViolationsBranch/ExternalViolationLog";
 
 $(".PreLoader").addClass("active");
 $(window).on("load", () => {
@@ -154,6 +160,73 @@ $(window).on("load", () => {
           rejectedViolationsRecords.filterViolationsLog(e);
         });
       }
+      if (functions.getPageName() === "QuarryViolationReferralRecords") {
+        functions.setPageMetaData("إحالة مخالفة محجرية");
+
+        // Initialize datepickers for date inputs
+        functions.inputDateFormat("#RefferedDateFrom", "", "", "dd-mm-yyyy");
+        functions.inputDateFormat("#RefferedDateTo", "", "", "dd-mm-yyyy");
+
+        // Load status dropdown first
+        sharedApis.getCasesStatus("#CaseStatus", function () {
+          // After loading options, initialize the page
+          console.log("Case status loaded, initializing quarry violation referral...");
+
+          // Set default value to "قيد انتظار تأشيرات النيابة"
+          $("#CaseStatus").val("قيد انتظار تأشيرات النيابة");
+
+          // Load initial data
+          quarryViolationReferralRecords.init();
+        });
+
+        // Setup search button
+        $(".searchBtn").on("click", (e) => {
+          e.preventDefault();
+          pagination.reset();
+          quarryViolationReferralRecords.filterQuarryViolationReferralsRecords(e);
+        });
+
+        // Setup form submission on Enter
+        $(".filterBox input").on("keypress", function (e) {
+          if (e.which === 13) {
+            quarryViolationReferralRecords.filterQuarryViolationReferralsRecords(e);
+          }
+        });
+      }
+      if (functions.getPageName() === "vehicleViolationReferralRecordsLog") {
+        functions.setPageMetaData("حظر عربة/معدة");
+
+        // Initialize datepickers for date inputs
+        functions.inputDateFormat("#RefferedDateFrom", "", "", "dd-mm-yyyy");
+        functions.inputDateFormat("#RefferedDateTo", "", "", "dd-mm-yyyy");
+
+        // Load status dropdown first
+        sharedApis.getCasesStatus("#CaseStatus", function () {
+          // After loading options, initialize the page
+          console.log("Case status loaded, initializing quarry violation referral...");
+
+          // Set default value to "قيد انتظار تأشيرات النيابة"
+          $("#CaseStatus").val("قيد انتظار تأشيرات النيابة");
+
+          // Load initial data
+          vehicleViolationReferralRecords.init();
+        });
+
+        // Setup search button
+        $(".searchBtn").on("click", (e) => {
+          e.preventDefault();
+          pagination.reset();
+          vehicleViolationReferralRecords.filterVehicleViolationReferralsRecords(e);
+        });
+
+        // Setup form submission on Enter
+        $(".filterBox input").on("keypress", function (e) {
+          if (e.which === 13) {
+            vehicleViolationReferralRecords.filterVehicleViolationReferralsRecords(e);
+          }
+        });
+      }
+
       if (functions.getPageName() === "DashBoard") {
         functions.setPageMetaData("الصفحة الرئيسية");
         $(".PreLoader").removeClass("active");
@@ -327,24 +400,117 @@ $(window).on("load", () => {
       }
       if (functions.getPageName() === "ExternalViolationForm") {
         functions.setPageMetaData("إنشاء مخالفات ضبط خارجية");
-        externalViolationForm.formActions();
-        externalViolationForm.violatorDetails();
+        externalViolationForm.init();
       }
-      // if (functions.getPageName() === "ExternalReviewedLog") {
-      //   $(".PreLoader").removeClass("active");
-      //   functions.setPageMetaData("سجل مخالفات ضبط خارجية");
-      //   externalReviewed.getExternalReviewedViolations();
-      //   $(".filterBox")
-      //     .find("#violatorNationalId")
-      //     .on("keypress", (e) => {
-      //       return functions.isNumberKey(e);
-      //     });
-      //   $(".searchBtn").on("click", (e) => {
-      //     e.preventDefault();
-      //     pagination.reset();
-      //     // externalReviewed.filterExternalReviewedViolations(e);
-      //   });
-      // }
+      if (functions.getPageName() === "ExternalViolationLog") {
+        functions.setPageMetaData("سجل مخالفات ضبط خارجية");
+        sharedApis.getViolationSectors("#violationSector");
+        sharedApis.getOffenderType("#violationCategory");
+        sharedApis.getViolationType("#TypeofViolation");
+
+        // Initialize datepickers for date inputs
+        functions.inputDateFormat("#createdFrom", "", "", "dd-mm-yyyy");
+        functions.inputDateFormat("#createdTo", "", "", "dd-mm-yyyy");
+
+        // Call init instead of getExternalViolations directly
+        ExternalViolationLog.init(); // This will setup events AND call the API
+
+        $(".searchBtn").on("click", (e) => {
+          e.preventDefault();
+          pagination.reset();
+          ExternalViolationLog.filterExternalViolations(e);
+        });
+        $(".resetBtn").on("click", (e) => {
+          ExternalViolationLog.resetFilter(e);
+        });
+      }
+      if (functions.getPageName() === "pendingPaymentLog") {
+        functions.setPageMetaData("سجل المخالفات قيد السداد");
+        sharedApis.getViolationSectors("#violationSector");
+        sharedApis.getOffenderType("#violationCategory");
+        sharedApis.getViolationType("#TypeofViolation");
+
+        // Initialize datepickers for date inputs
+        functions.inputDateFormat("#createdFrom", "", "", "dd-mm-yyyy");
+        functions.inputDateFormat("#createdTo", "", "", "dd-mm-yyyy");
+
+        pendingPayment.getPendingPayment();
+
+        $(".searchBtn").on("click", (e) => {
+          e.preventDefault();
+          pendingPayment.filterPaymentsLog(e);
+        });
+
+        $(".resetBtn").on("click", (e) => {
+          pendingPayment.resetFilter(e);
+        });
+      }
+      if (functions.getPageName() === "QuarryViolationReferralLog") {
+        functions.setPageMetaData("إحالة مخالفة محجرية");
+
+        // Initialize datepickers for date inputs
+        functions.inputDateFormat("#RefferedDateFrom", "", "", "dd-mm-yyyy");
+        functions.inputDateFormat("#RefferedDateTo", "", "", "dd-mm-yyyy");
+
+        // Load status dropdown first
+        sharedApis.getCasesStatus("#CaseStatus", function () {
+          // After loading options, initialize the page
+          console.log("Case status loaded, initializing quarry violation referral...");
+
+          // Set default value to "قيد انتظار تأشيرات النيابة"
+          $("#CaseStatus").val("قيد انتظار تأشيرات النيابة");
+
+          // Load initial data
+          quarryViolationReferral.init();
+        });
+
+        // Setup search button
+        $(".searchBtn").on("click", (e) => {
+          e.preventDefault();
+          pagination.reset();
+          quarryViolationReferral.filterQuarryViolationReferrals(e);
+        });
+
+        // Setup form submission on Enter
+        $(".filterBox input").on("keypress", function (e) {
+          if (e.which === 13) {
+            quarryViolationReferral.filterQuarryViolationReferrals(e);
+          }
+        });
+      }
+      if (functions.getPageName() === "VehicleViolationReferralLog") {
+        functions.setPageMetaData("حظر عربة/معدة");
+
+        // Initialize datepickers for date inputs
+        functions.inputDateFormat("#RefferedDateFrom", "", "", "dd-mm-yyyy");
+        functions.inputDateFormat("#RefferedDateTo", "", "", "dd-mm-yyyy");
+
+        // Load status dropdown first
+        sharedApis.getCasesStatus("#CaseStatus", function () {
+          // After loading options, initialize the page
+          console.log("Case status loaded, initializing quarry violation referral...");
+
+          // Set default value to "قيد انتظار تأشيرات النيابة"
+          $("#CaseStatus").val("قيد انتظار تأشيرات النيابة");
+
+          // Load initial data
+          vehicleViolationReferral.init();
+        });
+
+        // Setup search button
+        $(".searchBtn").on("click", (e) => {
+          e.preventDefault();
+          pagination.reset();
+          vehicleViolationReferral.filterVehicleViolationReferrals(e);
+        });
+
+        // Setup form submission on Enter
+        $(".filterBox input").on("keypress", function (e) {
+          if (e.which === 13) {
+            vehicleViolationReferral.filterVehicleViolationReferrals(e);
+          }
+        });
+      }
       if (functions.getPageName() === "DashBoard") {
         functions.setPageMetaData("الصفحة الرئيسية");
         $(".PreLoader").removeClass("active");

@@ -105,22 +105,19 @@ runningViolations.RunningViolationTable = (RunningViolation, destroyTable) => {
           `<div class="violationArName">${functions.getViolationArabicName(
             taskViolation.OffenderType
           )}</div>`,
-          `<div class="violationCode">${
-            taskViolation.OffenderType == "Vehicle"
-              ? taskViolation.CarNumber
-              : taskViolation.QuarryCode != ""
+          `<div class="violationCode">${taskViolation.OffenderType == "Vehicle"
+            ? taskViolation.CarNumber
+            : taskViolation.QuarryCode != ""
               ? taskViolation.QuarryCode
               : "---"
           }</div>`,
-          `<div class="companyName">${
-            taskViolation.ViolatorCompany != ""
-              ? taskViolation.ViolatorCompany
-              : "-"
+          `<div class="companyName">${taskViolation.ViolatorCompany != ""
+            ? taskViolation.ViolatorCompany
+            : "-"
           }</div>`,
-          `<div class="violationType" data-typeid="${
-            taskViolation.OffenderType == "Quarry"
-              ? taskViolation.ViolationTypes.ID
-              : 0
+          `<div class="violationType" data-typeid="${taskViolation.OffenderType == "Quarry"
+            ? taskViolation.ViolationTypes.ID
+            : 0
           }">${functions.getViolationArabicName(
             taskViolation.OffenderType,
             taskViolation?.ViolationTypes?.Title

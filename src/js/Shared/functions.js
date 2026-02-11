@@ -994,36 +994,46 @@ functions.commonEditData = (
 functions.getPetitionsStatus = (petitionStatus) => {
   let statusHtml = ``;
   switch (petitionStatus) {
+    case "قيد الإنتظار":
     case "التماس قيد الإنتظار": {
       statusHtml = `<div class="statusBox pendingStatus">
-                <i class="statusIcon fa-regular fa-clock"></i>
-                <span class="statusText">قيد الإنتظار</span>
-            </div>`;
-      break;
-    }
-    case "قبول وإلغاء المخالفة": {
-      statusHtml = `<div class="statusBox acceptWithEditStatus">
-                 <i class="statusIcon fa-regular fa-circle-check"></i>
-                <span class="statusText">قبول وإلغاء المخالفة</span>
-            </div>`;
+                            <i class="statusIcon fa-regular fa-clock"></i>
+                            <span>${petitionStatus}</span>
+                        </div>`;
       break;
     }
     case "التماس مرفوض": {
       statusHtml = `<div class="statusBox warningStatus">
-                <i class="statusIcon fa-regular fa-circle-xmark"></i>
-                <span class="statusText">التماس مرفوض</span>
-            </div>`;
+                            <i class="fa-regular fa-circle-xmark"></i>
+                            <span>${petitionStatus}</span>
+                        </div>`;
       break;
     }
     case "قبول مع التعديل": {
-      statusHtml = `<div class="statusBox closedStatus">
-                <i class="statusIcon fa-regular fa-circle-check"></i>
-                <span class="statusText">قبول مع التعديل</span>
-            </div>`;
+      statusHtml = `<div class="statusBox modifiedStatus">
+                            <i class="statusIcon fa-regular fa-circle-check"></i>
+                            <span>${petitionStatus}</span>
+                        </div>`;
+      break;
+    }
+    case "قبول وإلغاء المخالفة": {
+      statusHtml = `<div class="statusBox approvedCancelStatus">
+                            <i class="statusIcon fa-regular fa-circle-check"></i>
+                            <span>${petitionStatus}</span>
+                        </div>`;
       break;
     }
   }
-
   return statusHtml;
+};
+
+
+export const closePopup = () => {
+  $(".popup").remove();
+  $(".overlay").removeClass("active");
+};
+functions.closePopup = () => {
+  $(".popup").remove();
+  $(".overlay").removeClass("active");
 };
 export default functions;
