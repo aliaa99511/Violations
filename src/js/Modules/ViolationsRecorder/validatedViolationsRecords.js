@@ -3,32 +3,51 @@ import DetailsPopup from "../../Shared/detailsPopupContent";
 import pagination from "../../Shared/Pagination";
 
 let validatedViolationsRecords = {};
-// validatedViolationsRecords.pageIndex = 1;
-validatedViolationsRecords.dataObj = {
-  destroyTable: false,
-  OffenderType: "",
-  ViolationType: 0,
-  ViolationStatus: "",
-  //MultipleStatus:["Confirmed","Paid","Exceeded","Paid After Reffered","Saved"],
-};
+validatedViolationsRecords.pageIndex = 1;
+validatedViolationsRecords.destroyTable = false;
 
 validatedViolationsRecords.getViolations = (
   pageIndex = 1,
   destroyTable = false,
-  ViolationSector = Number(
-    $("#violationSector").children("option:selected").val()
-  ),
-  ViolationType = Number(
-    $("#TypeofViolation").children("option:selected").data("id")
-  ),
-  ViolationStatus = $("#ViolationStatus").children("option:selected").val(),
+  ViolationSector = Number($("#violationSector").children("option:selected").val()),
+  ViolationType = Number($("#TypeofViolation").children("option:selected").data("id")),
   ViolationGeneralSearch = $("#violationSearch").val()
 ) => {
-  let UserId = _spPageContextInfo.userId;
-  const theCode =
-    $("#violationCategory").val() == "Quarry"
-      ? { QuarryCode: $("#theCode").val() }
-      : { CarNumber: $("#theCode").val() };
+  // Check if theCode field has a value but violationCategory is empty
+  const theCodeValue = $("#theCode").val();
+  const violationCategoryValue = $("#violationCategory").val();
+
+  if (theCodeValue && theCodeValue.trim() !== "" && (!violationCategoryValue || violationCategoryValue === "")) {
+    functions.warningAlert("من فضلك قم باختيار تصنيف المخالفة قبل إدخال رقم المحجر/عربة/معدة");
+    $(".PreLoader").removeClass("active");
+    return;
+  }
+
+  const theCode = violationCategoryValue == "Quarry"
+    ? { QuarryCode: $("#theCode").val() }
+    : { CarNumber: $("#theCode").val() };
+
+  // Get selected status
+  const selectedStatus = $("#ViolationStatus").children("option:selected").val();
+
+  // Determine MultipleStatus based on selected status
+  let multipleStatus = [];
+
+  if (selectedStatus && selectedStatus !== "") {
+    // If a specific status is selected, only use that status
+    multipleStatus = [selectedStatus];
+  } else {
+    // If no status selected, use default list (excluding any you don't want)
+    multipleStatus = [
+      "Confirmed",
+      "Paid",
+      "Exceeded",
+      "Paid After Reffered",
+      "Saved",
+      "Cancelled"
+      // "UnderPayment",
+    ];
+  }
 
   let request = {
     Data: {
@@ -37,24 +56,17 @@ validatedViolationsRecords.getViolations = (
       PageIndex: pagination.currentPage,
       ColName: "created",
       SortOrder: "desc",
-      Status: validatedViolationsRecords.dataObj.ViolationStatus,
-      // MultipleStatus:validatedViolationsRecords.dataObj.MultipleStatus,
-      MultipleStatus: [
-        "Confirmed",
-        "Paid",
-        "Exceeded",
-        "Paid After Reffered",
-        "Saved",
-      ],
-      Sector: 0,
-      ViolationType: validatedViolationsRecords.dataObj.ViolationType,
-      OffenderType: validatedViolationsRecords.dataObj.OffenderType,
-      IsNew: true,
+      Status: selectedStatus, // Keep this for reference
+      MultipleStatus: multipleStatus, // Use dynamic multipleStatus
       ViolatorName: $("#violatorName").val(),
       NationalID: $("#nationalID").val(),
       ViolationCode: $("#violationCode").val(),
-      ViolationsZone: $("#violationZone").val(),
+      ViolationType: ViolationType,
+      SectorConfigId: ViolationSector,
       GlobalSearch: ViolationGeneralSearch,
+      Sector: 0,
+      OffenderType: $("#violationCategory").val(),
+      ViolationsZone: $("#violationZone").val(),
       CreatedFrom: $("#createdFrom").val()
         ? moment($("#createdFrom").val(), "DD-MM-YYYY").format("YYYY-MM-DD")
         : null,
@@ -75,50 +87,115 @@ validatedViolationsRecords.getViolations = (
     })
     .then((data) => {
       $(".PreLoader").removeClass("active");
-      let violationsData = [];
+      let ValidatedViolationData = [];
+
       let ItemsData = data.d.Result;
-      if (data.d.Result.GridData != null) {
-        if (data.d.Result.GridData.length > 0) {
-          Array.from(data.d.Result.GridData).forEach((element) => {
-            violationsData.push(element);
+      if (data.d.Result?.GridData != null) {
+        if (data.d.Result.GridData?.length > 0) {
+          Array.from(data.d.Result?.GridData).forEach((element) => {
+            ValidatedViolationData.push(element);
           });
         } else {
-          violationsData = [];
+          ValidatedViolationData = [];
         }
       }
-      validatedViolationsRecords.setPaginations(
-        ItemsData.TotalPageCount,
-        ItemsData.RowsPerPage
-      );
-      validatedViolationsRecords.dashBoardTable(violationsData);
-      validatedViolationsRecords.dataObj.destroyTable = true;
-      // validatedViolationsRecords.pageIndex = ItemsData.CurrentPage;
+      validatedViolationsRecords.setPaginations(ItemsData.TotalPageCount, ItemsData.RowsPerPage,);
+      validatedViolationsRecords.dashBoardTable(ValidatedViolationData, destroyTable);
+      validatedViolationsRecords.pageIndex = ItemsData.CurrentPage;
+      functions.getCurrentUserActions();
     })
     .catch((err) => {
       console.log(err);
     });
 };
+
 validatedViolationsRecords.setPaginations = (TotalPages, RowsPerPage) => {
   pagination.draw("#paginationID", TotalPages, RowsPerPage);
   pagination.start("#paginationID", validatedViolationsRecords.getViolations);
-  // pagination.reset()
-  // pagination.scrollToElement(el, length)
   pagination.activateCurrentPage();
 };
-validatedViolationsRecords.dashBoardTable = (violationsData) => {
+
+validatedViolationsRecords.filterViolationsLog = (e) => {
+  let pageIndex = validatedViolationsRecords.pageIndex;
+  let ViolationSectorVal = $("#violationSector").children("option:selected").val();
+  let ViolationTypeVal = $("#TypeofViolation").children("option:selected").data("id");
+  let ViolationGeneralSearch = $("#violationSearch").val();
+
+  // Check if theCode has value but violationCategory is empty
+  const theCodeValue = $("#theCode").val();
+  const violationCategoryValue = $("#violationCategory").val();
+
+  if (theCodeValue && theCodeValue.trim() !== "" && (!violationCategoryValue || violationCategoryValue === "")) {
+    functions.warningAlert("من فضلك قم باختيار تصنيف المخالفة قبل إدخال رقم المحجر/عربة/معدة");
+    return;
+  }
+
+  let ViolationType;
+  let ViolationSector;
+
+  if (
+    ViolationTypeVal == "" &&
+    ViolationSectorVal == "" &&
+    ViolationGeneralSearch == ""
+  ) {
+    functions.warningAlert(
+      "من فضلك قم بإدخال قيمة واحدة على الأقل من قيم البحث"
+    );
+  } else if (
+    ViolationSectorVal != "" ||
+    ViolationTypeVal != "0" ||
+    ViolationGeneralSearch != ""
+  ) {
+    $(".PreLoader").addClass("active");
+    ViolationSector = Number($("#violationSector").children("option:selected").val());
+    ViolationType = Number($("#TypeofViolation").children("option:selected").data("id"));
+
+    validatedViolationsRecords.getViolations(
+      pageIndex,
+      true,
+      ViolationSector,
+      ViolationType,
+      ViolationGeneralSearch
+    );
+  }
+};
+validatedViolationsRecords.resetFilter = (e) => {
+  e.preventDefault();
+  $("#nationalID").val("");
+  $("#violatorName").val("");
+  $("#violationCode").val("");
+  $("#violationSector").val("0");
+  $("#violationCategory").val("");
+  $("#TypeofViolation").val("0");
+  $("#violationZone").val("");
+  $("#violationSearch").val("");
+  $("#createdFrom").val("");
+  $("#createdTo").val("");
+  $("#theCode").val("");
+  $("#ViolationStatus").val("");
+
+  $(".PreLoader").addClass("active");
+  pagination.reset();
+  validatedViolationsRecords.getViolations();
+};
+
+validatedViolationsRecords.dashBoardTable = (violationsData, destroyTable) => {
   let data = [];
   let taskViolation;
-  let TaskStatus;
+
+  if (validatedViolationsRecords.destroyTable || destroyTable) {
+    $("#validatedViolationsRecords").DataTable().destroy();
+  }
 
   if (violationsData.length > 0) {
     violationsData.forEach((record) => {
       taskViolation = record.Violation;
-      TaskStatus = record.Status;
       let createdDate = functions.getFormatedDate(record.Created);
 
-      // if((TaskStatus == "Confirmed" || TaskStatus == "Paid" || TaskStatus == "Exceeded" || TaskStatus == "Paid After Reffered" || TaskStatus == "Saved")){
       data.push([
-        `<div class="violationId" data-taskid="${record.ID}" data-violationid="${record.ViolationId}" data-taskstatus="${record.Status}" data-paymentstatus="${record.PaymentStatus}" data-violationcode="${taskViolation.ViolationCode}" data-totalprice="${taskViolation.TotalPriceDue}" data-enddate="${record.ReconciliationExpiredDate}" data-offendertype="${taskViolation.OffenderType}">${taskViolation.ViolationCode}</div>`,
+        `<div class="violationId" data-taskid="${record.ID}">
+              ${taskViolation.ViolationCode}
+              </div>`,
         `<div class='controls'>
                 <div class='ellipsisButton'>
                     <i class='fa-solid fa-ellipsis-vertical'></i>
@@ -186,10 +263,13 @@ validatedViolationsRecords.dashBoardTable = (violationsData) => {
       { title: "تاريخ الإنشاء" },
     ],
     false,
-    validatedViolationsRecords.dataObj.destroyTable,
+    false,
     "سجل المحاضر المصدق عليها.xlsx",
     "سجل المحاضر المصدق عليها"
   );
+
+  validatedViolationsRecords.destroyTable = true;
+
   $(".ellipsisButton").on("click", (e) => {
     $(".hiddenListBox").hide(300);
     $(e.currentTarget).siblings(".hiddenListBox").toggle(300);
@@ -198,9 +278,7 @@ validatedViolationsRecords.dashBoardTable = (violationsData) => {
   let violationlog = Table.rows().nodes().to$();
   $.each(violationlog, (index, record) => {
     let jQueryRecord = $(record);
-    let violationID = jQueryRecord.find(".violationId").data("violationid");
     let taskID = jQueryRecord.find(".violationId").data("taskid");
-    let OffenderType = jQueryRecord.find(".violationId").data("offendertype");
 
     jQueryRecord
       .find(".controls")
@@ -415,74 +493,6 @@ validatedViolationsRecords.findViolationByID = (
     .catch((err) => {
       console.log(err);
     });
-};
-validatedViolationsRecords.filterViolationsLog = (e) => {
-  // let pageIndex = validatedViolationsRecords.pageIndex;
-  let OffenderTypeVal = $("#violationCategory")
-    .children("option:selected")
-    .val();
-  let ViolationTypeVal = $("#TypeofViolation")
-    .children("option:selected")
-    .data("id");
-  let ViolationStatusVal = $("#ViolationStatus")
-    .children("option:selected")
-    .val();
-  let ViolationGeneralSearch = $("#violationSearch").val();
-  let violationSector = $("#violationSector").children("option:selected").val();
-  // let ViolationType;
-  // let offenderType;
-  // let ViolationStatus;
-
-  if (
-    ViolationTypeVal == "" &&
-    OffenderTypeVal == "" &&
-    ViolationStatusVal == "" &&
-    ViolationGeneralSearch == "" &&
-    violationSector == "0"
-  ) {
-    functions.warningAlert(
-      "من فضلك قم بإدخال قيمة واحدة على الأقل من قيم البحث"
-    );
-  } else {
-    $(".PreLoader").addClass("active");
-    validatedViolationsRecords.dataObj.OffenderType = $("#violationCategory")
-      .children("option:selected")
-      .val();
-    validatedViolationsRecords.dataObj.ViolationType = Number(
-      $("#TypeofViolation").children("option:selected").data("id")
-    );
-    validatedViolationsRecords.dataObj.ViolationStatus = $("#ViolationStatus")
-      .children("option:selected")
-      .val();
-    // validatedViolationsRecords.dataObj.MultipleStatus = [validatedViolationsRecords.dataObj.ViolationStatus]
-    validatedViolationsRecords.dataObj.destroyTable = true;
-    validatedViolationsRecords.dataObj.pageIndex = pagination.currentPage;
-    validatedViolationsRecords.getViolations();
-  }
-};
-
-validatedViolationsRecords.resetFilter = (e) => {
-  e.preventDefault();
-  $("#nationalID").val("");
-  $("#violatorName").val("");
-  $("#violationCode").val("");
-  $("#violationSector").val("0");
-  $("#violationCategory").val("");
-  $("#TypeofViolation").val("0");
-  $("#violationZone").val("");
-  $("#violationSearch").val("");
-  $("#createdFrom").val("");
-  $("#createdTo").val("");
-  $("#theCode").val("");
-  $("#ViolationStatus").val("");
-
-  validatedViolationsRecords.dataObj.OffenderType = "";
-  validatedViolationsRecords.dataObj.ViolationType = 0;
-  validatedViolationsRecords.dataObj.ViolationStatus = "";
-
-  $(".PreLoader").addClass("active");
-  pagination.reset();
-  validatedViolationsRecords.getViolations();
 };
 
 export default validatedViolationsRecords;

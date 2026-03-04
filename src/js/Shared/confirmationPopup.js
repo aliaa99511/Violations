@@ -1,4 +1,3 @@
-import PendingViolations from "../Modules/ViolationsBranch/PendingViolations";
 import functions from "./functions";
 
 let confirmPopup = {};

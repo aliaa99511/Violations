@@ -1,45 +1,39 @@
 import functions from "../../Shared/functions";
 import pagination from "../../Shared/Pagination";
 
-let vehicleViolationReferral = {
-    dataObj: {
-        destroyTable: false,
-    },
-};
+let vehicleViolationReferral = {};
 vehicleViolationReferral.pageIndex = 1;
+vehicleViolationReferral.destroyTable = false;
 
 vehicleViolationReferral.getVehicleViolationReferrals = (
     pageIndex = 1,
     destroyTable = false,
-    VehicleRegistrationNumber = "", // Changed from ReferralNumber
-    CaseStatus = "",
-    OffenderType = "Vehicle",
-    RefferedDateFrom = "",
-    RefferedDateTo = ""
+    // VehicleRegistrationNumber = $("#vehicleRegistrationNumber").val(),
+    // CaseStatus = $("#CaseStatus").children("option:selected").val(),
 ) => {
     let request = {
         Request: {
-            RowsPerPage: pagination.rowsPerPage || 10,
-            PageIndex: pageIndex,
+            RowsPerPage: 10,
+            PageIndex: pagination.currentPage,
             ColName: "created",
             SortOrder: "desc",
-            VehicleRegistrationNumber: VehicleRegistrationNumber, // Use the correct parameter
-            Status: CaseStatus,
-            OffenderType: OffenderType,
-            RefferedDateFrom: RefferedDateFrom
-                ? moment(RefferedDateFrom, "DD-MM-YYYY").format("YYYY-MM-DD")
-                : "",
-            RefferedDateTo: RefferedDateTo
-                ? moment(RefferedDateTo, "DD-MM-YYYY").format("YYYY-MM-DD")
-                : "",
+            CarNumber: $("#theCode").val(),
+            ViolationCode: $("#violationCode").val(),
+            ViolationStatus: $("#ViolationStatus").children("option:selected").val(),
+            CourtCaseNumber: $("#CourtCaseNumber").val(),
+            ViolatorName: $("#TrafficName").val(),
+            ViolatorCompany: $("#ViolatorCompany").val(),
+            VehicleRegistrationNumber: $("#vehicleRegistrationNumber").val(),
+            Status: $("#CaseStatus").children("option:selected").val(),
+            OffenderType: "Vehicle",
+            RefferedDateFrom: $("#RefferedDateFrom").val()
+                ? moment($("#RefferedDateFrom").val(), "DD-MM-YYYY").format("YYYY-MM-DD")
+                : null,
+            RefferedDateTo: $("#RefferedDateTo").val()
+                ? moment($("#RefferedDateTo").val(), "DD-MM-YYYY").format("YYYY-MM-DD")
+                : null,
         }
     };
-
-    Object.keys(request.Request).forEach(key => {
-        if (request.Request[key] === "") {
-            delete request.Request[key];
-        }
-    });
 
     functions
         .requester(
@@ -57,8 +51,8 @@ vehicleViolationReferral.getVehicleViolationReferrals = (
             let ItemsData = data?.d?.Result;
 
             if (data?.d?.Result?.GridData != null) {
-                if (data.d.Result.GridData.length > 0) {
-                    Array.from(data.d.Result.GridData).forEach((element) => {
+                if (data.d.Result?.GridData.length > 0) {
+                    Array.from(data.d.Result?.GridData).forEach((element) => {
                         Referrals.push(element);
                     });
                 } else {
@@ -66,21 +60,12 @@ vehicleViolationReferral.getVehicleViolationReferrals = (
                 }
             }
 
-            const totalPages = ItemsData?.TotalPageCount || 0;
-            const rowsPerPage = ItemsData?.RowsPerPage || pagination.rowsPerPage || 10;
-            const currentPage = ItemsData?.CurrentPage || pageIndex;
-
-            vehicleViolationReferral.setPaginations(totalPages, rowsPerPage);
-            vehicleViolationReferral.VehicleViolationReferralTable(
-                Referrals,
-                destroyTable || vehicleViolationReferral.dataObj.destroyTable
-            );
-            vehicleViolationReferral.pageIndex = currentPage;
+            vehicleViolationReferral.setPaginations(ItemsData.TotalPageCount, ItemsData.RowsPerPage);
+            vehicleViolationReferral.VehicleViolationReferralTable(Referrals, destroyTable);
+            vehicleViolationReferral.pageIndex = ItemsData.CurrentPage;
         })
         .catch((err) => {
-            console.error("API Error:", err);
-            $(".PreLoader").removeClass("active");
-            functions.warningAlert("حدث خطأ في تحميل البيانات");
+            console.error(err);
         });
 };
 
@@ -89,7 +74,42 @@ vehicleViolationReferral.setPaginations = (TotalPages, RowsPerPage) => {
     pagination.start("#paginationID", vehicleViolationReferral.getVehicleViolationReferrals);
     pagination.activateCurrentPage();
 };
+vehicleViolationReferral.filterVehicleViolationReferrals = (e) => {
+    let pageIndex = vehicleViolationReferral.pageIndex;
 
+    $(".PreLoader").addClass("active");
+    vehicleViolationReferral.getVehicleViolationReferrals(
+        pageIndex,
+        true,
+    );
+
+    // let pageIndex = vehicleViolationReferral.pageIndex;
+
+    // let VehicleRegistrationNumberVal = $("#vehicleRegistrationNumber").val();
+    // let CaseStatusVal = $("#CaseStatus").children("option:selected").val();
+
+    // let VehicleRegistrationNumber;
+    // let CaseStatus;
+    // if (
+    //     VehicleRegistrationNumberVal == "" &&
+    //     CaseStatusVal == ""
+    // ) {
+    //     functions.warningAlert("من فضلك قم بإدخال قيمة واحدة على الأقل من قيم البحث");
+    // } else if (
+    //     VehicleRegistrationNumberVal != "" ||
+    //     CaseStatusVal != ""
+    // ) {
+    //     $(".PreLoader").addClass("active");
+    //     VehicleRegistrationNumber = $("#vehicleRegistrationNumber").val();
+    //     CaseStatus = $("#CaseStatus").children("option:selected").val();
+    //     vehicleViolationReferral.getVehicleViolationReferrals(
+    //         pageIndex,
+    //         true,
+    //         VehicleRegistrationNumber,
+    //         CaseStatus,
+    //     );
+    // }
+};
 vehicleViolationReferral.resetFilter = (e) => {
     e.preventDefault();
 
@@ -98,15 +118,23 @@ vehicleViolationReferral.resetFilter = (e) => {
     $("#CaseStatus").val("");
     $("#RefferedDateFrom").val("");
     $("#RefferedDateTo").val("");
+    $("#ViolationStatus").val("");
+    $("#theCode").val("");
+    $("#violationCode").val("");
+    $("#CourtCaseNumber").val("");
+    $("#TrafficName").val("");
+    $("#ViolatorCompany").val("");
 
     $(".PreLoader").addClass("active");
     pagination.reset();
-    vehicleViolationReferral.dataObj.destroyTable = true;
-    vehicleViolationReferral.getVehicleViolationReferrals(1, true);
+    vehicleViolationReferral.getVehicleViolationReferrals();
 };
-
-vehicleViolationReferral.VehicleViolationReferralTable = (Referrals, destroyTable = false) => {
+vehicleViolationReferral.VehicleViolationReferralTable = (Referrals, destroyTable) => {
     let data = [];
+
+    if (vehicleViolationReferral.destroyTable || destroyTable) {
+        $("#VehicleViolationReferralTable").DataTable().destroy();
+    }
 
     if (Referrals && Referrals.length > 0) {
         Referrals.forEach((referral) => {
@@ -121,45 +149,47 @@ vehicleViolationReferral.VehicleViolationReferralTable = (Referrals, destroyTabl
 
             // Determine which actions to show based on business rules
             let hasAddRegistrationNumberAction = false;
-            let hasAddCourtCaseNumberAction = false;
-            let hasReferToProsecutorAction = false;
-            let hasPayCaseAction = false; // تسديد القضية
-            let hasSaveAction = false; // حفظ القضية
+            // let hasAddCourtCaseNumberAction = false;
+            let hasPayCaseAction = false;
+            let hasPayCaseAfterEditAction = false;
+            let hasSaveAction = false;
             let canShowDetailsOnly = false;
 
             // Business Rule 1: Add Registration Number
             if (!vehicleRegistrationNumber &&
+                !courtCaseNumber &&
                 caseStatus == "قيد انتظار رقم القيد" &&
                 violationStatus == "UnderReview") {
                 hasAddRegistrationNumberAction = true;
             }
 
-            // Business Rule 2: Add Court Case Number
-            if (vehicleRegistrationNumber &&
-                !courtCaseNumber &&
-                caseStatus == "قيد انتظار الرقم القضائي" &&
-                violationStatus == "UnderReview") {
-                hasAddCourtCaseNumberAction = true;
-            }
-
-            // Business Rule 3: Refer to Prosecutor
-            if (vehicleRegistrationNumber &&
-                courtCaseNumber &&
-                caseStatus == "تم إضافة الرقم القضائي" &&
-                violationStatus == "UnderReview") {
-                hasReferToProsecutorAction = true;
-            }
+            // // Business Rule 2: Add Court Case Number
+            // if (vehicleRegistrationNumber &&
+            //     !courtCaseNumber &&
+            //     caseStatus == "قيد انتظار الرقم القضائي" &&
+            //     violationStatus == "UnderReview") {
+            //     hasAddCourtCaseNumberAction = true;
+            // }
 
             // Business Rule 4: Pay Case (تسديد القضية)
-            if (vehicleRegistrationNumber &&
-                caseStatus == "قيد انتظار الرقم القضائي" &&
+            if (
+                // vehicleRegistrationNumber &&
+                (caseStatus == "قيد انتظار رقم القيد" || caseStatus == "قيد انتظار الرقم القضائي") &&
                 violationStatus == "UnderReview") {
                 hasPayCaseAction = true;
             }
 
+            // Business Rule 4: Pay Case After Edit (سداد على الإحالة)
+            if (
+                // vehicleRegistrationNumber &&
+                caseStatus == "قيد انتظار الرقم القضائي" &&
+                violationStatus == "UnderReview") {
+                hasPayCaseAfterEditAction = true;
+            }
+
             // Business Rule 5: Save Action (حفظ القضية)
-            if ((caseStatus == "قيد انتظار الرقم القضائي" ||
-                caseStatus == "قيد انتظار المدعي العام العسكري") &&
+            if (
+                (caseStatus == "قيد انتظار رقم القيد" || caseStatus == "قيد انتظار الرقم القضائي") &&
                 violationStatus !== "Paid") {
                 hasSaveAction = true;
             }
@@ -169,7 +199,7 @@ vehicleViolationReferral.VehicleViolationReferralTable = (Referrals, destroyTabl
                 canShowDetailsOnly = true;
             }
 
-            // Build actions menu HTML
+            // Build actions menu HTML without data attributes
             let actionsMenuHTML = '';
             if (canShowDetailsOnly) {
                 actionsMenuHTML = `
@@ -183,55 +213,27 @@ vehicleViolationReferral.VehicleViolationReferralTable = (Referrals, destroyTabl
 
                 if (hasAddRegistrationNumberAction) {
                     actionsMenuHTML += `
-                    <li><a href="#" class="addRegistrationNumberAction" 
-                           data-referralid="${referral.ID}"
-                           data-violationid="${referral.ViolationId}"
-                           data-taskid="${referral.TaskId}"
-                           data-violationcode="${referral.ViolationCode}">إضافة رقم القيد</a></li>`;
+                    <li><a href="#" class="addRegistrationNumberAction">إضافة رقم القيد</a></li>`;
                 }
 
-                if (hasAddCourtCaseNumberAction) {
-                    actionsMenuHTML += `
-                    <li><a href="#" class="addCourtCaseNumberAction"
-                           data-referralid="${referral.ID}"
-                           data-violationid="${referral.ViolationId}"
-                           data-taskid="${referral.TaskId}"
-                           data-violationcode="${referral.ViolationCode}">إضافة الرقم القضائي</a></li>`;
-                }
-
-                if (hasReferToProsecutorAction) {
-                    actionsMenuHTML += `
-                    <li><a href="#" class="referToProsecutorAction"
-                           data-referralid="${referral.ID}"
-                           data-violationid="${referral.ViolationId}"
-                           data-taskid="${referral.TaskId}"
-                           data-violationcode="${referral.ViolationCode}"
-                           data-courtcasenumber="${courtCaseNumber}">إحالة إلى المدعي العام</a></li>`;
-                }
+                // if (hasAddCourtCaseNumberAction) {
+                //     actionsMenuHTML += `
+                //     <li><a href="#" class="addCourtCaseNumberAction">إضافة الرقم القضائي</a></li>`;
+                // }
 
                 if (hasPayCaseAction) {
                     actionsMenuHTML += `
-                    <li><a href="#" class="payCaseAction"
-                           data-referralid="${referral.ID}"
-                           data-violationid="${violation?.ID}"
-                           data-taskid="${referral.TaskId}"
-                           data-violationcode="${referral.ViolationCode}"
-                           data-courtcasenumber="${courtCaseNumber}"
-                           data-totalprice="${violation?.TotalPriceDue || 0}"
-                           data-oldprice="${violation?.TotalOldPrice || 0}">تسديد القضية</a></li>`;
+                    <li><a href="#" class="payCaseAction">سداد على نموذج التقييم</a></li>`;
+                }
+
+                if (hasPayCaseAfterEditAction) {
+                    actionsMenuHTML += `
+                    <li><a href="#" class="payCaseAfterEditAction">سداد على الحظر</a></li>`;
                 }
 
                 if (hasSaveAction) {
                     actionsMenuHTML += `
-                    <li><a href="#" class="saveCaseAction"
-                           data-referralid="${referral.ID}"
-                           data-violationid="${violation?.ID}"
-                           data-taskid="${referral.TaskId}"
-                           data-violationcode="${referral.ViolationCode}"
-                           data-referralnumber="${referralNumber}"
-                           data-vehicleregistrationnumber="${vehicleRegistrationNumber}"
-                           data-courtcasenumber="${courtCaseNumber}"
-                           data-casestatus="${caseStatus}">حفظ</a></li>`;
+                    <li><a href="#" class="saveCaseAction">حفظ</a></li>`;
                 }
 
                 actionsMenuHTML += `</ul>`;
@@ -239,22 +241,41 @@ vehicleViolationReferral.VehicleViolationReferralTable = (Referrals, destroyTabl
 
             let displayViolationStatus = vehicleViolationReferral.getViolationStatus(violationStatus);
 
+            // Prepare all data attributes in a single object
+            const violationCodeData = {
+                'referralid': referral.ID,
+                'violationid': referral.ViolationId,
+                'taskid': referral.TaskId,
+                'referralstatus': referral.Status,
+                'referralnumber': referral.ReferralNumber,
+                'vehicleregistrationnumber': vehicleRegistrationNumber,
+                'courtcasenumber': courtCaseNumber,
+                'violationcode': referral.ViolationCode,
+                'oldprice': violation?.TotalOldPrice || 0,
+                'newprice': violation?.TotalPriceDue || 0,
+                'referredamount': violation?.ReferredAmount,
+                'offendertype': violation?.OffenderType,
+                'casenumber': caseNumber,
+                'violationstatus': violationStatus,
+                'hasaddregistrationnumber': hasAddRegistrationNumberAction,
+                // 'hasaddcourtcasenumber': hasAddCourtCaseNumberAction,
+                'haspaycaseafteredit': hasPayCaseAfterEditAction,
+                'haspaycase': hasPayCaseAction,
+                'hassavecase': hasSaveAction,
+                'canshowdetailsonly': canShowDetailsOnly,
+                'totalprice': violation?.TotalPriceDue || 0,
+                'totaloldprice': violation?.TotalOldPrice || 0,
+                'courtcasenumber': courtCaseNumber
+            };
+
+            // Convert data object to data-attributes string
+            const dataAttributes = Object.entries(violationCodeData)
+                .map(([key, value]) => `data-${key.toLowerCase()}="${value}"`)
+                .join(' ');
+
             data.push([
-                `<div class="violationCode noWrapContent" 
-                        data-referralid="${referral.ID}" 
-                        data-violationid="${referral.ViolationId}" 
-                        data-taskid="${referral.TaskId}" 
-                        data-referralstatus="${referral.Status}" 
-                        data-referralnumber="${referral.ReferralNumber}" 
-                        data-vehicleregistrationnumber="${vehicleRegistrationNumber}"
-                        data-courtcasenumber="${courtCaseNumber}"
-                        data-violationcode="${referral.ViolationCode}" 
-                        data-oldprice="${violation?.TotalOldPrice}" 
-                        data-newprice="${violation?.TotalPriceDue}"
-                        data-offendertype="${violation?.OffenderType}"
-                        data-casenumber="${caseNumber}"
-                        data-violationstatus="${violationStatus}">
-                        ${referral.ViolationCode}
+                `<div class="violationCode noWrapContent" ${dataAttributes}>
+                    ${referral.ViolationCode}
                 </div>`,
                 `<div class='controls'>
                     <div class='ellipsisButton'>
@@ -300,60 +321,49 @@ vehicleViolationReferral.VehicleViolationReferralTable = (Referrals, destroyTabl
             { title: "المرفقات" },
         ],
         false,
-        destroyTable,
-        "سجل إحالات المخالفات المركبة.xlsx",
-        "سجل إحالات المخالفات المركبة"
+        false,
+        "سجل إحالات مخالفات المركبات.xlsx",
+        "سجل إحالات مخالفات المركبات"
     );
 
-    if (destroyTable && $.fn.DataTable.isDataTable("#VehicleViolationReferralTable")) {
-        $("#VehicleViolationReferralTable").DataTable().destroy();
-    }
+    vehicleViolationReferral.destroyTable = true;
 
-    // Event handlers
-    $(document).off('click', '.ellipsisButton').on('click', '.ellipsisButton', function (e) {
-        e.stopPropagation();
+    $(".ellipsisButton").on("click", (e) => {
         $(".hiddenListBox").hide(300);
-        $(this).siblings(".hiddenListBox").toggle(300);
-    });
-
-    $(document).on('click', function (e) {
-        if (!$(e.target).closest('.controls').length) {
-            $(".hiddenListBox").hide(300);
-        }
+        $(e.currentTarget).siblings(".hiddenListBox").toggle(300);
     });
 
     let referralsLog = Table.rows().nodes().to$();
-    vehicleViolationReferral.dataObj.destroyTable = true;
 
-    referralsLog.each(function (index) {
-        let jQueryRecord = $(this);
+    $.each(referralsLog, (index, record) => {
+        let jQueryRecord = $(record);
+        let violationCodeElement = jQueryRecord.find(".violationCode");
+        let referralID = violationCodeElement.data("referralid");
+        let referralNumber = violationCodeElement.data("referralnumber");
+        let hiddenListBox = jQueryRecord.find(".controls").children(".hiddenListBox");
 
-        if (jQueryRecord.find(".no-data").length === 0) {
-            let referralID = jQueryRecord.find(".violationCode").data("referralid");
-            let referralNumber = jQueryRecord.find(".violationCode").data("referralnumber");
-            let hiddenListBox = jQueryRecord.find(".controls").children(".hiddenListBox");
+        // Attachments click handler
+        jQueryRecord.find(".referralAttachments").find("a").off('click').on('click', function (e) {
+            e.preventDefault();
+            $(".overlay").addClass("active");
+            vehicleViolationReferral.getReferralAttachmentsByReferralId(referralID, referralNumber);
+        });
 
-            // Attachments click handler
-            jQueryRecord.find(".referralAttachments").find("a").off('click').on('click', function (e) {
-                e.preventDefault();
-                $(".overlay").addClass("active");
-                vehicleViolationReferral.getReferralAttachmentsByReferralId(referralID, referralNumber);
-            });
+        // Details click handler
+        jQueryRecord.find(".itemDetails").off('click').on('click', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            $(".overlay").addClass("active");
+            vehicleViolationReferral.FindReferralById(referralID);
+            $(".hiddenListBox").hide(300);
+        });
 
-            // Details click handler
-            jQueryRecord.find(".itemDetails").off('click').on('click', function (e) {
-                e.preventDefault();
-                e.stopPropagation();
-                $(".overlay").addClass("active");
-                vehicleViolationReferral.FindReferralById(referralID);
-                $(".hiddenListBox").hide(300);
-            });
-
-            // Position dropdown if needed
-            if (referralsLog.length > 3 && hiddenListBox.height() > 110 &&
-                jQueryRecord.is(":nth-last-child(-n + 4)")) {
-                hiddenListBox.addClass("toTopDDL");
-            }
+        if (
+            referralsLog.length > 4 &&
+            hiddenListBox.height() > 110 &&
+            jQueryRecord.is(":nth-last-child(-n + 4)")
+        ) {
+            hiddenListBox.addClass("toTopDDL");
         }
     });
 
@@ -362,75 +372,50 @@ vehicleViolationReferral.VehicleViolationReferralTable = (Referrals, destroyTabl
         e.preventDefault();
         e.stopPropagation();
 
-        let referralId = $(this).data('referralid');
-        let violationId = $(this).data('violationid');
-        let taskId = $(this).data('taskid');
-        let violationCode = $(this).data('violationcode');
+        let $row = $(this).closest('tr');
+        let $violationCode = $row.find('.violationCode');
 
-        console.log('Add Registration Number Action:', { referralId, violationId, taskId, violationCode });
+        let referralId = $violationCode.data('referralid');
+        let violationId = $violationCode.data('violationid');
+        let taskId = $violationCode.data('taskid');
+        let violationCode = $violationCode.data('violationcode');
 
         vehicleViolationReferral.addRegistrationNumberPopup(referralId, violationId, violationCode, taskId);
-
         $(".hiddenListBox").hide(300);
     });
 
-    // Add Court Case Number Action
-    $(document).off('click', '.addCourtCaseNumberAction').on('click', '.addCourtCaseNumberAction', function (e) {
-        e.preventDefault();
-        e.stopPropagation();
+    // // Add Court Case Number Action
+    // $(document).off('click', '.addCourtCaseNumberAction').on('click', '.addCourtCaseNumberAction', function (e) {
+    //     e.preventDefault();
+    //     e.stopPropagation();
 
-        let referralId = $(this).data('referralid');
-        let violationId = $(this).data('violationid');
-        let taskId = $(this).data('taskid');
-        let violationCode = $(this).data('violationcode');
+    //     let $row = $(this).closest('tr');
+    //     let $violationCode = $row.find('.violationCode');
 
-        console.log('Add Court Case Number Action:', { referralId, violationId, taskId, violationCode });
+    //     let referralId = $violationCode.data('referralid');
+    //     let violationId = $violationCode.data('violationid');
+    //     let taskId = $violationCode.data('taskid');
+    //     let violationCode = $violationCode.data('violationcode');
 
-        vehicleViolationReferral.addCourtCaseNumberPopup(referralId, violationId, violationCode, taskId);
-
-        $(".hiddenListBox").hide(300);
-    });
-
-    // Refer to Prosecutor Action
-    $(document).off('click', '.referToProsecutorAction').on('click', '.referToProsecutorAction', function (e) {
-        e.preventDefault();
-        e.stopPropagation();
-
-        let referralId = $(this).data('referralid');
-        let violationId = $(this).data('violationid');
-        let taskId = $(this).data('taskid');
-        let violationCode = $(this).data('violationcode');
-        let courtCaseNumber = $(this).data('courtcasenumber');
-
-        console.log('Refer to Prosecutor Action:', { referralId, violationId, taskId, violationCode, courtCaseNumber });
-
-        vehicleViolationReferral.referToProsecutorPopup(referralId, violationId, taskId, violationCode, courtCaseNumber);
-
-        $(".hiddenListBox").hide(300);
-    });
+    //     vehicleViolationReferral.addCourtCaseNumberPopup(referralId, violationId, violationCode, taskId);
+    //     $(".hiddenListBox").hide(300);
+    // });
 
     // Pay Case Action (تسديد القضية)
     $(document).off('click', '.payCaseAction').on('click', '.payCaseAction', function (e) {
         e.preventDefault();
         e.stopPropagation();
 
-        let referralId = $(this).data('referralid');
-        let violationId = $(this).data('violationid');
-        let taskId = $(this).data('taskid');
-        let violationCode = $(this).data('violationcode');
-        let courtCaseNumber = $(this).data('courtcasenumber');
-        let totalPrice = $(this).data('totalprice');
-        let oldPrice = $(this).data('oldprice');
+        let $row = $(this).closest('tr');
+        let $violationCode = $row.find('.violationCode');
 
-        console.log('Pay Case Action:', {
-            referralId,
-            violationId,
-            taskId,
-            violationCode,
-            courtCaseNumber,
-            totalPrice,
-            oldPrice
-        });
+        let referralId = $violationCode.data('referralid');
+        let violationId = $violationCode.data('violationid');
+        let taskId = $violationCode.data('taskid');
+        let violationCode = $violationCode.data('violationcode');
+        let courtCaseNumber = $violationCode.data('courtcasenumber');
+        let totalPrice = $violationCode.data('totalprice');
+        let oldPrice = $violationCode.data('oldprice');
 
         vehicleViolationReferral.payCasePopup(
             referralId,
@@ -440,18 +425,74 @@ vehicleViolationReferral.VehicleViolationReferralTable = (Referrals, destroyTabl
             courtCaseNumber,
             totalPrice
         );
+        $(".hiddenListBox").hide(300);
+    });
+
+    // Pay Case After Edit Action
+    $(document).off('click', '.payCaseAfterEditAction').on('click', '.payCaseAfterEditAction', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        let $row = $(this).closest('tr');
+        let $violationCode = $row.find('.violationCode');
+
+        let referralId = $violationCode.data('referralid');
+        let violationId = $violationCode.data('violationid');
+        let taskId = $violationCode.data('taskid');
+        let referralNumber = $violationCode.data('referralnumber');
+        let violationCode = $violationCode.data('violationcode');
+        let totalPrice = $violationCode.data('totalprice');
+        // let oldPrice = $violationCode.data('oldprice');
+        let referredAmount = $violationCode.data('referredamount');
+
+        vehicleViolationReferral.payCaseAfterEditPopup(
+            referralId,
+            violationId,
+            taskId,
+            referralNumber,
+            violationCode,
+            totalPrice,
+            // oldPrice,
+            referredAmount
+        );
 
         $(".hiddenListBox").hide(300);
     });
 
-    $(document).on('click', '.controlsList a', function (e) {
-        $(this).closest('.hiddenListBox').hide(300);
+    // Save Case Action Handler
+    $(document).off('click', '.saveCaseAction').on('click', '.saveCaseAction', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        let $row = $(this).closest('tr');
+        let $violationCode = $row.find('.violationCode');
+
+        let referralId = $violationCode.data('referralid');
+        let violationId = $violationCode.data('violationid');
+        let taskId = $violationCode.data('taskid');
+        let violationCode = $violationCode.data('violationcode');
+        let referralNumber = $violationCode.data('referralnumber');
+        let vehicleRegistrationNumber = $violationCode.data('vehicleregistrationnumber');
+        let courtCaseNumber = $violationCode.data('courtcasenumber');
+        let caseStatus = $violationCode.data('referralstatus');
+
+        // Implement save case functionality here
+        console.log('Save case:', {
+            referralId,
+            violationId,
+            taskId,
+            violationCode,
+            referralNumber,
+            vehicleRegistrationNumber,
+            courtCaseNumber,
+            caseStatus
+        });
+
+        $(".hiddenListBox").hide(300);
     });
 
     functions.hideTargetElement(".controls", ".hiddenListBox");
 };
-
-// Add Registration Number Popup
 vehicleViolationReferral.addRegistrationNumberPopup = (ReferralID, ViolationID, ViolationCode, TaskID) => {
     $(".overlay").removeClass("active");
     let popupHtml = `
@@ -471,6 +512,12 @@ vehicleViolationReferral.addRegistrationNumberPopup = (ReferralID, ViolationID, 
                                     <div class="form-group customFormGroup">
                                         <label for="registrationNumber" class="customLabel">رقم القيد</label>
                                         <input class="form-control customInput registrationNumber" id="registrationNumber" type="text" placeholder="أدخل رقم القيد">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group customFormGroup">
+                                        <label for="referredAmount" class="customLabel">مبلغ الحظر</label>
+                                        <input class="form-control customInput referredAmount" id="referredAmount" type="text" placeholder="أدخل مبلغ الحظر">
                                     </div>
                                 </div>
                                 <div class="col-md-6">
@@ -517,6 +564,7 @@ vehicleViolationReferral.addRegistrationNumberPopup = (ReferralID, ViolationID, 
     );
 
     let RegistrationNumberInput = $("#registrationNumber").val();
+    let ReferralAmountInput = $("#referredAmount").val();
     let RegistrationCommentsInput = $("#registrationComments").val();
     let filesExtension = [
         "gif", "svg", "jpg", "jpeg", "png",
@@ -568,6 +616,25 @@ vehicleViolationReferral.addRegistrationNumberPopup = (ReferralID, ViolationID, 
         }
     });
 
+    // ADDED: Allow only numbers and decimal point in referredAmount
+    $("#referredAmount").on("keypress", (e) => {
+        return functions.isDecimalNumberKey(e);
+    });
+
+    // ADDED: Format the referred amount with commas as the user types
+    $("#referredAmount").on("keyup", (e) => {
+        let rawValue = $(e.currentTarget).val().replace(/\,/g, "");
+
+        // Store the raw value for later use
+        ReferralAmountInput = rawValue;
+
+        // Format with commas for display
+        if (rawValue) {
+            $(e.currentTarget).val(
+                rawValue.replace(/\B(?=(?:\d{3})+(?!\d))/g, ",")
+            );
+        }
+    });
     $("#registrationNumber").on("keyup", (e) => {
         RegistrationNumberInput = $(e.currentTarget).val().trim();
     });
@@ -586,6 +653,7 @@ vehicleViolationReferral.addRegistrationNumberPopup = (ReferralID, ViolationID, 
                         ViolationId: ViolationID,
                         TaskId: TaskID,
                         VehicleRegistrationNumber: RegistrationNumberInput,
+                        ReferredAmount: ReferralAmountInput,
                         ID: ReferralID,
                         Status: "قيد انتظار الرقم القضائي"
                     }
@@ -608,305 +676,305 @@ vehicleViolationReferral.addRegistrationNumberPopup = (ReferralID, ViolationID, 
 };
 
 // Add Court Case Number Popup
-vehicleViolationReferral.addCourtCaseNumberPopup = (ReferralID, ViolationID, ViolationCode, TaskID) => {
-    $(".overlay").removeClass("active");
-    let popupHtml = `
-        <div class="popupHeader">
-            <div class="violationsCode"> 
-                <p>إضافة الرقم القضائي للمخالفة رقم (${ViolationCode})</p>
-            </div>
-        </div>
-        <div class="popupBody">
-            <div class="popupForm detailsPopupForm" id="detailsPopupForm">
+// vehicleViolationReferral.addCourtCaseNumberPopup = (ReferralID, ViolationID, ViolationCode, TaskID) => {
+//     $(".overlay").removeClass("active");
+//     let popupHtml = `
+//         <div class="popupHeader">
+//             <div class="violationsCode"> 
+//                 <p>إضافة الرقم القضائي للمخالفة رقم (${ViolationCode})</p>
+//             </div>
+//         </div>
+//         <div class="popupBody">
+//             <div class="popupForm detailsPopupForm" id="detailsPopupForm">
 
-                <div class="formContent">
-                    <div class="formBox">
-                        <div class="formElements">
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="form-group customFormGroup">
-                                        <label for="courtCaseNumber" class="customLabel">الرقم القضائي</label>
-                                        <input class="form-control customInput courtCaseNumber" id="courtCaseNumber" type="text" placeholder="أدخل الرقم القضائي">
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="form-group customFormGroup">
-                                        <label for="courtCaseComments" class="customLabel">ملاحظات</label>
-                                        <textarea class="form-control customTextArea courtCaseComments" id="courtCaseComments" rows="3" placeholder="أدخل الملاحظات"></textarea>
-                                    </div>
-                                </div>
-                                <div class="col-12">
-                                    <div class="form-group customFormGroup">
-                                        <label for="courtCaseNumberAttach" class="customLabel">إرفاق مستند الرقم القضائي</label>
-                                        <div class="fileBox" id="dropContainer">
-                                            <div class="inputFileBox">
-                                                <img src="/Style Library/MiningViolations/images/fileIcon.svg" alt="File Icon">
-                                                <p class="dragDropFilesLabel">قم بالسحب والإفلات لرفع الملف , أو <a href="#!" class="attachFileLink">استعراض ملفاتي</a></p>
-                                                <input type="file" class="customInput attachFilesInput courtCaseNumberAttach form-control" id="courtCaseNumberAttach" accept="image/gif,image/svg,image/jpg,image/jpeg,image/png,.doc,.docx,.pdf,.xls,.xlsx,.pptx" multiple>
-                                            </div>
-                                        </div>
-                                        <div class="dropFilesArea" id="dropFilesArea"></div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+//                 <div class="formContent">
+//                     <div class="formBox">
+//                         <div class="formElements">
+//                             <div class="row">
+//                                 <div class="col-md-6">
+//                                     <div class="form-group customFormGroup">
+//                                         <label for="courtCaseNumber" class="customLabel">الرقم القضائي</label>
+//                                         <input class="form-control customInput courtCaseNumber" id="courtCaseNumber" type="text" placeholder="أدخل الرقم القضائي">
+//                                     </div>
+//                                 </div>
+//                                 <div class="col-md-6">
+//                                     <div class="form-group customFormGroup">
+//                                         <label for="courtCaseComments" class="customLabel">ملاحظات</label>
+//                                         <textarea class="form-control customTextArea courtCaseComments" id="courtCaseComments" rows="3" placeholder="أدخل الملاحظات"></textarea>
+//                                     </div>
+//                                 </div>
+//                                 <div class="col-12">
+//                                     <div class="form-group customFormGroup">
+//                                         <label for="courtCaseNumberAttach" class="customLabel">إرفاق مستند الرقم القضائي</label>
+//                                         <div class="fileBox" id="dropContainer">
+//                                             <div class="inputFileBox">
+//                                                 <img src="/Style Library/MiningViolations/images/fileIcon.svg" alt="File Icon">
+//                                                 <p class="dragDropFilesLabel">قم بالسحب والإفلات لرفع الملف , أو <a href="#!" class="attachFileLink">استعراض ملفاتي</a></p>
+//                                                 <input type="file" class="customInput attachFilesInput courtCaseNumberAttach form-control" id="courtCaseNumberAttach" accept="image/gif,image/svg,image/jpg,image/jpeg,image/png,.doc,.docx,.pdf,.xls,.xlsx,.pptx" multiple>
+//                                             </div>
+//                                         </div>
+//                                         <div class="dropFilesArea" id="dropFilesArea"></div>
+//                                     </div>
+//                                 </div>
+//                             </div>
+//                         </div>
+//                     </div>
+//                 </div>
 
-                <div class="formButtonsBox">
-                    <div class="row">
-                        <div class="col-12">
-                            <div class="buttonsBox centerButtonsBox">
-                                <div class="btnStyle confirmBtnGreen popupBtn AddCourtCaseNumberBtn" id="AddCourtCaseNumberBtn">تأكيد</div>
-                                <div class="btnStyle cancelBtn popupBtn closeCourtCaseNumberPopup" id="closeCourtCaseNumberPopup" data-dismiss="modal" aria-label="Close">إلغاء</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+//                 <div class="formButtonsBox">
+//                     <div class="row">
+//                         <div class="col-12">
+//                             <div class="buttonsBox centerButtonsBox">
+//                                 <div class="btnStyle confirmBtnGreen popupBtn AddCourtCaseNumberBtn" id="AddCourtCaseNumberBtn">تأكيد</div>
+//                                 <div class="btnStyle cancelBtn popupBtn closeCourtCaseNumberPopup" id="closeCourtCaseNumberPopup" data-dismiss="modal" aria-label="Close">إلغاء</div>
+//                             </div>
+//                         </div>
+//                     </div>
+//                 </div>
 
-            </div>
-        </div>`;
+//             </div>
+//         </div>`;
 
-    functions.declarePopup(
-        ["generalPopupStyle", "greenPopup", "editPopup"],
-        popupHtml
-    );
+//     functions.declarePopup(
+//         ["generalPopupStyle", "greenPopup", "editPopup"],
+//         popupHtml
+//     );
 
-    let CourtCaseNumberInput = $("#courtCaseNumber").val();
-    let CourtCaseCommentsInput = $("#courtCaseComments").val();
-    let filesExtension = [
-        "gif", "svg", "jpg", "jpeg", "png",
-        "doc", "docx", "pdf", "xls", "xlsx", "pptx"
-    ];
-    let allAttachments;
-    let countOfFiles;
-    let request = {};
+//     let CourtCaseNumberInput = $("#courtCaseNumber").val();
+//     let CourtCaseCommentsInput = $("#courtCaseComments").val();
+//     let filesExtension = [
+//         "gif", "svg", "jpg", "jpeg", "png",
+//         "doc", "docx", "pdf", "xls", "xlsx", "pptx"
+//     ];
+//     let allAttachments;
+//     let countOfFiles;
+//     let request = {};
 
-    // File attachment handling
-    $("#courtCaseNumberAttach").on("change", (e) => {
-        allAttachments = $(e.currentTarget)[0].files;
-        if (allAttachments.length > 0) {
-            $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").show().empty();
-        }
-        for (let i = 0; i < allAttachments.length; i++) {
-            $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").append(`
-                <div class="file">
-                    <p class="fileName">${allAttachments[i].name}</p>
-                    <span class="deleteFile" data-index="${i}"><i class="fa-sharp fa-solid fa-x"></i></span>
-                </div>
-            `);
-        }
+//     // File attachment handling
+//     $("#courtCaseNumberAttach").on("change", (e) => {
+//         allAttachments = $(e.currentTarget)[0].files;
+//         if (allAttachments.length > 0) {
+//             $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").show().empty();
+//         }
+//         for (let i = 0; i < allAttachments.length; i++) {
+//             $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").append(`
+//                 <div class="file">
+//                     <p class="fileName">${allAttachments[i].name}</p>
+//                     <span class="deleteFile" data-index="${i}"><i class="fa-sharp fa-solid fa-x"></i></span>
+//                 </div>
+//             `);
+//         }
 
-        $(".deleteFile").on("click", (event) => {
-            let index = $(event.currentTarget).closest(".file").index();
-            $(event.currentTarget).closest(".file").remove();
-            let fileBuffer = new DataTransfer();
-            for (let i = 0; i < allAttachments.length; i++) {
-                if (index !== i) {
-                    fileBuffer.items.add(allAttachments[i]);
-                }
-            }
-            allAttachments = fileBuffer.files;
-            countOfFiles = allAttachments.length;
-            if (countOfFiles == 0) {
-                $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").hide();
-            }
-        });
+//         $(".deleteFile").on("click", (event) => {
+//             let index = $(event.currentTarget).closest(".file").index();
+//             $(event.currentTarget).closest(".file").remove();
+//             let fileBuffer = new DataTransfer();
+//             for (let i = 0; i < allAttachments.length; i++) {
+//                 if (index !== i) {
+//                     fileBuffer.items.add(allAttachments[i]);
+//                 }
+//             }
+//             allAttachments = fileBuffer.files;
+//             countOfFiles = allAttachments.length;
+//             if (countOfFiles == 0) {
+//                 $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").hide();
+//             }
+//         });
 
-        for (let i = 0; i < allAttachments.length; i++) {
-            let fileSplited = allAttachments[i].name.split(".");
-            let fileExt = fileSplited[fileSplited.length - 1].toLowerCase();
-            if ($.inArray(fileExt, filesExtension) == -1) {
-                functions.warningAlert("من فضلك أدخل الملفات بالامتدادات المسموح بها فقط");
-                $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").hide();
-                $(e.currentTarget).val("");
-            }
-        }
-    });
+//         for (let i = 0; i < allAttachments.length; i++) {
+//             let fileSplited = allAttachments[i].name.split(".");
+//             let fileExt = fileSplited[fileSplited.length - 1].toLowerCase();
+//             if ($.inArray(fileExt, filesExtension) == -1) {
+//                 functions.warningAlert("من فضلك أدخل الملفات بالامتدادات المسموح بها فقط");
+//                 $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").hide();
+//                 $(e.currentTarget).val("");
+//             }
+//         }
+//     });
 
-    $("#courtCaseNumber").on("keyup", (e) => {
-        CourtCaseNumberInput = $(e.currentTarget).val().trim();
-    });
+//     $("#courtCaseNumber").on("keyup", (e) => {
+//         CourtCaseNumberInput = $(e.currentTarget).val().trim();
+//     });
 
-    $("#courtCaseComments").on("keyup", (e) => {
-        CourtCaseCommentsInput = $(e.currentTarget).val().trim();
-    });
+//     $("#courtCaseComments").on("keyup", (e) => {
+//         CourtCaseCommentsInput = $(e.currentTarget).val().trim();
+//     });
 
-    $(".AddCourtCaseNumberBtn").on("click", (e) => {
-        if (CourtCaseNumberInput != "") {
-            if (allAttachments != null && allAttachments.length > 0) {
-                request = {
-                    Request: {
-                        Title: "تم إضافة الرقم القضائي",
-                        Comments: CourtCaseCommentsInput,
-                        ViolationId: ViolationID,
-                        TaskId: TaskID,
-                        CourtCaseNumber: CourtCaseNumberInput,
-                        ID: ReferralID,
-                        Status: "تم إضافة الرقم القضائي"
-                    }
-                };
-                $(".overlay").addClass("active");
-                vehicleViolationReferral.editReferralAPIResponse(
-                    request,
-                    ReferralID,
-                    "إضافة الرقم القضائي",
-                    "#courtCaseNumberAttach",
-                    "تم إضافة الرقم القضائي"
-                );
-            } else {
-                functions.warningAlert("من فضلك قم بإرفاق المستند المرفق بالرقم القضائي");
-            }
-        } else {
-            functions.warningAlert("من فضلك قم بإضافة الرقم القضائي بشكل صحيح");
-        }
-    });
-};
+//     $(".AddCourtCaseNumberBtn").on("click", (e) => {
+//         if (CourtCaseNumberInput != "") {
+//             if (allAttachments != null && allAttachments.length > 0) {
+//                 request = {
+//                     Request: {
+//                         Title: "تم إضافة الرقم القضائي",
+//                         Comments: CourtCaseCommentsInput,
+//                         ViolationId: ViolationID,
+//                         TaskId: TaskID,
+//                         CourtCaseNumber: CourtCaseNumberInput,
+//                         ID: ReferralID,
+//                         Status: "تم إضافة الرقم القضائي"
+//                     }
+//                 };
+//                 $(".overlay").addClass("active");
+//                 vehicleViolationReferral.editReferralAPIResponse(
+//                     request,
+//                     ReferralID,
+//                     "إضافة الرقم القضائي",
+//                     "#courtCaseNumberAttach",
+//                     "تم إضافة الرقم القضائي"
+//                 );
+//             } else {
+//                 functions.warningAlert("من فضلك قم بإرفاق المستند المرفق بالرقم القضائي");
+//             }
+//         } else {
+//             functions.warningAlert("من فضلك قم بإضافة الرقم القضائي بشكل صحيح");
+//         }
+//     });
+// };
 
-// Refer to Prosecutor Popup
-vehicleViolationReferral.referToProsecutorPopup = (ReferralID, ViolationID, TaskID, ViolationCode, CourtCaseNumber) => {
-    $(".overlay").removeClass("active");
-    let popupHtml = `
-        <div class="popupHeader">
-            <div class="violationsCode"> 
-                <p>إحالة إلى المدعي العام</p>
-            </div>
-        </div>
-        <div class="popupBody">
-            <div class="popupForm detailsPopupForm" id="detailsPopupForm">
+// // Refer to Prosecutor Popup
+// vehicleViolationReferral.referToProsecutorPopup = (ReferralID, ViolationID, TaskID, ViolationCode, CourtCaseNumber) => {
+//     $(".overlay").removeClass("active");
+//     let popupHtml = `
+//         <div class="popupHeader">
+//             <div class="violationsCode"> 
+//                 <p>إحالة إلى المدعي العام</p>
+//             </div>
+//         </div>
+//         <div class="popupBody">
+//             <div class="popupForm detailsPopupForm" id="detailsPopupForm">
 
-                <div class="formContent">
-                    <div class="formBox">
-                        <div class="formElements">
-                            <div class="row">
-                                <div class="col-12">
-                                    <div class="confirmationMessage">
-                                        <p>هل أنت متأكد من إحالة القضية رقم (${CourtCaseNumber}) إلى المدعي العام العسكري؟</p>
-                                    </div>
-                                </div>
-                                <div class="col-md-12">
-                                    <div class="form-group customFormGroup">
-                                        <label for="prosecutorComments" class="customLabel">ملاحظات</label>
-                                        <textarea class="form-control customTextArea prosecutorComments" id="prosecutorComments" rows="3" placeholder="أدخل الملاحظات"></textarea>
-                                    </div>
-                                </div>
-                                <div class="col-12">
-                                    <div class="form-group customFormGroup">
-                                        <label for="prosecutorAttach" class="customLabel">إرفاق مستند الإحالة</label>
-                                        <div class="fileBox" id="dropContainer">
-                                            <div class="inputFileBox">
-                                                <img src="/Style Library/MiningViolations/images/fileIcon.svg" alt="File Icon">
-                                                <p class="dragDropFilesLabel">قم بالسحب والإفلات لرفع الملف , أو <a href="#!" class="attachFileLink">استعراض ملفاتي</a></p>
-                                                <input type="file" class="customInput attachFilesInput prosecutorAttach form-control" id="prosecutorAttach" accept="image/gif,image/svg,image/jpg,image/jpeg,image/png,.doc,.docx,.pdf,.xls,.xlsx,.pptx" multiple>
-                                            </div>
-                                        </div>
-                                        <div class="dropFilesArea" id="dropFilesArea"></div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+//                 <div class="formContent">
+//                     <div class="formBox">
+//                         <div class="formElements">
+//                             <div class="row">
+//                                 <div class="col-12">
+//                                     <div class="confirmationMessage">
+//                                         <p>هل أنت متأكد من إحالة القضية رقم (${CourtCaseNumber}) إلى المدعي العام العسكري؟</p>
+//                                     </div>
+//                                 </div>
+//                                 <div class="col-md-12">
+//                                     <div class="form-group customFormGroup">
+//                                         <label for="prosecutorComments" class="customLabel">ملاحظات</label>
+//                                         <textarea class="form-control customTextArea prosecutorComments" id="prosecutorComments" rows="3" placeholder="أدخل الملاحظات"></textarea>
+//                                     </div>
+//                                 </div>
+//                                 <div class="col-12">
+//                                     <div class="form-group customFormGroup">
+//                                         <label for="prosecutorAttach" class="customLabel">إرفاق مستند الإحالة</label>
+//                                         <div class="fileBox" id="dropContainer">
+//                                             <div class="inputFileBox">
+//                                                 <img src="/Style Library/MiningViolations/images/fileIcon.svg" alt="File Icon">
+//                                                 <p class="dragDropFilesLabel">قم بالسحب والإفلات لرفع الملف , أو <a href="#!" class="attachFileLink">استعراض ملفاتي</a></p>
+//                                                 <input type="file" class="customInput attachFilesInput prosecutorAttach form-control" id="prosecutorAttach" accept="image/gif,image/svg,image/jpg,image/jpeg,image/png,.doc,.docx,.pdf,.xls,.xlsx,.pptx" multiple>
+//                                             </div>
+//                                         </div>
+//                                         <div class="dropFilesArea" id="dropFilesArea"></div>
+//                                     </div>
+//                                 </div>
+//                             </div>
+//                         </div>
+//                     </div>
+//                 </div>
 
-                <div class="formButtonsBox">
-                    <div class="row">
-                        <div class="col-12">
-                            <div class="buttonsBox centerButtonsBox">
-                                <div class="btnStyle confirmBtnGreen popupBtn confirmReferToProsecutorBtn" id="confirmReferToProsecutorBtn">تأكيد</div>
-                                <div class="btnStyle cancelBtn popupBtn closeReferToProsecutorPopup" id="closeReferToProsecutorPopup" data-dismiss="modal" aria-label="Close">إلغاء</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+//                 <div class="formButtonsBox">
+//                     <div class="row">
+//                         <div class="col-12">
+//                             <div class="buttonsBox centerButtonsBox">
+//                                 <div class="btnStyle confirmBtnGreen popupBtn confirmReferToProsecutorBtn" id="confirmReferToProsecutorBtn">تأكيد</div>
+//                                 <div class="btnStyle cancelBtn popupBtn closeReferToProsecutorPopup" id="closeReferToProsecutorPopup" data-dismiss="modal" aria-label="Close">إلغاء</div>
+//                             </div>
+//                         </div>
+//                     </div>
+//                 </div>
 
-            </div>
-        </div>`;
+//             </div>
+//         </div>`;
 
-    functions.declarePopup(
-        ["generalPopupStyle", "greenPopup", "editPopup"],
-        popupHtml
-    );
+//     functions.declarePopup(
+//         ["generalPopupStyle", "greenPopup", "editPopup"],
+//         popupHtml
+//     );
 
-    let ProsecutorCommentsInput = $("#prosecutorComments").val();
-    let filesExtension = [
-        "gif", "svg", "jpg", "jpeg", "png",
-        "doc", "docx", "pdf", "xls", "xlsx", "pptx"
-    ];
-    let allAttachments;
-    let countOfFiles;
-    let request = {};
+//     let ProsecutorCommentsInput = $("#prosecutorComments").val();
+//     let filesExtension = [
+//         "gif", "svg", "jpg", "jpeg", "png",
+//         "doc", "docx", "pdf", "xls", "xlsx", "pptx"
+//     ];
+//     let allAttachments;
+//     let countOfFiles;
+//     let request = {};
 
-    // File attachment handling
-    $("#prosecutorAttach").on("change", (e) => {
-        allAttachments = $(e.currentTarget)[0].files;
-        if (allAttachments.length > 0) {
-            $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").show().empty();
-        }
-        for (let i = 0; i < allAttachments.length; i++) {
-            $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").append(`
-                <div class="file">
-                    <p class="fileName">${allAttachments[i].name}</p>
-                    <span class="deleteFile" data-index="${i}"><i class="fa-sharp fa-solid fa-x"></i></span>
-                </div>
-            `);
-        }
+//     // File attachment handling
+//     $("#prosecutorAttach").on("change", (e) => {
+//         allAttachments = $(e.currentTarget)[0].files;
+//         if (allAttachments.length > 0) {
+//             $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").show().empty();
+//         }
+//         for (let i = 0; i < allAttachments.length; i++) {
+//             $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").append(`
+//                 <div class="file">
+//                     <p class="fileName">${allAttachments[i].name}</p>
+//                     <span class="deleteFile" data-index="${i}"><i class="fa-sharp fa-solid fa-x"></i></span>
+//                 </div>
+//             `);
+//         }
 
-        $(".deleteFile").on("click", (event) => {
-            let index = $(event.currentTarget).closest(".file").index();
-            $(event.currentTarget).closest(".file").remove();
-            let fileBuffer = new DataTransfer();
-            for (let i = 0; i < allAttachments.length; i++) {
-                if (index !== i) {
-                    fileBuffer.items.add(allAttachments[i]);
-                }
-            }
-            allAttachments = fileBuffer.files;
-            countOfFiles = allAttachments.length;
-            if (countOfFiles == 0) {
-                $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").hide();
-            }
-        });
+//         $(".deleteFile").on("click", (event) => {
+//             let index = $(event.currentTarget).closest(".file").index();
+//             $(event.currentTarget).closest(".file").remove();
+//             let fileBuffer = new DataTransfer();
+//             for (let i = 0; i < allAttachments.length; i++) {
+//                 if (index !== i) {
+//                     fileBuffer.items.add(allAttachments[i]);
+//                 }
+//             }
+//             allAttachments = fileBuffer.files;
+//             countOfFiles = allAttachments.length;
+//             if (countOfFiles == 0) {
+//                 $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").hide();
+//             }
+//         });
 
-        for (let i = 0; i < allAttachments.length; i++) {
-            let fileSplited = allAttachments[i].name.split(".");
-            let fileExt = fileSplited[fileSplited.length - 1].toLowerCase();
-            if ($.inArray(fileExt, filesExtension) == -1) {
-                functions.warningAlert("من فضلك أدخل الملفات بالامتدادات المسموح بها فقط");
-                $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").hide();
-                $(e.currentTarget).val("");
-            }
-        }
-    });
+//         for (let i = 0; i < allAttachments.length; i++) {
+//             let fileSplited = allAttachments[i].name.split(".");
+//             let fileExt = fileSplited[fileSplited.length - 1].toLowerCase();
+//             if ($.inArray(fileExt, filesExtension) == -1) {
+//                 functions.warningAlert("من فضلك أدخل الملفات بالامتدادات المسموح بها فقط");
+//                 $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").hide();
+//                 $(e.currentTarget).val("");
+//             }
+//         }
+//     });
 
-    $("#prosecutorComments").on("keyup", (e) => {
-        ProsecutorCommentsInput = $(e.currentTarget).val().trim();
-    });
+//     $("#prosecutorComments").on("keyup", (e) => {
+//         ProsecutorCommentsInput = $(e.currentTarget).val().trim();
+//     });
 
-    $(".confirmReferToProsecutorBtn").on("click", (e) => {
-        if (allAttachments != null && allAttachments.length > 0) {
-            request = {
-                Request: {
-                    Title: "قيد انتظار المدعي العام العسكري",
-                    Comments: ProsecutorCommentsInput,
-                    ViolationId: ViolationID,
-                    TaskId: TaskID,
-                    ID: ReferralID,
-                    Status: "قيد انتظار المدعي العام العسكري"
-                }
-            };
-            $(".overlay").addClass("active");
-            vehicleViolationReferral.editReferralAPIResponse(
-                request,
-                ReferralID,
-                "إحالة إلى المدعي العام",
-                "#prosecutorAttach",
-                "تم إحالة القضية إلى المدعي العام العسكري"
-            );
-        } else {
-            functions.warningAlert("من فضلك قم بإرفاق مستند الإحالة");
-        }
-    });
-};
+//     $(".confirmReferToProsecutorBtn").on("click", (e) => {
+//         if (allAttachments != null && allAttachments.length > 0) {
+//             request = {
+//                 Request: {
+//                     Title: "قيد انتظار المدعي العام العسكري",
+//                     Comments: ProsecutorCommentsInput,
+//                     ViolationId: ViolationID,
+//                     TaskId: TaskID,
+//                     ID: ReferralID,
+//                     Status: "قيد انتظار المدعي العام العسكري"
+//                 }
+//             };
+//             $(".overlay").addClass("active");
+//             vehicleViolationReferral.editReferralAPIResponse(
+//                 request,
+//                 ReferralID,
+//                 "إحالة إلى المدعي العام",
+//                 "#prosecutorAttach",
+//                 "تم إحالة القضية إلى المدعي العام العسكري"
+//             );
+//         } else {
+//             functions.warningAlert("من فضلك قم بإرفاق مستند الإحالة");
+//         }
+//     });
+// };
 
 // Pay Case Popup (تسديد القضية)
 vehicleViolationReferral.payCasePopup = (
@@ -921,7 +989,7 @@ vehicleViolationReferral.payCasePopup = (
     let popupHtml = `
         <div class="popupHeader">
             <div class="violationsCode"> 
-                <p>تسديد القضية - الرقم القضائي (${courtCaseNumber})</p>
+                <p>تسديد القضية</p>
             </div>
         </div>
         <div class="popupBody">
@@ -1054,7 +1122,581 @@ vehicleViolationReferral.payCasePopup = (
         }
     });
 };
+// Pay Case Popup (سداد على الإحالة )
+// vehicleViolationReferral.payCaseAfterEditPopup = (
+//     ReferralID,
+//     ViolationID,
+//     TaskID,
+//     referralNumber,
+//     violationCode,
+//     totalPrice,
+//     // oldPrice,
+//     referredAmount
+// ) => {
+//     $(".overlay").removeClass("active");
+//     let popupHtml = `
+//         <div class="popupHeader">
+//             <div class="violationsCode"> 
+//                 <p>سداد على الإحالة - الإحالة رقم (${referralNumber})</p>
+//             </div>
+//         </div>
+//         <div class="popupBody">
+//             <div class="popupForm detailsPopupForm" id="detailsPopupForm">
 
+//                 <div class="formContent">
+//                     <div class="formBox">
+//                         <div class="formElements">
+//                             <div class="row">
+//                                 <div class="col-md-4">
+//                                     <div class="form-group customFormGroup">
+//                                         <label for="violationOldPrice" class="customLabel">مبلغ المخالفة</label>
+//                                         <input class="form-control disabled customInput violationOldPrice" id="violationOldPrice" type="text" value="${functions.splitBigNumbersByComma(totalPrice)}" disabled>
+//                                     </div>
+//                                 </div>
+//                                 <div class="col-md-4">
+//                                     <div class="form-group customFormGroup">
+//                                         <label for="referredAmountValue" class="customLabel">مبلغ الإحالة</label>
+//                                         <input class="form-control disabled customInput referredAmountValue" id="referredAmountValue" type="text" value="${functions.splitBigNumbersByComma(referredAmount)}" disabled>
+//                                     </div>
+//                                 </div>
+//                                 <div class="col-md-4">
+//                                     <div class="form-group customFormGroup">
+//                                         <label for="courtCaseNumber" class="customLabel">الرقم القضائي</label>
+//                                         <input class="form-control customInput courtCaseNumber" id="courtCaseNumber" type="text" placeholder="أدخل الرقم القضائي">
+//                                     </div>
+//                                 </div>
+//                                 <!--
+//                                 <div class="col-md-4">
+//                                     <div class="form-group customFormGroup">
+//                                         <label for="violationCasePrice" class="customLabel">المبلغ الكلي المطلوب سداده</label>
+//                                         <input class="form-control disabled customInput violationCasePrice" id="violationCasePrice" type="text" value="${functions.splitBigNumbersByComma(totalPrice)}" disabled>
+//                                     </div>
+//                                 </div>
+//                                 -->
+//                                 <div class="col-md-6">
+//                                     <div class="form-group customFormGroup">
+//                                         <label for="payCaseAfterEditAttachment" class="customLabel">إرفاق مستند الرقم القضائي</label>
+//                                         <div class="fileBox" id="dropContainer">
+//                                             <div class="inputFileBox">
+//                                                 <img src="/Style Library/MiningViolations/images/fileIcon.svg" alt="File Icon">
+//                                                 <p class="dragDropFilesLabel">قم بالسحب والإفلات لرفع الملف , أو <a href="#!" class="attachFileLink">استعراض ملفاتي</a></p>
+//                                                 <input type="file" class="customInput attachFilesInput payCaseAfterEditAttachment form-control" id="payCaseAfterEditAttachment" accept="image/gif,image/svg,image/jpg,image/jpeg,image/png,.doc,.docx,.pdf,.xls,.xlsx,.pptx" multiple>
+//                                             </div>
+//                                         </div>
+//                                         <div class="dropFilesArea" id="dropFilesArea"></div>
+//                                     </div>
+//                                 </div>
+//                                 <div class="col-md-6">
+//                                     <div class="form-group customFormGroup">
+//                                         <label for="courtCaseComments" class="customLabel">ملاحظات</label>
+//                                         <textarea class="form-control customTextArea courtCaseComments" id="courtCaseComments" rows="3" placeholder="أدخل الملاحظات"></textarea>
+//                                     </div>
+//                                 </div>
+
+//                             </div>
+//                         </div>
+//                     </div>
+//                 </div>
+
+//                 <div class="formButtonsBox">
+//                     <div class="row">
+//                         <div class="col-12">
+//                             <div class="buttonsBox centerButtonsBox">
+//                                 <div class="btnStyle confirmBtnGreen popupBtn payCaseAfterEditBtn" id="payCaseAfterEditBtn">سداد على الحظر</div>
+//                                 <div class="btnStyle cancelBtn popupBtn closePayCasePopup" id="closePayCasePopup" data-dismiss="modal" aria-label="Close">إلغاء</div>
+//                             </div>
+//                         </div>
+//                     </div>
+//                 </div>
+
+//             </div>
+//         </div>`;
+
+//     functions.declarePopup(
+//         ["generalPopupStyle", "greenPopup", "editPopup"],
+//         popupHtml
+//     );
+
+//     let CourtCaseNumberInput = $("#courtCaseNumber").val();
+//     let CourtCaseCommentsInput = $("#courtCaseComments").val();
+//     let filesExtension = [
+//         "gif", "svg", "jpg", "jpeg", "png",
+//         "doc", "docx", "pdf", "xls", "xlsx", "pptx"
+//     ];
+//     let allAttachments;
+//     let countOfFiles;
+//     let request = {};
+
+//     $("#courtCaseNumber").on("keyup", (e) => {
+//         CourtCaseNumberInput = $(e.currentTarget).val().trim();
+//     });
+
+//     $("#courtCaseComments").on("keyup", (e) => {
+//         CourtCaseCommentsInput = $(e.currentTarget).val().trim();
+//     });
+
+//     // File attachment handling
+//     $("#payCaseAfterEditAttachment").on("change", (e) => {
+//         allAttachments = $(e.currentTarget)[0].files;
+//         if (allAttachments.length > 0) {
+//             $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").show().empty();
+//         }
+//         for (let i = 0; i < allAttachments.length; i++) {
+//             $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").append(`
+//                 <div class="file">
+//                     <p class="fileName">${allAttachments[i].name}</p>
+//                     <span class="deleteFile" data-index="${i}"><i class="fa-sharp fa-solid fa-x"></i></span>
+//                 </div>
+//             `);
+//         }
+
+//         $(".deleteFile").on("click", (event) => {
+//             let index = $(event.currentTarget).closest(".file").index();
+//             $(event.currentTarget).closest(".file").remove();
+//             let fileBuffer = new DataTransfer();
+//             for (let i = 0; i < allAttachments.length; i++) {
+//                 if (index !== i) {
+//                     fileBuffer.items.add(allAttachments[i]);
+//                 }
+//             }
+//             allAttachments = fileBuffer.files;
+//             countOfFiles = allAttachments.length;
+//             if (countOfFiles == 0) {
+//                 $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").hide();
+//             }
+//         });
+
+//         for (let i = 0; i < allAttachments.length; i++) {
+//             let fileSplited = allAttachments[i].name.split(".");
+//             let fileExt = fileSplited[fileSplited.length - 1].toLowerCase();
+//             if ($.inArray(fileExt, filesExtension) == -1) {
+//                 functions.warningAlert("من فضلك أدخل الملفات بالامتدادات المسموح بها فقط");
+//                 $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").hide();
+//                 $(e.currentTarget).val("");
+//             }
+//         }
+//     });
+
+//     $(".payCaseAfterEditBtn").on("click", (e) => {
+//         if (CourtCaseNumberInput != "") {
+//             if (allAttachments != null && allAttachments.length > 0) {
+//                 request = {
+//                     Request: {
+//                         Title: "تم الإحالة إلى المدعي العام العسكري",
+//                         Comments: CourtCaseCommentsInput,
+//                         ViolationId: ViolationID,
+//                         TaskId: TaskID,
+//                         CourtCaseNumber: CourtCaseNumberInput,
+//                         ID: ReferralID,
+//                         Status: "تم الإحالة إلى المدعي العام العسكري"
+//                     }
+//                 };
+//                 $(".overlay").addClass("active");
+//                 vehicleViolationReferral.editReferralAPIResponse(
+//                     request,
+//                     ReferralID,
+//                     "تم الإحالة إلى المدعي العام العسكري",
+//                     "#payCaseAfterEditAttachment",
+//                     "تم الإحالة إلى المدعي العام العسكري"
+//                 );
+
+//                 // Calculate actual amount paid (remove commas for calculation)
+//                 let actualAmountPaid = referredAmount.toString().replace(/\,/g, "");
+//                 // First change task status, then upload attachment in the success callback
+//                 vehicleViolationReferral.changeTaskStatusAfterPayCase(
+//                     TaskID,
+//                     ViolationID,
+//                     "#payCaseAfterEditAttachment",
+//                     parseFloat(actualAmountPaid),  // Add the actual amount paid
+//                     ReferralID  // Add ReferralID for the request
+//                 );
+//             } else {
+//                 functions.warningAlert("من فضلك قم بإرفاق المستند المرفق بالرقم القضائي");
+//             }
+//         } else {
+//             functions.warningAlert("من فضلك قم بإضافة الرقم القضائي بشكل صحيح");
+//         }
+
+
+//         // if (allAttachments != null && allAttachments.length > 0) {
+//         //     $(".overlay").addClass("active");
+
+//         //     // Calculate actual amount paid (remove commas for calculation)
+//         //     let actualAmountPaid = referredAmount.toString().replace(/\,/g, "");
+
+//         //     // First change task status, then upload attachment in the success callback
+//         //     vehicleViolationReferral.changeTaskStatusAfterPayCase(
+//         //         TaskID,
+//         //         ViolationID,
+//         //         "#payCaseAfterEditAttachment",
+//         //         parseFloat(actualAmountPaid),  // Add the actual amount paid
+//         //         ReferralID  // Add ReferralID for the request
+//         //     );
+
+//         // } else {
+//         //     functions.warningAlert("من فضلك قم بإرفاق إيصال السداد");
+//         // }
+//     });
+// };
+
+// new code
+vehicleViolationReferral.payCaseAfterEditPopup = (
+    ReferralID,
+    ViolationID,
+    TaskID,
+    referralNumber,
+    violationCode,
+    totalPrice,
+    referredAmount
+) => {
+    $(".overlay").removeClass("active");
+
+    // State management
+    let popupState = {
+        courtCaseNumber: "",
+        courtCaseComments: "",
+        attachments: null,
+        referralID: ReferralID,
+        violationID: ViolationID,
+        taskID: TaskID,
+        referredAmount: referredAmount,
+        totalPrice: totalPrice,
+        filesExtension: ["gif", "svg", "jpg", "jpeg", "png", "doc", "docx", "pdf", "xls", "xlsx", "pptx"]
+    };
+
+    // Render popup HTML
+    renderPopup();
+
+    // Setup event handlers
+    setupEventHandlers();
+
+    function renderPopup() {
+        let popupHtml = `
+            <div class="popupHeader">
+                <div class="violationsCode"> 
+                    <p>سداد على الإحالة - الإحالة رقم (${referralNumber})</p>
+                </div>
+            </div>
+            <div class="popupBody">
+                <div class="popupForm detailsPopupForm" id="detailsPopupForm">
+                    <div class="formContent">
+                        <div class="formBox">
+                            <div class="formElements">
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="form-group customFormGroup">
+                                            <label for="violationOldPrice" class="customLabel">مبلغ المخالفة</label>
+                                            <input class="form-control disabled customInput violationOldPrice" id="violationOldPrice" type="text" value="${functions.splitBigNumbersByComma(totalPrice)}" disabled>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group customFormGroup">
+                                            <label for="referredAmountValue" class="customLabel">مبلغ الإحالة</label>
+                                            <input class="form-control disabled customInput referredAmountValue" id="referredAmountValue" type="text" value="${functions.splitBigNumbersByComma(referredAmount)}" disabled>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group customFormGroup">
+                                            <label for="courtCaseNumber" class="customLabel">الرقم القضائي</label>
+                                            <input class="form-control customInput courtCaseNumber" id="courtCaseNumber" type="text" placeholder="أدخل الرقم القضائي">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group customFormGroup">
+                                            <label for="payCaseAfterEditAttachment" class="customLabel">إرفاق مستند الرقم القضائي</label>
+                                            <div class="fileBox" id="dropContainer">
+                                                <div class="inputFileBox">
+                                                    <img src="/Style Library/MiningViolations/images/fileIcon.svg" alt="File Icon">
+                                                    <p class="dragDropFilesLabel">قم بالسحب والإفلات لرفع الملف , أو <a href="#!" class="attachFileLink">استعراض ملفاتي</a></p>
+                                                    <input type="file" class="customInput attachFilesInput payCaseAfterEditAttachment form-control" id="payCaseAfterEditAttachment" accept="image/gif,image/svg,image/jpg,image/jpeg,image/png,.doc,.docx,.pdf,.xls,.xlsx,.pptx" multiple>
+                                                </div>
+                                            </div>
+                                            <div class="dropFilesArea" id="dropFilesArea"></div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group customFormGroup">
+                                            <label for="courtCaseComments" class="customLabel">ملاحظات</label>
+                                            <textarea class="form-control customTextArea courtCaseComments" id="courtCaseComments" rows="3" placeholder="أدخل الملاحظات"></textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="formButtonsBox">
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="buttonsBox centerButtonsBox">
+                                    <div class="btnStyle confirmBtnGreen popupBtn payCaseAfterEditBtn" id="payCaseAfterEditBtn">سداد على الحظر</div>
+                                    <div class="btnStyle cancelBtn popupBtn closePayCasePopup" id="closePayCasePopup" data-dismiss="modal" aria-label="Close">إلغاء</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>`;
+
+        functions.declarePopup(["generalPopupStyle", "greenPopup", "editPopup"], popupHtml);
+    }
+
+    function setupEventHandlers() {
+        // Court case number input handler
+        $("#courtCaseNumber").on("keyup", (e) => {
+            popupState.courtCaseNumber = $(e.currentTarget).val().trim();
+        });
+
+        // Comments input handler
+        $("#courtCaseComments").on("keyup", (e) => {
+            popupState.courtCaseComments = $(e.currentTarget).val().trim();
+        });
+
+        // File attachment handler
+        $("#payCaseAfterEditAttachment").on("change", handleFileAttachment);
+
+        // Submit button handler
+        $(".payCaseAfterEditBtn").on("click", handleSubmit);
+    }
+
+    function handleFileAttachment(e) {
+        popupState.attachments = $(e.currentTarget)[0].files;
+        const $fileBox = $(e.currentTarget).parents(".fileBox");
+        const $dropFilesArea = $fileBox.siblings(".dropFilesArea");
+
+        if (popupState.attachments.length > 0) {
+            $dropFilesArea.show().empty();
+        }
+
+        // Validate file extensions
+        let invalidFiles = false;
+        for (let i = 0; i < popupState.attachments.length; i++) {
+            const file = popupState.attachments[i];
+            const fileExt = file.name.split('.').pop().toLowerCase();
+
+            if (!popupState.filesExtension.includes(fileExt)) {
+                invalidFiles = true;
+                continue;
+            }
+
+            $dropFilesArea.append(`
+                <div class="file" data-file-index="${i}">
+                    <p class="fileName">${file.name}</p>
+                    <span class="deleteFile"><i class="fa-sharp fa-solid fa-x"></i></span>
+                </div>
+            `);
+        }
+
+        if (invalidFiles) {
+            functions.warningAlert("من فضلك أدخل الملفات بالامتدادات المسموح بها فقط");
+            $(e.currentTarget).val("");
+            $dropFilesArea.hide();
+            popupState.attachments = null;
+            return;
+        }
+
+        // Attach delete handler to new file elements
+        $(".deleteFile").off("click").on("click", handleFileDelete);
+    }
+
+    function handleFileDelete(event) {
+        const $fileElement = $(event.currentTarget).closest(".file");
+        const index = $fileElement.data("file-index");
+        $fileElement.remove();
+
+        // Remove file from FileList
+        if (popupState.attachments && popupState.attachments.length > 0) {
+            const fileBuffer = new DataTransfer();
+            for (let i = 0; i < popupState.attachments.length; i++) {
+                if (index !== i) {
+                    fileBuffer.items.add(popupState.attachments[i]);
+                }
+            }
+            popupState.attachments = fileBuffer.files;
+        }
+
+        // Hide drop area if no files left
+        if (popupState.attachments && popupState.attachments.length === 0) {
+            $(event.currentTarget).parents(".fileBox").siblings(".dropFilesArea").hide();
+        }
+    }
+
+    function handleSubmit(e) {
+        // Validation
+        if (!popupState.courtCaseNumber) {
+            functions.warningAlert("من فضلك قم بإضافة الرقم القضائي بشكل صحيح");
+            return;
+        }
+
+        if (!popupState.attachments || popupState.attachments.length === 0) {
+            functions.warningAlert("من فضلك قم بإرفاق المستند المرفق بالرقم القضائي");
+            return;
+        }
+
+        $(".overlay").addClass("active");
+
+        // Calculate actual amount paid (remove commas for calculation)
+        const actualAmountPaid = parseFloat(popupState.referredAmount.toString().replace(/,/g, ""));
+
+        // Execute operations in sequence
+        executePaymentProcess(actualAmountPaid);
+    }
+
+    function executePaymentProcess(actualAmountPaid) {
+        // Step 1: Update case with court case number (Cases.aspx/Save)
+        updateCaseWithCourtNumber()
+            .then(() => {
+                // Step 2: Update task status
+                return updateTaskStatus(actualAmountPaid);
+            })
+            .then(() => {
+                // Step 3: Create referral attachment record
+                return createReferralAttachmentRecord();
+            })
+            .then((recordId) => {
+                // Step 4: Upload referral attachments
+                return uploadReferralAttachments(recordId);
+            })
+            .then(() => {
+                // Step 5: Upload task attachments (if needed)
+                if (popupState.attachments && popupState.attachments.length > 0) {
+                    return uploadTaskAttachments();
+                }
+            })
+            .then(() => {
+                // All operations completed successfully
+                $(".overlay").removeClass("active");
+                functions.sucessAlert("تم السداد بنجاح");
+                functions.closePopup();
+
+                // Refresh the table
+                vehicleViolationReferral.getVehicleViolationReferrals(
+                    vehicleViolationReferral.pageIndex,
+                    true
+                );
+            })
+            .catch((error) => {
+                console.error("Payment process failed:", error);
+                $(".overlay").removeClass("active");
+                functions.warningAlert(error.message || "حدث خطأ أثناء عملية السداد");
+            });
+    }
+
+    function updateCaseWithCourtNumber() {
+        const request = {
+            Request: {
+                Title: "تم الإحالة إلى المدعي العام العسكري",
+                Comments: popupState.courtCaseComments || "",
+                ViolationId: popupState.violationID,
+                TaskId: popupState.taskID,
+                CourtCaseNumber: popupState.courtCaseNumber,
+                ID: popupState.referralID,
+                Status: "تم الإحالة إلى المدعي العام العسكري"
+            }
+        };
+
+        return functions.requester("/_layouts/15/Uranium.Violations.SharePoint/Cases.aspx/Save", request)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error("Failed to update case with court number");
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (!data.d || !data.d.Status) {
+                    throw new Error("Case update failed");
+                }
+                return data;
+            });
+    }
+
+    function updateTaskStatus(actualAmountPaid) {
+        const request = {
+            request: {
+                Data: {
+                    ID: popupState.taskID,
+                    ViolationId: popupState.violationID,
+                    ActualAmountPaid: actualAmountPaid,
+                    Status: "Paid"
+                }
+            }
+        };
+
+        return functions.requester("/_layouts/15/Uranium.Violations.SharePoint/Tasks.aspx/Save", request)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error("Failed to update task status");
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (!data.d || !data.d.Status) {
+                    throw new Error("Task status update failed");
+                }
+                return data;
+            });
+    }
+
+    function createReferralAttachmentRecord() {
+        const request = {
+            Request: {
+                Title: "New Attachment Record",
+                CaseId: popupState.referralID,
+                UploadPhase: "تم الإحالة إلى المدعي العام العسكري",
+                Comments: popupState.courtCaseComments || "",
+            }
+        };
+
+        return functions.requester("/_layouts/15/Uranium.Violations.SharePoint/CaseAttachments.aspx/Save", request)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error("Failed to create attachment record");
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (!data.d || !data.d.Status) {
+                    throw new Error("Attachment record creation failed");
+                }
+                return data.d.Result.Id; // Return record ID for next step
+            });
+    }
+
+    function uploadReferralAttachments(recordId) {
+        return uploadAttachments(recordId, popupState.attachments, "CasesAttachments");
+    }
+
+    function uploadTaskAttachments() {
+        return uploadAttachments(popupState.taskID, popupState.attachments, "ViolationsCycle");
+    }
+
+    function uploadAttachments(itemId, files, listName) {
+        return new Promise((resolve, reject) => {
+            const formData = new FormData();
+            formData.append("itemId", itemId);
+            formData.append("listName", listName);
+
+            // Append all files
+            for (let i = 0; i < files.length; i++) {
+                formData.append("file" + i, files[i]);
+            }
+
+            $.ajax({
+                type: "POST",
+                url: "/_layouts/15/Uranium.Violations.SharePoint/Attachments.aspx/Upload",
+                processData: false,
+                contentType: false,
+                data: formData,
+                success: (data) => {
+                    resolve(data);
+                },
+                error: (err) => {
+                    reject(new Error(`Failed to upload attachments to ${listName}`));
+                }
+            });
+        });
+    }
+};
 vehicleViolationReferral.changeTaskStatusAfterPayCase = (TaskID, ViolationID, attachInput, ActualAmountPaid, ReferralID, Comments = "") => {
     let request = {
         request: {
@@ -1121,7 +1763,7 @@ vehicleViolationReferral.uploadTaskAttachment = (TaskId, attachInput, ListName =
         error: (err) => {
             functions.warningAlert("خطأ في إرسال البيانات لقاعدة البيانات");
             $(".overlay").removeClass("active");
-            console.log(err.responseText);
+            console.error(err.responseText);
         },
     });
 };
@@ -1228,12 +1870,12 @@ vehicleViolationReferral.uploadReferralAttachments = (
         success: (data) => {
             $(".overlay").removeClass("active");
             functions.sucessAlert(Message);
-            functions.closePopup();
-            // Refresh the table
-            vehicleViolationReferral.getVehicleViolationReferrals(
-                vehicleViolationReferral.pageIndex,
-                true
-            );
+            // functions.closePopup();
+            // // Refresh the table
+            // vehicleViolationReferral.getVehicleViolationReferrals(
+            //     vehicleViolationReferral.pageIndex,
+            //     true
+            // );
         },
         error: (err) => {
             functions.warningAlert("خطأ في إرسال البيانات لقاعدة البيانات");
@@ -1241,7 +1883,7 @@ vehicleViolationReferral.uploadReferralAttachments = (
         },
     });
 };
-
+///////////////////////////////////////////////////
 vehicleViolationReferral.getReferralAttachmentsByReferralId = (ReferralId, referralNumber) => {
     let request = {
         Request: {
@@ -1357,7 +1999,9 @@ vehicleViolationReferral.drawReferralAttachmentsPopupTable = (
             { title: "ملاحظات" },
         ],
         false,
-        false
+        false,
+        "سجل إحالات المخالفات المركبة.xlsx",
+        "سجل إحالات المخالفات المركبة"
     );
 
     let referralAttachmentsLog = Table.rows().nodes().to$();
@@ -1419,7 +2063,6 @@ vehicleViolationReferral.FindReferralById = (ReferralID, popupType = "") => {
 
             if (data != null) {
                 referralData = data.d.Result;
-                console.log('referralData', referralData)
                 // Fix: Ensure Equipments exists
                 if (referralData.Violation && !referralData.Violation.Equipments) {
                     referralData.Violation.Equipments = [];
@@ -1455,39 +2098,6 @@ vehicleViolationReferral.FindReferralById = (ReferralID, popupType = "") => {
             $(".overlay").removeClass("active");
             functions.warningAlert("حدث خطأ في جلب تفاصيل الإحالة");
         });
-};
-
-vehicleViolationReferral.filterVehicleViolationReferrals = (e) => {
-    e.preventDefault();
-
-    // Change from ReferralNumber to VehicleRegistrationNumber
-    let VehicleRegistrationNumber = $("#vehicleRegistrationNumber").val();
-    let CaseStatus = $("#CaseStatus").val();
-    let RefferedDateFrom = $("#RefferedDateFrom").val();
-    let RefferedDateTo = $("#RefferedDateTo").val();
-
-    // Update the check accordingly
-    if (
-        VehicleRegistrationNumber === "" &&
-        CaseStatus === "" &&
-        RefferedDateFrom === "" &&
-        RefferedDateTo === ""
-    ) {
-        functions.warningAlert("من فضلك قم بإدخال قيمة واحدة على الأقل من قيم البحث");
-    } else {
-        $(".PreLoader").addClass("active");
-        pagination.reset();
-        vehicleViolationReferral.dataObj.destroyTable = true;
-        vehicleViolationReferral.getVehicleViolationReferrals(
-            1,
-            true,
-            VehicleRegistrationNumber, // Pass VehicleRegistrationNumber instead of ReferralNumber
-            CaseStatus,
-            "Vehicle",
-            RefferedDateFrom,
-            RefferedDateTo
-        );
-    }
 };
 
 vehicleViolationReferral.getViolationStatus = (ViolationStatus) => {
@@ -1989,32 +2599,32 @@ vehicleViolationReferral.referralEquipmentDetails = (violationData) => {
 };
 ////////////////////////////////////////////////
 
-// Initialization
-vehicleViolationReferral.init = () => {
-    vehicleViolationReferral.pageIndex = 1;
-    vehicleViolationReferral.dataObj.destroyTable = false;
+// // Initialization
+// vehicleViolationReferral.init = () => {
+//     vehicleViolationReferral.pageIndex = 1;
+//     vehicleViolationReferral.dataObj.destroyTable = false;
 
-    // Setup event listeners
-    $(".searchBtn").off("click").on("click", vehicleViolationReferral.filterVehicleViolationReferrals);
+//     // Setup event listeners
+//     $(".searchBtn").off("click").on("click", vehicleViolationReferral.filterVehicleViolationReferrals);
 
-    // ADDED: Reset button handler
-    $(".resetBtn").off("click").on("click", vehicleViolationReferral.resetFilter);
+//     // ADDED: Reset button handler
+//     $(".resetBtn").off("click").on("click", vehicleViolationReferral.resetFilter);
 
-    $(".filterBox input").off("keypress").on("keypress", function (e) {
-        if (e.which === 13) {
-            vehicleViolationReferral.filterVehicleViolationReferrals(e);
-        }
-    });
+//     $(".filterBox input").off("keypress").on("keypress", function (e) {
+//         if (e.which === 13) {
+//             vehicleViolationReferral.filterVehicleViolationReferrals(e);
+//         }
+//     });
 
-    // Load initial data
-    $(".PreLoader").addClass("active");
-    vehicleViolationReferral.getVehicleViolationReferrals();
-};
+//     // Load initial data
+//     $(".PreLoader").addClass("active");
+//     vehicleViolationReferral.getVehicleViolationReferrals();
+// };
 
-$(document).ready(function () {
-    if (functions.getPageName() === "VehicleViolationReferralLog") {
-        vehicleViolationReferral.init();
-    }
-});
+// $(document).ready(function () {
+//     if (functions.getPageName() === "VehicleViolationReferralLog") {
+//         vehicleViolationReferral.init();
+//     }
+// });
 
 export default vehicleViolationReferral;

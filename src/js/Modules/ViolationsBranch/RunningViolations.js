@@ -9,12 +9,8 @@ runningViolations.destroyTable = false;
 runningViolations.getRunningViolations = (
   pageIndex = 1,
   destroyTable = false,
-  ViolationSector = Number(
-    $("#violationSector").children("option:selected").val()
-  ),
-  ViolationType = Number(
-    $("#TypeofViolation").children("option:selected").data("id")
-  ),
+  ViolationSector = Number($("#violationSector").children("option:selected").val()),
+  ViolationType = Number($("#TypeofViolation").children("option:selected").data("id")),
   ViolationGeneralSearch = ""
 ) => {
   let request = {
@@ -28,6 +24,8 @@ runningViolations.getRunningViolations = (
       ViolationType: ViolationType,
       SectorConfigId: ViolationSector,
       GlobalSearch: $("#violationSearch").val(),
+      Sector: 0,
+      OffenderType: $("#violationCategory").val(),
       ViolationsZone: $("#violationZone").val(),
       CreatedFrom: $("#createdFrom").val()
         ? moment($("#createdFrom").val(), "DD-MM-YYYY").format("YYYY-MM-DD")
@@ -59,15 +57,10 @@ runningViolations.getRunningViolations = (
           RunningViolation = [];
         }
       }
-      runningViolations.setPaginations(
-        ItemsData.TotalPageCount,
-        ItemsData.RowsPerPage
-      );
-      runningViolations.RunningViolationTable(
-        RunningViolation,
-        runningViolations.destroyTable
-      );
+      runningViolations.setPaginations(ItemsData.TotalPageCount, ItemsData.RowsPerPage);
+      runningViolations.RunningViolationTable(RunningViolation, destroyTable);
       runningViolations.pageIndex = ItemsData.CurrentPage;
+      functions.getCurrentUserActions();
     })
     .catch((err) => {
       console.log(err);
@@ -78,6 +71,55 @@ runningViolations.setPaginations = (TotalPages, RowsPerPage) => {
   pagination.draw("#paginationID", TotalPages, RowsPerPage);
   pagination.start("#paginationID", runningViolations.getRunningViolations);
   pagination.activateCurrentPage();
+};
+runningViolations.filterViolationsLog = (e) => {
+  let pageIndex = runningViolations.pageIndex;
+  let ViolationSectorVal = $("#violationSector").children("option:selected").val();
+  let ViolationTypeVal = $("#TypeofViolation").children("option:selected").data("id");
+  let ViolationGeneralSearch = $("#violationSearch").val();
+
+  let ViolationType;
+  let ViolationSector;
+
+  if (
+    ViolationTypeVal == "" &&
+    ViolationSectorVal == "" &&
+    ViolationGeneralSearch == ""
+  ) {
+    functions.warningAlert(
+      "من فضلك قم بإدخال قيمة واحدة على الأقل من قيم البحث"
+    );
+  } else if (
+    ViolationSectorVal != "" ||
+    ViolationTypeVal != "0" ||
+    ViolationGeneralSearch != ""
+  ) {
+    $(".PreLoader").addClass("active");
+    ViolationSector = Number($("#violationSector").children("option:selected").val());
+    ViolationType = Number($("#TypeofViolation").children("option:selected").data("id"));
+    runningViolations.getRunningViolations(
+      pageIndex,
+      true,
+      ViolationSector,
+      ViolationType,
+      ViolationGeneralSearch
+    );
+  }
+};
+
+runningViolations.resetFilter = (e) => {
+  e.preventDefault();
+  $("#violationSector").val("0");
+  $("#violationCategory").val("");
+  $("#TypeofViolation").val("0");
+  $("#violationZone").val("");
+  $("#violationSearch").val("");
+  $("#createdFrom").val("");
+  $("#createdTo").val("");
+
+  $(".PreLoader").addClass("active");
+  pagination.reset();
+  runningViolations.getRunningViolations();
 };
 
 runningViolations.RunningViolationTable = (RunningViolation, destroyTable) => {
@@ -129,7 +171,7 @@ runningViolations.RunningViolationTable = (RunningViolation, destroyTable) => {
       }
     });
   }
-  if (runningViolations.destroyTable) {
+  if (runningViolations.destroyTable || destroyTable) {
     $("#RunningViolations").DataTable().destroy();
   }
   let Table = functions.tableDeclare(
@@ -152,8 +194,15 @@ runningViolations.RunningViolationTable = (RunningViolation, destroyTable) => {
     "المخالفات القائمة"
   );
 
-  let violationlog = Table.rows().nodes().to$();
   runningViolations.destroyTable = true;
+
+  $(".ellipsisButton").on("click", (e) => {
+    $(".hiddenListBox").hide(300);
+    $(e.currentTarget).siblings(".hiddenListBox").toggle(300);
+  });
+
+  let violationlog = Table.rows().nodes().to$();
+
   $.each(violationlog, (index, record) => {
     let jQueryRecord = $(record);
     let violationTaskID = jQueryRecord.find(".violationId").data("taskid");
@@ -205,8 +254,8 @@ runningViolations.RunningViolationTable = (RunningViolation, destroyTable) => {
         runningViolations.findViolationByID(e, violationTaskID, true);
       });
   });
+
   functions.hideTargetElement(".controls", ".hiddenListBox");
-  functions.getCurrentUserActions();
 };
 
 runningViolations.findViolationByID = (
@@ -306,63 +355,5 @@ runningViolations.findViolationByID = (
     });
 };
 
-runningViolations.filterViolationsLog = (e) => {
-  let pageIndex = runningViolations.pageIndex;
-  let ViolationSectorVal = $("#violationSector")
-    .children("option:selected")
-    .val();
-  let ViolationTypeVal = $("#TypeofViolation")
-    .children("option:selected")
-    .data("id");
-  let ViolationGeneralSearch = $("#violationSearch").val();
-
-  let ViolationType;
-  let ViolationSector;
-
-  if (
-    ViolationTypeVal == "" &&
-    ViolationSectorVal == "" &&
-    ViolationGeneralSearch == ""
-  ) {
-    functions.warningAlert(
-      "من فضلك قم بإدخال قيمة واحدة على الأقل من قيم البحث"
-    );
-  } else if (
-    ViolationSectorVal != "" ||
-    ViolationTypeVal != "0" ||
-    ViolationGeneralSearch != ""
-  ) {
-    $(".PreLoader").addClass("active");
-    debugger;
-    ViolationSector = Number(
-      $("#violationSector").children("option:selected").val()
-    );
-    ViolationType = Number(
-      $("#TypeofViolation").children("option:selected").data("id")
-    );
-    runningViolations.getRunningViolations(
-      pageIndex,
-      true,
-      ViolationSector,
-      ViolationType,
-      ViolationGeneralSearch
-    );
-  }
-};
-
-runningViolations.resetFilter = (e) => {
-  e.preventDefault();
-  $("#violationSector").val("0");
-  $("#violationCategory").val("");
-  $("#TypeofViolation").val("0");
-  $("#violationZone").val("");
-  $("#violationSearch").val("");
-  $("#createdFrom").val("");
-  $("#createdTo").val("");
-
-  $(".PreLoader").addClass("active");
-  pagination.reset();
-  runningViolations.getRunningViolations();
-};
 
 export default runningViolations;

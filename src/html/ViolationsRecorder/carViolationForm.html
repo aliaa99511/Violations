@@ -1,343 +1,236 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Document</title>
-  </head>
 
-  <body>
-    <div class="carForm" id="carForm">
-      <button
-        id="fetchAttachmentsBtn"
-        type="button"
-        style="display: none"
-      ></button>
-      <div
-        id="identify"
-        page-name="CarForm"
-        site-name="ViolationsRecorder"
-        hidden
-      ></div>
-      <div class="mainContainer">
-        <div class="contentContainer">
-          <div class="formContent">
-            <div class="formBox">
-              <div class="formBoxHeader">
-                <p class="formBoxTitle">
-                  <span class="formNumber">1</span> بيانات المخالف
-                </p>
-              </div>
-              <div class="formElements">
-                <div class="row">
-                  <div class="col-md-6">
-                    <div class="form-group customFormGroup">
-                      <label for="violatorName" class="customLabel"
-                        >اسم المخالف <span class="redAstric">*</span></label
-                      >
-                      <input
-                        class="form-control customInput violatorName"
-                        id="violatorName"
-                        type="text"
-                        placeholder="ادخل اسم المخالف"
-                      />
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Document</title>
+</head>
+
+<body>
+  <div class="carForm" id="carForm">
+    <button id="fetchAttachmentsBtn" type="button" style="display: none"></button>
+    <div id="identify" page-name="CarForm" site-name="ViolationsRecorder" hidden></div>
+    <div class="mainContainer">
+      <div class="contentContainer">
+        <div class="formContent">
+          <div class="formBox">
+            <div class="formBoxHeader">
+              <p class="formBoxTitle">
+                <span class="formNumber">1</span> بيانات المخالف
+              </p>
+            </div>
+            <div class="formElements">
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="form-group customFormGroup">
+                    <label for="violatorName" class="customLabel">اسم المخالف <span class="redAstric">*</span></label>
+                    <input class="form-control customInput violatorName" id="violatorName" type="text"
+                      placeholder="ادخل اسم المخالف" />
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <div class="form-group customFormGroup">
+                    <label for="violatorNationalId" class="customLabel">الرقم القومي للمخالف
+                    </label>
+                    <input class="form-control customInput violatorNationalId" id="violatorNationalId" type="text"
+                      maxlength="14" placeholder="ادخل الرقم القومي الخاص بالمخالف" />
+                  </div>
+                </div>
+                <!-- <div class="col-md-3">
+                  <div class="form-group customFormGroup">
+                    <label for="prevViolationsCount" class="customLabel">عدد المخالفات السابقة<span
+                        class="redAstric">*</span></label>
+                    <input class="form-control customInput prevViolationsCount" id="prevViolationsCount" type="text"
+                      placeholder="ادخل عدد المخالفات السابقة" />
+                  </div>
+                </div> -->
+                <div class="col-md-6">
+                  <div class="form-group customFormGroup">
+                    <label for="companyName" class="customLabel">الشركة المخالفة التابع لها</label>
+                    <input class="form-control customInput companyName" id="companyName" type="text"
+                      placeholder="ادخل اسم الشركة التابع لها المخالف" />
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="form-group customFormGroup">
+                    <label for="commercialRegister" class="customLabel">السجل التجاري للشركة</label>
+                    <input class="form-control customInput commercialRegister" id="commercialRegister" type="text"
+                      placeholder="ادخل رقم السجل التجاري للشركة" />
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="form-group customFormGroup">
+                    <label for="violationGov" class="customLabel">المحافظة <span class="redAstric">*</span></label>
+                    <div class="selectBox">
+                      <select class="form-control violationGov" id="violationGov">
+                        <option value="" disabled selected hidden>
+                          المحافظة
+                        </option>
+                      </select>
+                      <i class="fa-solid fa-sort-down"></i>
                     </div>
                   </div>
-                  <div class="col-md-3">
-                    <div class="form-group customFormGroup">
-                      <label for="violatorNationalId" class="customLabel"
-                        >الرقم القومي للمخالف
-                      </label>
-                      <input
-                        class="form-control customInput violatorNationalId"
-                        id="violatorNationalId"
-                        type="text"
-                        maxlength="14"
-                        placeholder="ادخل الرقم القومي الخاص بالمخالف"
-                      />
-                    </div>
-                  </div>
-                  <div class="col-md-3">
-                    <div class="form-group customFormGroup">
-                      <label for="prevViolationsCount" class="customLabel"
-                        >عدد المخالفات السابقة<span class="redAstric"
-                          >*</span
-                        ></label
-                      >
-                      <input
-                        class="form-control customInput prevViolationsCount"
-                        id="prevViolationsCount"
-                        type="text"
-                        placeholder="ادخل عدد المخالفات السابقة"
-                      />
-                    </div>
-                  </div>
-                  <div class="col-md-6">
-                    <div class="form-group customFormGroup">
-                      <label for="companyName" class="customLabel"
-                        >الشركة المخالفة التابع لها</label
-                      >
-                      <input
-                        class="form-control customInput companyName"
-                        id="companyName"
-                        type="text"
-                        placeholder="ادخل اسم الشركة التابع لها المخالف"
-                      />
-                    </div>
-                  </div>
-                  <div class="col-md-6">
-                    <div class="form-group customFormGroup">
-                      <label for="commercialRegister" class="customLabel"
-                        >السجل التجاري للشركة</label
-                      >
-                      <input
-                        class="form-control customInput commercialRegister"
-                        id="commercialRegister"
-                        type="text"
-                        placeholder="ادخل رقم السجل التجاري للشركة"
-                      />
-                    </div>
-                  </div>
-                  <div class="col-md-6">
-                    <div class="form-group customFormGroup">
-                      <label for="violationGov" class="customLabel"
-                        >المحافظة <span class="redAstric">*</span></label
-                      >
-                      <div class="selectBox">
-                        <select
-                          class="form-control violationGov"
-                          id="violationGov"
-                        >
-                          <option value="" disabled selected hidden>
-                            المحافظة
-                          </option>
-                        </select>
-                        <i class="fa-solid fa-sort-down"></i>
-                      </div>
-                    </div>
-                  </div>
-                  <div class="col-md-6">
-                    <div class="form-group customFormGroup">
-                      <label for="violationArea" class="customLabel"
-                        >منطقة الضبط <span class="redAstric">*</span></label
-                      >
-                      <input
-                        class="form-control customInput violationArea"
-                        id="violationArea"
-                        type="text"
-                        placeholder="ادخل منطقة الضبط"
-                      />
-                      <!-- <div class="selectBox">
+                </div>
+                <div class="col-md-6">
+                  <div class="form-group customFormGroup">
+                    <label for="violationArea" class="customLabel">منطقة الضبط <span class="redAstric">*</span></label>
+                    <input class="form-control customInput violationArea" id="violationArea" type="text"
+                      placeholder="ادخل منطقة الضبط" />
+                    <!-- <div class="selectBox">
                                             <select class="form-control violationArea" id="violationArea">
                                                 <option value="" disabled selected hidden>منطقة الضبط</option>
                                             </select>
                                             <i class="fa-solid fa-sort-down"></i>
                                         </div> -->
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="form-group customFormGroup">
+                    <label for="violationCarType" class="customLabel">نوع العربة <span
+                        class="redAstric">*</span></label>
+                    <div class="selectBox">
+                      <select class="form-control violationCarType" id="violationCarType">
+                        <option value="" disabled selected hidden>
+                          نوع العربة
+                        </option>
+                      </select>
+                      <i class="fa-solid fa-sort-down"></i>
                     </div>
                   </div>
-                  <div class="col-md-6">
-                    <div class="form-group customFormGroup">
-                      <label for="violationCarType" class="customLabel"
-                        >نوع العربة <span class="redAstric">*</span></label
-                      >
-                      <div class="selectBox">
-                        <select
-                          class="form-control violationCarType"
-                          id="violationCarType"
-                        >
-                          <option value="" disabled selected hidden>
-                            نوع العربة
-                          </option>
-                        </select>
-                        <i class="fa-solid fa-sort-down"></i>
-                      </div>
-                    </div>
-                  </div>
+                </div>
 
-                  <div class="col-md-6">
-                    <div class="row">
-                      <div class="col-md-5 checkboxInput">
-                        <label class="customelabel checkboxLabel" for="">
-                          <input
-                            type="checkbox"
-                            class="unmarkedCheckbox checkboxInput customeInputs"
-                            name="unmarkedCheckbox"
-                            id="unmarkedCheckbox"
-                          />
-                          <span class="checktext">بدون لوحات</span>
-                        </label>
-                      </div>
+                <div class="col-md-6">
+                  <div class="row">
+                    <div class="col-md-5 checkboxInput">
+                      <label class="customelabel checkboxLabel" for="">
+                        <input type="checkbox" class="unmarkedCheckbox checkboxInput customeInputs"
+                          name="unmarkedCheckbox" id="unmarkedCheckbox" />
+                        <span class="checktext">بدون لوحات</span>
+                      </label>
                     </div>
                   </div>
+                </div>
 
-                  <div class="col-md-6 tractorBox">
-                    <div class="row">
-                      <div class="col-md-6">
-                        <div class="form-group customFormGroup">
-                          <label for="tractorLetters" class="customLabel"
-                            >حروف المقطورة<span class="redAstric"
-                              >*</span
-                            ></label
-                          >
-                          <input
-                            class="form-control customInput tractorLetters"
-                            id="tractorLetters"
-                            type="text"
-                            minlength="4"
-                            maxlength="7"
-                            placeholder="ادخل حروف المقطورة"
-                          />
-                        </div>
+                <div class="col-md-6 tractorBox">
+                  <div class="row">
+                    <div class="col-md-6">
+                      <div class="form-group customFormGroup">
+                        <label for="tractorLetters" class="customLabel">حروف المقطورة<span
+                            class="redAstric">*</span></label>
+                        <input class="form-control customInput tractorLetters" id="tractorLetters" type="text"
+                          minlength="4" maxlength="7" placeholder="ادخل حروف المقطورة" />
                       </div>
-                      <div class="col-md-6">
-                        <div class="form-group customFormGroup">
-                          <label for="tractorNumbers" class="customLabel"
-                            >أرقام المقطورة<span class="redAstric"
-                              >*</span
-                            ></label
-                          >
-                          <input
-                            class="form-control customInput tractorNumbers"
-                            id="tractorNumbers"
-                            type="text"
-                            minlength="3"
-                            maxlength="7"
-                            placeholder="ادخل أرقام المقطورة"
-                          />
-                        </div>
+                    </div>
+                    <div class="col-md-6">
+                      <div class="form-group customFormGroup">
+                        <label for="tractorNumbers" class="customLabel">أرقام المقطورة<span
+                            class="redAstric">*</span></label>
+                        <input class="form-control customInput tractorNumbers" id="tractorNumbers" type="text"
+                          minlength="3" maxlength="7" placeholder="ادخل أرقام المقطورة" />
                       </div>
                     </div>
                   </div>
-                  <div class="col-12">
-                    <p class="formSectionLabel">* رخصة تسيير مركبة</p>
-                  </div>
-                  <!-- <div class="form-group customFormGroup formNoMargin" style="padding: 0.8rem 1rem;">
+                </div>
+                <div class="col-12">
+                  <p class="formSectionLabel">* رخصة تسيير مركبة</p>
+                </div>
+                <!-- <div class="form-group customFormGroup formNoMargin" style="padding: 0.8rem 1rem;">
                                     <label class="customelabel"></label>
                                     <input type="checkbox" class="form-control shipmentCompany emptyScaleCheckbox customeInputs" id="emptyScaleCheckbox">
                                 </div> -->
-                  <div class="col-md-6 nameLettersCar">
-                    <div class="row">
-                      <div class="col-md-5">
-                        <div class="form-group customFormGroup">
-                          <label for="carLicenseLetters" class="customLabel"
-                            >حروف<span class="redAstric">*</span></label
-                          >
-                          <input
-                            class="form-control customInput carLicenseLetters"
-                            id="carLicenseLetters"
-                            type="text"
-                            minlength="4"
-                            maxlength="7"
-                            placeholder="أحرف العربة"
-                          />
-                        </div>
+                <div class="col-md-6 nameLettersCar">
+                  <div class="row">
+                    <div class="col-md-5">
+                      <div class="form-group customFormGroup">
+                        <label for="carLicenseLetters" class="customLabel">حروف<span class="redAstric">*</span></label>
+                        <input class="form-control customInput carLicenseLetters" id="carLicenseLetters" type="text"
+                          minlength="4" maxlength="7" placeholder="أحرف العربة" />
                       </div>
-                      <div class="col-md-5">
-                        <div class="form-group customFormGroup">
-                          <label for="carLicenseNumbres" class="customLabel"
-                            >أرقام<span class="redAstric">*</span></label
-                          >
-                          <input
-                            class="form-control customInput carLicenseNumbres"
-                            id="carLicenseNumbres"
-                            type="text"
-                            minlength="3"
-                            maxlength="7"
-                            placeholder="أرقام العربة"
-                          />
-                        </div>
+                    </div>
+                    <div class="col-md-5">
+                      <div class="form-group customFormGroup">
+                        <label for="carLicenseNumbres" class="customLabel">أرقام<span class="redAstric">*</span></label>
+                        <input class="form-control customInput carLicenseNumbres" id="carLicenseNumbres" type="text"
+                          minlength="3" maxlength="7" placeholder="أرقام العربة" />
                       </div>
                     </div>
                   </div>
+                </div>
 
-                  <div class="col-md-12">
-                    <div class="row">
-                      <div class="col-md-3">
-                        <div class="form-group customFormGroup">
-                          <label for="carLicenseColor" class="customLabel"
-                            >اللون<span class="redAstric">*</span></label
-                          >
-                          <input
-                            class="form-control customInput carLicenseColor"
-                            id="carLicenseColor"
-                            type="text"
-                            placeholder="لون العربة"
-                          />
+                <div class="col-12">
+                  <div class="row">
+                    <div class="col-md-3 previous-violations-display" style="display: none;">
+                      <div class="form-group customFormGroup">
+                        <div class=""
+                          style="margin-bottom: 0; padding: 10px 15px; background-color: #e9ecef; border-radius: 5px;">
+                          <strong>عدد المخالفات السابقة: </strong>
+                          <span class="previous-violations-count-value"
+                            style="font-size: 18px; font-weight: bold;">0</span>
                         </div>
                       </div>
-                      <div class="col-md-4">
-                        <div class="form-group customFormGroup">
-                          <label for="carBrand" class="customLabel"
-                            >النوع<span class="redAstric">*</span></label
-                          >
+                    </div>
+                  </div>
+                </div>
 
-                          <input
-                            type="text"
-                            class="form-control customInput carBrand"
-                            id="carBrand"
-                            placeholder="ادخل النوع"
-                          />
-                        </div>
-                      </div>
-                      <div class="col-md-4">
-                        <div class="form-group customFormGroup">
-                          <label for="carLicenseTraffic" class="customLabel"
-                            >ترخيص المرور</label
-                          >
-                          <input
-                            type="text"
-                            class="form-control customInput carLicenseTraffic"
-                            id="carLicenseTraffic"
-                            placeholder="ترخيص المرور"
-                          />
-                        </div>
+                <div class="col-md-12">
+                  <div class="row">
+                    <div class="col-md-3">
+                      <div class="form-group customFormGroup">
+                        <label for="carLicenseColor" class="customLabel">اللون<span class="redAstric">*</span></label>
+                        <input class="form-control customInput carLicenseColor" id="carLicenseColor" type="text"
+                          placeholder="لون العربة" />
                       </div>
                     </div>
-                  </div>
+                    <div class="col-md-4">
+                      <div class="form-group customFormGroup">
+                        <label for="carBrand" class="customLabel">النوع<span class="redAstric">*</span></label>
 
-                  <div class="col-12">
-                    <p class="formSectionLabel">* رخصة القيادة</p>
-                  </div>
-                  <div class="col-md-6">
-                    <div class="form-group customFormGroup">
-                      <label for="driverLicenseNumber" class="customLabel"
-                        >رقم رخصة القيادة</label
-                      >
-                      <input
-                        class="form-control customInput driverLicenseNumber"
-                        id="driverLicenseNumber"
-                        type="text"
-                        maxlength="14"
-                        placeholder="رقم رخصة السائق"
-                      />
+                        <input type="text" class="form-control customInput carBrand" id="carBrand"
+                          placeholder="ادخل النوع" />
+                      </div>
+                    </div>
+                    <div class="col-md-4">
+                      <div class="form-group customFormGroup">
+                        <label for="carLicenseTraffic" class="customLabel">ترخيص المرور</label>
+                        <input type="text" class="form-control customInput carLicenseTraffic" id="carLicenseTraffic"
+                          placeholder="ترخيص المرور" />
+                      </div>
                     </div>
                   </div>
-                  <div class="col-md-3">
-                    <div class="form-group customFormGroup">
-                      <label for="driverLicenseTraffic" class="customLabel"
-                        >ترخيص المرور</label
-                      >
-                      <input
-                        type="text"
-                        class="form-control customInput driverLicenseTraffic"
-                        placeholder="ترخيص المرور"
-                      />
-                    </div>
+                </div>
+
+                <div class="col-12">
+                  <p class="formSectionLabel">* رخصة القيادة</p>
+                </div>
+                <div class="col-md-6">
+                  <div class="form-group customFormGroup">
+                    <label for="driverLicenseNumber" class="customLabel">رقم رخصة القيادة</label>
+                    <input class="form-control customInput driverLicenseNumber" id="driverLicenseNumber" type="text"
+                      maxlength="14" placeholder="رقم رخصة السائق" />
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <div class="form-group customFormGroup">
+                    <label for="driverLicenseTraffic" class="customLabel">ترخيص المرور</label>
+                    <input type="text" class="form-control customInput driverLicenseTraffic"
+                      placeholder="ترخيص المرور" />
                   </div>
                 </div>
               </div>
             </div>
+          </div>
 
-            <div class="formBox">
-              <div class="formBoxHeader">
-                <p class="formBoxTitle">
-                  <span class="formNumber">2</span> بيانات المخالفة
-                </p>
-              </div>
-              <div class="formElements">
-                <div class="row">
-                  <!-- <div class="col-md-6">
+          <div class="formBox">
+            <div class="formBoxHeader">
+              <p class="formBoxTitle">
+                <span class="formNumber">2</span> بيانات المخالفة
+              </p>
+            </div>
+            <div class="formElements">
+              <div class="row">
+                <!-- <div class="col-md-6">
                                     <div class="form-group customFormGroup">
                                         <label for="violationType" class="customLabel">نوع المخالفة</label>
                                         <div class="selectBox">
@@ -348,75 +241,54 @@
                                         </div>
                                     </div>
                                 </div> -->
-                  <div class="col-md-6">
-                    <div class="form-group customFormGroup">
-                      <label for="carViolationRawType" class="customLabel"
-                        >نوع الخام<span class="redAstric">*</span></label
-                      >
-                      <div class="selectBox">
-                        <select
-                          class="form-control carViolationRawType"
-                          id="carViolationRawType"
-                        >
-                          <option value="" disabled selected hidden>
-                            نوع الخام
-                          </option>
-                        </select>
-                        <i class="fa-solid fa-sort-down"></i>
-                      </div>
+                <div class="col-md-6">
+                  <div class="form-group customFormGroup">
+                    <label for="carViolationRawType" class="customLabel">نوع الخام<span
+                        class="redAstric">*</span></label>
+                    <div class="selectBox">
+                      <select class="form-control carViolationRawType" id="carViolationRawType">
+                        <option value="" disabled selected hidden>
+                          نوع الخام
+                        </option>
+                      </select>
+                      <i class="fa-solid fa-sort-down"></i>
                     </div>
                   </div>
-                  <div class="col-md-6 MaterialQuantityBox">
-                    <div class="form-group customFormGroup">
-                      <label for="RawQuantity" class="customLabel"
-                        >كمية الخام<span class="redAstric">*</span></label
-                      >
-                      <div class="selectBox">
-                        <select
-                          class="form-control RawQuantity"
-                          id="RawQuantity"
-                        >
-                          <option value="" disabled selected hidden>
-                            كمية الخام
-                          </option>
-                        </select>
-                        <i class="fa-solid fa-sort-down"></i>
-                      </div>
+                </div>
+                <div class="col-md-6 MaterialQuantityBox">
+                  <div class="form-group customFormGroup">
+                    <label for="RawQuantity" class="customLabel">كمية الخام<span class="redAstric">*</span></label>
+                    <div class="selectBox">
+                      <select class="form-control RawQuantity" id="RawQuantity">
+                        <option value="" disabled selected hidden>
+                          كمية الخام
+                        </option>
+                      </select>
+                      <i class="fa-solid fa-sort-down"></i>
                     </div>
                   </div>
-                  <div class="col-md-6">
-                    <div class="form-group customFormGroup">
-                      <label for="violationDate" class="customLabel"
-                        >تاريخ الضبط<span class="redAstric">*</span></label
-                      >
-                      <div class="inputIconBox">
-                        <input
-                          class="form-control customInput inputDate violationDate"
-                          id="violationDate"
-                          type="text"
-                          placeholder="DD-MM-YYYY"
-                        />
-                        <i class="fa-solid fa-calendar-days"></i>
-                      </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="form-group customFormGroup">
+                    <label for="violationDate" class="customLabel">تاريخ الضبط<span class="redAstric">*</span></label>
+                    <div class="inputIconBox">
+                      <input class="form-control customInput inputDate violationDate" id="violationDate" type="text"
+                        placeholder="DD-MM-YYYY" />
+                      <i class="fa-solid fa-calendar-days"></i>
                     </div>
                   </div>
-                  <div class="col-md-6">
-                    <div class="form-group customFormGroup">
-                      <label for="violationTime" class="customLabel"
-                        >وقت الضبط<span class="redAstric">*</span></label
-                      >
-                      <div class="inputIconBox">
-                        <input
-                          class="form-control customInput timeInput violationTime"
-                          id="violationTime"
-                          type="time"
-                          placeholder="14:43 PM"
-                        />
-                        <i class="fa-solid fa-clock"></i>
-                      </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="form-group customFormGroup">
+                    <label for="violationTime" class="customLabel">وقت الضبط<span class="redAstric">*</span></label>
+                    <div class="inputIconBox">
+                      <input class="form-control customInput timeInput violationTime" id="violationTime" type="time"
+                        placeholder="14:43 PM" />
+                      <i class="fa-solid fa-clock"></i>
                     </div>
                   </div>
-                  <!-- <div class="col-12">
+                </div>
+                <!-- <div class="col-12">
                                     <div class="form-group customFormGroup">
                                         <label class="customLabel">ضبط معدات<span class="redAstric">*</span></label>
                                         <div class="toolsBox carToolsBox">
@@ -429,26 +301,21 @@
                                         </div>
                                     </div>
                                 </div> -->
-                  <div class="col-12 addToolHiddenBox">
-                    <div class="row">
-                      <div class="col-md-6">
-                        <div class="form-group">
-                          <input
-                            class="form-control customInput toolName"
-                            id="toolName"
-                            type="text"
-                            placeholder="ادخل اسم المعدة المراد إضافتها"
-                          />
-                        </div>
+                <div class="col-12 addToolHiddenBox">
+                  <div class="row">
+                    <div class="col-md-6">
+                      <div class="form-group">
+                        <input class="form-control customInput toolName" id="toolName" type="text"
+                          placeholder="ادخل اسم المعدة المراد إضافتها" />
                       </div>
-                      <div class="col-md-5">
-                        <div class="buttonsBox pt-3">
-                          <div class="btnStyle confirmBtn" id="submitNewTool">
-                            إضافة
-                          </div>
-                          <div class="btnStyle cancelBtn" id="cancelNewTool">
-                            مسح
-                          </div>
+                    </div>
+                    <div class="col-md-5">
+                      <div class="buttonsBox pt-3">
+                        <div class="btnStyle confirmBtn" id="submitNewTool">
+                          إضافة
+                        </div>
+                        <div class="btnStyle cancelBtn" id="cancelNewTool">
+                          مسح
                         </div>
                       </div>
                     </div>
@@ -456,223 +323,176 @@
                 </div>
               </div>
             </div>
+          </div>
 
-            <div class="formBox">
-              <div class="formBoxHeader">
-                <p class="formBoxTitle">
-                  <span class="formNumber">3</span> الأبعاد والإحداثيات
-                </p>
-              </div>
-              <div class="formElements">
-                <div class="row">
-                  <div class="col-12">
-                    <div class="form-group customFormGroup">
-                      <label class="customLabel"
-                        >الإحداثيات<span class="redAstric">*</span></label
-                      >
-                      <div class="coordinatesTable" id="coordinatesTable">
-                        <table class="table table-bordered">
-                          <tr>
-                            <th scope="col">م</th>
-                            <th scope="col">شرقيات (E)</th>
-                            <th scope="col">شماليات (N)</th>
-                            <th data-attr-ignore></th>
-                          </tr>
-                          <tr class="hideRow">
-                            <th>1</th>
-                            <td>
-                              <input
-                                type="text"
-                                minlength="2"
-                                maxlength="2"
-                                required
-                              />
-                              <input type="text" maxlength="2" required />
-                              <input type="text" maxlength="5" required />
-                            </td>
-                            <td>
-                              <input
-                                type="text"
-                                minlength="2"
-                                maxlength="2"
-                                required
-                              />
-                              <input type="text" maxlength="2" required />
-                              <input type="text" maxlength="5" required />
-                            </td>
-                            <td></td>
-                          </tr>
-                        </table>
-                      </div>
+          <div class="formBox">
+            <div class="formBoxHeader">
+              <p class="formBoxTitle">
+                <span class="formNumber">3</span> الأبعاد والإحداثيات
+              </p>
+            </div>
+            <div class="formElements">
+              <div class="row">
+                <div class="col-12">
+                  <div class="form-group customFormGroup">
+                    <label class="customLabel">الإحداثيات<span class="redAstric">*</span></label>
+                    <div class="coordinatesTable" id="coordinatesTable">
+                      <table class="table table-bordered">
+                        <tr>
+                          <th scope="col">م</th>
+                          <th scope="col">شرقيات (E)</th>
+                          <th scope="col">شماليات (N)</th>
+                          <th data-attr-ignore></th>
+                        </tr>
+                        <tr class="hideRow">
+                          <th>1</th>
+                          <td>
+                            <input type="text" minlength="2" maxlength="2" required />
+                            <input type="text" maxlength="2" required />
+                            <input type="text" maxlength="5" required />
+                          </td>
+                          <td>
+                            <input type="text" minlength="2" maxlength="2" required />
+                            <input type="text" maxlength="2" required />
+                            <input type="text" maxlength="5" required />
+                          </td>
+                          <td></td>
+                        </tr>
+                      </table>
                     </div>
                   </div>
-                  <!-- <div class="col-12 AddNewPointBox">
+                </div>
+                <!-- <div class="col-12 AddNewPointBox">
                                     <div class="showOnMap">عرض على الخريطة</div>
                                 </div> -->
-                  <!-- <div class="col-12 ShowOnMapBox">
+                <!-- <div class="col-12 ShowOnMapBox">
                                     <div class="form-group customFormGroup">
                                         <label class="customLabel">الموقع على الخريطة</label>
                                         <div class="coordinatesMap" id="coordinatesMap"></div>
                                     </div>
                                 </div> -->
-                </div>
               </div>
             </div>
+          </div>
 
-            <div class="formBox">
-              <div class="formBoxHeader">
-                <p class="formBoxTitle">
-                  <span class="formNumber">4</span> وصف المخالفة
-                </p>
-              </div>
-              <div class="formElements">
-                <div class="row">
-                  <div class="col-md-3">
-                    <div class="form-group customFormGroup">
-                      <label for="attachViolationFiles" class="customLabel"
-                        >إرفاق أصل المحضر<span class="redAstric">*</span></label
-                      >
-                      <div class="fileBox" id="dropContainer">
-                        <div class="inputFileBox">
-                          <img
-                            src="/Style Library/MiningViolations/images/fileIcon.svg"
-                            alt="File Icon"
-                          />
-                          <p class="dragDropFilesLabel">
-                            قم بالسحب والإفلات لرفع الملف , أو
-                            <a href="#!" class="attachFileLink"
-                              >استعراض ملفاتي</a
-                            >
-                          </p>
-                          <input
-                            type="file"
-                            class="customInput attachFilesInput attachViolationFiles form-control"
-                            id="attachViolationFiles"
-                            accept="image/gif,image/svg,image/jpg,image/jpeg,image/png,.doc,.docx,.pdf,.xls,.xlsx,.pptx"
-                            multiple
-                          />
-                        </div>
+          <div class="formBox">
+            <div class="formBoxHeader">
+              <p class="formBoxTitle">
+                <span class="formNumber">4</span> وصف المخالفة
+              </p>
+            </div>
+            <div class="formElements">
+              <div class="row">
+                <div class="col-md-3">
+                  <div class="form-group customFormGroup">
+                    <label for="attachViolationFiles" class="customLabel">إرفاق أصل المحضر<span
+                        class="redAstric">*</span></label>
+                    <div class="fileBox" id="dropContainer">
+                      <div class="inputFileBox">
+                        <img src="/Style Library/MiningViolations/images/fileIcon.svg" alt="File Icon" />
+                        <p class="dragDropFilesLabel">
+                          قم بالسحب والإفلات لرفع الملف , أو
+                          <a href="#!" class="attachFileLink">استعراض ملفاتي</a>
+                        </p>
+                        <input type="file" class="customInput attachFilesInput attachViolationFiles form-control"
+                          id="attachViolationFiles"
+                          accept="image/gif,image/svg,image/jpg,image/jpeg,image/png,.doc,.docx,.pdf,.xls,.xlsx,.pptx"
+                          multiple />
                       </div>
-                      <div class="dropFilesArea" id="dropFilesArea"></div>
                     </div>
+                    <div class="dropFilesArea" id="dropFilesArea"></div>
                   </div>
-                  <div class="col-md-3">
-                    <div class="form-group customFormGroup">
-                      <label for="attachViolationFiles" class="customLabel"
-                        >إرفاق تقرير مصور<span class="redAstric">*</span></label
-                      >
-                      <div class="fileBox" id="dropContainer">
-                        <div class="inputFileBox">
-                          <img
-                            src="/Style Library/MiningViolations/images/fileIcon.svg"
-                            alt="File Icon"
-                          />
-                          <p class="dragDropFilesLabel">
-                            قم بالسحب والإفلات لرفع الملف , أو
-                            <a href="#!" class="attachFileLink"
-                              >استعراض ملفاتي</a
-                            >
-                          </p>
-                          <input
-                            type="file"
-                            class="customInput attachFilesInput attachViolationReportFile form-control"
-                            id="attachViolationReportFile"
-                            accept="image/gif,image/svg,image/jpg,image/jpeg,image/png,.doc,.docx,.pdf,.xls,.xlsx,.pptx"
-                            multiple
-                          />
-                        </div>
+                </div>
+                <div class="col-md-3">
+                  <div class="form-group customFormGroup">
+                    <label for="attachViolationFiles" class="customLabel">إرفاق تقرير مصور<span
+                        class="redAstric">*</span></label>
+                    <div class="fileBox" id="dropContainer">
+                      <div class="inputFileBox">
+                        <img src="/Style Library/MiningViolations/images/fileIcon.svg" alt="File Icon" />
+                        <p class="dragDropFilesLabel">
+                          قم بالسحب والإفلات لرفع الملف , أو
+                          <a href="#!" class="attachFileLink">استعراض ملفاتي</a>
+                        </p>
+                        <input type="file" class="customInput attachFilesInput attachViolationReportFile form-control"
+                          id="attachViolationReportFile"
+                          accept="image/gif,image/svg,image/jpg,image/jpeg,image/png,.doc,.docx,.pdf,.xls,.xlsx,.pptx"
+                          multiple />
                       </div>
-                      <div class="dropFilesArea" id="dropFilesArea"></div>
                     </div>
+                    <div class="dropFilesArea" id="dropFilesArea"></div>
                   </div>
-                  <div class="col-md-6">
-                    <div class="form-group customFormGroup">
-                      <label for="violationDescription" class="customLabel"
-                        >وصف المخالفة
-                        <span class="hint"
-                          >( في حالة عدم إرفاق تقرير مصور يرجى كتابة السبب
-                          )</span
-                        ><span class="redAstric">*</span></label
-                      >
-                      <textarea
-                        class="form-control violationDescription customTextArea"
-                        id="violationDescription"
-                        placeholder="ادخل الوصف الخاص بالمخالفة"
-                      ></textarea>
-                    </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="form-group customFormGroup">
+                    <label for="violationDescription" class="customLabel">وصف المخالفة
+                      <span class="hint">( في حالة عدم إرفاق تقرير مصور يرجى كتابة السبب
+                        )</span><span class="redAstric">*</span></label>
+                    <textarea class="form-control violationDescription customTextArea" id="violationDescription"
+                      placeholder="ادخل الوصف الخاص بالمخالفة"></textarea>
                   </div>
                 </div>
               </div>
             </div>
+          </div>
 
-            <div class="formBox">
-              <div class="formBoxHeader">
-                <p class="formBoxTitle">
-                  <span class="formNumber">5</span> أعضاء لجنة الضبط
-                </p>
-              </div>
-              <div class="formElements">
-                <div class="row">
-                  <div class="col-md-6">
-                    <div class="form-group customFormGroup">
-                      <label class="customLabel"
-                        >أعضاء اللجنة<span class="redAstric">*</span></label
-                      >
-                      <textarea
-                        class="form-control membersText customTextArea"
-                        rows="8"
-                        id="membersText"
-                        placeholder="ادخل أعضاء اللجنة"
-                      ></textarea>
-                      <!-- <div class="committeeBox recorder">
+          <div class="formBox">
+            <div class="formBoxHeader">
+              <p class="formBoxTitle">
+                <span class="formNumber">5</span> أعضاء لجنة الضبط
+              </p>
+            </div>
+            <div class="formElements">
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="form-group customFormGroup">
+                    <label class="customLabel">أعضاء اللجنة<span class="redAstric">*</span></label>
+                    <textarea class="form-control membersText customTextArea" rows="8" id="membersText"
+                      placeholder="ادخل أعضاء اللجنة"></textarea>
+                    <!-- <div class="committeeBox recorder">
                                             <div class="committeeData"></div>
                                         </div> -->
-                    </div>
                   </div>
-                  <div class="col-md-6">
-                    <div class="form-group customFormGroup">
-                      <!-- <label class="customLabel">القائم بالضبط</label> -->
-                      <label for="committeeMember" class="customLabel"
-                        >القائمون بالضبط<span class="redAstric">*</span></label
-                      >
-                      <!-- <input class="form-control customInput committeeMember" id="committeeMember"
+                </div>
+                <div class="col-md-6">
+                  <div class="form-group customFormGroup">
+                    <!-- <label class="customLabel">القائم بالضبط</label> -->
+                    <label for="committeeMember" class="customLabel">القائمون بالضبط<span
+                        class="redAstric">*</span></label>
+                    <!-- <input class="form-control customInput committeeMember" id="committeeMember"
                                             type="text" placeholder="ادخل القائم بالضبط"> -->
 
-                      <div class="committeeBox committeeMember">
-                        <div class="committeeSearch">
-                          <!-- <label for="committeeMemberSelect" class="customLabel">
+                    <div class="committeeBox committeeMember">
+                      <div class="committeeSearch">
+                        <!-- <label for="committeeMemberSelect" class="customLabel">
                                                     اختر القائمون بالضبط
                                                 </label> -->
-                          <div class="selectBox">
-                            <select
-                              class="form-control committeeMemberSelect"
-                              id="committeeMemberSelect"
-                              multiple
-                            >
-                              <option value="" disabled selected hidden>
-                                قائم بالضبط
-                              </option>
-                            </select>
-                            <i class="fa-solid fa-sort-down"></i>
-                          </div>
-                          <div class="submitSelectedMembers">
-                            <div class="submitSelectedMembersBtn">إضافة</div>
-                          </div>
-                          <!-- <div class="buttonsBox pt-3">
+                        <div class="selectBox">
+                          <select class="form-control committeeMemberSelect" id="committeeMemberSelect" multiple>
+                            <option value="" disabled selected hidden>
+                              قائم بالضبط
+                            </option>
+                          </select>
+                          <i class="fa-solid fa-sort-down"></i>
+                        </div>
+                        <div class="submitSelectedMembers">
+                          <div class="submitSelectedMembersBtn">إضافة</div>
+                        </div>
+                        <!-- <div class="buttonsBox pt-3">
                                                     <div class="btnStyle confirmBtn addCommitteeMember" id="addCommitteeMember">بحث</div>
                                                 </div>  -->
-                        </div>
-                        <div class="committeeData">
-                          <div class="membersDataBox"></div>
-                          <div class="reSelectMember">إعادة اختيار عضو اخر</div>
-                        </div>
                       </div>
-                      <!-- <label for="committeeMember" class="customLabel mt-3">إاضافة قائمين بالضبط اختياري</label>
+                      <div class="committeeData">
+                        <div class="membersDataBox"></div>
+                        <div class="reSelectMember">إعادة اختيار عضو اخر</div>
+                      </div>
+                    </div>
+                    <!-- <label for="committeeMember" class="customLabel mt-3">إاضافة قائمين بالضبط اختياري</label>
                                         <textarea class="form-control committeeMemberText customTextArea"
                                             id="committeeMemberText" placeholder="ادخل القائمين بالضبط"></textarea> -->
-                    </div>
                   </div>
-                  <!-- <div class="col-md-4">
+                </div>
+                <!-- <div class="col-md-4">
                                     <div class="form-group customFormGroup">
                                         <label class="customLabel">قائد القطاع</label>
                                         <div class="committeeBox sectorManager">
@@ -680,55 +500,44 @@
                                         </div>
                                     </div>
                                 </div> -->
-                </div>
               </div>
             </div>
+          </div>
 
-            <div class="formBox">
-              <div class="formBoxHeader">
-                <p class="formBoxTitle">
-                  <span class="formNumber">6</span> رأي قائد القطاع<span
-                    class="redAstric"
-                    >*</span
-                  >
-                </p>
-              </div>
-              <div class="formElements">
-                <div class="row">
-                  <div class="col-12">
-                    <div class="form-group customFormGroup">
-                      <textarea
-                        class="form-control sectorManegrOpinion customTextArea"
-                        id="sectorManegrOpinion"
-                        placeholder="رأي السيد قائد القطاع"
-                      ></textarea>
-                    </div>
+          <div class="formBox">
+            <div class="formBoxHeader">
+              <p class="formBoxTitle">
+                <span class="formNumber">6</span> رأي قائد القطاع<span class="redAstric">*</span>
+              </p>
+            </div>
+            <div class="formElements">
+              <div class="row">
+                <div class="col-12">
+                  <div class="form-group customFormGroup">
+                    <textarea class="form-control sectorManegrOpinion customTextArea" id="sectorManegrOpinion"
+                      placeholder="رأي السيد قائد القطاع"></textarea>
                   </div>
                 </div>
               </div>
             </div>
           </div>
+        </div>
 
-          <div class="formButtonsBox">
-            <div class="col-12">
-              <div class="buttonsBox centerButtonsBox">
-                <div
-                  class="btnStyle confirmBtn submitCarViolation"
-                  id="submitCarViolation"
-                >
-                  تأكيد
-                </div>
-                <div
-                  class="btnStyle cancelBtn cancelCarViolation"
-                  id="cancelCarViolation"
-                >
-                  إلغاء
-                </div>
+        <div class="formButtonsBox">
+          <div class="col-12">
+            <div class="buttonsBox centerButtonsBox">
+              <div class="btnStyle confirmBtn submitCarViolation" id="submitCarViolation">
+                تأكيد
+              </div>
+              <div class="btnStyle cancelBtn cancelCarViolation" id="cancelCarViolation">
+                إلغاء
               </div>
             </div>
           </div>
         </div>
       </div>
     </div>
-  </body>
+  </div>
+</body>
+
 </html>

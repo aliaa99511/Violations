@@ -17,16 +17,14 @@
                     <div class="row">
                         <div class="col-6 col-md-4">
                             <div class="form-group customFormGroup">
-                                <label for="vehicleRegistrationNumber" class="customLabel greenLabel">رقم
-                                    القيد</label>
+                                <label for="vehicleRegistrationNumber" class="customLabel greenLabel">رقم القيد</label>
                                 <input class="form-control customInput vehicleRegistrationNumber"
                                     id="vehicleRegistrationNumber" type="text" placeholder="ادخل رقم القيد" />
                             </div>
                         </div>
                         <div class="col-6 col-md-4">
                             <div class="form-group customFormGroup">
-                                <label for="CaseStatus" class="customLabel greenLabel">حالة القضية
-                                </label>
+                                <label for="CaseStatus" class="customLabel greenLabel">موقف الإحالة</label>
                                 <div class="selectBox smallSelectBox">
                                     <select class="form-control CaseStatus greenSelect" id="CaseStatus">
                                         <option value="" disabled selected hidden>الكل</option>
@@ -35,7 +33,62 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="col-6 col-md-3">
+                        <div class="col-6 col-md-4">
+                            <div class="form-group customFormGroup">
+                                <label for="violationCode" class="customLabel greenLabel">رقم المخالفة</label>
+                                <div class="selectBox smallSelectBox">
+                                    <input id="violationCode" type="text" class="form-control"
+                                        placeholder="ادخل رقم المخالفة" />
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-4">
+                            <div class="form-group customFormGroup">
+                                <label for="theCode" class="customLabel greenLabel">رقم العربة</label>
+                                <div class="selectBox smallSelectBox">
+                                    <input id="theCode" type="text" class="form-control" placeholder="ادخل الرقم" />
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-4">
+                            <div class="form-group customFormGroup">
+                                <label for="ViolationStatus" class="customLabel greenLabel">حالة المخالفة</label>
+                                <div class="selectBox smallSelectBox">
+                                    <select class="form-control ViolationStatus greenSelect" id="ViolationStatus">
+                                        <option value="" disabled selected hidden>الكل</option>
+                                    </select>
+                                    <i class="fa-solid fa-sort-down"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-4">
+                            <div class="form-group customFormGroup">
+                                <label for="CourtCaseNumber" class="customLabel greenLabel">الرقم القضائي</label>
+                                <div class="selectBox smallSelectBox">
+                                    <input id="CourtCaseNumber" type="text" class="form-control"
+                                        placeholder="ادخل الرقم القضائي" />
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-4">
+                            <div class="form-group customFormGroup">
+                                <label for="TrafficName" class="customLabel greenLabel">اسم السائق</label>
+                                <div class="selectBox smallSelectBox">
+                                    <input id="TrafficName" type="text" class="form-control"
+                                        placeholder="ادخل اسم السائق" />
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-4">
+                            <div class="form-group customFormGroup">
+                                <label for="ViolatorCompany" class="customLabel greenLabel">اسم الشركة</label>
+                                <div class="selectBox smallSelectBox">
+                                    <input id="ViolatorCompany" type="text" class="form-control"
+                                        placeholder="ادخل اسم الشركة" />
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-4">
                             <div class="form-group customFormGroup">
                                 <label for="refferedDateFrom" class="customLabel greenLabel">من</label>
                                 <div class="inputIconBox">
@@ -45,11 +98,9 @@
                                 </div>
                             </div>
                         </div>
-
-                        <div class="col-6 col-md-3">
+                        <div class="col-6 col-md-4">
                             <div class="form-group customFormGroup">
-                                <label for="refferedDateTo" class="customLabel greenLabel">إلى
-                                </label>
+                                <label for="refferedDateTo" class="customLabel greenLabel">إلى</label>
                                 <div class="inputIconBox">
                                     <input id="RefferedDateTo" type="text" class="form-control customInput inputDate"
                                         placeholder="DD-MM-YYYY" />

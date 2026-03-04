@@ -1,7 +1,6 @@
 import Swal from "sweetalert2";
 import DetailsPopup from "../../Shared/detailsPopupContent";
 import functions from "../../Shared/functions";
-// Abdelrahman
 import { ajaxDatatableHistoryInit } from "../../Shared/ajaxDatatable";
 import sharedApis from "../../Shared/sharedApiCall";
 import pagination from "../../Shared/Pagination";
@@ -9,27 +8,52 @@ import pagination from "../../Shared/Pagination";
 import { event } from "jquery";
 
 let confirmedViolationLog = {};
+
 confirmedViolationLog.pageIndex = 1;
-confirmedViolationLog.dataObj = {
-  destroyTable: false,
-  ViolationSector: 0,
-  ViolationType: 0,
-  ViolationGeneralSearch: "",
-};
+confirmedViolationLog.destroyTable = false;
 
 confirmedViolationLog.getConfirmedLog = (
   pageIndex = 1,
   destroyTable = false,
-  ViolationSector = $("#violationSector").children("option:selected").val(),
-  ViolationType = Number(
-    $("#TypeofViolation").children("option:selected").data("id")
-  ),
+  ViolationSector = Number($("#violationSector").children("option:selected").val()),
+  ViolationType = Number($("#TypeofViolation").children("option:selected").data("id")),
   ViolationGeneralSearch = $("#violationSearch").val()
 ) => {
-  const theCode =
-    $("#violationCategory").val() == "Quarry"
-      ? { QuarryCode: $("#theCode").val() }
-      : { CarNumber: $("#theCode").val() };
+  // Check if theCode field has a value but violationCategory is empty
+  const theCodeValue = $("#theCode").val();
+  const violationCategoryValue = $("#violationCategory").val();
+
+  if (theCodeValue && theCodeValue.trim() !== "" && (!violationCategoryValue || violationCategoryValue === "")) {
+    functions.warningAlert("من فضلك قم باختيار تصنيف المخالفة قبل إدخال رقم المحجر/عربة/معدة");
+    $(".PreLoader").removeClass("active");
+    return;
+  }
+
+  const theCode = violationCategoryValue == "Quarry"
+    ? { QuarryCode: $("#theCode").val() }
+    : { CarNumber: $("#theCode").val() };
+
+  // Get selected status
+  const selectedStatus = $("#ViolationStatus").children("option:selected").val();
+
+  // Determine MultipleStatus based on selected status
+  let multipleStatus = [];
+
+  if (selectedStatus && selectedStatus !== "") {
+    // If a specific status is selected, only use that status
+    multipleStatus = [selectedStatus];
+  } else {
+    // If no status selected, use default list (excluding any you don't want)
+    multipleStatus = [
+      "Confirmed",
+      "Paid",
+      "Exceeded",
+      "Paid After Reffered",
+      "Saved",
+      "Cancelled"
+      // "UnderPayment",
+    ];
+  }
 
   let request = {
     Data: {
@@ -38,13 +62,15 @@ confirmedViolationLog.getConfirmedLog = (
       PageIndex: pagination.currentPage,
       ColName: "created",
       SortOrder: "desc",
-      Status: "Confirmed",
-      ViolationType: ViolationType,
-      SectorConfigId: ViolationSector,
-      GlobalSearch: ViolationGeneralSearch,
+      Status: selectedStatus, // Keep this for reference
+      MultipleStatus: multipleStatus, // Use dynamic multipleStatus
       ViolatorName: $("#violatorName").val(),
       NationalID: $("#nationalID").val(),
       ViolationCode: $("#violationCode").val(),
+      ViolationType: ViolationType,
+      SectorConfigId: ViolationSector,
+      GlobalSearch: ViolationGeneralSearch,
+      Sector: 0,
       OffenderType: $("#violationCategory").val(),
       ViolationsZone: $("#violationZone").val(),
       CreatedFrom: $("#createdFrom").val()
@@ -78,14 +104,8 @@ confirmedViolationLog.getConfirmedLog = (
           ConfirmedViolation = [];
         }
       }
-      confirmedViolationLog.setPaginations(
-        ItemsData.TotalPageCount,
-        ItemsData.RowsPerPage
-      );
-      confirmedViolationLog.ConfirmedViolationTable(
-        ConfirmedViolation,
-        confirmedViolationLog.dataObj.destroyTable
-      );
+      confirmedViolationLog.setPaginations(ItemsData.TotalPageCount, ItemsData.RowsPerPage);
+      confirmedViolationLog.ConfirmedViolationTable(ConfirmedViolation, confirmedViolationLog.destroyTable);
       confirmedViolationLog.pageIndex = ItemsData.CurrentPage;
     })
     .catch((err) => {
@@ -96,44 +116,113 @@ confirmedViolationLog.getConfirmedLog = (
 confirmedViolationLog.setPaginations = (TotalPages, RowsPerPage) => {
   pagination.draw("#paginationID", TotalPages, RowsPerPage);
   pagination.start("#paginationID", confirmedViolationLog.getConfirmedLog);
-  // pagination.reset()
-  // pagination.scrollToElement(el, length)
   pagination.activateCurrentPage();
+};
+
+confirmedViolationLog.filterConfirmedLog = (e) => {
+  let pageIndex = confirmedViolationLog.pageIndex;
+  let ViolationSectorVal = $("#violationSector").children("option:selected").val();
+  let ViolationTypeVal = $("#TypeofViolation").children("option:selected").data("id");
+  let ViolationGeneralSearch = $("#violationSearch").val();
+
+  // Check if theCode has value but violationCategory is empty
+  const theCodeValue = $("#theCode").val();
+  const violationCategoryValue = $("#violationCategory").val();
+
+  if (theCodeValue && theCodeValue.trim() !== "" && (!violationCategoryValue || violationCategoryValue === "")) {
+    functions.warningAlert("من فضلك قم باختيار تصنيف المخالفة قبل إدخال رقم المحجر/عربة/معدة");
+    return;
+  }
+
+  let ViolationType;
+  let ViolationSector;
+
+  if (
+    ViolationTypeVal == "" &&
+    ViolationSectorVal == "" &&
+    ViolationGeneralSearch == ""
+  ) {
+    functions.warningAlert(
+      "من فضلك قم بإدخال قيمة واحدة على الأقل من قيم البحث"
+    );
+  } else if (
+    ViolationSectorVal != "" ||
+    ViolationTypeVal != "0" ||
+    ViolationGeneralSearch != ""
+  ) {
+    $(".PreLoader").addClass("active");
+    ViolationSector = Number($("#violationSector").children("option:selected").val());
+    ViolationType = Number($("#TypeofViolation").children("option:selected").data("id"));
+
+    confirmedViolationLog.getConfirmedLog(
+      pageIndex,
+      true,
+      ViolationSector,
+      ViolationType,
+      ViolationGeneralSearch
+    );
+  }
+};
+
+confirmedViolationLog.resetFilter = (e) => {
+  e.preventDefault();
+  $("#nationalID").val("");
+  $("#violatorName").val("");
+  $("#violationCode").val("");
+  $("#violationSector").val("0");
+  $("#violationCategory").val("");
+  $("#TypeofViolation").val("0");
+  $("#violationZone").val("");
+  $("#violationSearch").val("");
+  $("#createdFrom").val("");
+  $("#createdTo").val("");
+  $("#theCode").val("");
+  $("#ViolationStatus").val("");
+
+  $(".PreLoader").addClass("active");
+  pagination.reset();
+  confirmedViolationLog.getConfirmedLog();
 };
 
 confirmedViolationLog.ConfirmedViolationTable = (
   ConfirmedViolation,
   destroyTable
 ) => {
-  if (confirmedViolationLog.dataObj.destroyTable) {
-    $("#ConfirmedViolationlog").DataTable().destroy();
-  }
   let data = [];
   let taskViolation;
+  if (confirmedViolationLog.destroyTable || destroyTable) {
+    $("#ConfirmedViolationlog").DataTable().destroy();
+  }
+
   if (ConfirmedViolation.length > 0) {
     ConfirmedViolation.forEach((record) => {
       taskViolation = record.Violation;
       let createdDate = functions.getFormatedDate(record.Created);
+
       data.push([
-        `<div class="violationId" data-violationid="${taskViolation.ID}" data-taskid="${record.ID}" data-violationcode="${taskViolation.ViolationCode}" data-offendertype="${taskViolation.OffenderType}">${taskViolation.ViolationCode}</div>`,
-        `<div class='controls'> 
-              <div class='ellipsisButton'>
-                  <i class='fa-solid fa-ellipsis-vertical'></i>
-              </div>
-              <div class="hiddenListBox">
-                  <div class='arrow'></div>
-                  <ul class='list-unstyled controlsList'>
-                      <li><a href="#" class="itemDetails"> المزيد من التفاصيل</a></li>
-                      <li><a href="#" data-violationid="${taskViolation.ID}" data-violationcode="${taskViolation.ViolationCode}" class="violationHistory" data-toggle="modal" data-target="#trackHistoryModal">تتبع مرحلة المخالفة</a></li>                  
-                  </ul>
-              </div>
-          </div`,
+        `<div class="violationId" data-taskid="${record.ID}">
+          ${taskViolation.ViolationCode}
+          </div>`,
+        `<div class='controls'>
+            <div class='ellipsisButton'>
+                <i class='fa-solid fa-ellipsis-vertical'></i>
+            </div>
+            <div class="hiddenListBox">
+                <div class='arrow'></div>
+                <ul class='list-unstyled controlsList'>
+                    <li><a href="#" class="itemDetails">المزيد من التفاصيل</a></li>    
+                    <li><a href="#" data-violationid="${taskViolation?.ID}" data-violationcode="${taskViolation?.ViolationCode}" class="violationHistory" data-toggle="modal" data-target="#trackHistoryModal">تتبع مرحلة المخالفة</a></li>
+                </ul>
+            </div>
+        </div>`,
         `<div class="violationArName">${functions.getViolationArabicName(
           taskViolation.OffenderType
         )}</div>`,
-        `<div class="violationCode" >${taskViolation.OffenderType == "Quarry"
-          ? taskViolation.QuarryCode
-          : taskViolation.CarNumber
+        `<div class="violationCode">${taskViolation.OffenderType == "Vehicle"
+          ? taskViolation.CarNumber
+          : taskViolation.QuarryCode != ""
+            ? taskViolation.QuarryCode
+            : "---"
         }</div>`,
         `<div class="companyName">${taskViolation.ViolatorCompany != ""
           ? taskViolation.ViolatorCompany
@@ -146,19 +235,24 @@ confirmedViolationLog.ConfirmedViolationTable = (
           taskViolation.OffenderType,
           taskViolation?.ViolationTypes?.Title
         )}</div>`,
+        `<div class="violationZone">${taskViolation.ViolationsZone}</div>`,
+        `${confirmedViolationLog.getViolationStatus(record.Status)}`,
         `${taskViolation?.IsPetition
           ? functions.getPetitionsStatus(
             taskViolation?.Petition?.GridData?.[0]?.Status
           ) || "-"
           : "-"
         }`,
-        `<div class="violationZone">${taskViolation.ViolationsZone}</div>`,
-        `${functions.getFormatedDate(taskViolation.ViolationDate)}`,
+        `${functions.getFormatedDate(record.ReconciliationExpiredDate) ==
+          "01-01-2001"
+          ? "-"
+          : functions.getFormatedDate(record.ReconciliationExpiredDate)
+        }`,
         `${createdDate}`,
       ]);
     });
   }
-  confirmedViolationLog.dataObj.destroyTable = true;
+
   let Table = functions.tableDeclare(
     "#ConfirmedViolationlog",
     data,
@@ -169,23 +263,31 @@ confirmedViolationLog.ConfirmedViolationTable = (
       { title: "رقم المحجر/العربة" },
       { title: "إسم الشركة المخالفة" },
       { title: "نوع المخالفة " },
+      { title: "المنطقة", visible: true },
+      { title: "حالة المخالفة" },
       { title: "حالة الالتماس" },
-      { title: "المنطقة" },
-      { title: "تاريخ الضبط" },
+      { title: "الحد الأقصى للمصالحة" },
       { title: "تاريخ الإنشاء" },
     ],
     false,
     false,
-    "سجل المخالفات المصدق عليها.xlsx",
-    "سجل المخالفات المصدق عليها"
+    "سجل المحاضر المصدق عليها.xlsx",
+    "سجل المحاضر المصدق عليها"
   );
+
+  confirmedViolationLog.destroyTable = true;
+
   let violationlog = Table.rows().nodes().to$();
+
+  $(".ellipsisButton").on("click", (e) => {
+    $(".hiddenListBox").hide(300);
+    $(e.currentTarget).siblings(".hiddenListBox").toggle(300);
+  });
+
   $.each(violationlog, (index, record) => {
     let jQueryRecord = $(record);
     let taskID = jQueryRecord.find(".violationId").data("taskid");
-    let violationId = jQueryRecord.find(".violationId").data("violationid");
-    let violationCode = jQueryRecord.find(".violationId").data("violationcode");
-    let OffenderType = jQueryRecord.find(".violationId").data("offendertype");
+
     jQueryRecord
       .find(".controls")
       .children(".ellipsisButton")
@@ -212,7 +314,112 @@ confirmedViolationLog.ConfirmedViolationTable = (
   });
   functions.hideTargetElement(".controls", ".hiddenListBox");
 };
+confirmedViolationLog.getViolationStatus = (ViolationStatus) => {
+  let statusHtml = ``;
+  switch (ViolationStatus) {
+    case "Pending":
+    case "Confirmed": {
+      statusHtml = `<div class="statusBox pendingStatus">
+                <i class="statusIcon fa-regular fa-clock"></i>
+                <span class="statusText">قيد الانتظار</span>
+            </div>`;
+      break;
+    }
+    case "Exceeded": {
+      statusHtml = `<div class="statusBox warningStatus">
+                <img class="statusIcon" src="/Style Library/MiningViolations/images/tringleIcon.svg" alt="warning">
+                <span class="statusText">تجاوز مدة السداد</span>
+            </div>`;
+      break;
+    }
+    case "Saved": {
+      statusHtml = `<div class="statusBox killedStatus">
+                <i class="statusIcon fa-solid fa-ban"></i> 
+                <span class="statusText">محفوظة</span>
+            </div>`;
+      break;
+    }
+    case "Paid After Reffered": {
+      statusHtml = `<div class="statusBox closedStatus">
+                <i class="statusIcon fa-regular fa-circle-check"></i>
+                <span class="statusText">سداد بعد الإحالة</span>
+            </div>`;
+      break;
+    }
+    case "Paid": {
+      statusHtml = `<div class="statusBox closedStatus">
+                <i class="statusIcon fa-regular fa-circle-check"></i>
+                <span class="statusText">تم السداد</span>
+            </div>`;
+      break;
+    }
+    case "UnderPayment": {
+      statusHtml = `<div class="statusBox warningStatus">
+                <img class="statusIcon" src="/Style Library/MiningViolations/images/tringleIcon.svg" alt="warning">
+                <span class="statusText">قيد السداد</span>
+            </div>`;
+      break;
+    }
+    case "Approved": {
+      statusHtml = `<div class="statusBox closedStatus">
+                <i class="statusIcon fa-regular fa-circle-check"></i>
+                <span class="statusText">تم الموافقة</span>
+            </div>`;
+      break;
+    }
+    case "Rejected": {
+      statusHtml = `<div class="statusBox killedStatus">
+                <i class="statusIcon fa-solid fa-ban"></i> 
+                <span class="statusText">مرفوضة</span>
+            </div>`;
+      break;
+    }
+    case "Reffered": {
+      statusHtml = `<div class="statusBox pendingStatus">
+                <i class="statusIcon fa-regular fa-paper-plane"></i>
+                <span class="statusText">تم الإحالة</span>
+            </div>`;
+      break;
+    }
+    case "UnderReview": {
+      statusHtml = `<div class="statusBox pendingStatus">
+                <i class="statusIcon fa-regular fa-eye"></i>
+                <span class="statusText">قيد انتظار السداد</span>
+            </div>`;
+      break;
+    }
+    case "ExternalReviewed": {
+      statusHtml = `<div class="statusBox pendingStatus">
+                <i class="statusIcon fa-regular fa-external-link"></i>
+                <span class="statusText">خارجية</span>
+            </div>`;
+      break;
+    }
+    case "Completed": {
+      statusHtml = `<div class="statusBox closedStatus">
+                <i class="statusIcon fa-regular fa-circle-check"></i>
+                <span class="statusText">مكتملة</span>
+            </div>`;
+      break;
+    }
+    case "Cancelled": {
+      statusHtml = `<div class="statusBox killedStatus">
+                <i class="statusIcon fa-solid fa-ban"></i> 
+                <span class="statusText">ملغاه</span>
+            </div>`;
+      break;
+    }
+    default: {
+      statusHtml = `<div class="statusBox pendingStatus">
+                <i class="statusIcon fa-regular fa-question-circle"></i>
+                <span class="statusText">${ViolationStatus || "---"}</span>
+            </div>`;
+      break;
+    }
+  }
 
+  return statusHtml;
+};
 confirmedViolationLog.findViolationByID = (event, taskID, print = false) => {
   let request = {
     Id: taskID,
@@ -298,82 +505,101 @@ confirmedViolationLog.findViolationByID = (event, taskID, print = false) => {
       console.log(err);
     });
 };
-confirmedViolationLog.filterConfirmedLog = (e) => {
-  // let pageIndex = confirmedViolationLog.pageIndex;
-  let OffenderTypeVal = $("#violationCategory")
-    .children("option:selected")
-    .val();
-  let ViolationSectorVal = $("#violationSector")
-    .children("option:selected")
-    .val();
-  let ViolationTypeVal = $("#TypeofViolation")
-    .children("option:selected")
-    .data("id");
-  let ViolationGeneralSearch = $("#violationSearch").val();
 
-  if (
-    ViolationTypeVal == "" &&
-    ViolationSectorVal == "0" &&
-    ViolationGeneralSearch == "" &&
-    OffenderTypeVal == ""
-  ) {
-    functions.warningAlert(
-      "من فضلك قم بإدخال قيمة واحدة على الأقل من قيم البحث"
-    );
-  } else {
-    $(".PreLoader").addClass("active");
-    confirmedViolationLog.getConfirmedLog();
-  }
+
+const ViolationHistoryLogs = () => {
+
+  let selectedViolationId = null;
+  let selectedViolationCode = null;
+  let trackHistoryTable = null;
+
+  // ===============================
+  // 🔥 فتح المودال
+  // ===============================
+  $(".contentContainer").on("click", ".violationHistory", function () {
+
+    selectedViolationId = $(this).data("violationid");
+    selectedViolationCode = $(this).data("violationcode");
+
+    $("#trackHistoryModal").modal("show");
+  });
+
+  // ===============================
+  // 🔥 لما المودال يفتح
+  // ===============================
+  $(".track-history-modal").on("shown.bs.modal", function () {
+
+    $(".modal-violation-code").text(selectedViolationCode);
+
+    const request = {
+      Request: {
+        ViolationId: selectedViolationId,
+      },
+    };
+
+    const tableElement = $("#trackHistoryTable");
+
+    // ✅ لو أول مرة نعمل init
+    if (!trackHistoryTable) {
+
+      trackHistoryTable = tableElement.DataTable({
+        processing: true,
+        paging: false,
+        responsive: true,
+        destroy: true,
+
+        ajax: {
+          url: "/_layouts/15/Uranium.Violations.SharePoint/ViolationHistoryLogs.aspx/Search",
+          type: "POST",
+          contentType: "application/json",
+          data: () => JSON.stringify(request),
+
+          dataSrc: (data) => {
+            return data?.d?.Result?.GridData || [];
+          }
+        },
+
+        columns: [
+          { data: "Id" },
+          { data: "Status" },
+          {
+            data: "Created",
+            render: (data) =>
+              data ? functions.getFormatedDate(data) : "-"
+          },
+          { data: "CreatedBy" },
+          { data: "Comment" }
+        ],
+
+        language: {
+          emptyTable: "لا توجد بيانات",
+        }
+      });
+
+    } else {
+
+      // ✅ Reload فقط
+      trackHistoryTable.ajax.reload();
+    }
+  });
+
+  // ===============================
+  // 🔥 لما المودال يقفل
+  // ===============================
+  $(".track-history-modal").on("hidden.bs.modal", function () {
+
+    $(".modal-violation-code").text("");
+
+    if (trackHistoryTable) {
+      trackHistoryTable.clear().destroy();
+      trackHistoryTable = null;
+    }
+
+    $("#trackHistoryTable tbody").empty();
+  });
+
 };
 
-confirmedViolationLog.resetFilter = (e) => {
-  e.preventDefault();
-  $("#nationalID").val("");
-  $("#violatorName").val("");
-  $("#violationCode").val("");
-  $("#violationSector").val("0");
-  $("#violationCategory").val("");
-  $("#TypeofViolation").val("0");
-  $("#violationZone").val("");
-  $("#violationSearch").val("");
-  $("#createdFrom").val("");
-  $("#createdTo").val("");
-  $("#theCode").val("");
+ViolationHistoryLogs();
 
-  $(".PreLoader").addClass("active");
-  pagination.reset();
-  confirmedViolationLog.getConfirmedLog();
-};
-
-// Abdelrahman
-var selectedViolationId;
-var selectedViolationCode;
-var trackHistoryTable;
-$(".contentContainer").on("click", ".violationHistory", function () {
-  selectedViolationId = $(this).data("violationid");
-  selectedViolationCode = $(this).data("violationcode");
-});
-
-$(".track-history-modal").on("shown.bs.modal", function () {
-  $(".track-history-modal").removeClass("generalPopupStyle detailsPopup");
-  $(".modal-violation-code").text(selectedViolationCode);
-  let request = {
-    Request: {
-      ViolationId: selectedViolationId,
-    },
-  };
-  // Datatable section
-  const columns = ["id", "status", "created", "createdBy", "comment"];
-  trackHistoryTable = ajaxDatatableHistoryInit(
-    $("#trackHistoryTable"),
-    "/_layouts/15/Uranium.Violations.SharePoint/ViolationHistoryLogs.aspx/Search",
-    request,
-    columns
-  );
-});
-$(".track-history-modal").on("hidden.bs.modal", function () {
-  trackHistoryTable.destroy();
-  $("#trackHistoryTable tbody").empty();
-  $(".modal-violation-code").text("");
-});
 export default confirmedViolationLog;

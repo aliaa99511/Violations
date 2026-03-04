@@ -3,32 +3,39 @@
   font-family: Cairo;
   overflow-x: hidden;
   background-color: #f6f6f6;
+
   #s4-bodyContainer {
     height: 100%;
     padding-bottom: 0 !important;
-    > div {
+
+    >div {
       height: 100%;
-      > span {
+
+      >span {
         height: 100%;
         display: block;
       }
     }
   }
+
   &::-webkit-scrollbar {
     width: 6px;
     background: transparent;
   }
+
   &::-webkit-scrollbar-thumb {
     border-radius: 5px;
     // background: $customGreen;
     // border: 1px solid $customGreen;
   }
+
   &.greenScroller {
     &::-webkit-scrollbar-thumb {
       background: $customGreen;
       border: 1px solid $customGreen;
     }
   }
+
   &.blueScroller {
     &::-webkit-scrollbar-thumb {
       background: $customBlue;
@@ -38,7 +45,7 @@
 }
 
 .mainContainer {
-  width: 96%;
+  width: 97%;
   height: 100%;
   margin: 0 auto;
 }
@@ -46,15 +53,18 @@
 .pageTitleBox {
   height: 88px;
   position: relative;
+
   .pageTitleImageBox {
     height: 100%;
     width: 100%;
+
     img {
       height: 100%;
       width: 100%;
       object-fit: cover;
       object-position: center;
     }
+
     &::before {
       content: "";
       position: absolute;
@@ -64,14 +74,16 @@
       height: 100%;
       background-color: rgba(0, 0, 0, 0.5);
     }
-    
+
   }
+
   .pageNameBox {
     position: absolute;
     right: 0;
     top: 50%;
     transform: translateY(-50%);
     width: 100%;
+
     .pageName {
       color: $white;
       font-size: 25px;
@@ -84,14 +96,16 @@
 
 .layoutRow {
   min-height: 100%;
+
   .col-md-3.customCol3 {
     padding-inline-end: 0;
     box-shadow: -3px 0 6px rgba(0, 0, 0, 0.05);
-  background-color: $white;
+    background-color: $white;
     /* height: 100%;
     position: sticky;
     top: 0; */
   }
+
   .col-md-9.customCol9 {
     padding-inline-start: 0;
     height: 100%;
@@ -100,6 +114,7 @@
 
 .ms-webpartzone-cell {
   margin: 0 !important;
+
   .ms-webpartzone-cell {
     margin: 0 !important;
   }
@@ -108,10 +123,11 @@
 .contentContainer {
   background-color: $white;
   border-radius: 10px;
-  margin: 1.5rem 0;
+  margin: 1.3rem 0;
   min-height: calc(100vh - (140px + 70px + 85px + 3rem));
   // min-height: calc(100vh - (140px + 70px + 3rem));
   padding: 2rem 1.5rem;
+
   .dashBoardTable {
     // box-shadow: 2px 2px 10px rgba(0 0 0 /10%);
   }
@@ -119,6 +135,7 @@
 
 .sweetStyle {
   font-family: CairoSB !important;
+
   .swal2-title {
     font-family: CairoB;
     padding: 0.5rem 1rem 0;
@@ -146,9 +163,11 @@
   transition: all 0.4s ease-in-out;
   font-size: 15px;
 }
+
 .customeInputs::placeholder {
   font-size: 13px;
 }
+
 .customeInputs::placeholder {
   color: #aaa;
   font-size: 14px;
@@ -157,6 +176,7 @@
 .checkboxInput label.customelabel.checkboxLabel {
   margin: 23px 0;
 }
+
 .checkboxInput span.checktext {
   margin: 1px 5px;
 }
@@ -164,11 +184,13 @@
 .checkboxInput input#unmarkedCheckbox:disabled {
   background-color: #e9ecef !important;
 }
+
 .btnContainer {
   display: flex;
   justify-content: flex-end;
   align-items: center;
 }
+
 .exportBtn {
   margin-bottom: 1rem;
   padding: 5px 10px;
@@ -180,13 +202,70 @@
   align-items: center;
   gap: 10px;
 }
-.exportBtn.outlineGreenBtn, .exportBtn.customGreenBtn:hover {
+
+.exportBtn.outlineGreenBtn,
+.exportBtn.customGreenBtn:hover {
   border: 1px solid $customGreen;
   color: $customGreen;
   background-color: #f1f5f2;
 }
-.exportBtn.outlineBlueBtn, .exportBtn.customBlueBtn:hover {
+
+.exportBtn.outlineBlueBtn,
+.exportBtn.customBlueBtn:hover {
   border: 1px solid $customBlue;
   color: $customBlue;
   background-color: #eef1f6;
+}
+
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fadeIn {
+  animation: fadeIn 0.3s ease forwards;
+}
+
+
+.rejected-indicator {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  background-color: red;
+  border-radius: 50%;
+  margin-left: 5px;
+  /* For RTL layout - use margin-right: 5px for LTR */
+  vertical-align: middle;
+  box-shadow: 0 0 5px rgba(255, 0, 0, 0.5);
+  // animation: pulse 1.5s ease-in-out infinite;
+}
+
+// @keyframes pulse {
+//   0% {
+//     transform: scale(1);
+//     opacity: 1;
+//   }
+
+//   50% {
+//     transform: scale(1.2);
+//     opacity: 0.7;
+//   }
+
+//   100% {
+//     transform: scale(1);
+//     opacity: 1;
+//   }
+// }
+
+/* For tooltip styling */
+.rejected-indicator:hover {
+  // cursor: help;
 }

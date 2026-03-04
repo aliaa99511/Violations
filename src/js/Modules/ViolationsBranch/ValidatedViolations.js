@@ -4,52 +4,71 @@ import functions from "../../Shared/functions";
 import DetailsPopup from "../../Shared/detailsPopupContent";
 import confirmPopup from "../../Shared/confirmationPopup";
 import pagination from "../../Shared/Pagination";
+import { ajaxDatatableHistoryInit } from "../../Shared/ajaxDatatable";
 
 let validatedViolations = {};
 validatedViolations.pageIndex = 1;
 validatedViolations.destroyTable = false;
+
 validatedViolations.getValidatedViolations = (
+  pageIndex = 1,
   destroyTable = false,
-  ViolationSector = Number(
-    $("#violationSector").children("option:selected").val(),
-  ),
-  ViolationType = Number(
-    $("#TypeofViolation").children("option:selected").data("id"),
-  ),
-  ViolationStatus = $("#ViolationStatus").children("option:selected").val(),
-  ViolationGeneralSearch = $("#violationSearch").val(),
+  ViolationSector = Number($("#violationSector").children("option:selected").val()),
+  ViolationType = Number($("#TypeofViolation").children("option:selected").data("id")),
+  ViolationGeneralSearch = $("#violationSearch").val()
 ) => {
-  // debugger;
-  let UserId = _spPageContextInfo.userId;
-  const theCode =
-    $("#violationCategory").val() == "Quarry"
-      ? { QuarryCode: $("#theCode").val() }
-      : { CarNumber: $("#theCode").val() };
-  let ShownRows = 10;
+  // Check if theCode field has a value but violationCategory is empty
+  const theCodeValue = $("#theCode").val();
+  const violationCategoryValue = $("#violationCategory").val();
+
+  if (theCodeValue && theCodeValue.trim() !== "" && (!violationCategoryValue || violationCategoryValue === "")) {
+    functions.warningAlert("من فضلك قم باختيار تصنيف المخالفة قبل إدخال رقم المحجر/عربة/معدة");
+    $(".PreLoader").removeClass("active");
+    return;
+  }
+
+  const theCode = violationCategoryValue == "Quarry"
+    ? { QuarryCode: $("#theCode").val() }
+    : { CarNumber: $("#theCode").val() };
+
+  // Get selected status
+  const selectedStatus = $("#ViolationStatus").children("option:selected").val();
+
+  // Determine MultipleStatus based on selected status
+  let multipleStatus = [];
+
+  if (selectedStatus && selectedStatus !== "") {
+    // If a specific status is selected, only use that status
+    multipleStatus = [selectedStatus];
+  } else {
+    // If no status selected, use default list (excluding any you don't want)
+    multipleStatus = [
+      "Confirmed",
+      "Paid",
+      "Exceeded",
+      "Paid After Reffered",
+      "Saved",
+      "Cancelled"
+      // "UnderPayment",
+    ];
+  }
 
   let request = {
     Data: {
       ...theCode,
-      RowsPerPage: ShownRows,
+      RowsPerPage: 10,
       PageIndex: pagination.currentPage,
       ColName: "created",
       SortOrder: "desc",
-      Status: ViolationStatus,
-      MultipleStatus: [
-        "Confirmed",
-        "Paid",
-        "Exceeded",
-        "Paid After Reffered",
-        "Saved",
-        "Cancelled"
-        // "UnderPayment",
-      ],
-      VolationType: ViolationType,
-      SectorConfigId: ViolationSector,
-      GlobalSearch: ViolationGeneralSearch,
+      Status: selectedStatus, // Keep this for reference
+      MultipleStatus: multipleStatus, // Use dynamic multipleStatus
       ViolatorName: $("#violatorName").val(),
       NationalID: $("#nationalID").val(),
       ViolationCode: $("#violationCode").val(),
+      ViolationType: ViolationType,
+      SectorConfigId: ViolationSector,
+      GlobalSearch: ViolationGeneralSearch,
+      Sector: 0,
       OffenderType: $("#violationCategory").val(),
       ViolationsZone: $("#violationZone").val(),
       CreatedFrom: $("#createdFrom").val()
@@ -60,6 +79,7 @@ validatedViolations.getValidatedViolations = (
         : null,
     },
   };
+
   functions
     .requester("/_layouts/15/Uranium.Violations.SharePoint/Tasks.aspx/Search", {
       request,
@@ -71,71 +91,69 @@ validatedViolations.getValidatedViolations = (
     })
     .then((data) => {
       $(".PreLoader").removeClass("active");
-      let ValidatedViolation = [];
+      let ValidatedViolationData = [];
 
       let ItemsData = data.d.Result;
-      if (data.d.Result.GridData != null) {
-        if (data.d.Result.GridData.length > 0) {
-          Array.from(data.d.Result.GridData).forEach((element) => {
-            ValidatedViolation.push(element);
+      if (data.d.Result?.GridData != null) {
+        if (data.d.Result.GridData?.length > 0) {
+          Array.from(data.d.Result?.GridData).forEach((element) => {
+            ValidatedViolationData.push(element);
           });
         } else {
-          ValidatedViolation = [];
+          ValidatedViolationData = [];
         }
       }
-      validatedViolations.setPaginations(
-        ItemsData.TotalPageCount,
-        ItemsData.RowsPerPage,
-      );
-      validatedViolations.ValidatedViolationTable(
-        ValidatedViolation,
-        destroyTable || validatedViolations.destroyTable,
-      );
-      validatedViolations.destroyTable = true;
+      validatedViolations.setPaginations(ItemsData.TotalPageCount, ItemsData.RowsPerPage,);
+      validatedViolations.ValidatedViolationTable(ValidatedViolationData, destroyTable);
       validatedViolations.pageIndex = ItemsData.CurrentPage;
+      functions.getCurrentUserActions();
     })
-    .catch((err) => { });
+    .catch((err) => {
+      console.log(err);
+    });
 };
+
 validatedViolations.filterViolationsLog = (e) => {
+  let pageIndex = validatedViolations.pageIndex;
+
   let ViolationSectorVal = $("#violationSector").children("option:selected").val();
   let ViolationTypeVal = $("#TypeofViolation").children("option:selected").data("id");
-  let ViolationStatusVal = $("#ViolationStatus").children("option:selected").val();
   let ViolationGeneralSearch = $("#violationSearch").val();
+
+  // Check if theCode has value but violationCategory is empty
+  const theCodeValue = $("#theCode").val();
+  const violationCategoryValue = $("#violationCategory").val();
+
+  if (theCodeValue && theCodeValue.trim() !== "" && (!violationCategoryValue || violationCategoryValue === "")) {
+    functions.warningAlert("من فضلك قم باختيار تصنيف المخالفة قبل إدخال رقم المحجر/عربة/معدة");
+    return;
+  }
 
   let ViolationType;
   let ViolationSector;
-  let ViolationStatus;
 
   if (
     ViolationTypeVal == "" &&
     ViolationSectorVal == "" &&
-    ViolationStatusVal == "" &&
     ViolationGeneralSearch == ""
   ) {
     functions.warningAlert(
-      "من فضلك قم بإدخال قيمة واحدة على الأقل من قيم البحث",
+      "من فضلك قم بإدخال قيمة واحدة على الأقل من قيم البحث"
     );
   } else if (
-    ViolationSectorVal != "0" ||
+    ViolationSectorVal != "" ||
     ViolationTypeVal != "0" ||
-    ViolationStatusVal != "" ||
     ViolationGeneralSearch != ""
   ) {
     $(".PreLoader").addClass("active");
-    ViolationSector = Number(
-      $("#violationSector").children("option:selected").val(),
-    );
-    ViolationType = Number(
-      $("#TypeofViolation").children("option:selected").data("id"),
-    );
-    ViolationStatus = $("#ViolationStatus").children("option:selected").val();
+    ViolationSector = Number($("#violationSector").children("option:selected").val());
+    ViolationType = Number($("#TypeofViolation").children("option:selected").data("id"));
 
-    // Call with correct parameters - same as PendingViolations
     validatedViolations.getValidatedViolations(
-      true,  // destroyTable
+      pageIndex,
+      true,
       ViolationSector,
       ViolationType,
-      ViolationStatus,
       ViolationGeneralSearch
     );
   }
@@ -157,15 +175,7 @@ validatedViolations.resetFilter = (e) => {
 
   $(".PreLoader").addClass("active");
   pagination.reset();
-
-  // Call with default/reset values
-  validatedViolations.getValidatedViolations(
-    true,  // destroyTable
-    0,     // ViolationSector = "0"
-    0,     // ViolationType = "0"
-    "",    // ViolationStatus = empty
-    ""     // ViolationGeneralSearch = empty
-  );
+  validatedViolations.getValidatedViolations();
 };
 validatedViolations.setPaginations = (TotalPages, RowsPerPage) => {
   pagination.draw("#paginationID", TotalPages, RowsPerPage);
@@ -174,7 +184,7 @@ validatedViolations.setPaginations = (TotalPages, RowsPerPage) => {
 };
 
 /////////////////////////////////////////
-validatedViolations.ValidatedViolationTable = (ValidatedViolation) => {
+validatedViolations.ValidatedViolationTable = (ValidatedViolation, destroyTable) => {
   let data = [];
   let taskViolation;
   let TaskStatus;
@@ -239,7 +249,7 @@ validatedViolations.ValidatedViolationTable = (ValidatedViolation) => {
     });
   }
 
-  if (validatedViolations.destroyTable) {
+  if (validatedViolations.destroyTable || destroyTable) {
     $("#ValidatedViolation").DataTable().destroy();
   }
 
@@ -265,6 +275,8 @@ validatedViolations.ValidatedViolationTable = (ValidatedViolation) => {
     "المخالفات المصدق عليها"
   );
 
+  validatedViolations.destroyTable = true;
+
   $(".ellipsisButton").on("click", (e) => {
     $(".hiddenListBox").hide(300);
     $(e.currentTarget).siblings(".hiddenListBox").toggle(300);
@@ -272,7 +284,6 @@ validatedViolations.ValidatedViolationTable = (ValidatedViolation) => {
 
   let UserId = _spPageContextInfo.userId;
   let violationlog = Table.rows().nodes().to$();
-  validatedViolations.destroyTable = true;
   functions.callSharePointListApi("Configurations").then((Users) => {
     let UserDetails;
     let UsersData = Users.value;
@@ -301,7 +312,7 @@ validatedViolations.ValidatedViolationTable = (ValidatedViolation) => {
       if (offenderType === "Quarry") {
         referralButtonHtml = `<li><a href="#" class="reffereViolationQuarry">إحالة إلى النيابة المختصة</a></li>`;
       } else if (offenderType === "Vehicle") {
-        referralButtonHtml = `<li><a href="#" class="reffereViolationVehicle">حظر عربة \\ معدة</a></li>`;
+        referralButtonHtml = `<li><a href="#" class="reffereViolationVehicle">حظر عربة \ معدة</a></li>`;
       }
 
       switch (taskStatus) {
@@ -394,7 +405,6 @@ validatedViolations.ValidatedViolationTable = (ValidatedViolation) => {
       });
     });
 
-    functions.getCurrentUserActions();
   });
 
   functions.hideTargetElement(".controls", ".hiddenListBox");
@@ -532,7 +542,6 @@ validatedViolations.findViolationByID = (
 
         violationData = TaskData.Violation;
 
-        console.log('violationData', violationData)
         TaskId = TaskData.ID;
 
         ExDate = functions.getFormatedDate(TaskData.ReconciliationExpiredDate);
@@ -763,7 +772,6 @@ validatedViolations.popupPermissionShowTypes = (popupType, TaskId, ExDate) => {
 
 ////////////////////////////////////////
 validatedViolations.paymentFormHtml = (TaskData) => {
-  console.log('TaskData', TaskData)
   let offenderType = TaskData.Violation.OffenderType;
   let violationPriceType =
     TaskData.Violation.ViolationTypes != null
@@ -1435,6 +1443,7 @@ validatedViolations.reffereViolationToCase = (
           <div class="formBox">
             <div class="formElements">
               <div class="row">
+              <!--
                 <div class="col-md-6">
                   <div class="form-group customFormGroup">
                     <label for="reffereViolationNumber" class="customLabel">${inputLabel}</label>
@@ -1443,6 +1452,7 @@ validatedViolations.reffereViolationToCase = (
                     </div>
                   </div>
                 </div>
+                -->
                 <div class="col-md-6">
                   <div class="form-group customFormGroup">
                     <label for="reffereViolationDate" class="customLabel">تاريخ الإحالة</label>
@@ -1492,9 +1502,8 @@ validatedViolations.reffereViolationToCase = (
   let numberOfDaysBefore = functions.getViolationStartDate(3);
   functions.inputDateFormat(".inputDate", numberOfDaysBefore, "today");
 
-  // The rest of the function remains the same...
   let violationRefferedDate = $(".reffereViolationDate").val();
-  let violationRefferedNumber = $(".reffereViolationNumber").val();
+  // let violationRefferedNumber = $(".reffereViolationNumber").val();
   let violationRefferedComments = $(".reffereViolationComments").val();
 
   let filesExtension = ["gif", "svg", "jpg", "jpeg", "png", "doc", "docx", "pdf", "xls", "xlsx", "pptx"];
@@ -1544,9 +1553,9 @@ validatedViolations.reffereViolationToCase = (
     violationRefferedDate = $(e.currentTarget).val();
   });
 
-  $(".reffereViolationNumber").on("keyup", (e) => {
-    violationRefferedNumber = $(e.currentTarget).val().trim();
-  });
+  // $(".reffereViolationNumber").on("keyup", (e) => {
+  //   violationRefferedNumber = $(e.currentTarget).val().trim();
+  // });
 
   $(".reffereViolationComments").on("keyup", (e) => {
     violationRefferedComments = $(e.currentTarget).val().trim();
@@ -1554,30 +1563,30 @@ validatedViolations.reffereViolationToCase = (
 
   $(".reffereVioltionBtn").on("click", (e) => {
     if (violationRefferedDate != "") {
-      if (violationRefferedNumber != "") {
-        if (allAttachments != null && allAttachments.length > 0) {
-          $(".overlay").addClass("active");
-          validatedViolations.reffereViolationAPIResponse(
-            TaskId,
-            ViolationId,
-            OffenderType,
-            TotalPrice,
-            violationRefferedDate,
-            violationRefferedNumber,
-            violationRefferedComments,
-            "#reffereViolationAttach",
-          );
-        } else {
-          functions.warningAlert("من فضلك قم بإرفاق المستند الخاص بالإحالة");
-        }
+      // if (violationRefferedNumber != "") {
+      if (allAttachments != null && allAttachments.length > 0) {
+        $(".overlay").addClass("active");
+        validatedViolations.reffereViolationAPIResponse(
+          TaskId,
+          ViolationId,
+          OffenderType,
+          TotalPrice,
+          violationRefferedDate,
+          // violationRefferedNumber,
+          violationRefferedComments,
+          "#reffereViolationAttach",
+        );
       } else {
-        // Update alert message based on OffenderType
-        if (OffenderType === "Vehicle") {
-          functions.warningAlert("من فضلك قم بإدخال رقم القيد");
-        } else {
-          functions.warningAlert("من فضلك قم بإدخال رقم الإحالة");
-        }
+        functions.warningAlert("من فضلك قم بإرفاق المستند الخاص بالإحالة");
       }
+      // } else {
+      //   // Update alert message based on OffenderType
+      //   if (OffenderType === "Vehicle") {
+      //     functions.warningAlert("من فضلك قم بإدخال رقم القيد");
+      //   } else {
+      //     functions.warningAlert("من فضلك قم بإدخال رقم الإحالة");
+      //   }
+      // }
     } else {
       functions.warningAlert("من فضلك قم بتحديد تاريخ الإحالة الخاص بالمخالفة");
     }
@@ -1589,7 +1598,7 @@ validatedViolations.reffereViolationAPIResponse = (
   OffenderType,
   TotalPrice,
   violationRefferedDate,
-  ReferralNumber,
+  // ReferralNumber,
   Comments = "",
   attachInput,
 ) => {
@@ -1626,7 +1635,7 @@ validatedViolations.reffereViolationAPIResponse = (
         TaskId,
         ViolationId,
         violationRefferedDate,
-        ReferralNumber,
+        // ReferralNumber,
         Comments,
         OffenderType,
       );
@@ -1638,7 +1647,7 @@ validatedViolations.addNewCase = (
   TaskId,
   violationId,
   violationRefferedDate,
-  ReferralNumber,
+  // ReferralNumber,
   Comments = "",
   OffenderType,
 ) => {
@@ -1649,10 +1658,11 @@ validatedViolations.addNewCase = (
     request = {
       Request: {
         Title: "إحالة محجر إلى النيابة",
-        Status: "قيد الانتظار القطاع",
+        // Status: "قيد الانتظار القطاع",
+        Status: "قيد انتظار رقم الإحالة",
         ViolationId: violationId,
         TaskId: TaskId,
-        ReferralNumber: ReferralNumber,
+        // ReferralNumber: ReferralNumber,
         RefferedDate: violationRefferedDate,
         Comments: Comments,
         OffenderType: OffenderType
@@ -1662,29 +1672,31 @@ validatedViolations.addNewCase = (
     request = {
       Request: {
         Title: "تم حظر عربة او معدة",
-        Status: "قيد انتظار الرقم القضائي",
+        // Status: "قيد انتظار الرقم القضائي",
+        Status: "قيد انتظار رقم القيد",
         ViolationId: violationId,
         TaskId: TaskId,
-        VehicleRegistrationNumber: ReferralNumber, // Use VehicleRegistrationNumber for vehicles
+        // VehicleRegistrationNumber: ReferralNumber,
         RefferedDate: violationRefferedDate,
         Comments: Comments,
         OffenderType: OffenderType
       },
     };
-  } else {
-    // Default case for other offender types
-    request = {
-      Request: {
-        Title: "قضية مسجلة من مخالفة",
-        Status: "قيد مراجعة النيابة المختصة",
-        ViolationId: violationId,
-        TaskId: TaskId,
-        ReferralNumber: ReferralNumber,
-        RefferedDate: violationRefferedDate,
-        Comments: Comments
-      },
-    };
   }
+  // else {
+  //   // Default case for other offender types
+  //   request = {
+  //     Request: {
+  //       Title: "قضية مسجلة من مخالفة",
+  //       Status: "قيد مراجعة النيابة المختصة",
+  //       ViolationId: violationId,
+  //       TaskId: TaskId,
+  //       ReferralNumber: ReferralNumber,
+  //       RefferedDate: violationRefferedDate,
+  //       Comments: Comments
+  //     },
+  //   };
+  // }
 
   functions
     .requester(
@@ -2160,6 +2172,103 @@ validatedViolations.violationExceedTimeStatusChange = (taskId, violationId) => {
     })
     .catch((err) => { });
 };
+
+
+const ViolationHistoryLogs = () => {
+
+  let selectedViolationId = null;
+  let selectedViolationCode = null;
+  let trackHistoryTable = null;
+
+  // ===============================
+  // 🔥 فتح المودال
+  // ===============================
+  $(".contentContainer").on("click", ".violationHistory", function () {
+
+    selectedViolationId = $(this).data("violationid");
+    selectedViolationCode = $(this).data("violationcode");
+
+    $("#trackHistoryModal").modal("show");
+  });
+
+  // ===============================
+  // 🔥 لما المودال يفتح
+  // ===============================
+  $(".track-history-modal").on("shown.bs.modal", function () {
+
+    $(".modal-violation-code").text(selectedViolationCode);
+
+    const request = {
+      Request: {
+        ViolationId: selectedViolationId,
+      },
+    };
+
+    const tableElement = $("#trackHistoryTable");
+
+    // ✅ لو أول مرة نعمل init
+    if (!trackHistoryTable) {
+
+      trackHistoryTable = tableElement.DataTable({
+        processing: true,
+        paging: false,
+        responsive: true,
+        destroy: true,
+
+        ajax: {
+          url: "/_layouts/15/Uranium.Violations.SharePoint/ViolationHistoryLogs.aspx/Search",
+          type: "POST",
+          contentType: "application/json",
+          data: () => JSON.stringify(request),
+
+          dataSrc: (data) => {
+            return data?.d?.Result?.GridData || [];
+          }
+        },
+
+        columns: [
+          { data: "Id" },
+          { data: "Status" },
+          {
+            data: "Created",
+            render: (data) =>
+              data ? functions.getFormatedDate(data) : "-"
+          },
+          { data: "CreatedBy" },
+          { data: "Comment" }
+        ],
+
+        language: {
+          emptyTable: "لا توجد بيانات",
+        }
+      });
+
+    } else {
+
+      // ✅ Reload فقط
+      trackHistoryTable.ajax.reload();
+    }
+  });
+
+  // ===============================
+  // 🔥 لما المودال يقفل
+  // ===============================
+  $(".track-history-modal").on("hidden.bs.modal", function () {
+
+    $(".modal-violation-code").text("");
+
+    if (trackHistoryTable) {
+      trackHistoryTable.clear().destroy();
+      trackHistoryTable = null;
+    }
+
+    $("#trackHistoryTable tbody").empty();
+  });
+
+};
+
+ViolationHistoryLogs();
+
 
 export default validatedViolations;
 

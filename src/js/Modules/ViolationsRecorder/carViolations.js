@@ -11,30 +11,28 @@ carViolation.violatorDetails = () => {
     let violatorNameCheck = functions.getNameInTriple("#violatorName");
     let violatorName = $("#violatorName").val();
     let violatorNationalId = $("#violatorNationalId").val();
-    let violationPrevCount = $("#prevViolationsCount").val();
+
+    // Get the previous violations count from the display span instead of input
+    let violationPrevCount = $(".previous-violations-count-value").text();
+
     let violationGov = $("#violationGov").children("option:selected").val();
     let violationGovId = $("#violationGov").children("option:selected").data("id");
     let violationArea = $("#violationArea").val();
-    // let violationAreaName = $("#violationArea").children("option:selected").data("areaname");
     let companyName = $("#companyName").val();
     let commercialRegister = $("#commercialRegister").val()
     let carType = $("#violationCarType").children("option:selected").val()
-    // let TractorNumber = $(".tractorBox").is(":visible") && carType == "عربة بمقطورة"?$("#tractorNumber").val():"";
-    let NationalIdRegExp = /^(2|3)[0-9][0-9][0-1][0-9][0-3][0-9](01|02|03|04|11|12|13|14|15|16|17|18|19|21|22|23|24|25|26|27|28|29|31|32|33|34|35|88)\d\d\d\d\d$/;
+
     if (violatorNameCheck) {
-        // if(violatorNationalId != "" & NationalIdRegExp.test(violatorNationalId)){        
-        if (violationPrevCount != "") {
-            // if (companyName != "") {
+        // Check if previous violations count is not empty and is a valid number
+        if (violationPrevCount !== "" && !isNaN(violationPrevCount)) {
             if (violationGov != "") {
                 if (violationArea != "") {
                     if (carType != "" && carType == "عربة فردي") {
-                        // if (carType != "" && carType == "عربة فردي" && $("#unmarkedCheckbox:checked").length == 0) {
                         violatorDetails = {
                             violatorName: violatorName,
                             violatorNationalId: violatorNationalId != "" ? violatorNationalId : "",
-                            violationPrevCount: Number(violationPrevCount),
+                            violationPrevCount: Number(violationPrevCount), // Use the display value
                             violationGov: violationGovId,
-                            // violationAreaCode:violationArea,
                             violationAreaName: violationArea,
                             companyName: companyName != "" ? companyName : "",
                             commercialRegister: commercialRegister != "" ? commercialRegister : "",
@@ -42,7 +40,6 @@ carViolation.violatorDetails = () => {
                         }
                         vaildViolator = true;
                     } else if (carType != "" && carType == "عربة بمقطورة" && $(".tractorBox").is(":visible")) {
-                        // } else if (carType != "" && carType == "عربة بمقطورة" && $(".tractorBox").is(":visible") && $("#unmarkedCheckbox:checked").length == 0) {
                         let TractorLetters = $("#tractorLetters").val()
                         let TractorNumbers = $("#tractorNumbers").val()
                         if ((TractorLetters.length > 0 && TractorLetters.trim().length > 0) || $("#unmarkedCheckbox:checked").length != 0) {
@@ -51,9 +48,8 @@ carViolation.violatorDetails = () => {
                                 violatorDetails = {
                                     violatorName: violatorName,
                                     violatorNationalId: violatorNationalId != "" ? violatorNationalId : "",
-                                    violationPrevCount: Number(violationPrevCount),
+                                    violationPrevCount: Number(violationPrevCount), // Use the display value
                                     violationGov: violationGovId,
-                                    // violationAreaCode:violationArea,
                                     violationAreaName: violationArea,
                                     companyName: companyName != "" ? companyName : "",
                                     commercialRegister: commercialRegister != "" ? commercialRegister : "",
@@ -67,9 +63,7 @@ carViolation.violatorDetails = () => {
                         } else {
                             functions.warningAlert("من فضلك قم بادخال حروف المقطورة بشكل صحيح وباللغة العربية")
                         }
-                    }
-                    else {
-                        // else if (carType == "") {
+                    } else {
                         functions.warningAlert("من فضلك قم باختيار تصنيف العربة")
                     }
                 } else {
@@ -78,18 +72,16 @@ carViolation.violatorDetails = () => {
             } else {
                 functions.warningAlert("من فضلك قم باختيار المحافظة الواقع بها المخالفة")
             }
-            // } else {
-            //     functions.warningAlert("من فضلك قم بادخال اسم الشركة التابع لها المخالف")
-            // }
         } else {
-            functions.warningAlert("من فضلك قم بادخال عدد المخالفات السابقة")
+            functions.warningAlert(
+                "من فضلك قم بالتأكد من ظهور عدد المخالفات السابقة",
+                ".previous-violations-display"
+            );
         }
-        // }else{
-        //     functions.warningAlert("من فضلك قم بادخال الرقم القومي بشكل صحيح مكون من 14 رقم")
-        // }
     } else {
         functions.warningAlert("من فضلك قم بادخال اسم المخالف ثلاثي بشكل صحيح")
     }
+
     if (vaildViolator) {
         return violatorDetails;
     } else {
@@ -430,6 +422,61 @@ carViolation.formActions = () => {
     let numberOfDaysBefore = functions.getViolationStartDate(3)
     functions.inputDateFormat(".inputDate", numberOfDaysBefore, "today", 'dd/mm/yyyy')
 
+    // Add this after your existing formActions code
+
+    // Clear previous violations display when car number fields are cleared
+    $("#carLicenseLetters, #carLicenseNumbres").on("input", function () {
+        let letters = $("#carLicenseLetters").val();
+        let numbers = $("#carLicenseNumbres").val();
+        if ((!letters || letters.trim() === "") && (!numbers || numbers.trim() === "")) {
+            $(".previous-violations-display").fadeOut();
+            $(".previous-violations-count-value").text("0");
+        }
+    });
+
+    // Handle unmarked checkbox change
+    $("#unmarkedCheckbox").on("change", function () {
+        if ($(this).is(":checked")) {
+            $(".previous-violations-display").fadeOut();
+            $(".previous-violations-count-value").text("0");
+        } else {
+            // Trigger the API call if fields have values
+            let letters = $("#carLicenseLetters").val();
+            let numbers = $("#carLicenseNumbres").val();
+            if (letters && letters.trim() !== "" && numbers && numbers.trim() !== "") {
+                carViolation.getPreviousViolationsCount();
+            }
+        }
+    });
+
+    // Trigger API call on car number fields change
+    $("#carLicenseLetters, #carLicenseNumbres").on("change keyup", functions.debounce(function () {
+        // Don't call if unmarked checkbox is checked
+        if ($("#unmarkedCheckbox").is(":checked")) {
+            return;
+        }
+
+        let letters = $("#carLicenseLetters").val();
+        let numbers = $("#carLicenseNumbres").val();
+        if (letters && letters.trim() !== "" && numbers && numbers.trim() !== "") {
+            carViolation.getPreviousViolationsCount();
+        }
+    }, 500));
+
+    // Also trigger when user leaves the fields
+    $("#carLicenseLetters, #carLicenseNumbres").on("blur", function () {
+        // Don't call if unmarked checkbox is checked
+        if ($("#unmarkedCheckbox").is(":checked")) {
+            return;
+        }
+
+        let letters = $("#carLicenseLetters").val();
+        let numbers = $("#carLicenseNumbres").val();
+        if (letters && letters.trim() !== "" && numbers && numbers.trim() !== "") {
+            carViolation.getPreviousViolationsCount();
+        }
+    });
+
     $(".violatorNationalId").on("keypress", (e) => {
         return functions.isNumberKey(e)
     })
@@ -753,6 +800,8 @@ carViolation.validateForm = (e) => {
                             ID: urlParams.get("taskId") !== null ? editViolationId : "",
                             IsEdit: urlParams.get("taskId") !== null ? true : false,
 
+                            IsRejectedBefore: urlParams.get("taskId") !== null ? true : false,
+
                             // End edit violation
                             Title: "New Car Violation",
                             OffenderType: "Vehicle",
@@ -1049,4 +1098,75 @@ carViolation.editViolation = () => {
             });
     }
 };
+
+carViolation.getPreviousViolationsCount = () => {
+    // Get car number - combine letters and numbers if they exist
+    let carLicenseLetters = $("#carLicenseLetters").val();
+    let carLicenseNumbers = $("#carLicenseNumbres").val();
+
+    // Check if unmarked checkbox is checked
+    let unmarkedCheckbox = document.querySelector("#unmarkedCheckbox");
+    if (unmarkedCheckbox && unmarkedCheckbox.checked) {
+        $(".previous-violations-display").fadeOut();
+        $(".previous-violations-count-value").text("0");
+        return;
+    }
+
+    // Combine letters and numbers to form full car number
+    let carNumber = "";
+    if (carLicenseLetters && carLicenseLetters.trim() !== "" &&
+        carLicenseNumbers && carLicenseNumbers.trim() !== "") {
+        carNumber = (carLicenseLetters + " " + carLicenseNumbers).trim();
+    }
+
+    // Check if carNumber exists
+    if (!carNumber || carNumber.trim() === "") {
+        $(".previous-violations-display").fadeOut();
+        $(".previous-violations-count-value").text("0");
+        return;
+    }
+
+    let requestData = {
+        request: {
+            Data: {
+                OffenderType: "Vehicle",
+                CarNumber: carNumber.trim()
+            }
+        }
+    };
+
+    $.ajax({
+        type: "POST",
+        url: "/_layouts/15/Uranium.Violations.SharePoint/Tasks.aspx/GetPreviousViolationsCount",
+        contentType: "application/json; charset=utf-8",
+        dataType: "json",
+        data: JSON.stringify(requestData),
+        success: (response) => {
+            if (response.d && response.d.Status) {
+                let count = response.d.Result;
+
+                // Update only the display span
+                $(".previous-violations-count-value").text(count);
+                $(".previous-violations-display").fadeIn();
+
+                // Optional: Add animation
+                $(".previous-violations-display").addClass("fadeIn");
+                setTimeout(() => {
+                    $(".previous-violations-display").removeClass("fadeIn");
+                }, 500);
+            } else {
+                // Hide section if no data
+                $(".previous-violations-display").fadeOut();
+                $(".previous-violations-count-value").text("0");
+            }
+        },
+        error: (xhr) => {
+            console.log("Error fetching previous violations count:", xhr.responseText);
+            $(".previous-violations-display").fadeOut();
+            $(".previous-violations-count-value").text("0");
+            functions.warningAlert("حدث خطأ في جلب عدد المخالفات السابقة");
+        }
+    });
+};
+
 export default carViolation; 

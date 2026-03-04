@@ -1,19 +1,48 @@
 import functions from "../Shared/functions";
 import pagination from "../Shared/Pagination";
-import { ajaxDatatableHistoryInit } from "../Shared/ajaxDatatable";
+
 let petitionsLog = {};
 petitionsLog.pageIndex = 1;
 petitionsLog.destroyTable = false;
-petitionsLog.getPetitions = (Status = "All") => {
-  let ShownRows = 10;
-  let PetitionStatusVal = $("#petitionStatus").children("option:selected").val()
-    ? $("#petitionStatus").children("option:selected").val()
-    : Status;
 
-  const theCode =
-    $("#violationCategory").val() == "Quarry"
-      ? { QuarryCode: $("#theCode").val() }
-      : { CarNumber: $("#theCode").val() };
+petitionsLog.getPetitions = (Status = "All", pageIndex = 1, isFiltered = false, ViolationSector = null, ViolationType = null, PetitionStatus = null) => {
+  // Check if theCode field has a value but violationCategory is empty
+  const theCodeValue = $("#theCode").val();
+  const violationCategoryValue = $("#violationCategory").val();
+
+  if (theCodeValue && theCodeValue.trim() !== "" && (!violationCategoryValue || violationCategoryValue === "")) {
+    functions.warningAlert("من فضلك قم باختيار تصنيف المخالفة قبل إدخال رقم المحجر/عربة/معدة");
+    $(".PreLoader").removeClass("active");
+    return;
+  }
+
+  // Determine the ViolationCode value
+  let ViolationCodeValue;
+  if (isFiltered && ViolationType) {
+    // If filtered, use the passed ViolationType
+    ViolationCodeValue = ViolationType;
+  } else {
+    // Otherwise use the input field value (which will be empty after reset)
+    ViolationCodeValue = $("#violationCode").val();
+  }
+
+  let ShownRows = 10;
+
+  // Determine status value based on parameters or page context
+  let PetitionStatusVal;
+  if (isFiltered && PetitionStatus) {
+    PetitionStatusVal = PetitionStatus;
+  } else {
+    PetitionStatusVal = $("#petitionStatus").children("option:selected").val() || Status;
+  }
+
+  // Handle theCode based on violation category
+  const theCode = violationCategoryValue == "Quarry"
+    ? { QuarryCode: $("#theCode").val() }
+    : { CarNumber: $("#theCode").val() };
+
+  // Use provided pageIndex or current pagination page
+  const currentPage = pageIndex || Number(pagination.currentPage) || 1;
 
   functions
     .requester(
@@ -22,16 +51,16 @@ petitionsLog.getPetitions = (Status = "All") => {
         Request: {
           ...theCode,
           RowsPerPage: ShownRows,
-          PageIndex: Number(pagination.currentPage),
+          PageIndex: currentPage,
           ColName: "Created",
           SortOrder: "desc",
           ViolationId: 0,
-          ViolationCode: petitionsLog.ViolationCode,
+          ViolationCode: ViolationCodeValue, // Use the determined value
           Status: PetitionStatusVal,
           IsPetition: true,
-          OffenderType: $("#violationCategory").val()
-            ? $("#violationCategory").val()
-            : "",
+          ViolatorCompany: $("#ViolatorCompany").val(),
+          ViolatorName: $("#ViolatorName").val(),
+          OffenderType: $("#violationCategory").val() || "",
           CreatedFrom: $("#createdFrom").val()
             ? moment($("#createdFrom").val(), "DD-MM-YYYY").format("YYYY-MM-DD")
             : "",
@@ -70,23 +99,145 @@ petitionsLog.getPetitions = (Status = "All") => {
     })
     .catch((err) => {
       $(".PreLoader").removeClass("active");
+      console.error("Error fetching petitions:", err);
     });
-  // functions.callSharePointListApi("Petitions").then((Petitions) => {
-  //     let PetitionsData = Petitions.value;
-  //
-  //     petitionsLog.PetitionsTable(PetitionsData, destroyTable);
-  // })
 };
 
 petitionsLog.setPaginations = (TotalPages, RowsPerPage) => {
-  pagination.draw("#paginationID", TotalPages, RowsPerPage);
-  pagination.start("#paginationID", petitionsLog.getPetitions);
-  pagination.activateCurrentPage();
+  if (TotalPages > 0) {
+    pagination.draw("#paginationID", TotalPages, RowsPerPage);
+    pagination.start("#paginationID", () => {
+      // When pagination changes, get current filter state
+      const currentStatus = $("#petitionStatus").val() ||
+        (functions.getPageName() === "PendingPetitionsLog" ? "التماس قيد الإنتظار" : "All");
+
+      // Check if we're in filtered mode
+      const hasFilters = $("#violationCode").val() ||
+        $("#violationCategory").val() ||
+        $("#theCode").val() ||
+        $("#createdFrom").val() ||
+        $("#createdTo").val() ||
+        $("#ViolatorCompany").val() ||
+        $("#ViolatorName").val();
+
+      if (hasFilters) {
+        // Re-apply filters with new page
+        petitionsLog.filterPetitionsLog(new Event('click'), currentStatus);
+      } else {
+        // Just fetch with current page
+        petitionsLog.getPetitions(currentStatus, pagination.currentPage, false);
+      }
+    });
+    pagination.activateCurrentPage();
+  }
+};
+petitionsLog.filterPetitionsLog = (e, defaultStatus = "All") => {
+  e.preventDefault();
+
+  let ViolationSectorVal = $("#violationSector").children("option:selected").val();
+  let ViolationTypeVal = $("#TypeofViolation").children("option:selected").data("id");
+  let PetitionStatusVal = $("#petitionStatus").children("option:selected").val();
+
+  let ViolationType;
+  let ViolationSector;
+  let PetitionStatus;
+
+  // Get current filter values
+  const theCodeValue = $("#theCode").val();
+  const violationCategoryValue = $("#violationCategory").val();
+  const violationCodeValue = $("#violationCode").val();
+  const violatorCompanyValue = $("#ViolatorCompany").val();
+  const violatorNameValue = $("#ViolatorName").val();
+  const createdFromValue = $("#createdFrom").val();
+  const createdToValue = $("#createdTo").val();
+
+  // Check if theCode has value but violationCategory is empty
+  if (theCodeValue && theCodeValue.trim() !== "" && (!violationCategoryValue || violationCategoryValue === "")) {
+    functions.warningAlert("من فضلك قم باختيار تصنيف المخالفة قبل إدخال رقم المحجر/عربة/معدة");
+    return;
+  }
+
+  // Check if at least one filter has value - INCLUDING violationCategory
+  if (
+    (!ViolationSectorVal || ViolationSectorVal === "0" || ViolationSectorVal === "") &&
+    (!ViolationTypeVal || ViolationTypeVal === "0" || ViolationTypeVal === "") &&
+    (!PetitionStatusVal || PetitionStatusVal === "") &&
+    (!violationCodeValue || violationCodeValue === "") &&
+    (!theCodeValue || theCodeValue === "") &&
+    (!violatorCompanyValue || violatorCompanyValue === "") &&
+    (!violatorNameValue || violatorNameValue === "") &&
+    (!createdFromValue || createdFromValue === "") &&
+    (!createdToValue || createdToValue === "") &&
+    (!violationCategoryValue || violationCategoryValue === "") // ADD THIS LINE
+  ) {
+    functions.warningAlert("من فضلك قم بإدخال قيمة واحدة على الأقل من قيم البحث");
+    return;
+  }
+
+  $(".PreLoader").addClass("active");
+
+  // Convert values to proper types
+  ViolationSector = ViolationSectorVal && ViolationSectorVal !== "0" ? Number(ViolationSectorVal) : null;
+  ViolationType = ViolationTypeVal && ViolationTypeVal !== "0" ? Number(ViolationTypeVal) : null;
+  PetitionStatus = PetitionStatusVal || defaultStatus;
+
+  // Store values for reference
+  petitionsLog.PetitionStatus = PetitionStatus;
+  petitionsLog.ViolationCode = violationCodeValue;
+
+  // Call getPetitions with filter parameters - start from page 1
+  petitionsLog.getPetitions(
+    defaultStatus,
+    1, // Start from page 1 when filtering
+    true, // isFiltered flag
+    ViolationSector,
+    ViolationType,
+    PetitionStatus
+  );
+};
+
+petitionsLog.resetFilter = (e, defaultStatus = "All") => {
+  e.preventDefault();
+
+  // Reset all filter fields
+  $("#violationCode").val("");
+  $("#violationCategory").val("");
+  $("#theCode").val("");
+  $("#createdFrom").val("");
+  $("#createdTo").val("");
+  $("#petitionStatus").val("");
+  $("#ViolatorCompany").val("");
+  $("#ViolatorName").val("");
+
+  // Also reset stored filter values
+  petitionsLog.ViolationCode = ""; // Add this line
+  petitionsLog.PetitionStatus = defaultStatus; // Reset this too
+
+  // Also reset any hidden filter fields if they exist
+  if ($("#violationSector").length) {
+    $("#violationSector").val("0");
+  }
+  if ($("#TypeofViolation").length) {
+    $("#TypeofViolation").val("0");
+  }
+
+  $(".PreLoader").addClass("active");
+
+  // Reset pagination to first page
+  if (pagination && typeof pagination.reset === 'function') {
+    pagination.reset();
+  }
+
+  // Reset current page to 1
+  pagination.currentPage = 1;
+
+  // Fetch all petitions with default status
+  petitionsLog.getPetitions(defaultStatus, 1, false);
 };
 
 petitionsLog.ValidatedPetitionsTable = (Petitions, destroyTable) => {
   let data = [];
-  if (petitionsLog.destroyTable) {
+  if (petitionsLog.destroyTable || destroyTable) {
     $("#PetitionsTable").DataTable().destroy();
   }
   let petitionViolation;
@@ -275,107 +426,11 @@ petitionsLog.ValidatedPetitionsTable = (Petitions, destroyTable) => {
   });
   functions.hideTargetElement(".controls", ".hiddenListBox");
 };
-
-// petitionsLog.PetitionsTable = (Petitions, destroyTable) => {
-//
-//     let data = [];
-//     let petitionViolation;
-
-//     if (Petitions.length > 0) {
-//         Petitions.forEach(Petition => {
-//             data.push([
-//                 `<div class="violationId" data-petitionid=${Petition.ID} data-petitionstatus="${Petition.Status}" data-violationid="${Petition.ViolationIdId}">${Petition.Title}</div>`,
-//                 `${functions.getFormatedDate(Petition.Created)}`,
-//                 // `<div class="violationArName">${functions.getViolationArabicName(taskViolation.OffenderType)}</div>`,
-//                 `<div class="violationArName">مخالفة عربة أو محجر</div>`,
-//                 `${petitionsLog.getPetitionStatusIcon(Petition.Status)}`,
-//                 // `<div class="companyName">${taskViolation.ViolatorCompany != ""?taskViolation.ViolatorCompany:"-"}</div>`,
-//                 `<div class='controls'>
-//                     <div class='ellipsisButton'>
-//                         <i class='fa-solid fa-ellipsis-vertical'></i>
-//                     </div>
-//                     <div class="hiddenListBox">
-//                         <div class='arrow'></div>
-//                         <ul class='list-unstyled controlsList'>
-//                             <li><a href="#" class="itemDetails">المزيد من التفاصيل</a></li>
-//                             <li><a href="#" class="violationHistory" data-violationid="${Petition.ViolationIdId}" data-violationcode="${Petition.ViolationIdId}" data-toggle="modal" data-target="#trackHistoryModal">تتبع مرحلة المخالفة</a></li>
-//                         </ul>
-//                     </div>
-//                 </div`,
-//             ]);
-//         });
-//     }
-//     let Table = functions.tableDeclare(
-//         "#PetitionsTable",
-//         data, [
-//         { title: "رقم المخالفة" },
-//         { title: "تاريخ الالتماس" },
-//         { title: "تصنيف المخالفة" },
-//         { title: "حالة الالتماس" },
-//         // { title: "الحد الأقصى للمصالحة" },
-//         { title: "", class: "all" },
-//     ],
-//         false,
-//         destroyTable
-//     );
-//     $(".ellipsisButton").on("click", (e) => {
-//         $(".hiddenListBox").hide(300);
-//         $(e.currentTarget).siblings(".hiddenListBox").toggle(300);
-//     });
-//     let UserId = _spPageContextInfo.userId;
-//     let petitionsTable = Table.rows().nodes().to$();
-//     functions.callSharePointListApi("Configurations").then(Users => {
-//         let UserDetails;
-//         let UsersData = Users.value;
-//         UsersData.forEach(User => {
-//             if (User.UserIdId.find(id=> id==UserId) && (User.JobTitle1 == "فرع المخالفات" || User.JobTitle1 == "مسؤول التصديقات")) {
-//                 UserDetails = User
-//             }
-//         })
-//         $.each(petitionsTable, (index, record) => {
-//             let Content;
-//             let jQueryRecord = $(record);
-//             let petitionStatus = jQueryRecord.find(".violationId").data("petitionstatus");
-//             let petitionID = jQueryRecord.find(".violationId").data("petitionid");
-
-//             let ViolationId = jQueryRecord.find(".violationId").data("violationid");
-
-//             if (UserDetails.JobTitle1 == "مسؤول التصديقات") {
-//                 if (petitionStatus == "قيد الإنتظار") {
-//                     jQueryRecord.find(".controls").children(".hiddenListBox").find(".controlsList").append(`
-//                         <li><a href="#" class="approvePetition">قبول الالتماس</a></li>
-//                         <li><a href="#" class="rejectPetition">رفض الالتماس</a></li>
-//                     `);
-//                 }
-//             }
-//             if (petitionsTable.length > 4 && $('.hiddenListBox').height() > 110 && jQueryRecord.is(":nth-last-child(-n + 4)")) {
-//                 $('.hiddenListBox').addClass("toTopDDL")
-//             }
-//             jQueryRecord.find(".controls").children(".hiddenListBox").find(".itemDetails").on("click", (e) => {
-//                 $(".overlay").addClass("active");
-//                 petitionsLog.findPetitionsByID(petitionID)
-//             });
-//             jQueryRecord.find(".controls").children(".hiddenListBox").find(".violationHistory").on("click", (e) => {
-//                 // $(".overlay").addClass("active");
-//             });
-//             jQueryRecord.find(".controls").children(".hiddenListBox").find(".approvePetition").on("click", (e) => {
-//                 $(".overlay").addClass("active");
-//                 petitionsLog.approvePetition("violationTaskID", ViolationId, "violationCode")
-//             });
-//             jQueryRecord.find(".controls").children(".hiddenListBox").find(".rejectPetition").on("click", (e) => {
-//                 $(".overlay").addClass("active");
-//                 petitionsLog.rejectPetition("violationTaskID", ViolationId, "violationCode")
-//             });
-//         });
-
-//     })
-//     functions.hideTargetElement(".controls", ".hiddenListBox");
-// };
-
 petitionsLog.findPetitionsByID = (petitionID, exDate) => {
   let request = {
     Id: petitionID,
   };
+
   functions
     .requester(
       "/_layouts/15/Uranium.Violations.SharePoint/Petitions.aspx/FindById",
@@ -384,272 +439,224 @@ petitionsLog.findPetitionsByID = (petitionID, exDate) => {
     .then((response) => {
       if (response.ok) {
         return response.json();
+      } else {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
     })
     .then((data) => {
-      let petitionsData;
-      let petitionsId;
-      let Content;
+      // Remove overlay loading
+      $(".overlay").removeClass("active");
 
-      if (data != null) {
-        petitionsData = data.d.Result;
+      if (data && data.d && data.d.Result) {
+        let petitionsData = data.d.Result;
+        let petitionsId = petitionsData?.ID;
+        let violationData = petitionsData.Task?.Violation;
 
-        petitionsId = petitionsData?.ID;
-        let violationData = petitionsData.Task.Violation;
+        // Check if violationData exists
+        if (!violationData) {
+          functions.warningAlert("لا توجد بيانات للمخالفة");
+          return;
+        }
 
         let ExpiredDate;
         let date = exDate;
-        let DateYear = date.split("-")[2];
 
-        if (DateYear > 2020) {
-          ExpiredDate = date;
+        // Handle date formatting safely
+        if (date && date !== "-") {
+          let DateYear = date.split("-")[2];
+          if (DateYear > 2020) {
+            ExpiredDate = date;
+          } else {
+            ExpiredDate = "-";
+          }
         } else {
           ExpiredDate = "-";
         }
 
-        $(".overlay").removeClass("active");
-        let popupHtml = `
-                <div class="petitionPopup" id="printJS-form">
-                    <div class="popupHeader">
-                        <div class="popupTitleBox">
-                            <div class="PetitionNumberBox">
-                                <p class="PetitionNumber">تفاصيل التماس مخالفة رقم (${violationData.ViolationCode
-          })</p>  
-                                <!--<div class="printBtn"><img src="/Style Library/MiningViolations/images/WhitePrintBtn.png" alt="Print Button"></div>-->
-                            </div>
-                            <div class="btnStyle cancelBtn popupBtn closePetitionDetailsPopup" id="closePetitionDetailsPopup" data-dismiss="modal" aria-label="Close">
-                                <i class="fa-solid fa-x"></i>
-                            </div>
-                        </div> 
+        // Format values with fallbacks
+        const formatValue = (value, defaultValue = "----") => {
+          return value && value !== "" && value !== null ? value : defaultValue;
+        };
+
+        const popupHtml = `
+          <div class="petitionPopup" id="printJS-form">
+            <div class="popupHeader">
+              <div class="popupTitleBox">
+                <div class="PetitionNumberBox">
+                  <p class="PetitionNumber">تفاصيل التماس مخالفة رقم (${formatValue(violationData.ViolationCode, "")})</p>  
+                </div>
+                <div class="btnStyle cancelBtn popupBtn closePetitionDetailsPopup" id="closePetitionDetailsPopup" data-dismiss="modal" aria-label="Close">
+                  <i class="fa-solid fa-x"></i>
+                </div>
+              </div> 
+            </div>
+            <div class="popupBody">
+              <div class="popupForm detailsPopupForm" id="detailsPopupForm">
+                <div class="formContent">
+                  <div class="formBox">
+                    <div class="formBoxHeader">
+                      <p class="formBoxTitle"><span class="formNumber">1</span> تفاصيل الالتماس</p>
                     </div>
-                    <div class="popupBody">
-                        <div class="popupForm detailsPopupForm" id="detailsPopupForm">
-
-                            <div class="formContent">
-                                <div class="formBox">
-                                    <div class="formBoxHeader">
-                                        <p class="formBoxTitle"><span class="formNumber">1</span> تفاصيل الالتماس</p>
-                                    </div>
-                                    <div class="formElements">
-                                        <div class="row">
-                                            <div class="col-md-4">
-                                                <div class="form-group customFormGroup">
-                                                    <label for="petitionCreatedDate" class="customLabel">تاريخ تقديم الالتماس</label>
-                                                    <input class="form-control disabled customInput petitionCreatedDate" id="petitionCreatedDate" type="text" value="${functions.getFormatedDate(
-            petitionsData.Created,
-          )}" disabled>
-                                                </div> 
-                                            </div>
-                                            <div class="col-md-4">
-                                                <div class="form-group customFormGroup">
-                                                    <label for="PetitionStatus" class="customLabel">الحالة</label>
-                                                    <input class="form-control disabled customInput PetitionStatus" id="PetitionStatus" type="text" value="${petitionsData.Status
-          }" disabled>
-                                                </div> 
-                                            </div>
-                                            <div class="col-md-4">
-                                                <div class="form-group customFormGroup">
-                                                    <label for="dateBeforePetition" class="customLabel">المدة القديمة</label>
-                                                    <input class="form-control disabled customInput dateBeforePetition" id="dateBeforePetition" type="text" value="${ExpiredDate}" disabled>
-                                                </div> 
-                                            </div>
-                                            <div class="col-md-4">
-                                                <div class="form-group customFormGroup">
-                                                    <label for="petitionTotalOldPrice" class="customLabel">المبلغ القديم</label>
-                                                    <input class="form-control disabled customInput petitionTotalOldPrice" id="petitionTotalOldPrice" type="text" value="${violationData != null
-            ? violationData.ActualAmountPaid
-            : "----"
-          }" disabled>
-                                                </div> 
-                                            </div>
-                                            <div class="col-md-4">
-                                                <div class="form-group customFormGroup">
-                                                    <label for="ReconciliationExpiredDate" class="customLabel">المدة الجديدة</label>
-                                                    <input class="form-control disabled customInput ReconciliationExpiredDate" id="ReconciliationExpiredDate" type="text" value="${functions.getFormatedDate(
-            petitionsData.Task
-              .ReconciliationExpiredDate,
-          )}" disabled>
-                                                </div> 
-                                            </div>
-                                            <div class="col-md-4">
-                                                <div class="form-group customFormGroup">
-                                                    <label for="petitionTotalPriceDue" class="customLabel">المبلغ الجديدة</label>
-                                                    <input class="form-control disabled customInput petitionTotalPriceDue" id="petitionTotalPriceDue" type="text" value="${violationData != null
-            ? violationData.TotalPriceDue
-            : "----"
-          }" disabled>
-                                                </div> 
-                                            </div>
-                                            <div class="col-md-12">
-                                                <div class="form-group customFormGroup">
-                                                    <label for="commentsPetition" class="customLabel">موضوع الالتماس</label>
-                                                    <input class="form-control disabled customInput commentsPetition" id="commentsPetition" type="text" value="${petitionsData.Comments
-          }" value="${petitionsData.Comments !=
-            ""
-            ? petitionsData.Comments
-            : "----"
-          }" disabled>
-                                                </div> 
-                                            </div>
-
-                                            <div class="col-md-12 petitionsAttachmentsBoxes" id="petitionsAttachmentsBoxes">
-                                                <div class="feildInfoBoxe">
-                                                    <label class="customLabel">المرفقات</label>
-                                                </div>
-                                                <div class="petitionsAttachBox"></div>
-                                            </div>
-
-                                        </div>
-                                    </div>
-
-                                </div>
-                            </div>
-
-                            <div class="formContent">
-                                <div class="formBox">
-                                    <div class="formBoxHeader">
-                                        <p class="formBoxTitle"><span class="formNumber">2</span> تفاصيل المخالفة</p>
-                                    </div>
-                                    <div class="formElements">
-                                        <div class="row">
-
-                                            <div class="col-md-4">
-                                                <div class="form-group customFormGroup">
-                                                    <label for="violatorName" class="customLabel">إسم المخالف</label>
-                                                    <input class="form-control disabled customInput violatorName" id="violatorName" type="text" value="${violationData.ViolatorName
-          }" disabled>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-4">
-                                                <div class="form-group customFormGroup">
-                                                    <label for="violatorCompany" class="customLabel">الشركة المخالفة التابع لها</label>
-                                                    <input class="form-control disabled customInput violatorCompany" id="violatorCompany" type="text" value="${violationData.ViolatorCompany !=
-            ""
-            ? violationData.ViolatorCompany
-            : "----"
-          }" disabled>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-4">
-                                                <div class="form-group customFormGroup">
-                                                    <label for="violationType" class="customLabel">نوع المخالفة</label>
-                                                    <input class="form-control disabled customInput violationType" id="violationType" type="text" value="${violationData.ViolationTypes !=
-            null
-            ? violationData
-              .ViolationTypes
-              .Title
-            : violationData.VehicleFine !=
-              null
-              ? violationData
-                .VehicleFine
-                .VehicleType
-              : "----"
-          }" disabled>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-4">
-                                                <div class="form-group customFormGroup">
-                                                    <label for="materialQuantity" class="customLabel">كمية الخام</label>
-                                                    <input class="form-control disabled customInput materialQuantity" id="materialQuantity" type="text" value="${violationData?.VehicleFine
-            ?.Quantity != null
-            ? violationData
-              ?.VehicleFine
-              ?.Quantity
-            : violationData?.TotalQuantity !=
-              null
-              ? violationData?.TotalQuantity
-              : "-"
-          }" disabled>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-4">
-                                                <div class="form-group customFormGroup">
-                                                    <label for="materialType" class="customLabel">نوع الخام</label>
-                                                    <input class="form-control disabled customInput materialType" id="materialType" type="text" value="${violationData.VehicleFine !=
-            null &&
-            violationData.VehicleFine
-              .Material != null
-            ? violationData
-              .VehicleFine
-              .Material.Title
-            : violationData.Material
-              .Title
-          }" disabled>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-4">
-                                                <div class="form-group customFormGroup">
-                                                    <label for="violationGov" class="customLabel">المحافظة</label>
-                                                    <input class="form-control disabled customInput violationGov" id="violationGov" type="text" value="${violationData.Governrates !=
-            null
-            ? violationData
-              .Governrates.Title
-            : "----"
-          }" disabled>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-4">
-                                                <div class="form-group customFormGroup">
-                                                    <label for="violationZone" class="customLabel">منطقة الضبط</label>
-                                                    <input class="form-control disabled customInput violationZone" id="violationZone" type="text" value="${violationData.ViolationsZone !=
-            ""
-            ? violationData.ViolationsZone
-            : "----"
-          }" disabled>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-4">
-                                                <div class="form-group customFormGroup">
-                                                    <label for="violationTime" class="customLabel">وقت الضبط</label>
-                                                    <input class="form-control disabled customInput violationTime" id="violationTime" type="text" value="${functions.getFormatedDate(
-            violationData.ViolationTime,
-            "hh:mm A",
-          )}" disabled>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-4">
-                                                <div class="form-group customFormGroup">
-                                                    <label for="violationDate" class="customLabel">تاريخ الضبط</label>
-                                                    <input class="form-control disabled customInput violationDate" id="violationDate" type="text" value="${functions.getFormatedDate(
-            violationData.ViolationDate,
-          )}" disabled>
-                                                </div>
-                                            </div>
-
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="formButtonsBox">
-                                <div class="row">
-                                    <div class="col-12">
-                                        <div class="buttonsBox centerButtonsBox ">
-                                            <div class="btnStyle cancelBtn popupBtn closeDetailsPopup" id="closeDetailsPopup" data-dismiss="modal" aria-label="Close">إغلاق</div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
+                    <div class="formElements">
+                      <div class="row">
+                        <div class="col-md-4">
+                          <div class="form-group customFormGroup">
+                            <label for="petitionCreatedDate" class="customLabel">تاريخ تقديم الالتماس</label>
+                            <input class="form-control disabled customInput petitionCreatedDate" id="petitionCreatedDate" type="text" value="${functions.getFormatedDate(petitionsData.Created) || "----"}" disabled>
+                          </div> 
                         </div>
+                        <div class="col-md-4">
+                          <div class="form-group customFormGroup">
+                            <label for="PetitionStatus" class="customLabel">الحالة</label>
+                            <input class="form-control disabled customInput PetitionStatus" id="PetitionStatus" type="text" value="${formatValue(petitionsData.Status)}" disabled>
+                          </div> 
                         </div>
-                </div>`;
+                        <div class="col-md-4">
+                          <div class="form-group customFormGroup">
+                            <label for="dateBeforePetition" class="customLabel">المدة القديمة</label>
+                            <input class="form-control disabled customInput dateBeforePetition" id="dateBeforePetition" type="text" value="${ExpiredDate}" disabled>
+                          </div> 
+                        </div>
+                        <div class="col-md-4">
+                          <div class="form-group customFormGroup">
+                            <label for="petitionTotalOldPrice" class="customLabel">المبلغ القديم</label>
+                            <input class="form-control disabled customInput petitionTotalOldPrice" id="petitionTotalOldPrice" type="text" value="${formatValue(violationData.ActualAmountPaid)}" disabled>
+                          </div> 
+                        </div>
+                        <div class="col-md-4">
+                          <div class="form-group customFormGroup">
+                            <label for="ReconciliationExpiredDate" class="customLabel">المدة الجديدة</label>
+                            <input class="form-control disabled customInput ReconciliationExpiredDate" id="ReconciliationExpiredDate" type="text" value="${functions.getFormatedDate(petitionsData.Task?.ReconciliationExpiredDate) || "----"}" disabled>
+                          </div> 
+                        </div>
+                        <div class="col-md-4">
+                          <div class="form-group customFormGroup">
+                            <label for="petitionTotalPriceDue" class="customLabel">المبلغ الجديد</label>
+                            <input class="form-control disabled customInput petitionTotalPriceDue" id="petitionTotalPriceDue" type="text" value="${formatValue(violationData.TotalPriceDue)}" disabled>
+                          </div> 
+                        </div>
+                        <div class="col-md-12">
+                          <div class="form-group customFormGroup">
+                            <label for="commentsPetition" class="customLabel">موضوع الالتماس</label>
+                            <input class="form-control disabled customInput commentsPetition" id="commentsPetition" type="text" value="${formatValue(petitionsData.Comments)}" disabled>
+                          </div> 
+                        </div>
+                        <div class="col-md-12 petitionsAttachmentsBoxes" id="petitionsAttachmentsBoxes">
+                          <div class="feildInfoBoxe">
+                            <label class="customLabel">المرفقات</label>
+                          </div>
+                          <div class="petitionsAttachBox"></div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
 
+                <div class="formContent">
+                  <div class="formBox">
+                    <div class="formBoxHeader">
+                      <p class="formBoxTitle"><span class="formNumber">2</span> تفاصيل المخالفة</p>
+                    </div>
+                    <div class="formElements">
+                      <div class="row">
+                        <div class="col-md-4">
+                          <div class="form-group customFormGroup">
+                            <label for="violatorName" class="customLabel">إسم المخالف</label>
+                            <input class="form-control disabled customInput violatorName" id="violatorName" type="text" value="${formatValue(violationData.ViolatorName)}" disabled>
+                          </div>
+                        </div>
+                        <div class="col-md-4">
+                          <div class="form-group customFormGroup">
+                            <label for="violatorCompany" class="customLabel">الشركة المخالفة التابع لها</label>
+                            <input class="form-control disabled customInput violatorCompany" id="violatorCompany" type="text" value="${formatValue(violationData.ViolatorCompany)}" disabled>
+                          </div>
+                        </div>
+                        <div class="col-md-4">
+                          <div class="form-group customFormGroup">
+                            <label for="violationType" class="customLabel">نوع المخالفة</label>
+                            <input class="form-control disabled customInput violationType" id="violationType" type="text" value="${formatValue(violationData.ViolationTypes?.Title || violationData.VehicleFine?.VehicleType)}" disabled>
+                          </div>
+                        </div>
+                        <div class="col-md-4">
+                          <div class="form-group customFormGroup">
+                            <label for="materialQuantity" class="customLabel">كمية الخام</label>
+                            <input class="form-control disabled customInput materialQuantity" id="materialQuantity" type="text" value="${formatValue(violationData.VehicleFine?.Quantity || violationData.TotalQuantity)}" disabled>
+                          </div>
+                        </div>
+                        <div class="col-md-4">
+                          <div class="form-group customFormGroup">
+                            <label for="materialType" class="customLabel">نوع الخام</label>
+                            <input class="form-control disabled customInput materialType" id="materialType" type="text" value="${formatValue(violationData.VehicleFine?.Material?.Title || violationData.Material?.Title)}" disabled>
+                          </div>
+                        </div>
+                        <div class="col-md-4">
+                          <div class="form-group customFormGroup">
+                            <label for="violationGov" class="customLabel">المحافظة</label>
+                            <input class="form-control disabled customInput violationGov" id="violationGov" type="text" value="${formatValue(violationData.Governrates?.Title)}" disabled>
+                          </div>
+                        </div>
+                        <div class="col-md-4">
+                          <div class="form-group customFormGroup">
+                            <label for="violationZone" class="customLabel">منطقة الضبط</label>
+                            <input class="form-control disabled customInput violationZone" id="violationZone" type="text" value="${formatValue(violationData.ViolationsZone)}" disabled>
+                          </div>
+                        </div>
+                        <div class="col-md-4">
+                          <div class="form-group customFormGroup">
+                            <label for="violationTime" class="customLabel">وقت الضبط</label>
+                            <input class="form-control disabled customInput violationTime" id="violationTime" type="text" value="${functions.getFormatedDate(violationData.ViolationTime, "hh:mm A") || "----"}" disabled>
+                          </div>
+                        </div>
+                        <div class="col-md-4">
+                          <div class="form-group customFormGroup">
+                            <label for="violationDate" class="customLabel">تاريخ الضبط</label>
+                            <input class="form-control disabled customInput violationDate" id="violationDate" type="text" value="${functions.getFormatedDate(violationData.ViolationDate) || "----"}" disabled>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="formButtonsBox">
+                  <div class="row">
+                    <div class="col-12">
+                      <div class="buttonsBox centerButtonsBox ">
+                        <div class="btnStyle cancelBtn popupBtn closeDetailsPopup" id="closeDetailsPopup" data-dismiss="modal" aria-label="Close">إغلاق</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>`;
+
+        // Declare the popup
         functions.declarePopup(
           ["generalPopupStyle", "greenPopup", "editPopup", "petitionPopup"],
           popupHtml,
         );
 
-        // $(".printBtn").on("click", (e) => {
-        //     functions.PrintDetails(e);
-        // });
-      } else {
-        petitionsData = null;
-      }
+        // Get attachments
+        petitionsLog.getPetitionsAttachmentsById(petitionsId);
 
-      petitionsLog.getPetitionsAttachmentsById(petitionsId);
+        // Add close button handlers
+        $("#closePetitionDetailsPopup, #closeDetailsPopup").on("click", function () {
+          $(".overlay").removeClass("active");
+          $(".popupContainer").remove();
+        });
+
+      } else {
+        console.error("No data found for petition ID:", petitionID);
+        functions.warningAlert("لم يتم العثور على بيانات الالتماس");
+        $(".overlay").removeClass("active");
+      }
     })
-    .catch((err) => { });
+    .catch((err) => {
+      console.error("Error in findPetitionsByID:", err);
+      $(".overlay").removeClass("active");
+      functions.warningAlert("حدث خطأ في جلب بيانات الالتماس");
+    });
 };
 petitionsLog.getPetitionsAttachmentsById = (petitionsId) => {
   let request = {
@@ -939,67 +946,27 @@ petitionsLog.approvePetition = (
     newDateInput = $(e.currentTarget).val();
   });
 
-  $(document).off("click", "#approvePetitionBtn");
-  $(document).on("click", "#approvePetitionBtn", function (e) {
-    console.log("hi");
-
+  $(".approvePetitionBtn").on("click", (e) => {
     $(".overlay").addClass("active");
-
-    let priceValue = $("#priceAfterPetition").val();
-    let dateValue = $("#dateAfterPetition").val();
-
-    priceValue = priceValue ? priceValue.replace(/,/g, "").trim() : "";
-    dateValue = dateValue ? dateValue.trim() : "";
-
-    console.log("price:", priceValue);
-    console.log("date:", dateValue);
-
-    let hasPrice = priceValue.length > 0;
-    let hasDate = dateValue.length > 0;
-
-    if (!hasPrice && !hasDate) {
-      functions.warningAlert(
-        "من فضلك أدخل المبلغ الجديد أو التاريخ الجديد على الأقل"
-      );
-      $(".overlay").removeClass("active");
-      return;
-    }
-
-    let numericPrice = hasPrice ? Number(priceValue) : null;
-
-    if (hasPrice && numericPrice > oldPriceInput) {
-      functions.warningAlert(
-        "من فضلك قم بإدخال المبلغ الجديد لا يتجاوز المبلغ المحدد في المخالفة"
-      );
-      $(".overlay").removeClass("active");
-      return;
-    }
-
-    if (!allAttachments || allAttachments.length === 0) {
-      functions.warningAlert(
-        "من فضلك قم بإرفاق مؤيدات الموافقة على الالتماس"
-      );
-      $(".overlay").removeClass("active");
-      return;
-    }
-
     let oldDateNewFormat =
-      oldDateInput !== "-"
-        ? oldDateInput.split("-")[1] +
-        "-" +
-        oldDateInput.split("-")[0] +
-        "-" +
-        oldDateInput.split("-")[2]
-        : "";
-
-    let request = {
+      oldDateInput.split("-")[1] +
+      "-" +
+      oldDateInput.split("-")[0] +
+      "-" +
+      oldDateInput.split("-")[2];
+    let newDateFormat = newDateInput;
+    let isBiggerDate =
+      moment(newDateFormat).isAfter(moment(oldDateNewFormat)) ||
+      moment(newDateFormat).isSame(moment(oldDateNewFormat));
+    request = {
       request: {
         Data: {
           ID: violationTaskID,
           ViolationId: violationID,
-          TotalPriceDue: numericPrice,
-          ReconciliationOldExpiredDate: oldDateNewFormat,
-          ReconciliationExpiredDate: hasDate ? dateValue : null,
+          TotalPriceDue: Number(newPriceInput),
+          ReconciliationOldExpiredDate:
+            oldDateInput == "-" ? "" : oldDateNewFormat,
+          ReconciliationExpiredDate: newDateInput,
           Violation: {
             LawRoyalty: null,
             QuarryMaterialValue: null,
@@ -1008,143 +975,100 @@ petitionsLog.approvePetition = (
         },
       },
     };
+    // request = {
+    //   request: {
+    //     Data: {
+    //       ID: violationTaskID,
+    //       ViolationId: violationID,
+    //       ActualAmountPaid: Number(oldPriceInput),
+    //       TotalPriceDue: Number(newPriceInput),
+    //       ReconciliationOldExpiredDate:
+    //         oldDateInput == "-" ? "" : oldDateNewFormat,
+    //       ReconciliationExpiredDate: newDateInput,
+    //     },
+    //   },
+    // };
 
-    petitionsLog.changePetitionStatus(
-      e,
-      petitionID,
-      violationID,
-      request,
-      petitionComments,
-      "قبول مع التعديل"
-    );
+    if (newPriceInput === "" || newDateInput == "") {
+      functions.warningAlert(
+        "من فضلك قم بإدخال قيمة واحدة على الأقل من قيم المبلغ أو التاريخ وبشكل صحيح",
+      );
+      $(".overlay").removeClass("active");
+    } else if (newPriceInput != "" && newDateInput != "") {
+      // Add proper validation for both fields
+      if (newPriceInput <= oldPriceInput) {
+        if (allAttachments != undefined && allAttachments.length > 0) {
+          petitionsLog.changePetitionStatus(
+            e,
+            petitionID,
+            violationID,
+            request,
+            petitionComments,
+            "قبول مع التعديل",
+          );
+        } else {
+          functions.warningAlert(
+            "من فضلك قم بإرفاق المستند الخاص بقبول الالتماس",
+          );
+          $(".overlay").removeClass("active");
+        }
+      } else {
+        functions.warningAlert(
+          "من فضلك قم بإدخال المبلغ الجديد لا يتجاوز المبلغ المحدد في المخالفة",
+        );
+        $(".overlay").removeClass("active");
+      }
+    } else if (newPriceInput != "" && newDateInput == "") {
+      if (newPriceInput <= oldPriceInput) {
+        if (allAttachments != undefined && allAttachments.length > 0) {
+          $(".overlay").addClass("active");
+          petitionsLog.changePetitionStatus(
+            e,
+            petitionID,
+            violationID,
+            request,
+            petitionComments,
+            "قبول مع التعديل",
+          );
+        } else {
+          functions.warningAlert(
+            "من فضلك قم بإرفاق مؤيدات الموافقة على الالتماس",
+          );
+          $(".overlay").removeClass("active");
+        }
+      } else {
+        functions.warningAlert(
+          "من فضلك قم بإدخال المبلغ الجديد لا يتجاوز المبلغ المحدد في المخالفة",
+        );
+        $(".overlay").removeClass("active");
+      }
+    } else if (newDateInput != "" && newPriceInput == "") {
+      // remove condition on date must be > than old date [if (isBiggerDate replaced by newDateInput != "")]
+      if (newDateInput != "") {
+        if (allAttachments != undefined && allAttachments.length > 0) {
+          $(".overlay").addClass("active");
+          petitionsLog.changePetitionStatus(
+            e,
+            petitionID,
+            violationID,
+            request,
+            petitionComments,
+            "قبول مع التعديل",
+          );
+        } else {
+          functions.warningAlert(
+            "من فضلك قم بإرفاق مؤيدات الموافقة على الالتماس",
+          );
+          $(".overlay").removeClass("active");
+        }
+      } else {
+        functions.warningAlert(
+          "من فضلك قم بتحديد التاريخ الجديد للمصالحة لا يقل عن التاريخ المحدد في المخالفة",
+        );
+        $(".overlay").removeClass("active");
+      }
+    }
   });
-
-
-
-
-  // $(".approvePetitionBtn").on("click", (e) => {
-  //   $(".overlay").addClass("active");
-  //   let oldDateNewFormat =
-  //     oldDateInput.split("-")[1] +
-  //     "-" +
-  //     oldDateInput.split("-")[0] +
-  //     "-" +
-  //     oldDateInput.split("-")[2];
-  //   let newDateFormat = newDateInput;
-  //   let isBiggerDate =
-  //     moment(newDateFormat).isAfter(moment(oldDateNewFormat)) ||
-  //     moment(newDateFormat).isSame(moment(oldDateNewFormat));
-  //   request = {
-  //     request: {
-  //       Data: {
-  //         ID: violationTaskID,
-  //         ViolationId: violationID,
-  //         TotalPriceDue: Number(newPriceInput),
-  //         ReconciliationOldExpiredDate:
-  //           oldDateInput == "-" ? "" : oldDateNewFormat,
-  //         ReconciliationExpiredDate: newDateInput,
-  //         Violation: {
-  //           LawRoyalty: null,
-  //           QuarryMaterialValue: null,
-  //           TotalEquipmentsPrice: null,
-  //         },
-  //       },
-  //     },
-  //   };
-  //   // request = {
-  //   //   request: {
-  //   //     Data: {
-  //   //       ID: violationTaskID,
-  //   //       ViolationId: violationID,
-  //   //       ActualAmountPaid: Number(oldPriceInput),
-  //   //       TotalPriceDue: Number(newPriceInput),
-  //   //       ReconciliationOldExpiredDate:
-  //   //         oldDateInput == "-" ? "" : oldDateNewFormat,
-  //   //       ReconciliationExpiredDate: newDateInput,
-  //   //     },
-  //   //   },
-  //   // };
-
-  //   if (newPriceInput == "" || newDateInput == "") {
-  //     functions.warningAlert(
-  //       "من فضلك قم بإدخال قيمة واحدة على الأقل من قيم المبلغ أو التاريخ وبشكل صحيح",
-  //     );
-  //     $(".overlay").removeClass("active");
-  //   } else if (newPriceInput != "" && newDateInput != "") {
-  //     // Add proper validation for both fields
-  //     if (newPriceInput <= oldPriceInput) {
-  //       if (allAttachments != undefined && allAttachments.length > 0) {
-  //         petitionsLog.changePetitionStatus(
-  //           e,
-  //           petitionID,
-  //           violationID,
-  //           request,
-  //           petitionComments,
-  //           "قبول مع التعديل",
-  //         );
-  //       } else {
-  //         functions.warningAlert(
-  //           "من فضلك قم بإرفاق المستند الخاص بقبول الالتماس",
-  //         );
-  //         $(".overlay").removeClass("active");
-  //       }
-  //     } else {
-  //       functions.warningAlert(
-  //         "من فضلك قم بإدخال المبلغ الجديد لا يتجاوز المبلغ المحدد في المخالفة",
-  //       );
-  //       $(".overlay").removeClass("active");
-  //     }
-  //   } else if (newPriceInput != "" && newDateInput == "") {
-  //     if (newPriceInput <= oldPriceInput) {
-  //       if (allAttachments != undefined && allAttachments.length > 0) {
-  //         $(".overlay").addClass("active");
-  //         petitionsLog.changePetitionStatus(
-  //           e,
-  //           petitionID,
-  //           violationID,
-  //           request,
-  //           petitionComments,
-  //           "قبول مع التعديل",
-  //         );
-  //       } else {
-  //         functions.warningAlert(
-  //           "من فضلك قم بإرفاق مؤيدات الموافقة على الالتماس",
-  //         );
-  //         $(".overlay").removeClass("active");
-  //       }
-  //     } else {
-  //       functions.warningAlert(
-  //         "من فضلك قم بإدخال المبلغ الجديد لا يتجاوز المبلغ المحدد في المخالفة",
-  //       );
-  //       $(".overlay").removeClass("active");
-  //     }
-  //   } else if (newDateInput != "" && newPriceInput == "") {
-  //     // remove condition on date must be > than old date [if (isBiggerDate replaced by newDateInput != "")]
-  //     if (newDateInput != "") {
-  //       if (allAttachments != undefined && allAttachments.length > 0) {
-  //         $(".overlay").addClass("active");
-  //         petitionsLog.changePetitionStatus(
-  //           e,
-  //           petitionID,
-  //           violationID,
-  //           request,
-  //           petitionComments,
-  //           "قبول مع التعديل",
-  //         );
-  //       } else {
-  //         functions.warningAlert(
-  //           "من فضلك قم بإرفاق مؤيدات الموافقة على الالتماس",
-  //         );
-  //         $(".overlay").removeClass("active");
-  //       }
-  //     } else {
-  //       functions.warningAlert(
-  //         "من فضلك قم بتحديد التاريخ الجديد للمصالحة لا يقل عن التاريخ المحدد في المخالفة",
-  //       );
-  //       $(".overlay").removeClass("active");
-  //     }
-  //   }
-  // });
 };
 petitionsLog.approveAndCancelPetition = (
   petitionID,
@@ -1306,8 +1230,6 @@ petitionsLog.editPetition = (e, petitionID, violationID, requestData) => {
     })
     .catch((err) => {
       console.log("editPetition err", err);
-      $(".overlay").removeClass("active");
-      functions.warningAlert("خطأ في الاتصال بالخادم");
     });
 };
 petitionsLog.rejectPetition = (petitionId, violationID, violationCode) => {
@@ -1478,60 +1400,104 @@ petitionsLog.addNewPetitionAttachment = (
     },
   });
 };
+const ViolationHistoryLogs = () => {
 
-petitionsLog.filterPetitionsLog = (e) => {
-  let pageIndex = petitionsLog.pageIndex;
-  let ViolationSectorVal = $("#violationSector")
-    .children("option:selected")
-    .val();
-  let ViolationTypeVal = $("#TypeofViolation")
-    .children("option:selected")
-    .data("id");
-  let PetitionStatusVal = $("#petitionStatus")
-    .children("option:selected")
-    .val();
-  let ViolationType;
-  let ViolationSector;
-  let PetitionStatus;
+  let selectedViolationId = null;
+  let selectedViolationCode = null;
+  let trackHistoryTable = null;
 
-  if (
-    ViolationTypeVal == "" &&
-    ViolationSectorVal == "" &&
-    PetitionStatusVal == ""
-  ) {
-    functions.warningAlert(
-      "من فضلك قم بإدخال قيمة واحدة على الأقل من قيم البحث",
-    );
-  } else if (
-    ViolationSectorVal != "0" ||
-    ViolationTypeVal != "0" ||
-    PetitionStatusVal != ""
-  ) {
-    $(".PreLoader").addClass("active");
-    ViolationSector = Number(
-      $("#violationSector").children("option:selected").val(),
-    );
-    ViolationType = Number(
-      $("#TypeofViolation").children("option:selected").data("id"),
-    );
-    petitionsLog.PetitionStatus = $("#petitionStatus")
-      .children("option:selected")
-      .val();
-    petitionsLog.ViolationCode = $("#violationCode").val();
-    petitionsLog.getPetitions();
-  }
+  // ===============================
+  // 🔥 فتح المودال
+  // ===============================
+  $(".contentContainer").on("click", ".violationHistory", function () {
+
+    selectedViolationId = $(this).data("violationid");
+    selectedViolationCode = $(this).data("violationcode");
+
+    $("#trackHistoryModal").modal("show");
+  });
+
+  // ===============================
+  // 🔥 لما المودال يفتح
+  // ===============================
+  $(".track-history-modal").on("shown.bs.modal", function () {
+
+    $(".modal-violation-code").text(selectedViolationCode);
+
+    const request = {
+      Request: {
+        ViolationId: selectedViolationId,
+      },
+    };
+
+    const tableElement = $("#trackHistoryTable");
+
+    // ✅ لو أول مرة نعمل init
+    if (!trackHistoryTable) {
+
+      trackHistoryTable = tableElement.DataTable({
+        processing: true,
+        paging: false,
+        responsive: true,
+        destroy: true,
+
+        ajax: {
+          url: "/_layouts/15/Uranium.Violations.SharePoint/ViolationHistoryLogs.aspx/Search",
+          type: "POST",
+          contentType: "application/json",
+          data: () => JSON.stringify(request),
+
+          dataSrc: (data) => {
+            return data?.d?.Result?.GridData || [];
+          }
+        },
+
+        columns: [
+          { data: "Id" },
+          { data: "Status" },
+          {
+            data: "Created",
+            render: (data) =>
+              data ? functions.getFormatedDate(data) : "-"
+          },
+          { data: "CreatedBy" },
+          { data: "Comment" }
+        ],
+
+        language: {
+          emptyTable: "لا توجد بيانات",
+        }
+      });
+
+    } else {
+
+      // ✅ Reload فقط
+      trackHistoryTable.ajax.reload();
+    }
+  });
+
+  // ===============================
+  // 🔥 لما المودال يقفل
+  // ===============================
+  $(".track-history-modal").on("hidden.bs.modal", function () {
+
+    $(".modal-violation-code").text("");
+
+    if (trackHistoryTable) {
+      trackHistoryTable.clear().destroy();
+      trackHistoryTable = null;
+    }
+
+    $("#trackHistoryTable tbody").empty();
+  });
+
 };
-petitionsLog.resetFilter = (e) => {
-  e.preventDefault();
-  $("#violationCode").val("");
-  $("#violationCategory").val("");
-  $("#theCode").val("");
-  $("#createdFrom").val("");
-  $("#createdTo").val("");
-  $("#petitionStatus").val("");
 
-  $(".PreLoader").addClass("active");
-  pagination.reset();
-  petitionsLog.getPetitions();
-};
+ViolationHistoryLogs();
+
 export default petitionsLog;
+
+
+
+
+

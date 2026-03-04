@@ -9,60 +9,116 @@ pendingPayment.destroyTable = false;
 pendingPayment.getPendingPayment = (
     pageIndex = 1,
     destroyTable = false,
-    ViolationSector = 0,
-    ViolationType = 0,
-    GlobalSearch = ""
+    ViolationSector = Number($("#violationSector").children("option:selected").val()),
+    ViolationType = Number($("#TypeofViolation").children("option:selected").data("id")),
+    ViolationGeneralSearch = ""
 ) => {
     let request = {
         Data: {
-            RowsPerPage: pagination.rowsPerPage || 10,
-            PageIndex: pageIndex,
+            RowsPerPage: 10,
+            PageIndex: pagination.currentPage,
             ColName: "created",
             SortOrder: "desc",
             Status: "UnderPayment",
-            Sector: ViolationSector,
+            Sector: 0,
             ViolationType: ViolationType,
-            GlobalSearch: GlobalSearch,
+            SectorConfigId: ViolationSector,
+            GlobalSearch: $("#violationSearch").val(),
             OffenderType: $("#violationCategory").val(),
             CreatedFrom: $("#createdFrom").val()
                 ? moment($("#createdFrom").val(), "DD-MM-YYYY").format("YYYY-MM-DD")
-                : "",
+                : null,
             CreatedTo: $("#createdTo").val()
                 ? moment($("#createdTo").val(), "DD-MM-YYYY").format("YYYY-MM-DD")
-                : "",
+                : null,
         }
     };
 
-    Object.keys(request.Data).forEach(key => {
-        if (request.Data[key] === "") {
-            delete request.Data[key];
-        }
-    });
-
     functions
-        .requester("/_layouts/15/Uranium.Violations.SharePoint/Tasks.aspx/Search", { request })
-        .then(res => res.ok && res.json())
-        .then(data => {
-            $(".PreLoader").removeClass("active");
-
-            let ItemsData = data.d.Result;
-            let GridData = ItemsData.GridData || [];
-
-            pendingPayment.setPaginations(
-                ItemsData.TotalPageCount,
-                ItemsData.RowsPerPage
-            );
-
-            pendingPayment.PendingPaymentTable(GridData, destroyTable);
-            pendingPayment.pageIndex = ItemsData.CurrentPage;
+        .requester("_layouts/15/Uranium.Violations.SharePoint/Tasks.aspx/Search", {
+            request,
         })
-        .catch(console.log);
+        .then((response) => {
+            if (response.ok) {
+                return response.json();
+            }
+        })
+        .then((data) => {
+            $(".PreLoader").removeClass("active");
+            let pendingPaymentData = [];
+            let ItemsData = data.d.Result;
+            if (data.d.Result.GridData != null) {
+                if (data.d.Result.GridData.length > 0) {
+                    Array.from(data.d.Result.GridData).forEach((element) => {
+                        pendingPaymentData.push(element);
+                    });
+                } else {
+                    pendingPaymentData = [];
+                }
+            }
+
+            pendingPayment.setPaginations(ItemsData.TotalPageCount, ItemsData.RowsPerPage);
+            pendingPayment.PendingPaymentTable(pendingPaymentData, destroyTable);
+            pendingPayment.pageIndex = ItemsData.CurrentPage;
+            functions.getCurrentUserActions();
+        })
+        .catch((err) => {
+            console.log(err);
+        });
 };
 
 pendingPayment.setPaginations = (TotalPages, RowsPerPage) => {
     pagination.draw("#paginationID", TotalPages, RowsPerPage);
     pagination.start("#paginationID", pendingPayment.getPendingPayment);
     pagination.activateCurrentPage();
+};
+pendingPayment.filterPaymentsLog = () => {
+    let pageIndex = pendingPayment.pageIndex;
+    let ViolationSectorVal = $("#violationSector").children("option:selected").val();
+    let ViolationTypeVal = $("#TypeofViolation").children("option:selected").data("id");
+    let ViolationGeneralSearch = $("#violationSearch").val();
+
+    let ViolationType;
+    let ViolationSector;
+
+    if (
+        ViolationTypeVal == "" &&
+        ViolationSectorVal == "" &&
+        ViolationGeneralSearch == ""
+    ) {
+        functions.warningAlert(
+            "من فضلك قم بإدخال قيمة واحدة على الأقل من قيم البحث"
+        );
+    } else if (
+        ViolationSectorVal != "" ||
+        ViolationTypeVal != "0" ||
+        ViolationGeneralSearch != ""
+    ) {
+        $(".PreLoader").addClass("active");
+        ViolationSector = Number($("#violationSector").children("option:selected").val());
+        ViolationType = Number($("#TypeofViolation").children("option:selected").data("id"));
+        pendingPayment.getPendingPayment(
+            pageIndex,
+            true,
+            ViolationSector,
+            ViolationType,
+            ViolationGeneralSearch
+        );
+    }
+};
+
+pendingPayment.resetFilter = (e) => {
+    e.preventDefault();
+    $("#violationSector").val("0");
+    $("#violationCategory").val("");
+    $("#TypeofViolation").val("0");
+    $("#violationSearch").val("");
+    $("#createdFrom").val("");
+    $("#createdTo").val("");
+
+    $(".PreLoader").addClass("active");
+    pagination.reset();
+    pendingPayment.getPendingPayment();
 };
 
 pendingPayment.PendingPaymentTable = (PendingPaymentData, destroyTable) => {
@@ -93,7 +149,7 @@ pendingPayment.PendingPaymentTable = (PendingPaymentData, destroyTable) => {
                           data-printedcount="${record?.PrintedCount || 0}"
                           data-totalinstallmentspaidamount="${taskViolation?.TotalInstallmentsPaidAmount || 0}"
                           >
-                          ${taskViolation.ViolationCode}
+                          ${taskViolation.ViolationCode || "-"}
                       </div>`,
                     `<div class='controls'>
                         <div class='ellipsisButton'>
@@ -109,7 +165,8 @@ pendingPayment.PendingPaymentTable = (PendingPaymentData, destroyTable) => {
                     </div>`,
                     `<div class="violationArName">${functions.getViolationArabicName(
                         taskViolation.OffenderType
-                    )}</div>`,
+                    ) || "-"}</div>`,
+                    `<div class="violatorName">${taskViolation.ViolatorName || '-'}</div>`,
                     `<div class="violationCode" data-offendertype="${taskViolation.OffenderType
                     }">${taskViolation.OffenderType == "Vehicle"
                         ? taskViolation.CarNumber
@@ -129,9 +186,9 @@ pendingPayment.PendingPaymentTable = (PendingPaymentData, destroyTable) => {
                         taskViolation?.ViolationTypes?.Title
                     )}</div>`,
                     `<div class="violationZone">${taskViolation.ViolationsZone}</div>`,
-                    `${installmentDate}`,
-                    `${functions.splitBigNumbersByComma(taskViolation?.TotalInstallmentsPaidAmount || 0)}`,
-                    `${functions.splitBigNumbersByComma(taskViolation?.RemainingAmount || 0)}`,
+                    `${installmentDate || "-"}`,
+                    `${functions.splitBigNumbersByComma(taskViolation?.TotalInstallmentsPaidAmount || 0) || "-"}`,
+                    `${functions.splitBigNumbersByComma(taskViolation?.RemainingAmount || 0) || "-"}`,
                 ]);
             }
         });
@@ -148,6 +205,7 @@ pendingPayment.PendingPaymentTable = (PendingPaymentData, destroyTable) => {
             { title: "رقم المخالفة" },
             { title: "", class: "all" },
             { title: "تصنيف المخالفة" },
+            { title: "إسم المخالف" },
             { title: " رقم المحجر/العربة" },
             { title: "إسم الشركة المخالفة" },
             { title: "نوع المخالفة " },
@@ -156,7 +214,6 @@ pendingPayment.PendingPaymentTable = (PendingPaymentData, destroyTable) => {
             { title: "المبلغ المسدد" },
             { title: "المبلغ المتبقي" },
         ],
-        false,
         false,
         false,
         "المخالفات قيد السداد.xlsx",
@@ -284,7 +341,6 @@ pendingPayment.getViolationDetailsForPayment = (
 };
 
 pendingPayment.showInstallmentPaymentPopup = (TaskData) => {
-    console.log('TaskData', TaskData)
     let violationData = TaskData.Violation;
     let offenderType = violationData.OffenderType;
     let violationPriceType = violationData.ViolationTypes?.PriceType || "";
@@ -919,42 +975,6 @@ pendingPayment.findViolationByID = (event, taskID, print = false) => {
         .catch((err) => {
             console.log(err);
         });
-};
-
-pendingPayment.filterPaymentsLog = () => {
-    let ViolationSector = Number($("#violationSector").val() || 0);
-    let ViolationType = Number($("#TypeofViolation option:selected").data("id") || 0);
-    let GlobalSearch = $("#violationSearch").val();
-
-    $(".PreLoader").addClass("active");
-    pagination.reset();
-
-    pendingPayment.getPendingPayment(
-        1,
-        true,
-        ViolationSector,
-        ViolationType,
-        GlobalSearch
-    );
-};
-
-pendingPayment.resetFilter = (e) => {
-    e.preventDefault();
-    $("#nationalID").val("");
-    $("#violatorName").val("");
-    $("#violationCode").val("");
-    $("#violationSector").val("0");
-    $("#violationCategory").val("");
-    $("#TypeofViolation").val("0");
-    $("#violationZone").val("");
-    $("#violationSearch").val("");
-    $("#createdFrom").val("");
-    $("#createdTo").val("");
-    $("#theCode").val("");
-
-    $(".PreLoader").addClass("active");
-    pagination.reset();
-    pendingPayment.getPendingPayment();
 };
 
 // // Initialize when document is ready

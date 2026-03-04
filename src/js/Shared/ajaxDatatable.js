@@ -1,78 +1,77 @@
 import functions from "../Shared/functions";
-// names convention is:  ajaxDatatable is function name / Table Name / Init is static
 
-// ajaxDatatable for history init
-const ajaxDatatableHistoryInit = function (table, url, request, columns) {
-  // defiend all columns here so we can use what ever we want
+export const ajaxDatatableHistoryInit = (table, url, request, columns) => {
+
+  // 🔥 لو الجدول معمول له init قبل كده ندمّره
+  if ($.fn.DataTable.isDataTable(table)) {
+    table.DataTable().clear().destroy();
+    table.find("tbody").empty();
+  }
+
   const allColumns = {
     id: {
       data: "Id",
       name: "Id",
-      render: function (row) {        
-        return row;
-      },
     },
+
     status: {
       data: "Status",
       name: "Status",
-      render: function (row) {
-        return row;
-      },
     },
+
     created: {
       data: "Created",
       name: "Created",
-      render: function (row) {
-        return row != "" ? functions.getFormatedDate(row) : "-";
-      },
+      render: (data) =>
+        data ? functions.getFormatedDate(data) : "-",
     },
+
     createdBy: {
       data: "CreatedBy",
       name: "CreatedBy",
-      render: function (row) {
-        return row;
-      },
     },
+
     comment: {
       data: "Comment",
       name: "Comment",
-      render: function (row) {
-        return row;
-      },
     },
   };
-  const usedColumnes = [];
-  // pass columns in function as array so we can loop over allColumnes and get what ever column we want
-  columns.map((column) => {
-    usedColumnes.push(allColumns[column]);
-  });
 
-    var table = table.DataTable({
-      processing: true,
-      paging: false,
-      responsive: true,
-      ajax: {
-        url: url,
-        contentType: "application/json",
-        type: "POST",
-        data: function () {
-          return JSON.stringify(request);
-        },
-        dataSrc: function (data) {          
-          if (data?.d.Result != null) {            
-            $(".modal-violation-code").text(data.d.Result.GridData.ViolationCode);
-            return data.d.Result.GridData;
-          }else{
-            return []
-          }
-        },
+  const usedColumns = columns.map((col) => allColumns[col]);
+
+  return table.DataTable({
+    processing: true,
+    paging: false,
+    responsive: true,
+    destroy: true,
+
+    ajax: {
+      url: url,
+      type: "POST",
+      contentType: "application/json",
+
+      data: () => JSON.stringify(request),
+
+      dataSrc: (data) => {
+
+        if (data?.d?.Result) {
+
+          $(".modal-violation-code").text(
+            data.d.Result.GridData?.[0]?.ViolationCode || ""
+          );
+
+          return data.d.Result.GridData || [];
+        }
+
+        return [];
       },
-      columns: usedColumnes,
-      "language": {
-        "emptyTable": "لا توجد بيانات متاحة",
-        'loadingRecords': "يتم تحميل البيانات"
-      }
-    });
-    return table;
+    },
+
+    columns: usedColumns,
+
+    language: {
+      emptyTable: "لا توجد بيانات متاحة",
+      loadingRecords: "يتم تحميل البيانات",
+    },
+  });
 };
-export { ajaxDatatableHistoryInit };

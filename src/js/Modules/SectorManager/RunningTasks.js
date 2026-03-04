@@ -7,7 +7,7 @@ let runningSectorTask = {};
 runningSectorTask.destroyTable = false;
 runningSectorTask.pageIndex = 1;
 
-runningSectorTask.getRunningTasks = (pageIndex = 1, ViolationSector = 0, ViolationType = 0, ViolationGeneralSearch= "") => {
+runningSectorTask.getRunningTasks = (pageIndex = 1, ViolationSector = 0, ViolationType = 0, ViolationGeneralSearch = "") => {
   let request = {
     Data: {
       RowsPerPage: 10,
@@ -95,7 +95,7 @@ runningSectorTask.runningSectorTaskTable = (runningTasks) => {
         `<div class="violationZone">${taskViolation.ViolationsZone}</div>`,
         `${functions.getFormatedDate(taskViolation.ViolationDate)}`,
         `${createdDate}`,
-        
+
       ]);
     });
   }
@@ -114,7 +114,8 @@ runningSectorTask.runningSectorTaskTable = (runningTasks) => {
       { title: "تاريخ الضبط" },
       { title: "تاريخ الإنشاء" },
     ],
-    false, false,
+    false,
+    false,
     "المخالفات القائمة.xlsx",
     "المخالفات القائمة"
   );
@@ -127,7 +128,7 @@ runningSectorTask.runningSectorTaskTable = (runningTasks) => {
     let UserDetails;
     let UsersData = Users.value;
     UsersData.forEach(User => {
-      if (User.UserIdId.find(id=> id==UserId)) {
+      if (User.UserIdId.find(id => id == UserId)) {
         UserDetails = User
       }
     })
@@ -138,7 +139,7 @@ runningSectorTask.runningSectorTaskTable = (runningTasks) => {
       let violationId = jQueryRecord.find(".violationId").data("violationid");
       let violationCode = jQueryRecord.find(".violationId").data("violationcode");
       let OffenderType = jQueryRecord.find(".violationId").data("offendertype");
-        jQueryRecord.find(".controls").children(".hiddenListBox").find(".controlsList").append(`
+      jQueryRecord.find(".controls").children(".hiddenListBox").find(".controlsList").append(`
             <li><a href="#" class="confirmViolationPopup">التصديق على المخالفة</a></li>  
             <li><a href="#" class="printConfirmationForm">طباعة نموذج التصديق</a></li>  
         `);
@@ -210,7 +211,7 @@ runningSectorTask.findViolationByID = (event, taskID, print = false, UserJopTitl
             printBox = `<div class="printBox" id="printJS-form">${Content}</div>`;
             functions.declarePopup(["generalPopupStyle", "detailsPopup"], printBox);
           }
-        } else if(violationOffenderType == "Vehicle") {
+        } else if (violationOffenderType == "Vehicle") {
           let VehcleType = violationData.VehicleType;
           if (popupType == "ConfirmationFormPrint") {
             $(".overlay").removeClass("active");
@@ -226,7 +227,7 @@ runningSectorTask.findViolationByID = (event, taskID, print = false, UserJopTitl
           } else {
             $(".TrailerNumberBox").hide();
           }
-        }else if(violationOffenderType == "Equipment"){
+        } else if (violationOffenderType == "Equipment") {
           if (popupType == "ConfirmationFormPrint") {
             $(".overlay").removeClass("active");
             Content = DetailsPopup.printPaymentForm(TaskData)
@@ -506,5 +507,20 @@ runningSectorTask.filterTasksLog = (e) => {
     runningSectorTask.getRunningTasks(pageIndex, ViolationSector, ViolationType, ViolationGeneralSearch);
   }
 };
+runningSectorTask.resetFilter = (e) => {
+  e.preventDefault();
+  $("#violationSector").val("0"); // Reset to "الكل" option
+  $("#TypeofViolation").val("0"); // Reset to "الكل" option
+  $("#violationSearch").val(""); // Clear search input
 
+  // Reset pagination to first page
+  pagination.reset();
+  runningSectorTask.pageIndex = 1;
+
+  // Show loader while fetching data
+  $(".PreLoader").addClass("active");
+
+  // Fetch tasks with default filter values (all sectors, all types, empty search)
+  runningSectorTask.getRunningTasks(1, 0, 0, "");
+};
 export default runningSectorTask;

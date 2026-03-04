@@ -63,7 +63,6 @@ completedViolations.setPaginations = (TotalPages, RowsPerPage) => {
     pagination.activateCurrentPage();
 };
 
-
 completedViolations.CompletedViolationTable = (CompletedViolation, destroyTable) => {
     let data = [];
     let taskViolation;
@@ -175,7 +174,7 @@ completedViolations.findViolationByID = (event, violationTaskID, print = false) 
                     Content = DetailsPopup.quarryDetailsPopupContent(violationData, "القائمة");
                     printBox = `<div class="printBox" id="printJS-form">${Content}</div>`;
                     functions.declarePopup(["generalPopupStyle", "detailsPopup"], printBox);
-                } else if(violationOffenderType == "Vehicle") {
+                } else if (violationOffenderType == "Vehicle") {
                     Content = DetailsPopup.vehicleDetailsPopupContent(violationData, "القائمة");
                     printBox = `<div class="printBox" id="printJS-form">${Content}</div>`;
                     functions.declarePopup(["generalPopupStyle", "detailsPopup"], printBox);
@@ -185,7 +184,7 @@ completedViolations.findViolationByID = (event, violationTaskID, print = false) 
                     } else {
                         $(".TrailerNumberBox").hide();
                     }
-                }else if(violationOffenderType == "Equipment"){
+                } else if (violationOffenderType == "Equipment") {
                     Content = DetailsPopup.equipmentDetailsPopupContent(violationData, "القائمة");
                     printBox = `<div class="printBox" id="printJS-form">${Content}</div>`;
                     functions.declarePopup(["generalPopupStyle", "detailsPopup"], printBox);
@@ -226,35 +225,4 @@ completedViolations.filterCompletedLog = (e) => {
     }
 };
 
-
-// // Abdelrahman
-// var selectedViolationId;
-// var selectedViolationCode;
-// var trackHistoryTable;
-// $(".contentContainer").on('click', ".violationHistory", function () {
-//     selectedViolationId = $(this).data('violationid');
-//     selectedViolationCode = $(this).data('violationcode');
-// })
-
-
-// $('.track-history-modal').on('shown.bs.modal', function () {
-//     $('.track-history-modal').removeClass('generalPopupStyle detailsPopup')
-//     $(".modal-violation-code").text(selectedViolationCode)
-//     let request = {
-//         "Request": {
-//             ViolationId: selectedViolationId,
-//         }
-
-//     }
-//     // Datatable section
-//     const columns = ["id", "status", "created", "createdBy", "comment"]
-//     trackHistoryTable = ajaxDatatableHistoryInit($("#trackHistoryTable"), "http://dev-web-sp19:29978/_layouts/15/Uranium.Violations.SharePoint/ViolationHistoryLogs.aspx/Search", request, columns)
-// })
-// $('.track-history-modal').on('hidden.bs.modal', function () {
-//     trackHistoryTable.destroy();
-//     $("#trackHistoryTable tbody").empty()
-//     $(".modal-violation-code").text('')
-
-// })
-// export default completedViolations;
 export default completedViolations;

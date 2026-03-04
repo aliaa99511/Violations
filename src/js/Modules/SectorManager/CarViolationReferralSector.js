@@ -1,15 +1,13 @@
 import functions from "../../Shared/functions";
 import pagination from "../../Shared/Pagination";
 
-let quarryViolationReferralRecords = {};
-quarryViolationReferralRecords.pageIndex = 1;
-quarryViolationReferralRecords.destroyTable = false;
+let vehicleViolationReferralSector = {};
+vehicleViolationReferralSector.pageIndex = 1;
+vehicleViolationReferralSector.destroyTable = false;
 
-quarryViolationReferralRecords.getQuarryViolationReferralsRecords = (
+vehicleViolationReferralSector.getVehicleViolationReferralsRecords = (
     pageIndex = 1,
     destroyTable = false,
-    // ReferralNumber = $("#CaseNumber").val(),
-    // CaseStatus = $("#CaseStatus").children("option:selected").val(),
 ) => {
     let request = {
         Request: {
@@ -17,12 +15,15 @@ quarryViolationReferralRecords.getQuarryViolationReferralsRecords = (
             PageIndex: pagination.currentPage,
             ColName: "created",
             SortOrder: "desc",
-            QuarryCode: $("#theCode").val(),
+            CarNumber: $("#theCode").val(),
             ViolationCode: $("#violationCode").val(),
             ViolationStatus: $("#ViolationStatus").children("option:selected").val(),
-            ReferralNumber: $("#CaseNumber").val(),
+            CourtCaseNumber: $("#CourtCaseNumber").val(),
+            ViolatorName: $("#TrafficName").val(),
+            ViolatorCompany: $("#ViolatorCompany").val(),
+            VehicleRegistrationNumber: $("#vehicleRegistrationNumber").val(),
             Status: $("#CaseStatus").children("option:selected").val(),
-            OffenderType: "Quarry",
+            OffenderType: "Vehicle",
             RefferedDateFrom: $("#RefferedDateFrom").val()
                 ? moment($("#RefferedDateFrom").val(), "DD-MM-YYYY").format("YYYY-MM-DD")
                 : null,
@@ -48,8 +49,8 @@ quarryViolationReferralRecords.getQuarryViolationReferralsRecords = (
             let ItemsData = data?.d?.Result;
 
             if (data?.d?.Result?.GridData != null) {
-                if (data.d.Result.GridData.length > 0) {
-                    Array.from(data.d.Result.GridData).forEach((element) => {
+                if (data.d.Result?.GridData.length > 0) {
+                    Array.from(data.d.Result?.GridData).forEach((element) => {
                         Referrals.push(element);
                     });
                 } else {
@@ -57,80 +58,56 @@ quarryViolationReferralRecords.getQuarryViolationReferralsRecords = (
                 }
             }
 
-            quarryViolationReferralRecords.setPaginations(ItemsData.TotalPageCount, ItemsData.RowsPerPage);
-            quarryViolationReferralRecords.QuarryViolationReferralRecordsTable(Referrals, destroyTable);
-            quarryViolationReferralRecords.pageIndex = ItemsData.CurrentPage;
+            vehicleViolationReferralSector.setPaginations(ItemsData.TotalPageCount, ItemsData.RowsPerPage);
+            vehicleViolationReferralSector.VehicleViolationReferralRecordsTable(Referrals, destroyTable);
+            vehicleViolationReferralSector.pageIndex = ItemsData.CurrentPage;
         })
         .catch((err) => {
             console.log(err);
         });
 };
 
-quarryViolationReferralRecords.setPaginations = (TotalPages, RowsPerPage) => {
-    pagination.draw("#paginationID", TotalPages, RowsPerPage);
-    pagination.start("#paginationID", quarryViolationReferralRecords.getQuarryViolationReferralsRecords);
+vehicleViolationReferralSector.setPaginations = (TotalPages, RowsPerPage) => {
+    pagination.draw("#paginationIDRecords", TotalPages, RowsPerPage);
+    pagination.start("#paginationIDRecords", vehicleViolationReferralSector.getVehicleViolationReferralsRecords);
     pagination.activateCurrentPage();
 };
 
-quarryViolationReferralRecords.filterQuarryViolationReferralsRecords = (e) => {
-    let pageIndex = quarryViolationReferralRecords.pageIndex;
+vehicleViolationReferralSector.filterVehicleViolationReferralsRecords = (e) => {
+    let pageIndex = vehicleViolationReferralSector.pageIndex;
 
     $(".PreLoader").addClass("active");
-    quarryViolationReferralRecords.getQuarryViolationReferralsRecords(
+    vehicleViolationReferralSector.getVehicleViolationReferralsRecords(
         pageIndex,
         true,
     );
-
-    // let pageIndex = quarryViolationReferralRecords.pageIndex;
-
-    // let ReferralNumberVal = $("#CaseNumber").val();
-    // let CaseStatusVal = $("#CaseStatus").children("option:selected").val();
-
-    // let ReferralNumber;
-    // let CaseStatus;
-
-    // if (
-    //     ReferralNumberVal == "" &&
-    //     CaseStatusVal == ""
-    // ) {
-    //     functions.warningAlert("من فضلك قم بإدخال قيمة واحدة على الأقل من قيم البحث");
-    // } else if (
-    //     ReferralNumberVal != "" ||
-    //     CaseStatusVal != ""
-    // ) {
-    //     $(".PreLoader").addClass("active");
-    //     ReferralNumber = $("#CaseNumber").val();
-    //     CaseStatus = $("#CaseStatus").children("option:selected").val();
-    //     quarryViolationReferralRecords.getQuarryViolationReferralsRecords(
-    //         pageIndex,
-    //         true,
-    //         ReferralNumber,
-    //         CaseStatus,
-    //     );
-    // }
 };
-quarryViolationReferralRecords.resetFilter = (e) => {
+
+vehicleViolationReferralSector.resetFilter = (e) => {
     e.preventDefault();
 
     // Clear all filter inputs
-    $("#CaseNumber").val("");
-    $("#CaseStatus").val(""); // This will reset to the first option
+    $("#vehicleRegistrationNumber").val(""); // This is the Vehicle Registration Number input
+    $("#CaseStatus").val("");
+    $("#RefferedDateFrom").val("");
+    $("#RefferedDateTo").val("");
     $("#ViolationStatus").val("");
     $("#theCode").val("");
     $("#violationCode").val("");
-    $("#RefferedDateFrom").val("");
-    $("#RefferedDateTo").val("");
+    $("#CourtCaseNumber").val("");
+    $("#TrafficName").val("");
+    $("#ViolatorCompany").val("");
 
     $(".PreLoader").addClass("active");
     pagination.reset();
-    quarryViolationReferralRecords.getQuarryViolationReferralsRecords();
+    vehicleViolationReferralSector.getVehicleViolationReferralsRecords();
 };
 
-// quarryViolationReferralRecords.QuarryViolationReferralRecordsTable = (Referrals, destroyTable) => {
+// vehicleViolationReferralSector.VehicleViolationReferralRecordsTable = (Referrals, destroyTable) => {
 //     let data = [];
 
-//     if (quarryViolationReferralRecords.destroyTable || destroyTable) {
-//         $("#QuarryViolationReferralRecordsTable").DataTable().destroy();
+//     if (vehicleViolationReferralSector.destroyTable || destroyTable) {
+//         $("#VehicleViolationReferralSectorTable").DataTable().destroy();
 //     }
 
 //     if (Referrals && Referrals.length > 0) {
@@ -141,41 +118,16 @@ quarryViolationReferralRecords.resetFilter = (e) => {
 //             let caseStatus = referral.Status || "";
 //             let referralNumber = referral.ReferralNumber || "";
 //             let caseNumber = referral.CaseNumber || "";
+//             let vehicleRegistrationNumber = referral.VehicleRegistrationNumber || "";
+//             let courtCaseNumber = referral.CourtCaseNumber || "";
 
-//             // Determine which actions to show based on business rules
-//             let hasAttachEndorsementAction = false;
-
-//             // Business Rule: Attach Endorsement
-//             // Condition: ReferralNumber is not empty AND Status is "قيد الانتظار القطاع" OR "قيد انتظار تأشيرات النيابة" AND ViolationStatus is "UnderReview"
-//             if (referralNumber &&
-//                 (caseStatus == "قيد الانتظار القطاع" || caseStatus == "قيد انتظار تأشيرات النيابة") &&
-//                 violationStatus == "UnderReview") {
-//                 hasAttachEndorsementAction = true;
-//             }
-
-//             // Build actions menu HTML
+//             // For records view, we only show details action
 //             let actionsMenuHTML = `
 //                 <ul class='list-unstyled controlsList'>
-//                     <li><a href="#" class="itemDetails">المزيد من التفاصيل</a></li>`;
+//                     <li><a href="#" class="itemDetails">المزيد من التفاصيل</a></li>
+//                 </ul>`;
 
-//             if (hasAttachEndorsementAction) {
-
-//                 actionsMenuHTML += `
-//                 <li><a href="#" class="attachEndorsementAction" 
-//                     data-referralid="${referral.ID}"
-//                     data-violationid="${referral.ViolationId}"
-//                     data-taskid="${referral.TaskId}"
-//                     data-referralnumber="${referral.ReferralNumber || ''}"
-//                     data-violationcode="${referral.ViolationCode}"
-//                     data-totalendorsementscount="${referral.TotalEndorsementsCount || 0}"
-//                     data-totalPriceDue="${violation?.TotalPriceDue || 0}"
-//                     data-referred-amount="${violation?.ReferredAmount || 0}"
-//                     data-isfinalendorsementuploaded="${referral.IsFinalEndorsementUploaded || false}">إرفاق تأشيرات النيابة</a></li>`;
-//             }
-
-//             actionsMenuHTML += `</ul>`;
-
-//             let displayViolationStatus = quarryViolationReferralRecords.getViolationStatus(violationStatus);
+//             let displayViolationStatus = vehicleViolationReferralSector.getViolationStatus(violationStatus);
 
 //             data.push([
 //                 `<div class="violationCode noWrapContent" 
@@ -184,6 +136,8 @@ quarryViolationReferralRecords.resetFilter = (e) => {
 //                         data-taskid="${referral.TaskId}" 
 //                         data-referralstatus="${referral.Status}" 
 //                         data-referralnumber="${referral.ReferralNumber}" 
+//                         data-vehicleregistrationnumber="${vehicleRegistrationNumber}"
+//                         data-courtcasenumber="${courtCaseNumber}"
 //                         data-violationcode="${referral.ViolationCode}" 
 //                         data-oldprice="${violation?.TotalOldPrice}" 
 //                         data-newprice="${violation?.TotalPriceDue}"
@@ -202,10 +156,10 @@ quarryViolationReferralRecords.resetFilter = (e) => {
 //                     </div>
 //                 </div>`,
 //                 `<div class="refferedDate noWrapContent">${refferedDate}</div>`,
-//                 `<div class="referralNumber">${referralNumber || "-----"}</div>`,
+//                 `<div class="vehicleRegistrationNumber">${vehicleRegistrationNumber || "-----"}</div>`,
+//                 `<div class="courtCaseNumber">${courtCaseNumber || "-----"}</div>`,
 //                 `<div class="violationStatus">${displayViolationStatus || "-----"}</div>`,
 //                 `<div class="referralStatus">${caseStatus || "-----"}</div>`,
-//                 `<div class="totalPriceDue">${functions.splitBigNumbersByComma(violation.TotalPriceDue || 0) || "-----"}</div>`,
 //                 `<div class="referralAttachments caseAttachments"><a href="#!" style="color: black;">المرفقات</a></div>`,
 //             ]);
 //         });
@@ -222,25 +176,27 @@ quarryViolationReferralRecords.resetFilter = (e) => {
 //         ]);
 //     }
 
+
 //     let Table = functions.tableDeclare(
-//         "#QuarryViolationReferralRecordsTable",
+//         "#VehicleViolationReferralSectorTable",
 //         data,
 //         [
 //             { title: "رقم المخالفة" },
 //             { title: "", class: "all" },
-//             { title: "تاريخ الإحالة" },
-//             { title: "رقم الإحالة" },
+//             { title: "تاريخ القضية" },
+//             { title: "رقم القيد" },
+//             { title: "الرقم القضائي" },
 //             { title: "حالة المخالفة" },
 //             { title: "موقف الإحالة" },
-//             { title: "المبلغ المستحق" },
 //             { title: "المرفقات" },
 //         ],
 //         false,
 //         false,
-//         "سجل إحالات المخالفات المحجرية.xlsx",
-//         "سجل إحالات المخالفات المحجرية"
+//         "سجل إحالات مخالفات المركبات.xlsx",
+//         "سجل إحالات مخالفات المركبات"
 //     );
-//     quarryViolationReferralRecords.destroyTable = true;
+
+//     vehicleViolationReferralSector.destroyTable = true;
 
 //     $(".ellipsisButton").on("click", (e) => {
 //         $(".hiddenListBox").hide(300);
@@ -260,7 +216,7 @@ quarryViolationReferralRecords.resetFilter = (e) => {
 //         jQueryRecord.find(".referralAttachments").find("a").off('click').on('click', function (e) {
 //             e.preventDefault();
 //             $(".overlay").addClass("active");
-//             quarryViolationReferralRecords.getReferralAttachmentsByReferralId(referralID, referralNumber);
+//             vehicleViolationReferralSector.getReferralAttachmentsByReferralId(referralID, referralNumber);
 //         });
 
 //         // Details click handler
@@ -268,8 +224,7 @@ quarryViolationReferralRecords.resetFilter = (e) => {
 //             e.preventDefault();
 //             e.stopPropagation();
 //             $(".overlay").addClass("active");
-//             quarryViolationReferralRecords.FindReferralById(referralID);
-//             $(".hiddenListBox").hide(300);
+//             vehicleViolationReferralSector.FindReferralById(referralID);
 //         });
 
 //         if (
@@ -281,43 +236,14 @@ quarryViolationReferralRecords.resetFilter = (e) => {
 //         }
 //     });
 
-//     // Attach Endorsement Action
-//     $(document).off('click', '.attachEndorsementAction').on('click', '.attachEndorsementAction', function (e) {
-//         e.preventDefault();
-//         e.stopPropagation();
-
-//         let referralId = $(this).data('referralid');
-//         let violationId = $(this).data('violationid');
-//         let taskId = $(this).data('taskid');
-//         let referralNumber = $(this).data('referralnumber');
-//         let violationCode = $(this).data('violationcode');
-//         let totalEndorsementsCount = $(this).data('totalendorsementscount');
-//         let isFinalEndorsementUploaded = $(this).data('isfinalendorsementuploaded');
-//         let TotalPriceDue = $(this).data('totalPriceDue');
-//         let ReferredAmount = $(this).data('referredAmount');
-
-//         // Show popup for attaching endorsements
-//         quarryViolationReferralRecords.attachEndorsementPopup(
-//             referralId,
-//             violationId,
-//             taskId,
-//             referralNumber,
-//             violationCode,
-//             totalEndorsementsCount,
-//             isFinalEndorsementUploaded,
-//             TotalPriceDue,
-//             ReferredAmount
-//         );
-//     });
-
 //     functions.hideTargetElement(".controls", ".hiddenListBox");
 // };
 
-quarryViolationReferralRecords.QuarryViolationReferralRecordsTable = (Referrals, destroyTable) => {
+vehicleViolationReferralSector.VehicleViolationReferralRecordsTable = (Referrals, destroyTable) => {
     let data = [];
 
-    if (quarryViolationReferralRecords.destroyTable || destroyTable) {
-        $("#QuarryViolationReferralRecordsTable").DataTable().destroy();
+    if (vehicleViolationReferralSector.destroyTable || destroyTable) {
+        $("#VehicleViolationReferralSectorTable").DataTable().destroy();
     }
 
     if (Referrals && Referrals.length > 0) {
@@ -328,31 +254,16 @@ quarryViolationReferralRecords.QuarryViolationReferralRecordsTable = (Referrals,
             let caseStatus = referral.Status || "";
             let referralNumber = referral.ReferralNumber || "";
             let caseNumber = referral.CaseNumber || "";
+            let vehicleRegistrationNumber = referral.VehicleRegistrationNumber || "";
+            let courtCaseNumber = referral.CourtCaseNumber || "";
 
-            // Determine which actions to show based on business rules
-            let hasAttachEndorsementAction = false;
-
-            // Business Rule: Attach Endorsement
-            // Condition: ReferralNumber is not empty AND Status is "قيد الانتظار القطاع" OR "قيد انتظار تأشيرات النيابة" AND ViolationStatus is "UnderReview"
-            if (referralNumber &&
-                (caseStatus == "قيد الانتظار القطاع" || caseStatus == "قيد انتظار تأشيرات النيابة") &&
-                violationStatus == "UnderReview") {
-                hasAttachEndorsementAction = true;
-            }
-
-            // Build actions menu HTML
+            // For records view, we only show details action
             let actionsMenuHTML = `
                 <ul class='list-unstyled controlsList'>
-                    <li><a href="#" class="itemDetails">المزيد من التفاصيل</a></li>`;
+                    <li><a href="#" class="itemDetails">المزيد من التفاصيل</a></li>
+                </ul>`;
 
-            if (hasAttachEndorsementAction) {
-                actionsMenuHTML += `
-                <li><a href="#" class="attachEndorsementAction">إرفاق تأشيرات النيابة</a></li>`;
-            }
-
-            actionsMenuHTML += `</ul>`;
-
-            let displayViolationStatus = quarryViolationReferralRecords.getViolationStatus(violationStatus);
+            let displayViolationStatus = vehicleViolationReferralSector.getViolationStatus(violationStatus);
 
             // Prepare all data attributes in a single object
             const violationCodeData = {
@@ -361,17 +272,15 @@ quarryViolationReferralRecords.QuarryViolationReferralRecordsTable = (Referrals,
                 'taskid': referral.TaskId,
                 'referralstatus': referral.Status,
                 'referralnumber': referral.ReferralNumber,
+                'vehicleregistrationnumber': vehicleRegistrationNumber,
+                'courtcasenumber': courtCaseNumber,
                 'violationcode': referral.ViolationCode,
-                'oldprice': violation?.TotalOldPrice,
-                'newprice': violation?.TotalPriceDue,
+                'oldprice': violation?.TotalOldPrice || 0,
+                'newprice': violation?.TotalPriceDue || 0,
                 'offendertype': violation?.OffenderType,
                 'casenumber': caseNumber,
                 'violationstatus': violationStatus,
-                'hasattachendorsement': hasAttachEndorsementAction,
-                'totalendorsementscount': referral.TotalEndorsementsCount || 0,
-                'isfinalendorsementuploaded': referral.IsFinalEndorsementUploaded || false,
-                'totalpricedue': violation?.TotalPriceDue || 0,
-                'referredamount': violation?.ReferredAmount || 0
+                'totalpricedue': violation?.TotalPriceDue || 0
             };
 
             // Convert data object to data-attributes string
@@ -393,10 +302,10 @@ quarryViolationReferralRecords.QuarryViolationReferralRecordsTable = (Referrals,
                     </div>
                 </div>`,
                 `<div class="refferedDate noWrapContent">${refferedDate}</div>`,
-                `<div class="referralNumber">${referralNumber || "-----"}</div>`,
+                `<div class="vehicleRegistrationNumber">${vehicleRegistrationNumber || "-----"}</div>`,
+                `<div class="courtCaseNumber">${courtCaseNumber || "-----"}</div>`,
                 `<div class="violationStatus">${displayViolationStatus || "-----"}</div>`,
                 `<div class="referralStatus">${caseStatus || "-----"}</div>`,
-                `<div class="totalPriceDue">${functions.splitBigNumbersByComma(violation.TotalPriceDue || 0) || "-----"}</div>`,
                 `<div class="referralAttachments caseAttachments"><a href="#!" style="color: black;">المرفقات</a></div>`,
             ]);
         });
@@ -414,24 +323,25 @@ quarryViolationReferralRecords.QuarryViolationReferralRecordsTable = (Referrals,
     }
 
     let Table = functions.tableDeclare(
-        "#QuarryViolationReferralRecordsTable",
+        "#VehicleViolationReferralSectorTable",
         data,
         [
             { title: "رقم المخالفة" },
             { title: "", class: "all" },
-            { title: "تاريخ الإحالة" },
-            { title: "رقم الإحالة" },
+            { title: "تاريخ القضية" },
+            { title: "رقم القيد" },
+            { title: "الرقم القضائي" },
             { title: "حالة المخالفة" },
             { title: "موقف الإحالة" },
-            { title: "المبلغ المستحق" },
             { title: "المرفقات" },
         ],
         false,
         false,
-        "سجل إحالات المخالفات المحجرية.xlsx",
-        "سجل إحالات المخالفات المحجرية"
+        "سجل إحالات مخالفات المركبات.xlsx",
+        "سجل إحالات مخالفات المركبات"
     );
-    quarryViolationReferralRecords.destroyTable = true;
+
+    vehicleViolationReferralSector.destroyTable = true;
 
     $(".ellipsisButton").on("click", (e) => {
         $(".hiddenListBox").hide(300);
@@ -452,7 +362,7 @@ quarryViolationReferralRecords.QuarryViolationReferralRecordsTable = (Referrals,
         jQueryRecord.find(".referralAttachments").find("a").off('click').on('click', function (e) {
             e.preventDefault();
             $(".overlay").addClass("active");
-            quarryViolationReferralRecords.getReferralAttachmentsByReferralId(referralID, referralNumber);
+            vehicleViolationReferralSector.getReferralAttachmentsByReferralId(referralID, referralNumber);
         });
 
         // Details click handler
@@ -460,7 +370,7 @@ quarryViolationReferralRecords.QuarryViolationReferralRecordsTable = (Referrals,
             e.preventDefault();
             e.stopPropagation();
             $(".overlay").addClass("active");
-            quarryViolationReferralRecords.FindReferralById(referralID);
+            vehicleViolationReferralSector.FindReferralById(referralID);
             $(".hiddenListBox").hide(300);
         });
 
@@ -473,412 +383,10 @@ quarryViolationReferralRecords.QuarryViolationReferralRecordsTable = (Referrals,
         }
     });
 
-    // Attach Endorsement Action
-    $(document).off('click', '.attachEndorsementAction').on('click', '.attachEndorsementAction', function (e) {
-        e.preventDefault();
-        e.stopPropagation();
-
-        // Get the parent row and find the violationCode element to access all data
-        let $row = $(this).closest('tr');
-        let $violationCode = $row.find('.violationCode');
-
-        // Get all data from the violationCode element
-        let referralId = $violationCode.data('referralid');
-        let violationId = $violationCode.data('violationid');
-        let taskId = $violationCode.data('taskid');
-        let referralNumber = $violationCode.data('referralnumber');
-        let violationCode = $violationCode.data('violationcode');
-        let totalEndorsementsCount = $violationCode.data('totalendorsementscount');
-        let isFinalEndorsementUploaded = $violationCode.data('isfinalendorsementuploaded');
-        let TotalPriceDue = $violationCode.data('totalpricedue');
-        let ReferredAmount = $violationCode.data('referredamount');
-
-        // Show popup for attaching endorsements
-        quarryViolationReferralRecords.attachEndorsementPopup(
-            referralId,
-            violationId,
-            taskId,
-            referralNumber,
-            violationCode,
-            totalEndorsementsCount,
-            isFinalEndorsementUploaded,
-            TotalPriceDue,
-            ReferredAmount
-        );
-    });
-
     functions.hideTargetElement(".controls", ".hiddenListBox");
 };
 
-quarryViolationReferralRecords.attachEndorsementPopup = (
-    ReferralID,
-    ViolationID,
-    TaskID,
-    ReferralNumber,
-    ViolationCode,
-    TotalEndorsementsCount = 0,
-    IsFinalEndorsementUploaded = false,
-    TotalPriceDue,
-    ReferredAmount
-) => {
-    $(".overlay").removeClass("active");
-
-    // Calculate next endorsement number
-    let nextEndorsementNumber = TotalEndorsementsCount + 1;
-
-    let popupHtml = `
-        <div class="popupHeader">
-            <div class="violationsCode"> 
-                <p>إرفاق تأشيرة النيابة للإحالة رقم (${ReferralNumber}) - المخالفة (${ViolationCode})</p>
-            </div>
-        </div>
-        <div class="popupBody">
-            <div class="popupForm detailsPopupForm" id="detailsPopupForm">
-                <div class="formContent">
-                    <div class="formBox">
-                        <div class="formElements">
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="form-group customFormGroup">
-                                        <label for="endorsementNumber" class="customLabel">رقم التأشيرة</label>
-                                        <input class="form-control customInput endorsementNumber" id="endorsementNumber" type="text" value="التأشيرة ${nextEndorsementNumber}" disabled>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="form-group customFormGroup">
-                                        <label for="endorsementComments" class="customLabel">ملاحظات</label>
-                                        <textarea class="form-control customTextArea endorsementComments" rows="3" id="endorsementComments" placeholder="أدخل الملاحظات"></textarea>
-                                    </div>
-                                </div>
-     
-                                <div class="col-12">
-                                    <div class="form-group customFormGroup">
-                                        <label for="endorsementAttach" class="customLabel">إرفاق مستند التأشيرة</label>
-                                        <div class="fileBox" id="dropContainer">
-                                            <div class="inputFileBox">
-                                                <img src="/Style Library/MiningViolations/images/fileIcon.svg" alt="File Icon">
-                                                <p class="dragDropFilesLabel">قم بالسحب والإفلات لرفع الملف , أو <a href="#!" class="attachFileLink">استعراض ملفاتي</a></p>
-                                                <input type="file" class="customInput attachFilesInput endorsementAttach form-control" id="endorsementAttach" accept="image/gif,image/svg,image/jpg,image/jpeg,image/png,.doc,.docx,.pdf,.xls,.xlsx,.pptx" multiple>
-                                            </div>
-                                        </div>
-                                        <div class="dropFilesArea" id="dropFilesArea"></div>
-                                    </div>
-                                </div>
-                                <div class="col-4">
-                                    <div class="form-check customCheckBox" style="margin-top: 15px;margin-bottom: 20px;display: flex;">
-                                        <input class="form-check-input" type="checkbox" id="isFinalEndorsement" 
-                                            style="margin-right: 0.25rem; margin-left: 0 !important;">
-                                        <label class="form-check-label" for="isFinalEndorsement" 
-                                            style="margin-right: .5rem;">
-                                            التأشيرة الأخيرة
-                                        </label>
-                                    </div>
-                                </div>
-                                 <div class="col-12">
-                                 </div>
-                               <div class="col-md-6" id="totalPriceDueContainer" style="display: none;">
-                                    <div class="form-group customFormGroup">
-                                        <label for="referredAmount" class="customLabel">مبلغ الإحالة</label>
-                                        <input class="form-control customInput referredAmount" id="referredAmount" type="text" value="${functions.splitBigNumbersByComma(ReferredAmount || 0) || "-"}" disabled>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="formButtonsBox" style="margin-top: 15px;">
-                    <div class="row">
-                        <div class="col-12">
-                            <div class="buttonsBox centerButtonsBox">
-                                <div class="btnStyle confirmBtnBlue popupBtn deliverToInvestigationsBtn" id="deliverToInvestigationsBtn" style="opacity: 0.5; cursor: not-allowed;">تسليم للتحريات</div>
-                                <div class="btnStyle confirmBtnBlue popupBtn attachEndorsementBtn" id="attachEndorsementBtn" style="opacity: 1;">إرفاق التأشيرة</div>
-                                <div class="btnStyle cancelBtn popupBtn closeEndorsementPopup" id="closeEndorsementPopup" data-dismiss="modal" aria-label="Close">إلغاء</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>`;
-
-    functions.declarePopup(
-        ["generalPopupStyle", "bluePopup", "editPopup"],
-        popupHtml
-    );
-
-    let EndorsementCommentsInput = $("#endorsementComments").val();
-    let filesExtension = [
-        "gif", "svg", "jpg", "jpeg", "png",
-        "doc", "docx", "pdf", "xls", "xlsx", "pptx"
-    ];
-    let allAttachments;
-    let countOfFiles;
-    let isFinalEndorsementChecked = false;
-    let request = {};
-
-    // File attachment handling
-    $("#endorsementAttach").on("change", (e) => {
-        allAttachments = $(e.currentTarget)[0].files;
-        if (allAttachments.length > 0) {
-            $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").show().empty();
-        }
-        for (let i = 0; i < allAttachments.length; i++) {
-            $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").append(`
-                <div class="file">
-                    <p class="fileName">${allAttachments[i].name}</p>
-                    <span class="deleteFile" data-index="${i}"><i class="fa-sharp fa-solid fa-x"></i></span>
-                </div>
-            `);
-        }
-
-        $(".deleteFile").on("click", (event) => {
-            let index = $(event.currentTarget).closest(".file").index();
-            $(event.currentTarget).closest(".file").remove();
-            let fileBuffer = new DataTransfer();
-            for (let i = 0; i < allAttachments.length; i++) {
-                if (index !== i) {
-                    fileBuffer.items.add(allAttachments[i]);
-                }
-            }
-            allAttachments = fileBuffer.files;
-            countOfFiles = allAttachments.length;
-            if (countOfFiles == 0) {
-                $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").hide();
-            }
-        });
-
-        for (let i = 0; i < allAttachments.length; i++) {
-            let fileSplited = allAttachments[i].name.split(".");
-            let fileExt = fileSplited[fileSplited.length - 1].toLowerCase();
-            if ($.inArray(fileExt, filesExtension) == -1) {
-                functions.warningAlert("من فضلك أدخل الملفات بالامتدادات المسموح بها فقط");
-                $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").hide();
-                $(e.currentTarget).val("");
-            }
-        }
-    });
-
-    $("#endorsementComments").on("keyup", (e) => {
-        EndorsementCommentsInput = $(e.currentTarget).val().trim();
-    });
-
-    // Handle final endorsement checkbox
-    $("#isFinalEndorsement").on("change", function () {
-        isFinalEndorsementChecked = $(this).is(":checked");
-
-        if (isFinalEndorsementChecked) {
-            // If final endorsement is checked, dim the "إرفاق التأشيرة" button and enable "تسليم للتحريات"
-            $("#attachEndorsementBtn").css({
-                "opacity": "0.5",
-                "cursor": "not-allowed"
-            });
-            $("#deliverToInvestigationsBtn").css({
-                "opacity": "1",
-                "cursor": "pointer"
-            });
-            // Show the total price due field
-            $("#totalPriceDueContainer").show();
-        } else {
-            // If final endorsement is not checked, enable "إرفاق التأشيرة" and dim "تسليم للتحريات"
-            $("#attachEndorsementBtn").css({
-                "opacity": "1",
-                "cursor": "pointer"
-            });
-            $("#deliverToInvestigationsBtn").css({
-                "opacity": "0.5",
-                "cursor": "not-allowed"
-            });
-            // Hide the total price due field
-            $("#totalPriceDueContainer").hide();
-        }
-    });
-
-    // Attach Endorsement Button Handler
-    $(".attachEndorsementBtn").on("click", (e) => {
-        if (!isFinalEndorsementChecked) {
-            if (allAttachments != null && allAttachments.length > 0) {
-                request = {
-                    Request: {
-                        Title: "تم إرفاق تأشيرة النيابة",
-                        Status: "قيد انتظار تأشيرات النيابة",
-                        Comments: EndorsementCommentsInput,
-                        ViolationId: ViolationID,
-                        TaskId: TaskID,
-                        ID: ReferralID,
-                        TotalEndorsementsCount: nextEndorsementNumber,
-                        IsNewEndorsementUpload: true,
-                    }
-                };
-
-                $(".overlay").addClass("active");
-                quarryViolationReferralRecords.saveEndorsementAPI(
-                    request,
-                    ReferralID,
-                    "إرفاق تأشيرة النيابة",
-                    "#endorsementAttach",
-                    "تم إرفاق تأشيرة النيابة بنجاح"
-                );
-            } else {
-                functions.warningAlert("من فضلك قم بإرفاق مستند التأشيرة");
-            }
-        } else {
-            functions.warningAlert("لا يمكن إرفاق تأشيرة عند اختيار التأشيرة الأخيرة. استخدم زر 'تسليم للتحريات' بدلاً من ذلك.");
-        }
-    });
-
-    // Deliver to Investigations Button Handler
-    $(".deliverToInvestigationsBtn").on("click", (e) => {
-        if (isFinalEndorsementChecked) {
-            if (allAttachments != null && allAttachments.length > 0) {
-                request = {
-                    Request: {
-                        ID: ReferralID,
-                        Title: "تم تسليم الإحالة للتحريات",
-                        Status: "تم التسليم للتحريات",
-                        Comments: EndorsementCommentsInput,
-                        ViolationId: ViolationID,
-                        TaskId: TaskID,
-                        IsFinalEndorsementUploaded: true,
-                        TotalEndorsementsCount: nextEndorsementNumber,
-                        TotalOldPrice: TotalPriceDue,
-                        TotalPriceDue: ReferredAmount
-                    }
-                };
-
-                $(".overlay").addClass("active");
-                quarryViolationReferralRecords.saveEndorsementAPI(
-                    request,
-                    ReferralID,
-                    "التسليم للتحريات",
-                    "#endorsementAttach",
-                    "تم تسليم الإحالة للتحريات بنجاح"
-                );
-            } else {
-                functions.warningAlert("من فضلك قم بإرفاق مستند التأشيرة الأخيرة");
-            }
-        } else {
-            functions.warningAlert("يجب تحديد 'التأشيرة الأخيرة' أولاً لتتمكن من التسليم للتحريات");
-        }
-    });
-};
-
-quarryViolationReferralRecords.saveEndorsementAPI = (
-    request,
-    ReferralId,
-    uploadPhase,
-    attachInput,
-    Message = ""
-) => {
-    functions
-        .requester(
-            "/_layouts/15/Uranium.Violations.SharePoint/Cases.aspx/Save",
-            request
-        )
-        .then((response) => {
-            if (response.ok) {
-                return response.json();
-            }
-        })
-        .then((data) => {
-            if (data.d.Status) {
-                quarryViolationReferralRecords.addNewReferralAttachmentRecord(
-                    ReferralId,
-                    uploadPhase,
-                    attachInput,
-                    Message
-                );
-            } else {
-                functions.warningAlert("هناك خطأ في إرسال بيانات الطلب");
-            }
-        })
-        .catch((err) => {
-            console.error(err);
-            functions.warningAlert("حدث خطأ في الاتصال بالخادم");
-        });
-};
-
-quarryViolationReferralRecords.addNewReferralAttachmentRecord = (
-    ReferralId,
-    uploadPhase,
-    attachInput,
-    Message = "",
-    Comments = ""
-) => {
-    let request = {
-        Request: {
-            Title: "New Attachment Record",
-            CaseId: ReferralId,
-            UploadPhase: uploadPhase,
-            Comments: Comments,
-        },
-    };
-
-    functions
-        .requester(
-            "/_layouts/15/Uranium.Violations.SharePoint/CaseAttachments.aspx/Save",
-            request
-        )
-        .then((response) => {
-            if (response.ok) {
-                return response.json();
-            }
-        })
-        .then((data) => {
-            if (data.d.Status) {
-                let RecordId = data.d.Result.Id;
-                quarryViolationReferralRecords.uploadReferralAttachments(
-                    RecordId,
-                    attachInput,
-                    "CasesAttachments",
-                    Message
-                );
-            } else {
-                functions.warningAlert("هناك خطأ في إرسال بيانات الطلب");
-            }
-        })
-        .catch((err) => {
-            console.error(err);
-            functions.warningAlert("حدث خطأ في الاتصال بالخادم");
-        });
-};
-
-quarryViolationReferralRecords.uploadReferralAttachments = (
-    RecordId,
-    attachInput,
-    ListName,
-    Message
-) => {
-    let Data = new FormData();
-    Data.append("itemId", RecordId);
-    Data.append("listName", ListName);
-    for (let i = 0; i <= $(attachInput)[0].files.length; i++) {
-        Data.append("file" + i, $(attachInput)[0].files[i]);
-    }
-
-    $.ajax({
-        type: "POST",
-        url: "/_layouts/15/Uranium.Violations.SharePoint/Attachments.aspx/Upload",
-        processData: false,
-        contentType: false,
-        data: Data,
-        success: (data) => {
-            $(".overlay").removeClass("active");
-            functions.sucessAlert(Message);
-            functions.closePopup();
-            // Refresh the table
-            quarryViolationReferralRecords.getQuarryViolationReferralsRecords(
-                quarryViolationReferralRecords.pageIndex,
-                true
-            );
-        },
-        error: (err) => {
-            functions.warningAlert("خطأ في إرسال البيانات لقاعدة البيانات");
-            $(".overlay").removeClass("active");
-        },
-    });
-};
-
-quarryViolationReferralRecords.getReferralAttachmentsByReferralId = (ReferralId, referralNumber) => {
+vehicleViolationReferralSector.getReferralAttachmentsByReferralId = (ReferralId, referralNumber) => {
     let request = {
         Request: {
             CaseId: ReferralId,
@@ -903,7 +411,7 @@ quarryViolationReferralRecords.getReferralAttachmentsByReferralId = (ReferralId,
                 } else {
                     ReferralAttachmentsRecords = [];
                 }
-                quarryViolationReferralRecords.referralAttachmentsDetailsPopup(
+                vehicleViolationReferralSector.referralAttachmentsDetailsPopup(
                     ReferralId,
                     referralNumber,
                     ReferralAttachmentsRecords
@@ -916,7 +424,7 @@ quarryViolationReferralRecords.getReferralAttachmentsByReferralId = (ReferralId,
         });
 };
 
-quarryViolationReferralRecords.referralAttachmentsDetailsPopup = (
+vehicleViolationReferralSector.referralAttachmentsDetailsPopup = (
     ReferralId,
     referralNumber,
     ReferralAttachmentsRecords
@@ -941,7 +449,7 @@ quarryViolationReferralRecords.referralAttachmentsDetailsPopup = (
         popupHtml
     );
 
-    quarryViolationReferralRecords.drawReferralAttachmentsPopupTable(
+    vehicleViolationReferralSector.drawReferralAttachmentsPopupTable(
         "#referralAttachmentsTable",
         ReferralAttachmentsRecords
     );
@@ -952,7 +460,7 @@ quarryViolationReferralRecords.referralAttachmentsDetailsPopup = (
     });
 };
 
-quarryViolationReferralRecords.drawReferralAttachmentsPopupTable = (
+vehicleViolationReferralSector.drawReferralAttachmentsPopupTable = (
     TableId,
     ReferralAttachmentsRecords
 ) => {
@@ -966,7 +474,7 @@ quarryViolationReferralRecords.drawReferralAttachmentsPopupTable = (
             data.push([
                 `<div class="attachCount">${counter}</div>`,
                 `<div class="attachFiles" data-fileslength="${attachedFilesData.length}">
-                    ${quarryViolationReferralRecords.drawAttachmentsInTable(attachedFilesData)}
+                    ${vehicleViolationReferralSector.drawAttachmentsInTable(attachedFilesData)}
                 </div>`,
                 `<div class="attachUploadPhase">${attchRecord.UploadPhase}</div>`,
                 `<div class="attachUploadDate">${functions.getFormatedDate(
@@ -993,9 +501,7 @@ quarryViolationReferralRecords.drawReferralAttachmentsPopupTable = (
             { title: "ملاحظات" },
         ],
         false,
-        false,
-        "سجل إحالات المخالفات المحجرية.xlsx",
-        "سجل إحالات المخالفات المحجرية"
+        false
     );
 
     let referralAttachmentsLog = Table.rows().nodes().to$();
@@ -1016,7 +522,7 @@ quarryViolationReferralRecords.drawReferralAttachmentsPopupTable = (
     });
 };
 
-quarryViolationReferralRecords.drawAttachmentsInTable = (Attachments) => {
+vehicleViolationReferralSector.drawAttachmentsInTable = (Attachments) => {
     let attachmentsBox = ``;
 
     if (Attachments.length > 0) {
@@ -1036,7 +542,7 @@ quarryViolationReferralRecords.drawAttachmentsInTable = (Attachments) => {
     return attachmentsBox;
 };
 
-quarryViolationReferralRecords.FindReferralById = (ReferralID, popupType = "") => {
+vehicleViolationReferralSector.FindReferralById = (ReferralID, popupType = "") => {
     let request = {
         Id: ReferralID,
     };
@@ -1066,7 +572,7 @@ quarryViolationReferralRecords.FindReferralById = (ReferralID, popupType = "") =
                 $(".overlay").removeClass("active");
 
                 // Build the popup HTML similar to quarryViolationReferral.getReferralDetails
-                Content = quarryViolationReferralRecords.getReferralDetails(referralData);
+                Content = vehicleViolationReferralSector.getReferralDetails(referralData);
 
                 functions.declarePopup(
                     ["generalPopupStyle", "bluePopup", "caseDetailsPopup"],
@@ -1094,7 +600,7 @@ quarryViolationReferralRecords.FindReferralById = (ReferralID, popupType = "") =
         });
 };
 
-quarryViolationReferralRecords.getViolationStatus = (ViolationStatus) => {
+vehicleViolationReferralSector.getViolationStatus = (ViolationStatus) => {
     let statusHtml = ``;
     switch (ViolationStatus) {
         case "Pending":
@@ -1129,7 +635,7 @@ quarryViolationReferralRecords.getViolationStatus = (ViolationStatus) => {
         case "Paid": {
             statusHtml = `<div class="statusBox closedStatus">
                 <i class="statusIcon fa-regular fa-circle-check"></i>
-                <span class="statusText">مسددة</span>
+                <span class="statusText">تم السداد</span>
             </div>`;
             break;
         }
@@ -1164,7 +670,7 @@ quarryViolationReferralRecords.getViolationStatus = (ViolationStatus) => {
         case "UnderReview": {
             statusHtml = `<div class="statusBox pendingStatus">
                 <i class="statusIcon fa-regular fa-eye"></i>
-                <span class="statusText">منظورة</span>
+                <span class="statusText">قيد انتظار السداد</span>
             </div>`;
             break;
         }
@@ -1201,9 +707,9 @@ quarryViolationReferralRecords.getViolationStatus = (ViolationStatus) => {
     return statusHtml;
 };
 
-quarryViolationReferralRecords.getReferralDetails = (referralData) => {
+vehicleViolationReferralSector.getReferralDetails = (referralData) => {
     let violation = referralData.Violation;
-    let violationOffenderType = violation?.OffenderType || "Quarry";
+    let violationOffenderType = violation?.OffenderType || "Vehicle";
     let popupTitle;
 
     if (referralData.ReferralNumber) {
@@ -1242,6 +748,18 @@ quarryViolationReferralRecords.getReferralDetails = (referralData) => {
                                 </div>
                                 <div class="col-md-4">
                                     <div class="form-group customFormGroup">
+                                        <label for="vehicleRegistrationNumber" class="customLabel">رقم القيد</label>
+                                        <input class="form-control customInput vehicleRegistrationNumber" id="vehicleRegistrationNumber" type="text" value="${referralData.VehicleRegistrationNumber || "----"}" disabled>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-group customFormGroup">
+                                        <label for="courtCaseNumber" class="customLabel">الرقم القضائي</label>
+                                        <input class="form-control customInput courtCaseNumber" id="courtCaseNumber" type="text" value="${referralData.CourtCaseNumber || "----"}" disabled>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-group customFormGroup">
                                         <label for="refferedDate" class="customLabel">تاريخ الإحالة</label>
                                         <input class="form-control customInput refferedDate" id="refferedDate" type="text" value="${functions.getFormatedDate(referralData.RefferedDate)}" disabled>
                                     </div>
@@ -1255,7 +773,7 @@ quarryViolationReferralRecords.getReferralDetails = (referralData) => {
                                 <div class="col-md-4">
                                     <div class="form-group customFormGroup">
                                         <label for="violationStatus" class="customLabel">حالة المخالفة</label>
-                                        <input class="form-control customInput violationStatus" id="violationStatus" type="text" value="${quarryViolationReferralRecords.getViolationStatusText(referralData.ViolationStatus)}" disabled>
+                                        <input class="form-control customInput violationStatus" id="violationStatus" type="text" value="${vehicleViolationReferralSector.getViolationStatusText(referralData.ViolationStatus)}" disabled>
                                     </div>
                                 </div>
                                 <div class="col-md-4">
@@ -1289,10 +807,10 @@ quarryViolationReferralRecords.getReferralDetails = (referralData) => {
                         <div class="formElements">
                             <div class="row">
                                 ${violationOffenderType == "Quarry"
-            ? quarryViolationReferralRecords.referralQuarryDetails(violation)
+            ? vehicleViolationReferralSector.referralQuarryDetails(violation)
             : violationOffenderType == "Vehicle"
-                ? quarryViolationReferralRecords.referralVehicleDetails(violation)
-                : quarryViolationReferralRecords.referralEquipmentDetails(violation)
+                ? vehicleViolationReferralSector.referralVehicleDetails(violation)
+                : vehicleViolationReferralSector.referralEquipmentDetails(violation)
         }
                             </div>
                         </div>
@@ -1316,7 +834,7 @@ quarryViolationReferralRecords.getReferralDetails = (referralData) => {
     return popupHtml;
 };
 
-quarryViolationReferralRecords.getViolationStatusText = (status) => {
+vehicleViolationReferralSector.getViolationStatusText = (status) => {
     const statusMap = {
         "Pending": "قيد الانتظار",
         "Confirmed": "مؤكدة",
@@ -1337,7 +855,7 @@ quarryViolationReferralRecords.getViolationStatusText = (status) => {
     return statusMap[status] || status || "----";
 };
 
-quarryViolationReferralRecords.referralQuarryDetails = (violationData) => {
+vehicleViolationReferralSector.referralQuarryDetails = (violationData) => {
     let detailsHtml = `
         <div class="col-md-4">
             <div class="form-group customFormGroup">
@@ -1372,7 +890,7 @@ quarryViolationReferralRecords.referralQuarryDetails = (violationData) => {
         <div class="col-md-4">
             <div class="form-group customFormGroup">
                 <label for="violationGov" class="customLabel">المحافظة</label>
-                <input class="form-control customInput violationGov" id="violationGov" type="text" value="${violationData.Governrates?.Title || "----"}" disabled>
+                                <input class="form-control customInput violationGov" id="violationGov" type="text" value="${violationData.Governrates?.Title || "----"}" disabled>
             </div>
         </div>
         <div class="col-md-4">
@@ -1421,7 +939,7 @@ quarryViolationReferralRecords.referralQuarryDetails = (violationData) => {
     return detailsHtml;
 };
 
-quarryViolationReferralRecords.referralVehicleDetails = (violationData) => {
+vehicleViolationReferralSector.referralVehicleDetails = (violationData) => {
     let detailsHtml = `
         <div class="col-md-4">
             <div class="form-group customFormGroup">
@@ -1505,7 +1023,7 @@ quarryViolationReferralRecords.referralVehicleDetails = (violationData) => {
     return detailsHtml;
 };
 
-quarryViolationReferralRecords.referralEquipmentDetails = (violationData) => {
+vehicleViolationReferralSector.referralEquipmentDetails = (violationData) => {
     let detailsHtml = `
         <div class="col-md-4">
             <div class="form-group customFormGroup">
@@ -1583,29 +1101,4 @@ quarryViolationReferralRecords.referralEquipmentDetails = (violationData) => {
     return detailsHtml;
 };
 
-// // Initialization
-// quarryViolationReferralRecords.init = () => {
-//     quarryViolationReferralRecords.pageIndex = 1;
-//     quarryViolationReferralRecords.dataObj.destroyTable = false;
-
-//     // Setup event listeners
-//     $(".searchBtn").off("click").on("click", quarryViolationReferralRecords.filterQuarryViolationReferralsRecords);
-
-//     $(".filterBox input").off("keypress").on("keypress", function (e) {
-//         if (e.which === 13) {
-//             quarryViolationReferralRecords.filterQuarryViolationReferralsRecords(e);
-//         }
-//     });
-
-//     // Load initial data
-//     $(".PreLoader").addClass("active");
-//     quarryViolationReferralRecords.getQuarryViolationReferralsRecords();
-// };
-
-// $(document).ready(function () {
-//     if (functions.getPageName() === "QuarryViolationReferralRecords") {
-//         quarryViolationReferralRecords.init();
-//     }
-// });
-
-export default quarryViolationReferralRecords;
+export default vehicleViolationReferralSector;

@@ -10,7 +10,98 @@ functions.stripHTML = (html) => {
   div.innerHTML = html;
   return div.textContent || div.innerText || "";
 };
+// functions.exportDataTable = (options) => {
+//   const {
+//     tableSelector,
+//     fileName = "export.xlsx",
+//     sheetName = "Sheet1",
+//     headers = null,
+//     ignoreLastColumns = 0,
+//     onlyVisible = true,
+//     rtl = true,
+//     columnWidths = 25,
+//   } = options;
 
+//   let table = $(tableSelector).DataTable();
+//   let data = [];
+
+//   // Headers
+//   if (headers) {
+//     // Filter out empty headers or headers that should be ignored
+//     const filteredHeaders = headers.filter((header, index) => {
+//       // Skip the empty column (second column) and any columns at the end based on ignoreLastColumns
+//       return index !== 1; // Skip the second column (index 1) which contains the ellipsis button
+//     });
+//     data.push(filteredHeaders);
+//   } else {
+//     let autoHeaders = [];
+//     $(tableSelector + " thead th").each(function (index) {
+//       // Skip the second column (index 1) which contains the ellipsis button
+//       if (index !== 1) {
+//         autoHeaders.push($(this).text().trim());
+//       }
+//     });
+//     data.push(autoHeaders);
+//   }
+
+//   // Rows
+//   table.rows(onlyVisible ? { search: "applied" } : {}).every(function () {
+//     let row = this.data();
+//     let rowData = [];
+
+//     // Skip the second column (index 1) which contains the ellipsis button
+//     // Also apply ignoreLastColumns from the end
+//     for (let i = 0; i < row.length; i++) {
+//       // Skip the second column (index 1)
+//       if (i === 1) continue;
+
+//       // Handle ignoreLastColumns - keep all except the last specified columns
+//       if (i >= row.length - ignoreLastColumns) continue;
+
+//       let cell = row[i];
+//       let textContent = '';
+
+//       // Check if cell contains HTML
+//       if (typeof cell === 'string' && cell.trim().startsWith('<')) {
+//         // Create a temporary element to parse HTML and extract text
+//         let tempDiv = $('<div>').html(cell);
+
+//         // Try to get text from specific elements first
+//         let violationIdDiv = tempDiv.find('.violationId');
+//         if (violationIdDiv.length) {
+//           textContent = violationIdDiv.text().trim();
+//         } else {
+//           // Fallback to getting all text
+//           textContent = tempDiv.text().trim();
+//         }
+
+//         // If still empty, try to get from data attributes or other sources
+//         if (textContent === '' && violationIdDiv.length) {
+//           // Try to get from data-violationcode attribute
+//           textContent = violationIdDiv.data('violationcode') || '';
+//         }
+//       } else {
+//         // Not HTML, use as is
+//         textContent = functions.stripHTML ? functions.stripHTML(cell) : cell;
+//       }
+
+//       rowData.push(textContent);
+//     }
+
+//     data.push(rowData);
+//   });
+
+//   let ws = XLSX.utils.aoa_to_sheet(data);
+
+//   if (rtl) ws["!dir"] = "rtl";
+
+//   ws["!cols"] = data[0].map(() => ({ wch: columnWidths }));
+
+//   let wb = XLSX.utils.book_new();
+//   XLSX.utils.book_append_sheet(wb, ws, sheetName);
+
+//   XLSX.writeFile(wb, fileName);
+// };
 functions.exportDataTable = (options) => {
   const {
     tableSelector,
@@ -26,83 +117,73 @@ functions.exportDataTable = (options) => {
   let table = $(tableSelector).DataTable();
   let data = [];
 
-  // Headers
+  // ================= Headers =================
   if (headers) {
-    data.push(headers);
+    const filteredHeaders = headers.filter((header, index) => {
+      return index !== 1;
+    });
+    data.push(filteredHeaders);
   } else {
     let autoHeaders = [];
-    $(tableSelector + " thead th").each(function () {
-      autoHeaders.push($(this).text().trim());
+    $(tableSelector + " thead th").each(function (index) {
+      if (index !== 1) {
+        autoHeaders.push($(this).text().trim());
+      }
     });
     data.push(autoHeaders);
   }
 
-  // Rows
+  // ================= Rows =================
   table.rows(onlyVisible ? { search: "applied" } : {}).every(function () {
     let row = this.data();
 
-    let cleanRow = row
-      .slice(0, row.length - ignoreLastColumns)
-      .map((cell) => functions.stripHTML(cell));
+    let filteredRow = row.filter((cell, index) => {
+      if (index === 1) return false;
+      return index < row.length - ignoreLastColumns;
+    });
+
+    let cleanRow = filteredRow.map((cell) => {
+      let value = functions.stripHTML(cell);
+
+      // Detect SharePoint Date
+      if (typeof value === "string" && value.includes("/Date(")) {
+        return functions.parseSharePointDate(value);
+      }
+
+      // Detect numeric values
+      if (!isNaN(value) && value !== "") {
+        return Number(value);
+      }
+
+      return value;
+    });
 
     data.push(cleanRow);
   });
 
+  // ================= Create Sheet =================
   let ws = XLSX.utils.aoa_to_sheet(data);
 
   if (rtl) ws["!dir"] = "rtl";
 
+  // Column width
   ws["!cols"] = data[0].map(() => ({ wch: columnWidths }));
+
+  // Format date cells
+  data.forEach((row, rowIndex) => {
+    row.forEach((cell, colIndex) => {
+      if (cell instanceof Date) {
+        let cellRef = XLSX.utils.encode_cell({ r: rowIndex, c: colIndex });
+        ws[cellRef].t = "d";
+        ws[cellRef].z = "dd-mm-yyyy";
+      }
+    });
+  });
 
   let wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, sheetName);
 
   XLSX.writeFile(wb, fileName);
-};
-
-functions.setUserDetailsSideMenu = (UserType, UserJop, UserSector = "") => {
-  $(".userDetails")
-    .find(".userName")
-    .text(UserJop == "الأرشيف" ? "فرع المخالفات" : UserJop);
-  if (UserType == "Recorder") {
-    $(".userDetails")
-      .find(".userSector")
-      .text("( " + UserSector + " )");
-    // $(".userDetails").find(".userName").css("margin-bottom", "0.75rem");
-  }
-  // $(".userDetails").find(".userEmail").text(UserEmail)
-};
-functions.callSharePointListApi = (ListName) => {
-  return new Promise(function (resolve, reject) {
-    $.ajax({
-      type: "GET",
-      url:
-        _spPageContextInfo.siteAbsoluteUrl +
-        "/_api/web/lists/getbytitle('" +
-        ListName +
-        "')/items?$top=1000",
-      contentType: "application/json; charset=utf-8",
-      dataType: "json",
-      success: (data) => {
-        if (data != null) {
-          resolve(data);
-        } else {
-          resolve([]);
-        }
-      },
-      error: (xhr) => { },
-    });
-  });
-};
-functions.getSiteName = () => {
-  return $("#identify").attr("site-name");
-};
-functions.getPageName = () => {
-  return $("#identify").attr("page-name");
-};
-functions.setPageMetaData = (pageName) => {
-  // $(".pageTitleBox .pageTitleImageBox").find("img").attr("src", pageImageSrc);
-  $(".pageNameBox").find("p.pageName").text(pageName);
 };
 functions.tableDeclare = (
   tableID,
@@ -151,18 +232,22 @@ functions.tableDeclare = (
   }
 
   let Table = $(tableID).DataTable(tableOptions);
-  $("#exportBtn").on("click", () => {
-    functions.exportDataTable({
-      tableSelector: tableID,
-      fileName: exportFileName,
-      sheetName: exportSheetName,
-      headers: tableColumns.map((col) => col.title),
-      ignoreLastColumns: 2,
-      onlyVisible: true,
-      rtl: true,
-      columnWidths: 25,
+
+  $("#exportBtn")
+    .off("click")
+    .on("click", () => {
+      functions.exportDataTable({
+        tableSelector: tableID,
+        fileName: exportFileName,
+        sheetName: exportSheetName,
+        headers: tableColumns.map((col) => col.title),
+        ignoreLastColumns: 0,
+        onlyVisible: true,
+        rtl: true,
+        columnWidths: 25,
+      });
     });
-  });
+
   return Table;
 };
 functions.tableSearch = (
@@ -180,7 +265,60 @@ functions.tableSearch = (
     }
   });
 };
+functions.parseSharePointDate = function (spDate) {
+  if (!spDate) return "";
 
+  if (spDate instanceof Date) return spDate;
+
+  let match = /\/Date\((\d+)\)\//.exec(spDate);
+  if (!match) return "";
+
+  return new Date(parseInt(match[1]));
+};
+functions.setUserDetailsSideMenu = (UserType, UserJop, UserSector = "") => {
+  $(".userDetails")
+    .find(".userName")
+    .text(UserJop == "الأرشيف" ? "فرع المخالفات" : UserJop);
+  if (UserType == "Recorder") {
+    $(".userDetails")
+      .find(".userSector")
+      .text("( " + UserSector + " )");
+    // $(".userDetails").find(".userName").css("margin-bottom", "0.75rem");
+  }
+  // $(".userDetails").find(".userEmail").text(UserEmail)
+};
+functions.callSharePointListApi = (ListName) => {
+  return new Promise(function (resolve, reject) {
+    $.ajax({
+      type: "GET",
+      url:
+        _spPageContextInfo.siteAbsoluteUrl +
+        "/_api/web/lists/getbytitle('" +
+        ListName +
+        "')/items?$top=1000",
+      contentType: "application/json; charset=utf-8",
+      dataType: "json",
+      success: (data) => {
+        if (data != null) {
+          resolve(data);
+        } else {
+          resolve([]);
+        }
+      },
+      error: (xhr) => { },
+    });
+  });
+};
+functions.getSiteName = () => {
+  return $("#identify").attr("site-name");
+};
+functions.getPageName = () => {
+  return $("#identify").attr("page-name");
+};
+functions.setPageMetaData = (pageName) => {
+  // $(".pageTitleBox .pageTitleImageBox").find("img").attr("src", pageImageSrc);
+  $(".pageNameBox").find("p.pageName").text(pageName);
+};
 functions.requester = (url, data) => {
   let otherParams;
   otherParams = {
@@ -191,7 +329,6 @@ functions.requester = (url, data) => {
   };
   return fetch(`${url}`, otherParams);
 };
-
 functions.requesterGET = (url) => {
   let otherParams;
   otherParams = {
@@ -296,20 +433,47 @@ functions.inputDateFormat = (
     autoclose: true,
   });
 };
-functions.getFormatedDate = (unForamttedDate, format = "DD-MM-YYYY") => {
-  // functions.getFormatedDate = (unForamttedDate, format = "MM-DD-YYYY") => {
+functions.getFormatedDate = (unFormattedDate, format = "DD-MM-YYYY") => {
 
-  let localDate = new Date(
-    Number(
-      unForamttedDate?.substring(
-        unForamttedDate.indexOf("(") + 1,
-        unForamttedDate.lastIndexOf(")")
+  if (!unFormattedDate) return "-";
+
+  let timestamp = null;
+
+  // ✅ لو الشكل /Date(1696230713000)/
+  if (typeof unFormattedDate === "string" && unFormattedDate.includes("(")) {
+    timestamp = Number(
+      unFormattedDate.substring(
+        unFormattedDate.indexOf("(") + 1,
+        unFormattedDate.lastIndexOf(")")
       )
-    )
-  ).toLocaleString();
-  let formatedDate = moment(localDate).format(format);
-  return formatedDate;
+    );
+  }
+
+  // ✅ لو Date عادي
+  else {
+    timestamp = new Date(unFormattedDate).getTime();
+  }
+
+  if (!timestamp || isNaN(timestamp)) return "-";
+
+  const localDate = new Date(timestamp);
+
+  return moment(localDate).format(format);
 };
+// functions.getFormatedDate = (unForamttedDate, format = "DD-MM-YYYY") => {
+//   // functions.getFormatedDate = (unForamttedDate, format = "MM-DD-YYYY") => {
+
+//   let localDate = new Date(
+//     Number(
+//       unForamttedDate?.substring(
+//         unForamttedDate.indexOf("(") + 1,
+//         unForamttedDate.lastIndexOf(")")
+//       )
+//     )
+//   ).toLocaleString();
+//   let formatedDate = moment(localDate).format(format);
+//   return formatedDate;
+// };
 functions.getViolationArabicName = (OffenderType, violationArabicName = "") => {
   let violationArType = "-";
   if (OffenderType == "Quarry") {
@@ -1027,13 +1191,20 @@ functions.getPetitionsStatus = (petitionStatus) => {
   return statusHtml;
 };
 
-
 export const closePopup = () => {
   $(".popup").remove();
   $(".overlay").removeClass("active");
 };
-functions.closePopup = () => {
-  $(".popup").remove();
-  $(".overlay").removeClass("active");
+functions.debounce = (func, wait) => {
+  let timeout;
+  return function executedFunction(...args) {
+    const later = () => {
+      clearTimeout(timeout);
+      func(...args);
+    };
+    clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
+  };
 };
+
 export default functions;

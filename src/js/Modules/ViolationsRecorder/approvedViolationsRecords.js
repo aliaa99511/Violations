@@ -10,7 +10,7 @@ approvedViolationsRecords.dataObj = {
   ViolationType: 0,
 }
 
-approvedViolationsRecords.getViolations = () => {
+approvedViolationsRecords.getApprovedViolations = () => {
   let UserId = _spPageContextInfo.userId;
   let request = {
     Data: {
@@ -54,7 +54,7 @@ approvedViolationsRecords.getViolations = () => {
 };
 approvedViolationsRecords.setPaginations = (TotalPages, RowsPerPage) => {
   pagination.draw("#paginationID", TotalPages, RowsPerPage);
-  pagination.start("#paginationID", approvedViolationsRecords.getViolations);
+  pagination.start("#paginationID", approvedViolationsRecords.getApprovedViolations);
   // pagination.reset()
   // pagination.scrollToElement(el, length)
   pagination.activateCurrentPage();
@@ -93,7 +93,7 @@ approvedViolationsRecords.dashBoardTable = (violationsData) => {
     });
   }
   let Table = functions.tableDeclare(
-    "#approvedViolationsRecords",
+    "#approvedViolationsRecordsTable",
     data,
     [
       { title: "رقم المخالفة", class: "no-sort" },
@@ -204,8 +204,21 @@ approvedViolationsRecords.filterViolationsLog = (e) => {
     approvedViolationsRecords.dataObj.ViolationType = Number($("#TypeofViolation").children("option:selected").data("id"));
     approvedViolationsRecords.dataObj.destroyTable = true;
     approvedViolationsRecords.dataObj.pageIndex = pagination.currentPage
-    approvedViolationsRecords.getViolations();
+    approvedViolationsRecords.getApprovedViolations();
   }
 };
+approvedViolationsRecords.resetFilter = (e) => {
+  e.preventDefault();
+  $("#violationCategory").val(""); // Reset to "الكل" (the disabled selected hidden option)
+  $("#TypeofViolation").val("0"); // Reset to "الكل" with data-id="0"
 
+  // Reset the data object properties
+  approvedViolationsRecords.dataObj.OffenderType = "";
+  approvedViolationsRecords.dataObj.ViolationType = 0;
+  approvedViolationsRecords.dataObj.destroyTable = true;
+
+  pagination.reset();
+  $(".PreLoader").addClass("active");
+  approvedViolationsRecords.getApprovedViolations();
+};
 export default approvedViolationsRecords;

@@ -720,64 +720,6 @@ certificationCases.caseVehicleDetails = (violationData) => {
   return detailsHtml;
 };
 
-// certificationCases.FindCaseById = (CaseID, popupType = "") => {
-//     let request = {
-//         Id: CaseID,
-//     };
-//     functions.requester("/_layouts/15/Uranium.Violations.SharePoint/Cases.aspx/FindById", request)
-//         .then((response) => {
-//             if (response.ok) {
-//                 return response.json();
-//             }
-//         })
-//         .then((data) => {
-
-//             let caseData;
-//             let caseViolation
-//             let violationOffenderType;
-//             let Content;
-//             let printBox;
-//             if (data != null) {
-//                 caseData = data.d.Result
-//                 caseViolation = data.d.Result.Violation
-//                 violationOffenderType = caseViolation.OffenderType
-//                 if (violationOffenderType == "Quarry") {
-//                     if (popupType == "PaymentFormPrint") {
-//                         $(".overlay").removeClass("active");
-//                         Content = DetailsPopup.printPaymentForm(caseViolation)
-//                         functions.declarePopup(["generalPopupStyle", "paymentFormDetailsPopup"], Content);
-//                     } else {
-//                         // Content = DetailsPopup.quarryDetailsPopupContent(violationData,"القائمة");
-//                         // printBox = `<div class="printBox" id="printJS-form">${Content}</div>`;
-//                         // functions.declarePopup(["generalPopupStyle", "detailsPopup"],printBox);
-//                     }
-//                 } else {
-//                     if (popupType == "PaymentFormPrint") {
-//                         $(".overlay").removeClass("active");
-//                         Content = DetailsPopup.printPaymentForm(caseViolation)
-//                         functions.declarePopup(["generalPopupStyle", "paymentFormDetailsPopup"], Content);
-//                     } else {
-//                         // Content = DetailsPopup.vehicleDetailsPopupContent(violationData,"القائمة");
-//                         // printBox = `<div class="printBox" id="printJS-form">${Content}</div>`;
-//                         // functions.declarePopup(["generalPopupStyle", "detailsPopup"],printBox);
-//                     }
-//                 }
-//                 $(".printConfirmationForm").hide()
-//                 $(".printPaymentForm").on("click", (e) => {
-//                     functions.PrintDetails(e)
-//                 })
-//                 // $(".printBtn").on("click", (e) => {
-//                 //     functions.PrintDetails(e);
-//                 // });
-//             } else {
-//                 caseData = null;
-//             }
-//         })
-//         .catch((err) => {
-
-//         });
-// }
-
 certificationCases.filterViolationsLog = (e) => {
   // let pageIndex = certificationCases.pageIndex
   let CaseNumber = $("#caseNumber").val();

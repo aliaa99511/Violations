@@ -1,127 +1,142 @@
 import functions from "../../Shared/functions";
 import DetailsPopup from "../../Shared/detailsPopupContent";
 import pagination from "../../Shared/Pagination";
-import moment from "moment";
 
 let ExternalViolationLog = {
     pageIndex: 1,
     destroyTable: false
 };
 
-/* =========================
-   API
-========================= */
-ExternalViolationLog.getExternalViolations = ({
-    pageIndex = pagination.currentPage || 1,
+ExternalViolationLog.getExternalViolations = (
+    pageIndex = 1,
     destroyTable = false,
-    CaseNumber = $("#caseNumber").val(),
-    ViolationCode = $("#violationCode").val(),
-    CreatedFrom = $("#createdFrom").val()
-        ? moment($("#createdFrom").val(), "DD-MM-YYYY").format("YYYY-MM-DD")
-        : null,
-    CreatedTo = $("#createdTo").val()
-        ? moment($("#createdTo").val(), "DD-MM-YYYY").format("YYYY-MM-DD")
-        : null
-} = {}) => {
-
+) => {
     let request = {
         Data: {
             RowsPerPage: 10,
-            PageIndex: pageIndex,
+            PageIndex: pagination.currentPage,
             ColName: "created",
             SortOrder: "desc",
-            ViolationCode,
-            CaseNumber,
             IsExternalRecord: true,
             Status: "ExternalReviewed",
-            CreatedFrom,
-            CreatedTo,
+            CaseNumber: $("#caseNumber").val(),
+            ViolationCode: $("#violationCode").val(),
+            CreatedFrom: $("#createdFrom").val()
+                ? moment($("#createdFrom").val(), "DD-MM-YYYY").format("YYYY-MM-DD")
+                : null,
+            CreatedTo: $("#createdTo").val()
+                ? moment($("#createdTo").val(), "DD-MM-YYYY").format("YYYY-MM-DD")
+                : null,
         }
     };
-
     functions
-        .requester(
-            "/_layouts/15/Uranium.Violations.SharePoint/Tasks.aspx/Search",
-            { request }
-        )
-        .then(res => res.ok ? res.json() : null)
-        .then(data => {
-            $(".PreLoader").removeClass("active");
-            if (!data?.d?.Result) return;
-
-            let result = data.d.Result;
-            let records = result.GridData || [];
-            ExternalViolationLog.setPaginations(
-                result.TotalPageCount,
-                result.RowsPerPage
-            );
-
-            ExternalViolationLog.renderTable(records, destroyTable);
-            ExternalViolationLog.pageIndex = result.CurrentPage;
-            // functions.getCurrentUserActions();
+        .requester("_layouts/15/Uranium.Violations.SharePoint/Tasks.aspx/Search", {
+            request,
         })
-        .catch(console.error);
+        .then((response) => {
+            if (response.ok) {
+                return response.json();
+            }
+        })
+        .then((data) => {
+            $(".PreLoader").removeClass("active");
+            let ExternalViolationDate = [];
+            let ItemsData = data.d.Result;
+            if (data.d.Result.GridData != null) {
+                if (data.d.Result.GridData.length > 0) {
+                    Array.from(data.d.Result.GridData).forEach((element) => {
+                        ExternalViolationDate.push(element);
+                    });
+                } else {
+                    ExternalViolationDate = [];
+                }
+            }
+
+            ExternalViolationLog.setPaginations(ItemsData.TotalPageCount, ItemsData.RowsPerPage);
+            ExternalViolationLog.ExternalViolationTable(ExternalViolationDate, destroyTable);
+            ExternalViolationLog.pageIndex = ItemsData.CurrentPage;
+            functions.getCurrentUserActions();
+        })
+        .catch((err) => {
+            console.log(err);
+        });
 };
 
-/* =========================
-   Pagination
-========================= */
 ExternalViolationLog.setPaginations = (TotalPages, RowsPerPage) => {
     pagination.draw("#paginationID", TotalPages, RowsPerPage);
-    pagination.start("#paginationID", (page) => {
-        ExternalViolationLog.getExternalViolations({ pageIndex: page });
-    });
+    pagination.start("#paginationID", ExternalViolationLog.getExternalViolations);
     pagination.activateCurrentPage();
 };
+ExternalViolationLog.filterExternalViolations = () => {
+    let pageIndex = ExternalViolationLog.pageIndex;
 
-ExternalViolationLog.renderTable = (records) => {
-    if ($.fn.DataTable.isDataTable("#ExternalViolationLog")) {
-        $("#ExternalViolationLog").DataTable().clear().destroy();
-    }
+    $(".PreLoader").addClass("active");
+    ExternalViolationLog.getExternalViolations(
+        pageIndex,
+        true
+    );
+};
 
+ExternalViolationLog.resetFilter = (e) => {
+    e.preventDefault();
+    $("#caseNumber").val("");
+    $("#violationCode").val("");
+    $("#createdFrom").val("");
+    $("#createdTo").val("");
+
+    $(".PreLoader").addClass("active");
+    pagination.reset();
+    ExternalViolationLog.getExternalViolations();
+};
+ExternalViolationLog.ExternalViolationTable = (ExternalViolationDate, destroyTable) => {
     let data = [];
 
-    records.forEach(record => {
-        let v = record.Violation;
-        if (!v) return;
+    if (ExternalViolationDate.length > 0) {
+        ExternalViolationDate.forEach(record => {
+            let v = record.Violation;
+            if (!v) return;
 
-        data.push([
-            `<div class="violationId"
-                data-taskid="${record.ID}"
-                data-violationid="${v.ID}"
-                data-offendertype="${v.OffenderType}"
-                data-violationcode="${v.ViolationCode}"
-                data-casenumber="${v.CaseNumber}">
-                ${v.ViolationCode || "---"}
-            </div>`,
+            data.push([
+                `<div class="violationId"
+                    data-taskid="${record.ID}"
+                    data-violationid="${v.ID}"
+                    data-offendertype="${v.OffenderType}"
+                    data-violationcode="${v.ViolationCode}"
+                    data-casenumber="${v.CaseNumber}">
+                    ${v.ViolationCode || "---"}
+                </div>`,
 
-            `<div class="controls">
-                <div class="ellipsisButton">
-                    <i class="fa-solid fa-ellipsis-vertical"></i>
-                </div>
-                <div class="hiddenListBox">
-                    <div class="arrow"></div>
-                    <ul class="list-unstyled controlsList">
-                        <li>
-                            <a href="#" class="itemDetails">المزيد من التفاصيل</a>
-                        </li>
-                    </ul>
-                </div>
-            </div>`,
+                `<div class="controls">
+                    <div class="ellipsisButton">
+                        <i class="fa-solid fa-ellipsis-vertical"></i>
+                    </div>
+                    <div class="hiddenListBox">
+                        <div class="arrow"></div>
+                        <ul class="list-unstyled controlsList">
+                            <li>
+                                <a href="#" class="itemDetails">المزيد من التفاصيل</a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>`,
+                `<div>${functions.getViolationArabicName(v.OffenderType)}</div>`,
+                `<div>${v.CaseNumber || "---"}</div>`,
+                `<div>${v.ViolatorCompany || "-"}</div>`,
+                `<div>${functions.getViolationArabicName(
+                    v.OffenderType,
+                    v?.ViolationTypes?.Title
+                )}</div>`,
+                `<div>${v.AssignedProsecution || "---"}</div>`,
+                `<div>${v.Governrates?.Title || "---"}</div>`
+            ]);
+        });
+    }
 
-            `<div>${functions.getViolationArabicName(v.OffenderType)}</div>`,
-            `<div>${v.CaseNumber || "---"}</div>`,
-            `<div>${v.ViolatorCompany || "-"}</div>`,
-            `<div>${functions.getViolationArabicName(
-                v.OffenderType,
-                v?.ViolationTypes?.Title
-            )}</div>`,
-            `<div>${v.AssignedProsecution || "---"}</div>`,
-            `<div>${v.Governrates?.Title || "---"}</div>`
-        ]);
-    });
+    if (ExternalViolationLog.destroyTable || destroyTable) {
+        $("#ExternalViolationLog").DataTable().destroy();
+    }
 
-    let table = functions.tableDeclare(
+    let Table = functions.tableDeclare(
         "#ExternalViolationLog",
         data,
         [
@@ -139,41 +154,90 @@ ExternalViolationLog.renderTable = (records) => {
         "سجل المخالفات الخارجية.xlsx",
         "سجل المخالفات الخارجية"
     );
+    ExternalViolationLog.destroyTable = true;
 
-    ExternalViolationLog.bindTableEvents(table);
-};
-/* =========================
-   Table Events
-========================= */
-ExternalViolationLog.bindTableEvents = (table) => {
-
-    $(document)
-        .off("click", ".ellipsisButton")
-        .on("click", ".ellipsisButton", function () {
-            $(".hiddenListBox").hide(200);
-            $(this).siblings(".hiddenListBox").toggle(200);
+    $(".ellipsisButton").on("click", (e) => {
+        $(".hiddenListBox").hide(300);
+        $(e.currentTarget).siblings(".hiddenListBox").toggle(300);
+    });
+    let violationlog = Table.rows().nodes().to$();
+    let UserId = _spPageContextInfo.userId;
+    functions.callSharePointListApi("Configurations").then((Users) => {
+        let UserDetails = null;
+        let UsersData = Users.value;
+        UsersData.forEach((User) => {
+            if (User.UserIdId.find((id) => id == UserId)) {
+                UserDetails = User;
+            }
         });
 
-    $(document)
-        .off("click", ".itemDetails")
-        .on("click", ".itemDetails", function (e) {
-            e.preventDefault();
-            let taskID = $(this)
-                .closest("tr")
-                .find(".violationId")
-                .data("taskid");
+        $.each(violationlog, (index, record) => {
+            let jQueryRecord = $(record);
+            let taskID = jQueryRecord.find(".violationId").data("taskid");
+            let hiddenListBox = jQueryRecord
+                .find(".controls")
+                .children(".hiddenListBox");
 
-            $(".overlay").addClass("active");
-            ExternalViolationLog.findViolationByID(taskID);
+            if (
+                violationlog.length > 4 &&
+                hiddenListBox.height() > 110 &&
+                jQueryRecord.is(":nth-last-child(-n + 4)")
+            ) {
+                hiddenListBox.addClass("toTopDDL");
+            }
+
+            jQueryRecord
+                .find(".controls")
+                .children(".hiddenListBox")
+                .find(".itemDetails")
+                .on("click", (e) => {
+                    $(".overlay").addClass("active");
+                    ExternalViolationLog.findViolationByID(
+                        e,
+                        taskID,
+                        false,
+                        UserDetails ? UserDetails.JobTitle1 : ""
+                    );
+                });
         });
+    });
 
     functions.hideTargetElement(".controls", ".hiddenListBox");
+
+    // ExternalViolationLog.bindTableEvents(table);
 };
 
-/* =========================
-   Details Popup
-========================= */
-ExternalViolationLog.findViolationByID = (taskID) => {
+// ExternalViolationLog.bindTableEvents = (table) => {
+
+//     $(document)
+//         .off("click", ".ellipsisButton")
+//         .on("click", ".ellipsisButton", function () {
+//             $(".hiddenListBox").hide(200);
+//             $(this).siblings(".hiddenListBox").toggle(200);
+//         });
+
+//     $(document)
+//         .off("click", ".itemDetails")
+//         .on("click", ".itemDetails", function (e) {
+//             e.preventDefault();
+//             let taskID = $(this)
+//                 .closest("tr")
+//                 .find(".violationId")
+//                 .data("taskid");
+
+//             $(".overlay").addClass("active");
+//             ExternalViolationLog.findViolationByID(taskID);
+//         });
+
+//     functions.hideTargetElement(".controls", ".hiddenListBox");
+// };
+
+ExternalViolationLog.findViolationByID = (
+    event,
+    taskID,
+    print = false,
+    UserJopTitle = ""
+) => {
     functions
         .requester(
             "/_layouts/15/Uranium.Violations.SharePoint/Tasks.aspx/FindbyId",
@@ -201,115 +265,6 @@ ExternalViolationLog.findViolationByID = (taskID) => {
             $(".detailsPopupForm").addClass("externalViolations");
         })
         .catch(console.error);
-};
-
-/* =========================
-   Filters
-========================= */
-ExternalViolationLog.filterExternalViolations = () => {
-    let hasValue =
-        $("#violationCode").val() ||
-        $("#caseNumber").val() ||
-        $("#createdFrom").val() ||
-        $("#createdTo").val();
-
-    if (!hasValue) {
-        return functions.warningAlert(
-            "من فضلك قم بإدخال قيمة واحدة على الأقل من قيم البحث"
-        );
-    }
-
-    $(".PreLoader").addClass("active");
-    pagination.reset();
-    ExternalViolationLog.getExternalViolations({
-        pageIndex: 1,
-        destroyTable: true
-    });
-};
-
-ExternalViolationLog.resetFilter = (e) => {
-    e.preventDefault();
-    $("#violationCode, #caseNumber, #createdFrom, #createdTo").val("");
-    $(".PreLoader").addClass("active");
-    pagination.reset();
-    ExternalViolationLog.getExternalViolations({ destroyTable: true });
-};
-
-/* =========================
-   Init
-========================= */
-/* =========================
-   Init - REMOVE THIS SECTION or make it conditional
-========================= */
-// Remove or comment out this auto-execution:
-// $(document).ready(() => {
-//     $("#createdFrom, #createdTo").datepicker({
-//         format: "dd-mm-yyyy",
-//         autoclose: true,
-//         todayHighlight: true,
-//         language: "ar"
-//     });
-// 
-//     $(".searchGreenBtn").on("click", ExternalViolationLog.filterExternalViolations);
-//     $(".resetGreenBtn").on("click", ExternalViolationLog.resetFilter);
-// 
-//     $("#exportBtn").on("click", () => {
-//         functions.exportDataTable({
-//             tableSelector: "#ExternalViolationLog",
-//             fileName: "سجل المخالفات الخارجية.xlsx",
-//             sheetName: "سجل المخالفات الخارجية",
-//             headers: [
-//                 "رقم المخالفة",
-//                 "تصنيف المخالفة",
-//                 "رقم القضية",
-//                 "إسم الشركة المخالفة",
-//                 "نوع المخالفة",
-//                 "النيابة المختصة",
-//                 "جهة الضبط"
-//             ],
-//             ignoreLastColumns: 2,
-//             onlyVisible: true,
-//             rtl: true,
-//             columnWidths: 25,
-//         });
-//     });
-//     ExternalViolationLog.getExternalViolations(); // THIS IS WHAT'S BEING CALLED
-// });
-
-// Instead, export the initialization function
-ExternalViolationLog.init = () => {
-    $("#createdFrom, #createdTo").datepicker({
-        format: "dd-mm-yyyy",
-        autoclose: true,
-        todayHighlight: true,
-        language: "ar"
-    });
-
-    $(".searchGreenBtn").on("click", ExternalViolationLog.filterExternalViolations);
-    $(".resetGreenBtn").on("click", ExternalViolationLog.resetFilter);
-
-    $("#exportBtn").on("click", () => {
-        functions.exportDataTable({
-            tableSelector: "#ExternalViolationLog",
-            fileName: "سجل المخالفات الخارجية.xlsx",
-            sheetName: "سجل المخالفات الخارجية",
-            headers: [
-                "رقم المخالفة",
-                "تصنيف المخالفة",
-                "رقم القضية",
-                "إسم الشركة المخالفة",
-                "نوع المخالفة",
-                "النيابة المختصة",
-                "جهة الضبط"
-            ],
-            ignoreLastColumns: 2,
-            onlyVisible: true,
-            rtl: true,
-            columnWidths: 25,
-        });
-    });
-
-    ExternalViolationLog.getExternalViolations();
 };
 
 export default ExternalViolationLog;

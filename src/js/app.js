@@ -18,7 +18,7 @@ import validatedViolationsRecords from "./Modules/ViolationsRecorder/validatedVi
 import PendingViolations from "./Modules/ViolationsBranch/PendingViolations";
 import runningViolations from "./Modules/ViolationsBranch/RunningViolations";
 import validatedViolations from "./Modules/ViolationsBranch/ValidatedViolations";
-import completedViolations from "./Modules/ViolationsBranch/completedViolations";
+// import completedViolations from "./Modules/ViolationsBranch/completedViolations";
 import rejectedViolations from "./Modules/ViolationsBranch/RejectedViolations";
 import violationsCases from "./Modules/ViolationsBranch/ViolationsCases";
 import runningSectorTask from "./Modules/SectorManager/RunningTasks";
@@ -35,14 +35,30 @@ import quarryViolationReferral from "./Modules/ViolationsBranch/QuarryViolationR
 import quarryViolationReferralRecords from "./Modules/ViolationsRecorder/QuarryViolationReferralRecords";
 import vehicleViolationReferralRecords from "./Modules/ViolationsRecorder/CarViolationReferralRecords";
 import ExternalViolationLog from "./Modules/ViolationsBranch/ExternalViolationLog";
+import pendingPaymentRecords from "./Modules/ViolationsRecorder/PendingPaymentRecords";
+import vehicleViolationReferralSector from "./Modules/SectorManager/CarViolationReferralSector";
+import quarryViolationReferralSector from "./Modules/SectorManager/QuarryViolationReferralSector";
 
 $(".PreLoader").addClass("active");
 $(window).on("load", () => {
-  if (document.readyState == "complete") {
-    sideMenuFunctions.getOnlyVisibleNavSubsites().then((Navigation) => {
-      // Render the navigation menu
-      sideMenuFunctions.renderNavigationMenu(Navigation);
+
+  if (typeof window.SP_CONNECTION !== "undefined" && !window.SP_CONNECTION) {
+
+    $(".PreLoader").addClass("active");
+
+    Swal.fire({
+      icon: "error",
+      title: "SharePoint Disconnected",
+      text: "V: drive is not connected. Please reconnect.",
+      confirmButtonText: "OK"
     });
+
+  } else {
+    $(".PreLoader").removeClass("active");
+  }
+
+  if (document.readyState == "complete") {
+    sideMenuFunctions.init();
 
     if (functions.getSiteName() === "Home") {
       $(".PreLoader").find("span").addClass("greenLoader");
@@ -97,7 +113,7 @@ $(window).on("load", () => {
           prevViolations.filterViolationsLog(e);
         });
       }
-      if (functions.getPageName() === "PendingViolationsRecordsLog") {
+      if (functions.getPageName() === "RegisteredViolationsRecords") {
         functions.setPageMetaData("سجل المحاضر المسجلة");
         sharedApis.getOffenderType("#violationCategory");
         sharedApis.getViolationType("#TypeofViolation");
@@ -106,7 +122,7 @@ $(window).on("load", () => {
         functions.inputDateFormat("#createdFrom", "", "", "dd-mm-yyyy");
         functions.inputDateFormat("#createdTo", "", "", "dd-mm-yyyy");
 
-        violationRecords.getViolations();
+        violationRecords.getRegisteredViolations();
         $(".searchBtn").on("click", (e) => {
           e.preventDefault();
           pagination.reset();
@@ -116,15 +132,21 @@ $(window).on("load", () => {
           violationRecords.resetFilter(e);
         });
       }
-      if (functions.getPageName() === "ApprovedViolationsRecordsLog") {
+      if (functions.getPageName() === "ApprovedViolationsRecords") {
         functions.setPageMetaData("سجل المحاضر الموافق عليها");
         sharedApis.getOffenderType("#violationCategory");
         sharedApis.getViolationType("#TypeofViolation");
-        approvedViolationsRecords.getViolations();
+
+        approvedViolationsRecords.getApprovedViolations();
+
         $(".searchBtn").on("click", (e) => {
           e.preventDefault();
           pagination.reset();
           approvedViolationsRecords.filterViolationsLog(e);
+        });
+
+        $(".resetBtn").on("click", (e) => {
+          approvedViolationsRecords.resetFilter(e);
         });
       }
       if (functions.getPageName() === "ValidatedViolationsRecordsLog") {
@@ -151,33 +173,33 @@ $(window).on("load", () => {
         });
       }
       if (functions.getPageName() === "RejectedViolationsRecordsLog") {
-        functions.setPageMetaData("سجل المحاضر المرفوضة");
-        sharedApis.getOffenderType("#violationCategory");
+        functions.setPageMetaData("سجل المخالفات المرفوضة");
+        // sharedApis.getViolationZones("#violationZone");
+        sharedApis.getViolationSectors("#violationSector");
         sharedApis.getViolationType("#TypeofViolation");
+
         rejectedViolationsRecords.getViolations();
+
         $(".searchBtn").on("click", (e) => {
           e.preventDefault();
+          pagination.reset();
           rejectedViolationsRecords.filterViolationsLog(e);
+        });
+        $(".resetBtn").on("click", (e) => {
+          rejectedViolationsRecords.resetFilter(e);
         });
       }
       if (functions.getPageName() === "QuarryViolationReferralRecords") {
         functions.setPageMetaData("إحالة مخالفة محجرية");
 
+        sharedApis.getCasesStatus("#CaseStatus");
+        sharedApis.getViolationStatus("#ViolationStatus");
+
         // Initialize datepickers for date inputs
         functions.inputDateFormat("#RefferedDateFrom", "", "", "dd-mm-yyyy");
         functions.inputDateFormat("#RefferedDateTo", "", "", "dd-mm-yyyy");
 
-        // Load status dropdown first
-        sharedApis.getCasesStatus("#CaseStatus", function () {
-          // After loading options, initialize the page
-          console.log("Case status loaded, initializing quarry violation referral...");
-
-          // Set default value to "قيد انتظار تأشيرات النيابة"
-          $("#CaseStatus").val("قيد انتظار تأشيرات النيابة");
-
-          // Load initial data
-          quarryViolationReferralRecords.init();
-        });
+        quarryViolationReferralRecords.getQuarryViolationReferralsRecords();
 
         // Setup search button
         $(".searchBtn").on("click", (e) => {
@@ -185,32 +207,22 @@ $(window).on("load", () => {
           pagination.reset();
           quarryViolationReferralRecords.filterQuarryViolationReferralsRecords(e);
         });
-
-        // Setup form submission on Enter
-        $(".filterBox input").on("keypress", function (e) {
-          if (e.which === 13) {
-            quarryViolationReferralRecords.filterQuarryViolationReferralsRecords(e);
-          }
+        $(".resetBtn").on("click", (e) => {
+          quarryViolationReferralRecords.resetFilter(e);
         });
       }
-      if (functions.getPageName() === "vehicleViolationReferralRecordsLog") {
+      if (functions.getPageName() === "VehicleViolationReferralRecords") {
         functions.setPageMetaData("حظر عربة/معدة");
 
-        // Initialize datepickers for date inputs
+        // Initialize datepickers AFTER DOM is ready
         functions.inputDateFormat("#RefferedDateFrom", "", "", "dd-mm-yyyy");
         functions.inputDateFormat("#RefferedDateTo", "", "", "dd-mm-yyyy");
 
-        // Load status dropdown first
-        sharedApis.getCasesStatus("#CaseStatus", function () {
-          // After loading options, initialize the page
-          console.log("Case status loaded, initializing quarry violation referral...");
+        sharedApis.getCasesStatus("#CaseStatus");
+        sharedApis.getViolationStatus("#ViolationStatus");
 
-          // Set default value to "قيد انتظار تأشيرات النيابة"
-          $("#CaseStatus").val("قيد انتظار تأشيرات النيابة");
-
-          // Load initial data
-          vehicleViolationReferralRecords.init();
-        });
+        // Call the API to get data
+        vehicleViolationReferralRecords.getVehicleViolationReferralsRecords();
 
         // Setup search button
         $(".searchBtn").on("click", (e) => {
@@ -219,14 +231,32 @@ $(window).on("load", () => {
           vehicleViolationReferralRecords.filterVehicleViolationReferralsRecords(e);
         });
 
-        // Setup form submission on Enter
-        $(".filterBox input").on("keypress", function (e) {
-          if (e.which === 13) {
-            vehicleViolationReferralRecords.filterVehicleViolationReferralsRecords(e);
-          }
+        $(".resetBtn").on("click", (e) => {
+          vehicleViolationReferralRecords.resetFilter(e);
         });
       }
+      if (functions.getPageName() === "PendingPaymentRecordsLog") {
+        functions.setPageMetaData("سجل المخالفات قيد السداد");
+        sharedApis.getViolationSectors("#violationSector");
+        sharedApis.getOffenderType("#violationCategory");
+        sharedApis.getViolationType("#TypeofViolation");
 
+        // Initialize datepickers for date inputs
+        functions.inputDateFormat("#createdFrom", "", "", "dd-mm-yyyy");
+        functions.inputDateFormat("#createdTo", "", "", "dd-mm-yyyy");
+
+        pendingPaymentRecords.getPendingPayment();
+
+        $(".searchBtn").on("click", (e) => {
+          e.preventDefault();
+          pagination.reset();
+          pendingPaymentRecords.filterPaymentsLog(e);
+        });
+
+        $(".resetBtn").on("click", (e) => {
+          pendingPaymentRecords.resetFilter(e);
+        });
+      }
       if (functions.getPageName() === "DashBoard") {
         functions.setPageMetaData("الصفحة الرئيسية");
         $(".PreLoader").removeClass("active");
@@ -267,6 +297,7 @@ $(window).on("load", () => {
         functions.inputDateFormat("#createdTo", "", "", "dd-mm-yyyy");
 
         PendingViolations.getPendingViolations();
+
         $(".searchBtn").on("click", (e) => {
           e.preventDefault();
           pagination.reset();
@@ -290,6 +321,7 @@ $(window).on("load", () => {
         functions.inputDateFormat("#createdTo", "", "", "dd-mm-yyyy");
 
         validatedViolations.getValidatedViolations();
+
         $(".searchBtn").on("click", (e) => {
           e.preventDefault();
           pagination.reset();
@@ -304,10 +336,16 @@ $(window).on("load", () => {
         // sharedApis.getViolationZones("#violationZone");
         sharedApis.getViolationSectors("#violationSector");
         sharedApis.getViolationType("#TypeofViolation");
+
         rejectedViolations.getRejectedViolations();
+
         $(".searchBtn").on("click", (e) => {
           e.preventDefault();
+          pagination.reset();
           rejectedViolations.filterViolationsLog(e);
+        });
+        $(".resetBtn").on("click", (e) => {
+          rejectedViolations.resetFilter(e);
         });
       }
       if (functions.getPageName() === "RunningViolations") {
@@ -356,46 +394,50 @@ $(window).on("load", () => {
           violationsCases.filterViolationsLog(e);
         });
       }
+
       if (functions.getPageName() === "PendingPetitionsLog") {
         $(".PreLoader").find("span").addClass("greenLoader");
         $(".PreLoader").addClass("active");
         functions.setPageMetaData("سجل الإلتماسات قيد الإنتظار");
-        // sharedApis.getViolationSectors("#violationSector")
-        // sharedApis.getViolationType("#TypeofViolation");
+
         sharedApis.getOffenderType("#violationCategory");
         sharedApis.getPetitionsStatus("#petitionStatus");
-        // Initialize datepickers for date inputs
         functions.inputDateFormat("#createdFrom", "", "", "dd-mm-yyyy");
         functions.inputDateFormat("#createdTo", "", "", "dd-mm-yyyy");
-        petitionsLog.getPetitions("التماس قيد الإنتظار");
+
+        // Initial load with pending status
+        petitionsLog.getPetitions("التماس قيد الإنتظار", 1, false);
+
         $(".searchBtn").on("click", (e) => {
           e.preventDefault();
-          pagination.reset();
-          petitionsLog.filterPetitionsLog(e);
+          petitionsLog.filterPetitionsLog(e, "التماس قيد الإنتظار");
         });
+
         $(".resetBtn").on("click", (e) => {
-          petitionsLog.resetFilter(e);
+          petitionsLog.resetFilter(e, "التماس قيد الإنتظار");
         });
       }
+
       if (functions.getPageName() === "PetitionsLog") {
         $(".PreLoader").find("span").addClass("greenLoader");
         $(".PreLoader").addClass("active");
         functions.setPageMetaData("سجل الالتماسات");
-        // sharedApis.getViolationSectors("#violationSector")
-        // sharedApis.getViolationType("#TypeofViolation");
+
         sharedApis.getOffenderType("#violationCategory");
         sharedApis.getPetitionsStatus("#petitionStatus");
-        // Initialize datepickers for date inputs
         functions.inputDateFormat("#createdFrom", "", "", "dd-mm-yyyy");
         functions.inputDateFormat("#createdTo", "", "", "dd-mm-yyyy");
-        petitionsLog.getPetitions();
+
+        // Initial load with all petitions
+        petitionsLog.getPetitions("All", 1, false);
+
         $(".searchBtn").on("click", (e) => {
           e.preventDefault();
-          pagination.reset();
-          petitionsLog.filterPetitionsLog(e);
+          petitionsLog.filterPetitionsLog(e, "All");
         });
+
         $(".resetBtn").on("click", (e) => {
-          petitionsLog.resetFilter(e);
+          petitionsLog.resetFilter(e, "All");
         });
       }
       if (functions.getPageName() === "ExternalViolationForm") {
@@ -404,16 +446,18 @@ $(window).on("load", () => {
       }
       if (functions.getPageName() === "ExternalViolationLog") {
         functions.setPageMetaData("سجل مخالفات ضبط خارجية");
-        sharedApis.getViolationSectors("#violationSector");
-        sharedApis.getOffenderType("#violationCategory");
-        sharedApis.getViolationType("#TypeofViolation");
+
+        // sharedApis.getViolationSectors("#violationSector");
+        // sharedApis.getOffenderType("#violationCategory");
+        // sharedApis.getViolationType("#TypeofViolation");
 
         // Initialize datepickers for date inputs
         functions.inputDateFormat("#createdFrom", "", "", "dd-mm-yyyy");
         functions.inputDateFormat("#createdTo", "", "", "dd-mm-yyyy");
 
         // Call init instead of getExternalViolations directly
-        ExternalViolationLog.init(); // This will setup events AND call the API
+        // ExternalViolationLog.init(); // This will setup events AND call the API
+        ExternalViolationLog.getExternalViolations();
 
         $(".searchBtn").on("click", (e) => {
           e.preventDefault();
@@ -438,31 +482,26 @@ $(window).on("load", () => {
 
         $(".searchBtn").on("click", (e) => {
           e.preventDefault();
+          pagination.reset();
           pendingPayment.filterPaymentsLog(e);
         });
 
         $(".resetBtn").on("click", (e) => {
+          // e.preventDefault();
           pendingPayment.resetFilter(e);
         });
       }
       if (functions.getPageName() === "QuarryViolationReferralLog") {
         functions.setPageMetaData("إحالة مخالفة محجرية");
 
+        sharedApis.getCasesStatus("#CaseStatus");
+        sharedApis.getViolationStatus("#ViolationStatus");
+
         // Initialize datepickers for date inputs
         functions.inputDateFormat("#RefferedDateFrom", "", "", "dd-mm-yyyy");
         functions.inputDateFormat("#RefferedDateTo", "", "", "dd-mm-yyyy");
 
-        // Load status dropdown first
-        sharedApis.getCasesStatus("#CaseStatus", function () {
-          // After loading options, initialize the page
-          console.log("Case status loaded, initializing quarry violation referral...");
-
-          // Set default value to "قيد انتظار تأشيرات النيابة"
-          $("#CaseStatus").val("قيد انتظار تأشيرات النيابة");
-
-          // Load initial data
-          quarryViolationReferral.init();
-        });
+        quarryViolationReferral.getQuarryViolationReferrals();
 
         // Setup search button
         $(".searchBtn").on("click", (e) => {
@@ -470,13 +509,15 @@ $(window).on("load", () => {
           pagination.reset();
           quarryViolationReferral.filterQuarryViolationReferrals(e);
         });
-
-        // Setup form submission on Enter
-        $(".filterBox input").on("keypress", function (e) {
-          if (e.which === 13) {
-            quarryViolationReferral.filterQuarryViolationReferrals(e);
-          }
+        $(".resetBtn").on("click", (e) => {
+          quarryViolationReferral.resetFilter(e);
         });
+        // // Setup form submission on Enter
+        // $(".filterBox input").on("keypress", function (e) {
+        //   if (e.which === 13) {
+        //     quarryViolationReferral.filterQuarryViolationReferrals(e);
+        //   }
+        // });
       }
       if (functions.getPageName() === "VehicleViolationReferralLog") {
         functions.setPageMetaData("حظر عربة/معدة");
@@ -486,16 +527,10 @@ $(window).on("load", () => {
         functions.inputDateFormat("#RefferedDateTo", "", "", "dd-mm-yyyy");
 
         // Load status dropdown first
-        sharedApis.getCasesStatus("#CaseStatus", function () {
-          // After loading options, initialize the page
-          console.log("Case status loaded, initializing quarry violation referral...");
+        sharedApis.getCasesStatus("#CaseStatus");
+        sharedApis.getViolationStatus("#ViolationStatus");
 
-          // Set default value to "قيد انتظار تأشيرات النيابة"
-          $("#CaseStatus").val("قيد انتظار تأشيرات النيابة");
-
-          // Load initial data
-          vehicleViolationReferral.init();
-        });
+        vehicleViolationReferral.getVehicleViolationReferrals();
 
         // Setup search button
         $(".searchBtn").on("click", (e) => {
@@ -504,11 +539,8 @@ $(window).on("load", () => {
           vehicleViolationReferral.filterVehicleViolationReferrals(e);
         });
 
-        // Setup form submission on Enter
-        $(".filterBox input").on("keypress", function (e) {
-          if (e.which === 13) {
-            vehicleViolationReferral.filterVehicleViolationReferrals(e);
-          }
+        $(".resetBtn").on("click", (e) => {
+          vehicleViolationReferral.resetFilter(e);
         });
       }
       if (functions.getPageName() === "DashBoard") {
@@ -549,6 +581,9 @@ $(window).on("load", () => {
           pagination.reset();
           runningSectorTask.filterTasksLog(e);
         });
+        $(".resetBtn").on("click", (e) => {
+          runningSectorTask.resetFilter(e);
+        });
       }
       if (functions.getPageName() === "ConfirmedViolation") {
         functions.setPageMetaData(" سجل المخالفات المصدق عليها");
@@ -581,23 +616,110 @@ $(window).on("load", () => {
           certificationCases.filterViolationsLog(e);
         });
       }
+      if (functions.getPageName() === "PendingPetitionsLog") {
+        $(".PreLoader").find("span").addClass("greenLoader");
+        $(".PreLoader").addClass("active");
+        functions.setPageMetaData("سجل الإلتماسات قيد الإنتظار");
+
+        sharedApis.getOffenderType("#violationCategory");
+        sharedApis.getPetitionsStatus("#petitionStatus");
+        functions.inputDateFormat("#createdFrom", "", "", "dd-mm-yyyy");
+        functions.inputDateFormat("#createdTo", "", "", "dd-mm-yyyy");
+
+        // Initial load with pending status
+        petitionsLog.getPetitions("التماس قيد الإنتظار", 1, false);
+
+        $(".searchBtn").on("click", (e) => {
+          e.preventDefault();
+          petitionsLog.filterPetitionsLog(e, "التماس قيد الإنتظار");
+        });
+
+        $(".resetBtn").on("click", (e) => {
+          petitionsLog.resetFilter(e, "التماس قيد الإنتظار");
+        });
+      }
       if (functions.getPageName() === "PetitionsLog") {
         $(".PreLoader").find("span").addClass("greenLoader");
         $(".PreLoader").addClass("active");
         functions.setPageMetaData("سجل الالتماسات");
-        // sharedApis.getViolationSectors("#violationSector")
-        // sharedApis.getViolationType("#TypeofViolation");
+
         sharedApis.getOffenderType("#violationCategory");
         sharedApis.getPetitionsStatus("#petitionStatus");
-        // Initialize datepickers for date inputs
         functions.inputDateFormat("#createdFrom", "", "", "dd-mm-yyyy");
         functions.inputDateFormat("#createdTo", "", "", "dd-mm-yyyy");
-        petitionsLog.getPetitions();
+
+        // Initial load with all petitions
+        petitionsLog.getPetitions("All", 1, false);
+
         $(".searchBtn").on("click", (e) => {
           e.preventDefault();
-          petitionsLog.filterPetitionsLog(e);
+          petitionsLog.filterPetitionsLog(e, "All");
+        });
+
+        $(".resetBtn").on("click", (e) => {
+          petitionsLog.resetFilter(e, "All");
         });
       }
+      if (functions.getPageName() === "QuarryViolationReferralSector") {
+        functions.setPageMetaData("إحالة مخالفة محجرية");
+
+        sharedApis.getCasesStatus("#CaseStatus");
+        sharedApis.getViolationStatus("#ViolationStatus");
+
+        // Initialize datepickers for date inputs
+        functions.inputDateFormat("#RefferedDateFrom", "", "", "dd-mm-yyyy");
+        functions.inputDateFormat("#RefferedDateTo", "", "", "dd-mm-yyyy");
+
+        // First load
+        quarryViolationReferralSector.getQuarryViolationReferralsRecords();
+
+        // Search
+        $(".searchBtn").on("click", (e) => {
+          e.preventDefault();
+          pagination.reset();
+          quarryViolationReferralSector.filterQuarryViolationReferralsRecords(e);
+        });
+
+        // Reset
+        $(".resetBtn").on("click", (e) => {
+          quarryViolationReferralSector.resetFilter(e);
+        });
+      }
+      if (functions.getPageName() === "VehicleViolationReferralSector") {
+        functions.setPageMetaData("حظر عربة/معدة");
+
+        // Initialize datepickers
+        functions.inputDateFormat("#RefferedDateFrom", "", "", "dd-mm-yyyy");
+        functions.inputDateFormat("#RefferedDateTo", "", "", "dd-mm-yyyy");
+
+        sharedApis.getCasesStatus("#CaseStatus");
+        sharedApis.getViolationStatus("#ViolationStatus");
+
+        // Call the API to get data
+        vehicleViolationReferralSector.getVehicleViolationReferralsRecords();
+
+        // Setup search button
+        $(".searchBtn").on("click", (e) => {
+          e.preventDefault();
+          pagination.reset();
+          vehicleViolationReferralSector.filterVehicleViolationReferralsRecords(e);
+        });
+
+        $(".resetBtn").on("click", (e) => {
+          vehicleViolationReferralSector.resetFilter(e);
+        });
+      }
+
+
     }
   }
 });
+
+
+
+
+
+
+
+
+

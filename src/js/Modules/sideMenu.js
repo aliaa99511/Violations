@@ -1,125 +1,309 @@
 ﻿const sideMenuFunctions = {};
 
+// ==========================
+// Counter Mapping
+// ==========================
+const counterMapping = {
+
+  // ==========================
+  // Violations Branch
+  // ==========================
+  "/ViolationsBranch/Pages/PendingViolations.aspx": { type: "Violations", key: "Pending" },
+  "/ViolationsBranch/Pages/RunningViolations.aspx": { type: "Violations", key: "Approved" },
+  "/ViolationsBranch/Pages/RejectedViolations.aspx": { type: "Violations", key: "Rejected" },
+
+  "/ViolationsBranch/Pages/ValidatedViolations.aspx": {
+    type: "Violations",
+    keys: ["Confirmed", "Paid", "Exceeded", "Paid After Reffered", "Saved", "Cancelled"],
+    operation: "sum"
+  },
+
+  "/ViolationsBranch/Pages/pendingPaymentLog.aspx": { type: "Violations", key: "UnderPayment" },
+  "/ViolationsBranch/Pages/completedViolations.aspx": { type: "Violations", key: "Completed" },
+
+  // ✅ Cases Updated
+  "/ViolationsBranch/Pages/CasesLog.aspx": {
+    type: "Cases",
+    keys: ["Quarry", "Vehicle", "Equipment"],
+    operation: "sum"
+  },
+  "/ViolationsBranch/Pages/quarryViolationReferral.aspx": { type: "Cases", key: "Quarry" },
+  "/ViolationsBranch/Pages/CarViolationReferral.aspx": { type: "Cases", key: "Vehicle" },
+
+  "/ViolationsBranch/Pages/PendingPetitionsLog.aspx": { type: "Petitions", key: "التماس قيد الإنتظار" },
+  "/ViolationsBranch/Pages/PetitionsLog.aspx": {
+    type: "Petitions",
+    keys: ["التماس مرفوض", "قبول مع التعديل", "قبول وإلغاء المخالفة"],
+    operation: "sum"
+  },
+
+  // ==========================
+  // Certification Officer
+  // ==========================
+  "/CertificationOfficer/Pages/RunningViolations.aspx": { type: "Violations", key: "Approved" },
+
+  "/CertificationOfficer/Pages/ConfirmedLog.aspx": {
+    type: "Violations",
+    keys: ["Confirmed", "Paid", "Exceeded", "Paid After Reffered", "Saved", "Cancelled"],
+    operation: "sum"
+  },
+
+  "/CertificationOfficer/Pages/CasesLog.aspx": {
+    type: "Cases",
+    keys: ["Quarry", "Vehicle", "Equipment"],
+    operation: "sum"
+  },
+  "/CertificationOfficer/Pages/QuarryViolationReferralSector.aspx": { type: "Cases", key: "Quarry" },
+  "/CertificationOfficer/Pages/Block-Car-Equipment.aspx": { type: "Cases", key: "Vehicle" },
+
+  "/CertificationOfficer/Pages/Pending-Petitions.aspx": { type: "Petitions", key: "التماس قيد الإنتظار" },
+  "/CertificationOfficer/Pages/PetitionsLog.aspx": {
+    type: "Petitions",
+    keys: ["التماس مرفوض", "قبول مع التعديل", "قبول وإلغاء المخالفة"],
+    operation: "sum"
+  },
+
+  // ==========================
+  // Violations Recorder
+  // ==========================
+  "/ViolationsRecorder/Pages/Registered-Violations.aspx": { type: "Violations", key: "Pending" },
+  "/ViolationsRecorder/Pages/ApprovedViolationsRecords.aspx": { type: "Violations", key: "Approved" },
+
+  "/ViolationsRecorder/Pages/ValidatedViolationsRecords.aspx": {
+    type: "Violations",
+    keys: ["Confirmed", "Paid", "Exceeded", "Paid After Reffered", "Saved", "Cancelled"],
+    operation: "sum"
+  },
+
+  "/ViolationsRecorder/Pages/QuarryViolationReferralRecords.aspx": { type: "Cases", key: "Quarry" },
+  "/ViolationsRecorder/Pages/CarViolationReferralRecords.aspx": { type: "Cases", key: "Vehicle" },
+
+  "/ViolationsRecorder/Pages/RejectedViolationsRecords.aspx": { type: "Violations", key: "Rejected" },
+  "/ViolationsRecorder/Pages/Pending-Payment.aspx": { type: "Violations", key: "UnderPayment" }
+};
+
+
+// ==========================
+// URL Normalizer
+// ==========================
+sideMenuFunctions.normalizeUrl = function (url) {
+  if (!url) return "";
+  return url.toLowerCase().split("?")[0].replace(/\/$/, "");
+};
+
+
+// ==========================
+// Build Normalized Mapping
+// ==========================
+sideMenuFunctions.normalizedCounterMapping = {};
+
+Object.keys(counterMapping).forEach(key => {
+  const normalized = sideMenuFunctions.normalizeUrl(key);
+  sideMenuFunctions.normalizedCounterMapping[normalized] = counterMapping[key];
+});
+
+
+// ==========================
+// Fetch Navigation + Counters
+// ==========================
 sideMenuFunctions.getOnlyVisibleNavSubsites = async function () {
   try {
-    // Get the root URL by splitting at '/Pages/' as requested
+
     const rootUrl = window.location.href.split("/Pages/")[0];
 
-    const navResponse = await $.ajax({
-      url:
-        rootUrl +
-        "/_api/web/navigation/QuickLaunch?$select=Title,Url,Children&$expand=Children",
-      method: "GET",
-      caches: true,
-      headers: { Accept: "application/json;odata=verbose" },
-    });
+    const [navResponse, countersResponse] = await Promise.all([
 
-    // Filter to return only pages with Arabic titles
-    const arabicPages = navResponse.d.results.filter((link) =>
+      $.ajax({
+        url: rootUrl + "/_api/web/navigation/QuickLaunch?$select=Title,Url,Children&$expand=Children",
+        method: "GET",
+        headers: { Accept: "application/json;odata=verbose" }
+      }),
+
+      $.ajax({
+        url: "/_layouts/15/Uranium.Violations.SharePoint/Dashboard.aspx/GetCounters",
+        type: "POST",
+        contentType: "application/json; charset=utf-8",
+        dataType: "json",
+        data: JSON.stringify({})
+      })
+
+    ]);
+
+    this.counters = countersResponse?.d?.Result?.Counters || {};
+
+    const arabicPages = navResponse.d.results.filter(link =>
       /[\u0600-\u06FF]/.test(link.Title)
     );
 
+    this.attachCountersToNavigation(arabicPages);
+
     return arabicPages;
+
   } catch (error) {
-    console.error("Error fetching visible navigation subsites:", error);
+    console.error("Navigation error:", error);
     return [];
   }
 };
 
-sideMenuFunctions.renderNavigationMenu = function (navigationData) {
-  const currentPage = window.location.pathname;
-  const menuContainer = $(".SideMenu .menuLinksBox");
 
-  if (!menuContainer.length) {
-    console.error("Menu container not found");
-    return;
+// ==========================
+// Attach Counters To Navigation
+// ==========================
+sideMenuFunctions.attachCountersToNavigation = function (items) {
+
+  if (!Array.isArray(items)) return;
+
+  items.forEach(item => {
+
+    this.attachCounterToItem(item);
+
+    if (item.Children?.results?.length) {
+      item.Children.results.forEach(child => {
+        this.attachCounterToItem(child);
+      });
+    }
+
+  });
+};
+
+
+// ==========================
+// Attach Counter To Single Item
+// ==========================
+sideMenuFunctions.attachCounterToItem = function (item) {
+
+  if (!this.counters) return;
+
+  const normalizedUrl = this.normalizeUrl(item.Url);
+  const mapping = this.normalizedCounterMapping[normalizedUrl];
+
+  if (!mapping) return;
+
+  let total = 0;
+  const details = [];
+
+  const counterType = this.counters[mapping.type];
+  if (!counterType) return;
+
+  if (mapping.keys) {
+
+    mapping.keys.forEach(key => {
+      const value = counterType[key];
+      if (value !== undefined && value !== null && value > 0) {
+        total += value;
+        details.push({ status: key, count: value });
+      }
+    });
+
+  } else if (mapping.key) {
+
+    const value = counterType[mapping.key];
+    if (value !== undefined && value !== null && value > 0) {
+      total = value;
+      details.push({ status: mapping.key, count: value });
+    }
   }
 
-  // Build the menu HTML
-  let menuHTML = '<ul class="navigationMenu">';
+  if (total > 0) {
+    item.Count = total;
+    item.CountDetails = details;
+  } else {
+    delete item.Count;
+    delete item.CountDetails;
+  }
+};
 
-  navigationData.forEach((item) => {
-    const hasChildren =
-      item.Children &&
-      item.Children.results &&
-      item.Children.results.length > 0;
-    const isActive = currentPage === item.Url;
 
-    // Check if any child is active
+// ==========================
+// Render Menu
+// ==========================
+sideMenuFunctions.renderNavigationMenu = function (data) {
+
+  const currentPage = this.normalizeUrl(window.location.pathname);
+  const menuContainer = $(".SideMenu .menuLinksBox");
+
+  let html = '<ul class="navigationMenu">';
+
+  data.forEach(item => {
+
+    const hasChildren = item.Children?.results?.length > 0;
+    const normalizedItemUrl = this.normalizeUrl(item.Url);
+
+    const isActive = currentPage === normalizedItemUrl;
     let hasActiveChild = false;
+
     if (hasChildren) {
-      hasActiveChild = item.Children.results.some(
-        (child) => currentPage === child.Url
+      hasActiveChild = item.Children.results.some(child =>
+        currentPage === this.normalizeUrl(child.Url)
       );
     }
 
-    const itemClass = hasChildren ? "menu-item has-children" : "menu-item";
     const activeClass = isActive || hasActiveChild ? "active" : "";
+    const itemClass = hasChildren ? "menu-item has-children" : "menu-item";
 
     if (hasChildren) {
-      // Parent item with children (collapsible)
-      menuHTML += `
-        <li class="${itemClass} ${activeClass}">
-          <div class="menu-header">
-            <span class="menu-title">${item.Title}</span>
-            <i class="fa-solid fa-angle-left"></i>
-          </div>
-          <ul class="submenu">`;
 
-      // Add children
-      item.Children.results.forEach((child) => {
-        const childActive = currentPage === child.Url ? "active-child" : "";
-        const childCount = child.Count || "";
-        menuHTML += `
-          <li class="submenu-item ${childActive}">
-            <a href="${child.Url}">
-              ${child.Title}
-              ${childCount ? `<span class="count">${childCount}</span>` : ""}
-            </a>
-          </li>`;
-      });
+      html += `<li class="${itemClass} ${activeClass}">
+        <div class="menu-header">
+          <span>${item.Title}</span>
+          <i class="fa-solid fa-angle-left toggle-icon"></i>
+        </div>
+        <ul class="submenu">`;
 
-      menuHTML += `
-          </ul>
-        </li>`;
-    } else {
-      // Single item without children
-      menuHTML += `
-        <li class="${itemClass} ${activeClass}">
-          <a href="${item.Url}" class="menu-link">
-            ${item.Title}
+      item.Children.results.forEach(child => {
+
+        const childActive = currentPage === this.normalizeUrl(child.Url)
+          ? "active-child"
+          : "";
+
+        const count = child.Count || "";
+
+        html += `<li class="submenu-item ${childActive}">
+          <a href="${child.Url}">
+            <span>${child.Title}</span>
+            ${count ? `<span class="count-badge">${count}</span>` : ""}
           </a>
         </li>`;
-    }
-  });
+      });
 
-  menuHTML += "</ul>";
+      html += "</ul></li>";
 
-  // Insert the menu into the container
-  menuContainer.html(menuHTML);
-
-  // Add collapse/expand functionality
-  $(".menu-header").on("click", function () {
-    const $parent = $(this).parent();
-    const $submenu = $parent.find(".submenu");
-    const $icon = $(this).find(".toggle-icon");
-
-    // Toggle the submenu
-    $submenu.slideToggle(300);
-    $parent.toggleClass("expanded");
-
-    // Rotate the icon
-    if ($parent.hasClass("expanded")) {
-      $icon.css("transform", "rotate(180deg)");
     } else {
-      $icon.css("transform", "rotate(0deg)");
+
+      const count = item.Count || "";
+
+      html += `<li class="${itemClass} ${activeClass}">
+        <a href="${item.Url}" class="menu-link">
+          <span>${item.Title}</span>
+          ${count ? `<span class="count-badge">${count}</span>` : ""}
+        </a>
+      </li>`;
     }
+
   });
 
-  // Auto-expand active items
-  $(".menu-item.active.has-children").addClass("expanded");
-  $(".menu-item.expanded .submenu").show();
-  $(".menu-item.expanded .toggle-icon").css("transform", "rotate(180deg)");
+  html += "</ul>";
+
+  menuContainer.html(html);
+
+  $(".menu-header").on("click", function () {
+    $(this).parent().toggleClass("expanded");
+    $(this).next(".submenu").slideToggle(300);
+  });
+
+  $(".menu-item.active.has-children")
+    .addClass("expanded")
+    .children(".submenu")
+    .show();
+};
+
+
+// ==========================
+// Init
+// ==========================
+sideMenuFunctions.init = function () {
+  this.getOnlyVisibleNavSubsites()
+    .then(nav => this.renderNavigationMenu(nav));
 };
 
 export default sideMenuFunctions;

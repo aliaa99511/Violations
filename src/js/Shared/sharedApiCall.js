@@ -2,38 +2,176 @@ import functions from "./functions";
 
 let sharedApis = {};
 
+// sharedApis.getGovernrates = (Selector) => {
+//   functions.callSharePointListApi("Governrates").then((Govs) => {
+//     console.log('Govs', Govs);
+//     let GovsData = Govs.value;
+
+//     // Clear the select first
+//     $(Selector).empty();
+//     $(Selector).append(`<option value="" disabled selected hidden>المحافظة</option>`);
+
+//     // Append all govern rates
+//     GovsData.forEach((Gov) => {
+//       $(Selector).append(`
+//         <option value="${Gov.Code}" data-id="${Gov.ID}">${Gov.Title}</option>
+//       `);
+//     });
+//   });
+// };
+
+
+// test
 sharedApis.getGovernrates = (Selector) => {
   let UserId = _spPageContextInfo.userId;
-  functions.callSharePointListApi("Configurations").then((Users) => {
-    let UsersData = Users.value;
-    UsersData.forEach((User) => {
-      if (User.UserIdId.find((id) => id == UserId)) {
-        let UserConfigId = User.ID;
-        functions.callSharePointListApi("Governrates").then((Govs) => {
-          let GovsData = Govs.value;
+  functions.callSharePointListApi("Configurations")
+    .then((Users) => {
+      let UsersData = Users.value;
 
-          GovsData.forEach((Gov) => {
-            $(Selector).append(`
-                            <option value="${Gov.Code}" data-id="${Gov.ID}">${Gov.Title}</option>
-                        `);
-            // if (User.JobTitle1 == "الشركة المصرية للتعدين") {
-            //     $(Selector).append(`
-            //         <option value="${Gov.Code}" data-id="${Gov.ID}">${Gov.Title}</option>
-            //     `)
-            //     return;
-            // }
-            // if (Gov.SectorConfigIdId == UserConfigId) {
-            //     $(Selector).append(`
-            //         <option value="${Gov.Code}" data-id="${Gov.ID}">${Gov.Title}</option>
-            //     `)
-            // }
+      // Check if user exists in Configurations
+      let userFound = false;
+
+      UsersData.forEach((User) => {
+        if (User.UserIdId && User.UserIdId.find((id) => id == UserId)) {
+          userFound = true;
+          functions.callSharePointListApi("Governrates")
+            .then((Govs) => {
+              let GovsData = Govs.value;
+
+              if (GovsData.length === 0) {
+                return;
+              }
+
+              GovsData.forEach((Gov) => {
+                $(Selector).append(`
+                  <option value="${Gov.Code}" data-id="${Gov.ID}">${Gov.Title}</option>
+                `);
+              });
+            })
+            .catch((error) => {
+              console.error("Error fetching Governrates:", error);
+            });
+        }
+      });
+
+      if (!userFound) {
+        // Optional: Load all governrates if user not found
+        functions.callSharePointListApi("Governrates")
+          .then((Govs) => {
+            let GovsData = Govs.value;
+            GovsData.forEach((Gov) => {
+              $(Selector).append(`
+                <option value="${Gov.Code}" data-id="${Gov.ID}">${Gov.Title}</option>
+              `);
+            });
           });
-        });
       }
+    })
+    .catch((error) => {
+      console.error("Error fetching Configurations:", error);
     });
-  });
 };
 
+// that found in release
+// sharedApis.getGovernrates = (Selector) => {
+//   let UserId = _spPageContextInfo.userId;
+//   functions.callSharePointListApi("Configurations").then((Users) => {
+//     let UsersData = Users.value;
+//     UsersData.forEach((User) => {
+//       console.log("User.UserIdId", User.UserIdId);
+
+//       if (User.UserIdId.find((id) => id == UserId)) {
+//         let UserConfigId = User.ID;
+//         functions.callSharePointListApi("Governrates").then((Govs) => {
+//           console.log('Govs', Govs)
+//           let GovsData = Govs.value;
+
+//           GovsData.forEach((Gov) => {
+//             $(Selector).append(`
+//                             <option value="${Gov.Code}" data-id="${Gov.ID}">${Gov.Title}</option>
+//                         `);
+//             // if (User.JobTitle1 == "الشركة المصرية للتعدين") {
+//             //     $(Selector).append(`
+//             //         <option value="${Gov.Code}" data-id="${Gov.ID}">${Gov.Title}</option>
+//             //     `)
+//             //     return;
+//             // }
+//             // if (Gov.SectorConfigIdId == UserConfigId) {
+//             //     $(Selector).append(`
+//             //         <option value="${Gov.Code}" data-id="${Gov.ID}">${Gov.Title}</option>
+//             //     `)
+//             // }
+//           });
+//         });
+//       }
+//     });
+//   });
+// };
+
+
+// works in 3030
+// sharedApis.getGovernrates = (Selector) => {
+//   let UserId = _spPageContextInfo.userId;
+
+//   functions.callSharePointListApi("Configurations").then((Users) => {
+//     let UsersData = Users.value;
+//     let UserConfigId = null;
+
+//     // Find the current user's configuration
+//     UsersData.forEach((User) => {
+//       // Check if User.UserIdId exists and is an array
+//       if (User.UserIdId && Array.isArray(User.UserIdId)) {
+//         if (User.UserIdId.find((id) => Number(id) === UserId)) {
+//           UserConfigId = User.ID;
+//         }
+//       }
+//     });
+
+//     // Now get all govern rates
+//     functions.callSharePointListApi("Governrates").then((Govs) => {
+//       let GovsData = Govs.value;
+
+//       // Clear the select first (optional)
+//       $(Selector).empty();
+//       $(Selector).append(`<option value="" disabled selected hidden>المحافظة</option>`);
+
+//       // If we found a user configuration, filter govern rates
+//       if (UserConfigId) {
+//         GovsData.forEach((Gov) => {
+//           // Check if this govern rate belongs to the user's sector
+//           if (Gov.SectorConfigIdId == UserConfigId) {
+//             $(Selector).append(`
+//               <option value="${Gov.Code}" data-id="${Gov.ID}">${Gov.Title}</option>
+//             `);
+//           }
+//         });
+//       } else {
+//         // If no user config found, show all govern rates
+//         GovsData.forEach((Gov) => {
+//           $(Selector).append(`
+//             <option value="${Gov.Code}" data-id="${Gov.ID}">${Gov.Title}</option>
+//           `);
+//         });
+//       }
+
+//       // Special case for specific company
+//       // Uncomment if needed
+//       /*
+//       if (userJobTitle === "الشركة المصرية للتعدين") {
+//         // Show all govern rates for this company
+//         $(Selector).empty();
+//         $(Selector).append(`<option value="" disabled selected hidden>المحافظة</option>`);
+//         GovsData.forEach((Gov) => {
+//           $(Selector).append(`
+//             <option value="${Gov.Code}" data-id="${Gov.ID}">${Gov.Title}</option>
+//           `);
+//         });
+//       }
+//       */
+//     });
+//   });
+// };
+//////////
 // sharedApis.getViolationZones = (Selector) => {
 //     functions.callSharePointListApi("ViolationZones").then(Zones=>{
 //         let unsortedZonesData = Zones.value
@@ -531,28 +669,57 @@ sharedApis.getViolationStatus = (Selector) => {
       let arabicStatusName;
       ViolationsStatus.forEach((violationStatus) => {
         switch (violationStatus) {
+          case "Pending":
           case "Confirmed": {
             arabicStatusName = "قيد الإنتظار";
-            break;
-          }
-          case "Paid": {
-            arabicStatusName = "تم السداد";
             break;
           }
           case "Exceeded": {
             arabicStatusName = "تجاوز مدة السداد";
             break;
           }
+          case "Saved": {
+            arabicStatusName = "محفوظة";
+            break;
+          }
           case "Paid After Reffered": {
             arabicStatusName = "سداد بعد الإحالة";
             break;
           }
-          case "Saved": {
-            arabicStatusName = "حفظ بعد الإحالة";
+          case "Paid": {
+            arabicStatusName = "تم السداد";
+            break;
+          }
+          case "UnderPayment": {
+            arabicStatusName = "قيد السداد";
+            break;
+          }
+          case "Approved": {
+            arabicStatusName = "تم الموافقة";
+            break;
+          }
+          case "Rejected": {
+            arabicStatusName = "مرفوضة";
+            break;
+          }
+          case "Reffered": {
+            arabicStatusName = "تم الإحالة";
+            break;
+          }
+          case "UnderReview": {
+            arabicStatusName = "منظورة";
+            break;
+          }
+          case "ExternalReviewed": {
+            arabicStatusName = "خارجية";
             break;
           }
           case "Completed": {
-            arabicStatusName = "تم الانتهاء";
+            arabicStatusName = "مكتملة";
+            break;
+          }
+          case "Cancelled": {
+            arabicStatusName = "ملغاة";
             break;
           }
         }

@@ -16,6 +16,7 @@ const uglify = require("gulp-uglify");
 
 // Utils
 const plumber = require("gulp-plumber");
+const fs = require("fs");
 
 /* ===================== PATHS ===================== */
 
@@ -36,6 +37,7 @@ const paths = {
   },
 
   sharepoint: {
+    root: "V:/Style Library/MiningViolations",
     css: "V:/Style Library/MiningViolations/CSS",
     js: "V:/Style Library/MiningViolations/JS",
     images: "V:/Style Library/MiningViolations/images",
@@ -45,28 +47,61 @@ const paths = {
   },
 };
 
-/* ===================== DEV TASKS (FAST + SharePoint) ===================== */
+/* ===================== SHAREPOINT CHECK ===================== */
+
+function isSharePointAvailable() {
+  try {
+    return fs.existsSync(paths.sharepoint.root);
+  } catch (err) {
+    return false;
+  }
+}
+
+function writeConnectionStatus() {
+  const status = isSharePointAvailable()
+    ? "window.SP_CONNECTION = true;"
+    : "window.SP_CONNECTION = false;";
+
+  if (!fs.existsSync("./dist/js")) {
+    fs.mkdirSync("./dist/js", { recursive: true });
+  }
+
+  fs.writeFileSync("./dist/js/connection-status.js", status);
+}
+
+function safeSharePoint(stream, sharepointPath) {
+  if (isSharePointAvailable()) {
+    return stream.pipe(dest(sharepointPath));
+  } else {
+    console.log("⚠ SharePoint V: drive is not connected!");
+    return stream;
+  }
+}
+
+/* ===================== DEV TASKS ===================== */
 
 function htmlDev() {
-  return src(paths.html)
+  const stream = src(paths.html)
     .pipe(plumber())
-    .pipe(dest(paths.dist.html))
-    .pipe(dest(paths.sharepoint.html));
+    .pipe(dest(paths.dist.html));
+
+  return safeSharePoint(stream, paths.sharepoint.html);
 }
 
 function cssDev() {
-  return src("./src/scss/*.scss")
+  const stream = src("./src/scss/*.scss")
     .pipe(plumber())
     .pipe(sourcemaps.init())
     .pipe(sass())
     .pipe(concatCss("style.css"))
     .pipe(sourcemaps.write("./"))
-    .pipe(dest(paths.dist.css))
-    .pipe(dest(paths.sharepoint.css));
+    .pipe(dest(paths.dist.css));
+
+  return safeSharePoint(stream, paths.sharepoint.css);
 }
 
 function jsDev() {
-  return src(paths.js)
+  const stream = src(paths.js)
     .pipe(plumber())
     .pipe(
       browserify({
@@ -80,111 +115,249 @@ function jsDev() {
       })
     )
     .pipe(rename("bundle.js"))
-    .pipe(dest(paths.dist.js))
-    .pipe(dest(paths.sharepoint.js));
+    .pipe(dest(paths.dist.js));
+
+  return safeSharePoint(stream, paths.sharepoint.js);
 }
 
 function imagesDev() {
-  return src(paths.images)
+  const stream = src(paths.images)
     .pipe(plumber())
-    .pipe(dest(paths.dist.images))
-    .pipe(dest(paths.sharepoint.images));
+    .pipe(dest(paths.dist.images));
+
+  return safeSharePoint(stream, paths.sharepoint.images);
 }
 
 function fontsDev() {
-  return src(paths.fonts)
+  const stream = src(paths.fonts)
     .pipe(plumber())
-    .pipe(dest(paths.dist.fonts))
-    .pipe(dest(paths.sharepoint.fonts));
+    .pipe(dest(paths.dist.fonts));
+
+  return safeSharePoint(stream, paths.sharepoint.fonts);
 }
 
 function fontAwesomeDev() {
-  return src("./node_modules/@fortawesome/fontawesome-free/webfonts/*")
+  const stream = src("./node_modules/@fortawesome/fontawesome-free/webfonts/*")
     .pipe(plumber())
-    .pipe(dest(paths.dist.webfonts))
-    .pipe(dest(paths.sharepoint.webfonts));
+    .pipe(dest(paths.dist.webfonts));
+
+  return safeSharePoint(stream, paths.sharepoint.webfonts);
 }
 
-/* ===================== WATCH (DEV) ===================== */
+/* ===================== WATCH ===================== */
 
 function watcher() {
+  writeConnectionStatus();
+
   watch(paths.html, htmlDev);
   watch(paths.scss, cssDev);
   watch("./src/js/**/*.js", jsDev);
   watch(paths.images, imagesDev);
   watch(paths.fonts, fontsDev);
 
-  // copy once
   fontAwesomeDev();
 }
 
-/* ===================== BUILD TASKS (DIST ONLY) ===================== */
+/* ===================== BUILD ===================== */
 
-function cssBuild() {
-  return src("./src/scss/*.scss")
-    .pipe(plumber())
-    .pipe(sass())
-    .pipe(concatCss("style.css"))
-    .pipe(cleanCss())
-    .pipe(dest(paths.dist.css));
+function build(cb) {
+  writeConnectionStatus();
+  cb();
 }
-
-function jsBuild() {
-  return src(paths.js)
-    .pipe(plumber())
-    .pipe(
-      browserify({
-        debug: true,
-        transform: [
-          babelify.configure({
-            presets: ["@babel/preset-env"],
-            ignore: [/node_modules/],
-          }),
-        ],
-      })
-    )
-    .pipe(rename("bundle.js"))
-    .pipe(uglify())
-    .pipe(dest(paths.dist.js));
-}
-
-function htmlBuild() {
-  return src(paths.html)
-    .pipe(plumber())
-    .pipe(dest(paths.dist.html));
-}
-
-function imagesBuild() {
-  return src(paths.images)
-    .pipe(plumber())
-    .pipe(dest(paths.dist.images));
-}
-
-function fontsBuild() {
-  return src(paths.fonts)
-    .pipe(plumber())
-    .pipe(dest(paths.dist.fonts));
-}
-
-function fontAwesomeBuild() {
-  return src("./node_modules/@fortawesome/fontawesome-free/webfonts/*")
-    .pipe(plumber())
-    .pipe(dest(paths.dist.webfonts));
-}
-
-/* ===================== EXPORTS ===================== */
 
 exports.default = watcher;
+exports.build = build;
 
-exports.build = function build(cb) {
-  htmlBuild();
-  cssBuild();
-  jsBuild();
-  imagesBuild();
-  fontsBuild();
-  fontAwesomeBuild();
-  cb();
-};
+
+
+
+// // dev with dist in sharepoint
+
+// const { src, dest, watch } = require("gulp");
+
+// // CSS
+// const sass = require("gulp-sass")(require("sass"));
+// const concatCss = require("gulp-concat-css");
+// const cleanCss = require("gulp-clean-css");
+// const sourcemaps = require("gulp-sourcemaps");
+
+// // JS
+// const browserify = require("gulp-browserify");
+// const babelify = require("babelify");
+// const rename = require("gulp-rename");
+// const uglify = require("gulp-uglify");
+
+// // Utils
+// const plumber = require("gulp-plumber");
+
+// /* ===================== PATHS ===================== */
+
+// const paths = {
+//   html: "./src/html/**/*.html",
+//   scss: "./src/scss/**/*.scss",
+//   js: "./src/js/app.js",
+//   images: "./src/images/**/*",
+//   fonts: "./src/fonts/**/*",
+
+//   dist: {
+//     html: "./dist/html",
+//     css: "./dist/css",
+//     js: "./dist/js",
+//     images: "./dist/images",
+//     fonts: "./dist/fonts",
+//     webfonts: "./dist/webfonts",
+//   },
+
+//   sharepoint: {
+//     css: "V:/Style Library/MiningViolations/CSS",
+//     js: "V:/Style Library/MiningViolations/JS",
+//     images: "V:/Style Library/MiningViolations/images",
+//     fonts: "V:/Style Library/MiningViolations/fonts",
+//     webfonts: "V:/Style Library/MiningViolations/webfonts",
+//     html: "V:/Style Library/MiningViolations/Solutions",
+//   },
+// };
+
+// /* ===================== DEV TASKS (FAST + SharePoint) ===================== */
+
+// function htmlDev() {
+//   return src(paths.html)
+//     .pipe(plumber())
+//     .pipe(dest(paths.dist.html))
+//     .pipe(dest(paths.sharepoint.html));
+// }
+
+// function cssDev() {
+//   return src("./src/scss/*.scss")
+//     .pipe(plumber())
+//     .pipe(sourcemaps.init())
+//     .pipe(sass())
+//     .pipe(concatCss("style.css"))
+//     .pipe(sourcemaps.write("./"))
+//     .pipe(dest(paths.dist.css))
+//     .pipe(dest(paths.sharepoint.css));
+// }
+
+// function jsDev() {
+//   return src(paths.js)
+//     .pipe(plumber())
+//     .pipe(
+//       browserify({
+//         debug: true,
+//         transform: [
+//           babelify.configure({
+//             presets: ["@babel/preset-env"],
+//             ignore: [/node_modules/],
+//           }),
+//         ],
+//       })
+//     )
+//     .pipe(rename("bundle.js"))
+//     .pipe(dest(paths.dist.js))
+//     .pipe(dest(paths.sharepoint.js));
+// }
+
+// function imagesDev() {
+//   return src(paths.images)
+//     .pipe(plumber())
+//     .pipe(dest(paths.dist.images))
+//     .pipe(dest(paths.sharepoint.images));
+// }
+
+// function fontsDev() {
+//   return src(paths.fonts)
+//     .pipe(plumber())
+//     .pipe(dest(paths.dist.fonts))
+//     .pipe(dest(paths.sharepoint.fonts));
+// }
+
+// function fontAwesomeDev() {
+//   return src("./node_modules/@fortawesome/fontawesome-free/webfonts/*")
+//     .pipe(plumber())
+//     .pipe(dest(paths.dist.webfonts))
+//     .pipe(dest(paths.sharepoint.webfonts));
+// }
+
+// /* ===================== WATCH (DEV) ===================== */
+
+// function watcher() {
+//   watch(paths.html, htmlDev);
+//   watch(paths.scss, cssDev);
+//   watch("./src/js/**/*.js", jsDev);
+//   watch(paths.images, imagesDev);
+//   watch(paths.fonts, fontsDev);
+
+//   // copy once
+//   fontAwesomeDev();
+// }
+
+// /* ===================== BUILD TASKS (DIST ONLY) ===================== */
+
+// function cssBuild() {
+//   return src("./src/scss/*.scss")
+//     .pipe(plumber())
+//     .pipe(sass())
+//     .pipe(concatCss("style.css"))
+//     .pipe(cleanCss())
+//     .pipe(dest(paths.dist.css));
+// }
+
+// function jsBuild() {
+//   return src(paths.js)
+//     .pipe(plumber())
+//     .pipe(
+//       browserify({
+//         debug: true,
+//         transform: [
+//           babelify.configure({
+//             presets: ["@babel/preset-env"],
+//             ignore: [/node_modules/],
+//           }),
+//         ],
+//       })
+//     )
+//     .pipe(rename("bundle.js"))
+//     .pipe(uglify())
+//     .pipe(dest(paths.dist.js));
+// }
+
+// function htmlBuild() {
+//   return src(paths.html)
+//     .pipe(plumber())
+//     .pipe(dest(paths.dist.html));
+// }
+
+// function imagesBuild() {
+//   return src(paths.images)
+//     .pipe(plumber())
+//     .pipe(dest(paths.dist.images));
+// }
+
+// function fontsBuild() {
+//   return src(paths.fonts)
+//     .pipe(plumber())
+//     .pipe(dest(paths.dist.fonts));
+// }
+
+// function fontAwesomeBuild() {
+//   return src("./node_modules/@fortawesome/fontawesome-free/webfonts/*")
+//     .pipe(plumber())
+//     .pipe(dest(paths.dist.webfonts));
+// }
+
+// /* ===================== EXPORTS ===================== */
+
+// exports.default = watcher;
+
+// exports.build = function build(cb) {
+//   htmlBuild();
+//   cssBuild();
+//   jsBuild();
+//   imagesBuild();
+//   fontsBuild();
+//   fontAwesomeBuild();
+//   cb();
+// };
 
 
 

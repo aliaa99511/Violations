@@ -3,15 +3,16 @@ import DetailsPopup from "../../Shared/detailsPopupContent";
 import pagination from "../../Shared/Pagination";
 
 let rejectedViolationsRecords = {};
-// rejectedViolationsRecords.pageIndex = 1;
-rejectedViolationsRecords.dataObj = {
-  destroyTable: false,
-  OffenderType: "",
-  ViolationType: 0,
-}
+rejectedViolationsRecords.pageIndex = 1;
+rejectedViolationsRecords.destroyTable = false;
 
-rejectedViolationsRecords.getViolations = () => {
-  let UserId = _spPageContextInfo.userId;
+rejectedViolationsRecords.getViolations = (
+  pageIndex = 1,
+  destroyTable = false,
+  ViolationSector = Number($("#violationSector").children("option:selected").val()),
+  ViolationType = Number($("#TypeofViolation").children("option:selected").data("id")),
+  ViolationGeneralSearch = ""
+) => {
   let request = {
     Data: {
       RowsPerPage: 10,
@@ -19,13 +20,11 @@ rejectedViolationsRecords.getViolations = () => {
       ColName: "created",
       SortOrder: "desc",
       Status: "Rejected",
-      Sector: 0,
-      ViolationType: rejectedViolationsRecords.dataObj.ViolationType,
-      OffenderType: rejectedViolationsRecords.dataObj.OffenderType,
+      ViolationType: ViolationType,
+      SectorConfigId: ViolationSector,
       GlobalSearch: $("#violationSearch").val(),
     },
   };
-
   functions.requester("/_layouts/15/Uranium.Violations.SharePoint/Tasks.aspx/Search", { request })
     .then((response) => {
       if (response.ok) {
@@ -45,10 +44,10 @@ rejectedViolationsRecords.getViolations = () => {
           violationsData = [];
         }
       }
-      rejectedViolationsRecords.setPaginations(ItemsData.TotalPageCount, ItemsData.RowsPerPage);
-      rejectedViolationsRecords.dashBoardTable(violationsData);
-      rejectedViolationsRecords.dataObj.destroyTable = true;
-      // rejectedViolationsRecords.pageIndex = ItemsData.CurrentPage;
+      rejectedViolationsRecords.setPaginations(ItemsData.TotalPageCount, ItemsData.RowsPerPage)
+      rejectedViolationsRecords.dashBoardTable(violationsData, destroyTable);
+      rejectedViolationsRecords.pageIndex = ItemsData.CurrentPage;
+      functions.getCurrentUserActions();
     })
     .catch((err) => {
       console.log(err);
@@ -57,14 +56,13 @@ rejectedViolationsRecords.getViolations = () => {
 rejectedViolationsRecords.setPaginations = (TotalPages, RowsPerPage) => {
   pagination.draw("#paginationID", TotalPages, RowsPerPage);
   pagination.start("#paginationID", rejectedViolationsRecords.getViolations);
-  // pagination.reset()
-  // pagination.scrollToElement(el, length)
   pagination.activateCurrentPage();
 };
-rejectedViolationsRecords.dashBoardTable = (violationsData) => {
+rejectedViolationsRecords.dashBoardTable = (violationsData, destroyTable) => {
   let data = [];
   let taskViolation;
   // let violationData;
+
   if (violationsData.length > 0) {
     violationsData.forEach(record => {
       taskViolation = record.Violation;
@@ -104,6 +102,10 @@ rejectedViolationsRecords.dashBoardTable = (violationsData) => {
       ]);
     });
   }
+
+  if (rejectedViolationsRecords.destroyTable || destroyTable) {
+    $("#rejectedViolationsRecords").DataTable().destroy();
+  }
   let Table = functions.tableDeclare(
     "#rejectedViolationsRecords",
     data,
@@ -119,10 +121,13 @@ rejectedViolationsRecords.dashBoardTable = (violationsData) => {
       { title: "تاريخ الإنشاء", class: "sort" },
     ],
     false,
-    rejectedViolationsRecords.dataObj.destroyTable,
+    false,
     "سجل المحاضر المرفوضة.xlsx",
     "سجل المحاضر المرفوضة"
   );
+
+  rejectedViolationsRecords.destroyTable = true;
+
   $(".ellipsisButton").on("click", (e) => {
     $(".hiddenListBox").hide(300);
     $(e.currentTarget).siblings(".hiddenListBox").toggle(300);
@@ -204,25 +209,49 @@ rejectedViolationsRecords.findViolationByID = (event, taskID, print = false) => 
     });
 };
 rejectedViolationsRecords.filterViolationsLog = (e) => {
-  // let pageIndex = rejectedViolationsRecords.pageIndex;
-  let OffenderTypeVal = $("#violationCategory").children("option:selected").val();
+  let pageIndex = rejectedViolationsRecords.pageIndex
+  let ViolationSectorVal = $("#violationSector").children("option:selected").val();
   let ViolationTypeVal = $("#TypeofViolation").children("option:selected").data("id");
-  let violationSearch = $("#violationSearch").val();
-  // let ViolationType;
-  // let offenderType;
+  let ViolationGeneralSearch = $("#violationSearch").val();
 
-  if (ViolationTypeVal == "" && OffenderTypeVal == "" && violationSearch == "") {
+  let ViolationType;
+  let ViolationSector;
+
+  if (
+    ViolationTypeVal == "" &&
+    ViolationSectorVal == "" &&
+    ViolationGeneralSearch == ""
+  ) {
     functions.warningAlert(
       "من فضلك قم بإدخال قيمة واحدة على الأقل من قيم البحث"
     );
-  } else if (OffenderTypeVal != "" || ViolationTypeVal != "0" || violationSearch != "") {
+  } else if (
+    ViolationSectorVal != "" ||
+    ViolationTypeVal != "0" ||
+    ViolationGeneralSearch != ""
+  ) {
     $(".PreLoader").addClass("active");
-    rejectedViolationsRecords.dataObj.OffenderType = $("#violationCategory").children("option:selected").val();
-    rejectedViolationsRecords.dataObj.ViolationType = Number($("#TypeofViolation").children("option:selected").data("id"));
-    rejectedViolationsRecords.dataObj.destroyTable = true;
-    rejectedViolationsRecords.dataObj.pageIndex = pagination.currentPage
-    rejectedViolationsRecords.getViolations(rejectedViolationsRecords.dataObj.pageIndex, true, OffenderTypeVal, ViolationTypeVal);
+    ViolationSector = Number($("#violationSector").children("option:selected").val());
+    ViolationType = Number($("#TypeofViolation").children("option:selected").data("id"));
+    rejectedViolationsRecords.getViolations(
+      pageIndex,
+      true,
+      ViolationSector,
+      ViolationType,
+      ViolationGeneralSearch
+    );
   }
 };
+rejectedViolationsRecords.resetFilter = (e) => {
+  e.preventDefault();
+  $("#violationSector").val("0");
+  $("#TypeofViolation").val("0");
+  $("#violationSearch").val("");
+
+  $(".PreLoader").addClass("active");
+  pagination.reset();
+  rejectedViolationsRecords.getViolations();
+};
+
 
 export default rejectedViolationsRecords;

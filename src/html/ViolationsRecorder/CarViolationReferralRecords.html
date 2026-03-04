@@ -10,27 +10,81 @@
 
 <body>
     <div class="vehicleViolationReferralRecords" id="vehicleViolationReferralRecords">
-        <div id="identify" page-name="VehicleViolationReferralRecordsLog" site-name="ViolationsBranch" hidden></div>
+        <div id="identify" page-name="VehicleViolationReferralRecords" site-name="ViolationsRecorder" hidden></div>
         <div class="mainContainer">
             <div class="contentContainer">
                 <div class="filterBox blueFilterBox">
                     <div class="row">
                         <div class="col-6 col-md-4">
                             <div class="form-group customFormGroup">
-                                <label for="referralNumber" class="customLabel blueLabel">رقم الإحالة</label>
-                                <input class="form-control customInput referralNumber" id="CaseNumber" type="text"
-                                    placeholder="ادخل رقم الإحالة" />
+                                <label for="vehicleRegistrationNumber" class="customLabel blueLabel">رقم القيد</label>
+                                <input class="form-control customInput vehicleRegistrationNumber"
+                                    id="vehicleRegistrationNumber" type="text" placeholder="ادخل رقم القيد" />
                             </div>
                         </div>
                         <div class="col-6 col-md-4">
                             <div class="form-group customFormGroup">
-                                <label for="CaseStatus" class="customLabel blueLabel">حالة القضية
-                                </label>
+                                <label for="CaseStatus" class="customLabel blueLabel">موقف الإحالة</label>
                                 <div class="selectBox smallSelectBox">
                                     <select class="form-control CaseStatus blueSelect" id="CaseStatus">
                                         <option value="" disabled selected hidden>الكل</option>
                                     </select>
                                     <i class="fa-solid fa-sort-down"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-4">
+                            <div class="form-group customFormGroup">
+                                <label for="violationCode" class="customLabel blueLabel">رقم المخالفة</label>
+                                <div class="selectBox smallSelectBox">
+                                    <input id="violationCode" type="text" class="form-control"
+                                        placeholder="ادخل رقم المخالفة" />
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-4">
+                            <div class="form-group customFormGroup">
+                                <label for="theCode" class="customLabel blueLabel">رقم العربة</label>
+                                <div class="selectBox smallSelectBox">
+                                    <input id="theCode" type="text" class="form-control" placeholder="ادخل الرقم" />
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-4">
+                            <div class="form-group customFormGroup">
+                                <label for="ViolationStatus" class="customLabel blueLabel">حالة المخالفة</label>
+                                <div class="selectBox smallSelectBox">
+                                    <select class="form-control ViolationStatus blueSelect" id="ViolationStatus">
+                                        <option value="" disabled selected hidden>الكل</option>
+                                    </select>
+                                    <i class="fa-solid fa-sort-down"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-4">
+                            <div class="form-group customFormGroup">
+                                <label for="CourtCaseNumber" class="customLabel blueLabel">الرقم القضائي</label>
+                                <div class="selectBox smallSelectBox">
+                                    <input id="CourtCaseNumber" type="text" class="form-control"
+                                        placeholder="ادخل الرقم القضائي" />
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-4">
+                            <div class="form-group customFormGroup">
+                                <label for="TrafficName" class="customLabel blueLabel">اسم السائق</label>
+                                <div class="selectBox smallSelectBox">
+                                    <input id="TrafficName" type="text" class="form-control"
+                                        placeholder="ادخل اسم السائق" />
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-4">
+                            <div class="form-group customFormGroup">
+                                <label for="ViolatorCompany" class="customLabel blueLabel">اسم الشركة</label>
+                                <div class="selectBox smallSelectBox">
+                                    <input id="ViolatorCompany" type="text" class="form-control"
+                                        placeholder="ادخل اسم الشركة" />
                                 </div>
                             </div>
                         </div>
@@ -44,7 +98,6 @@
                                 </div>
                             </div>
                         </div>
-
                         <div class="col-6 col-md-3">
                             <div class="form-group customFormGroup">
                                 <label for="refferedDateTo" class="customLabel blueLabel">إلى
@@ -80,8 +133,7 @@
                             <i class="fa-solid fa-download"></i>
                         </div>
                     </div>
-                    <table id="VehicleViolationReferralRecordsTable"
-                        class="table tableWithIcons blueTable VehicleViolationReferralRecordsTable"></table>
+                    <table id="VehicleViolationReferralRecordsTable" class="table tableWithIcons blueTable"></table>
                 </div>
 
                 <div id="paginationIDRecords" class="paginationBox" current="" total="" style="display: flex"></div>

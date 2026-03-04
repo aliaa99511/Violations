@@ -771,6 +771,9 @@ equipmentViolation.validateForm = (e) => {
                   // Edit violation
                   ID: urlParams.get("taskId") !== null ? editViolationId : "",
                   IsEdit: urlParams.get("taskId") !== null ? true : false,
+
+                  IsRejectedBefore: urlParams.get("taskId") !== null ? true : false,
+
                   Title: "New Equipment Violation",
                   OffenderType: "Equipment",
                   ViolatorName: violatorDetails.violatorName,

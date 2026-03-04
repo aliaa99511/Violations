@@ -2,16 +2,34 @@
   width: 100%;
   min-height: calc(100vh - (85px));
   // min-height: 100vh;
-  
+
+  /* تنسيق العداد */
+  .count-badge {
+    display: inline-block;
+    font-size: 12.5px;
+    font-weight: bold;
+    margin-right: 14px;
+  }
+
+  /* للغات RTL */
+  // [dir="rtl"] .count-badge {
+  //   margin-right: 0;
+  //   margin-left: 8px;
+  //   float: right;
+  // }
+
   .userDetailsBox {
     width: 100%;
     position: relative;
+
     .userBackImageBox {
       width: 100%;
+
       img {
         width: 100%;
       }
     }
+
     /* .userDetails{
             position: absolute;
             top: 50%;
@@ -55,6 +73,7 @@
             }
         } */
   }
+
   .menuLinksBox {
     padding: 1.5rem 0;
 
@@ -89,7 +108,7 @@
               border-right-color: $customBlue;
               color: $customBlue;
               font-weight: 600;
-            //   font-family: CairoB;
+              //   font-family: CairoB;
             }
           }
         }
@@ -107,10 +126,11 @@
             border-right: 4px solid transparent;
 
             .menu-title {
-            //   font-family: CairoB;
+              //   font-family: CairoB;
               font-size: 16px;
               color: #333;
             }
+
             i {
               color: #333;
               transition: transform 0.3s ease;
@@ -172,7 +192,7 @@
 
               &.active-child {
                 a {
-                //   font-family: CairoB;
+                  //   font-family: CairoB;
                   color: $customBlue;
                   background-color: #f8f8f8;
                 }
@@ -183,6 +203,7 @@
           &.expanded {
             .menu-header {
               background-color: #f0f0f0;
+
               i {
                 transform: rotate(-90deg);
               }
@@ -196,8 +217,9 @@
               .menu-title {
                 color: $customBlue;
                 // font-family: CairoB;
-                    font-weight: 600;
+                font-weight: 600;
               }
+
               i {
                 color: $customBlue;
               }
@@ -211,35 +233,44 @@
 
     ul.root {
       padding: 0;
-      > li.static {
-        > a.static {
+
+      >li.static {
+        >a.static {
           display: none;
         }
-        > ul.static {
+
+        >ul.static {
           padding: 0;
           @include flexCol;
+
           li.static {
             margin-bottom: 0.75rem;
             // padding: 0.5rem 1.75rem;
             padding: 0.5rem 1.25rem;
             position: relative;
             background-color: #fafafa;
+
             a.static {
               @include customMenuLinks;
             }
+
             span.static {
               @include customMenuLinks;
               margin-bottom: 0.75rem;
             }
+
             ul.static {
               @include flexCol;
               padding: 0;
-              > li.static {
+
+              >li.static {
                 // padding: 0.5rem 1.25rem;
                 padding: 0.5rem 0.75rem;
                 margin-bottom: 0.25rem;
-                > a.static {
+
+                >a.static {
                   font-size: 14px;
+
                   &::before {
                     content: "-";
                     margin-inline-end: 0.5rem;
@@ -248,12 +279,14 @@
                 }
               }
             }
+
             &.selected {
               a.static {
                 // font-family: CairoB;
                 font-weight: 600;
                 color: $customBlue;
               }
+
               &::before {
                 content: "";
                 position: absolute;
@@ -268,11 +301,13 @@
           }
         }
       }
+
       .ms-navedit-editArea {
         display: none;
       }
     }
   }
+
   &.blueMunu {
     .menuLinksBox {
       .navigationMenu {
@@ -283,7 +318,7 @@
                 border-right-color: $customBlue;
                 color: $customBlue;
                 // font-family: CairoB;
-                    font-weight: 600;
+                font-weight: 600;
               }
             }
           }
@@ -296,8 +331,9 @@
                 .menu-title {
                   color: $customBlue;
                   // font-family: CairoB;
-                      font-weight: 600;
+                  font-weight: 600;
                 }
+
                 i {
                   color: $customBlue;
                 }
@@ -310,7 +346,7 @@
                   a {
                     color: $customBlue;
                     // font-family: CairoB;
-                        font-weight: 600;
+                    font-weight: 600;
                   }
                 }
 
@@ -324,22 +360,25 @@
       }
 
       ul.root {
-        > li.static {
-          > ul.static {
+        >li.static {
+          >ul.static {
             li.static {
               &.selected {
                 a.static {
                   color: $customBlue;
                 }
+
                 &::before {
                   background-color: $customBlue;
                 }
               }
+
               a.static {
                 &:hover {
                   color: $customBlue;
                 }
               }
+
               // &:hover{
               //     a.static{
               //         color: $customBlue;
@@ -351,6 +390,7 @@
       }
     }
   }
+
   &.greenMunu {
     .menuLinksBox {
       .navigationMenu {
@@ -361,7 +401,7 @@
                 border-right-color: $customGreen;
                 color: $customGreen;
                 // font-family: CairoB;
-                    font-weight: 600;
+                font-weight: 600;
               }
             }
           }
@@ -374,8 +414,9 @@
                 .menu-title {
                   color: $customGreen;
                   // font-family: CairoB;
-                      font-weight: 600;
+                  font-weight: 600;
                 }
+
                 i {
                   color: $customGreen;
                 }
@@ -402,22 +443,25 @@
       }
 
       ul.root {
-        > li.static {
-          > ul.static {
+        >li.static {
+          >ul.static {
             li.static {
               &.selected {
                 a.static {
                   color: $customGreen;
                 }
+
                 &::before {
                   background-color: $customGreen;
                 }
               }
+
               a.static {
                 &:hover {
                   color: $customGreen;
                 }
               }
+
               // &:hover{
               //     a.static{
               //         color: $customGreen;
