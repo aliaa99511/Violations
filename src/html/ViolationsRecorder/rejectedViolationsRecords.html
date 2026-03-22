@@ -15,19 +15,7 @@
       <div class="contentContainer">
         <div class="filterBox blueFilterBox">
           <div class="row">
-            <div class="col-6 col-sm-4">
-              <div class="form-group customFormGroup">
-                <label for="violationSector" class="customLabel blueLabel">القطاع
-                </label>
-                <div class="selectBox smallSelectBox">
-                  <select class="form-control violationSector blueSelect" id="violationSector">
-                    <option value="0" disabled selected hidden>الكل</option>
-                  </select>
-                  <i class="fa-solid fa-sort-down"></i>
-                </div>
-              </div>
-            </div>
-            <div class="col-6 col-sm-4">
+            <div class="col-6 col-md-4">
               <div class="form-group customFormGroup">
                 <label for="TypeofViolation" class="customLabel blueLabel">نوع المخالفة
                 </label>
@@ -41,7 +29,7 @@
                 </div>
               </div>
             </div>
-            <div class="col-6 col-sm-3">
+            <div class="col-6 col-md-4">
               <div class="form-group customFormGroup">
                 <label for="violationSearch" class="customLabel blueLabel">البحث عن مخالفة
                 </label>
@@ -51,7 +39,7 @@
               </div>
             </div>
 
-            <div class="col-6 col-md-1 FilterationBtnsBox">
+            <div class="col-6 col-md-4 FilterationBtnsBox">
               <div class="buttonsBox pt-3">
                 <div class="btnStyle resetBtn resetBlueBtn">
                   <i class="fa-solid fa-rotate-left"></i>
@@ -70,6 +58,15 @@
 
         <div class="dashBoardTable">
           <div class="btnContainer">
+            <!-- Column Selector -->
+            <div class="columnSelectorWrapper">
+              <button type="button" id="columnToggleBtn" class="outlineBlueBtn selectColumnBtn">
+                تحديد الأعمدة
+                <i class="fa-solid fa-grip-lines-vertical"></i>
+              </button>
+              <div id="columnSelector" class="columnDropdown"></div>
+            </div>
+            <!-- Export Button -->
             <div id="exportBtn" class="outlineBlueBtn exportBtn">
               تصدير
               <i class="fa-solid fa-download"></i>

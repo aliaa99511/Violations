@@ -123,6 +123,10 @@ violationsCases.ViolationsCasesTable = (Cases) => {
     "سجل القضايا.xlsx",
     "سجل القضايا"
   );
+
+  // 🔹 create column selector
+  functions.createColumnSelector(Table, "#columnSelector", 'green');
+
   if (violationsCases.dataObj.destroyTable) {
     $("#CasesLogTable").DataTable().destroy();
   }
@@ -394,60 +398,75 @@ violationsCases.FindCaseById = (CaseID, popupType = "") => {
 
 violationsCases.addCaseNumberPopup = (CaseID, ViolationID, ViolationCode) => {
   $(".overlay").removeClass("active");
+
+  // Generate unique IDs for close buttons
+  const closeHeaderId = "closeCaseNumberHeader_" + Math.random().toString(36).substr(2, 9);
+  const closeFooterId = "closeCaseNumberFooter_" + Math.random().toString(36).substr(2, 9);
+
   let popupHtml = `
-        <div class="popupHeader">
-            <div class="violationsCode"> 
-                <p> أضافة رقم القضية للمخالفة رقم (${ViolationCode})</p>
+    <div class="popupHeader" style="display: flex; justify-content: space-between; align-items: center;">
+      <div class="violationsCode"> 
+        <p>أضافة رقم القضية للمخالفة رقم (${ViolationCode})</p>
+      </div>
+      <div class="btnStyle cancelBtn popupBtn ${closeHeaderId}" id="${closeHeaderId}" style="color: #fff; cursor: pointer;" data-dismiss="modal" aria-label="Close">
+        <i class="fa-solid fa-x"></i>
+      </div>
+    </div>
+    <div class="popupBody">
+      <div class="popupForm detailsPopupForm" id="detailsPopupForm">
+
+        <div class="formContent">
+          <div class="formBox">
+            <div class="formElements">
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="form-group customFormGroup">
+                    <label for="caseNumber" class="customLabel">رقم القضية</label>
+                    <input class="form-control customInput caseNumber" id="caseNumber" type="text" placeholder="أدخل رقم القضية">
+                  </div>
+                </div>
+                <div class="col-12">
+                  <div class="form-group customFormGroup">
+                    <label for="caseNumberAttach" class="customLabel">إرفاق مستند رقم القضية</label>
+                    <div class="fileBox" id="dropContainer">
+                      <div class="inputFileBox">
+                        <img src="/Style Library/MiningViolations/images/fileIcon.svg" alt="File Icon">
+                        <p class="dragDropFilesLabel">قم بالسحب والإفلات لرفع الملف , أو <a href="#!" class="attachFileLink">استعراض ملفاتي</a></p>
+                        <input type="file" class="customInput attachFilesInput caseNumberAttach form-control" id="caseNumberAttach" accept="image/gif,image/svg,image/jpg,image/jpeg,image/png,.doc,.docx,.pdf,.xls,.xlsx,.pptx" multiple>
+                      </div>
+                    </div>
+                    <div class="dropFilesArea" id="dropFilesArea"></div>
+                  </div>
+                </div>
+              </div>
             </div>
+          </div>
         </div>
-        <div class="popupBody">
-            <div class="popupForm detailsPopupForm" id="detailsPopupForm">
 
-                <div class="formContent">
-                    <div class="formBox">
-                        <div class="formElements">
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="form-group customFormGroup">
-                                        <label for="caseNumber" class="customLabel">رقم القضية</label>
-                                        <input class="form-control customInput caseNumber" id="caseNumber" type="text" placeholder="أدخل رقم القضية">
-                                    </div>
-                                </div>
-                                <div class="col-12">
-                                    <div class="form-group customFormGroup">
-                                        <label for="caseNumberAttach" class="customLabel">إرفاق مستند رقم القضية</label>
-                                        <div class="fileBox" id="dropContainer">
-                                            <div class="inputFileBox">
-                                                <img src="/Style Library/MiningViolations/images/fileIcon.svg" alt="File Icon">
-                                                <p class="dragDropFilesLabel">قم بالسحب والإفلات لرفع الملف , أو <a href="#!" class="attachFileLink">استعراض ملفاتي</a></p>
-                                                <input type="file" class="customInput attachFilesInput caseNumberAttach form-control" id="caseNumberAttach" accept="image/gif,image/svg,image/jpg,image/jpeg,image/png,.doc,.docx,.pdf,.xls,.xlsx,.pptx" multiple>
-                                            </div>
-                                        </div>
-                                        <div class="dropFilesArea" id="dropFilesArea"></div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="formButtonsBox">
-                    <div class="row">
-                        <div class="col-12">
-                            <div class="buttonsBox centerButtonsBox">
-                                <div class="btnStyle confirmBtnGreen popupBtn AddCaseNumberBtn" id="AddCaseNumberBtn">تأكيد</div>
-                                <div class="btnStyle cancelBtn popupBtn closeCaseNumberPopup" id="closeCaseNumberPopup" data-dismiss="modal" aria-label="Close">إلغاء</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
+        <div class="formButtonsBox">
+          <div class="row">
+            <div class="col-12">
+              <div class="buttonsBox centerButtonsBox">
+                <div class="btnStyle confirmBtnGreen popupBtn AddCaseNumberBtn" id="AddCaseNumberBtn">تأكيد</div>
+                <div class="btnStyle cancelBtn popupBtn ${closeFooterId}" id="${closeFooterId}" data-dismiss="modal" aria-label="Close">إلغاء</div>
+              </div>
             </div>
-        </div>`;
+          </div>
+        </div>
+
+      </div>
+    </div>`;
+
   functions.declarePopup(
     ["generalPopupStyle", "greenPopup", "editPopup"],
     popupHtml
   );
+
+  // Add close button handlers
+  $(`#${closeHeaderId}, #${closeFooterId}`).on("click", function () {
+    functions.closePopup();
+  });
+
   let CaseNumberInput = $("#caseNumber").val();
   let filesExtension = [
     "gif",
@@ -465,6 +484,7 @@ violationsCases.addCaseNumberPopup = (CaseID, ViolationID, ViolationCode) => {
   let allAttachments;
   let countOfFiles;
   let request = {};
+
   $("#caseNumberAttach").on("change", (e) => {
     allAttachments = $(e.currentTarget)[0].files;
     if (allAttachments.length > 0) {
@@ -476,11 +496,11 @@ violationsCases.addCaseNumberPopup = (CaseID, ViolationID, ViolationCode) => {
     }
     for (let i = 0; i < allAttachments.length; i++) {
       $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").append(`
-                <div class="file">
-                    <p class="fileName">${allAttachments[i].name}</p>
-                    <span class="deleteFile" data-index="${i}"><i class="fa-sharp fa-solid fa-x"></i></span>
-                </div>
-            `);
+        <div class="file">
+          <p class="fileName">${allAttachments[i].name}</p>
+          <span class="deleteFile" data-index="${i}"><i class="fa-sharp fa-solid fa-x"></i></span>
+        </div>
+      `);
     }
     $(".deleteFile").on("click", (event) => {
       let index = $(event.currentTarget).closest(".file").index();
@@ -492,7 +512,6 @@ violationsCases.addCaseNumberPopup = (CaseID, ViolationID, ViolationCode) => {
         }
       }
       allAttachments = fileBuffer.files;
-
       countOfFiles = allAttachments.length;
       if (countOfFiles == 0) {
         $(e.currentTarget)
@@ -516,9 +535,11 @@ violationsCases.addCaseNumberPopup = (CaseID, ViolationID, ViolationCode) => {
       }
     }
   });
+
   $("#caseNumber").on("keyup", (e) => {
     CaseNumberInput = $(e.currentTarget).val().trim();
   });
+
   $(".AddCaseNumberBtn").on("click", (e) => {
     if (CaseNumberInput != "") {
       if (allAttachments != null && allAttachments.length > 0) {
@@ -548,9 +569,7 @@ violationsCases.addCaseNumberPopup = (CaseID, ViolationID, ViolationCode) => {
       functions.warningAlert("من فضلك قم بإضافة رقم القضية بشكل صحيح");
     }
   });
-  // return popupHtml;
 };
-
 violationsCases.editCasePrice = (
   CaseID,
   ViolationID,
@@ -559,68 +578,81 @@ violationsCases.editCasePrice = (
   TotalViolationPrice
 ) => {
   $(".overlay").removeClass("active");
+
+  // Generate unique IDs for close buttons
+  const closeHeaderId = "closeEditPriceHeader_" + Math.random().toString(36).substr(2, 9);
+  const closeFooterId = "closeEditPriceFooter_" + Math.random().toString(36).substr(2, 9);
+
   let popupHtml = `
-        <div class="popupHeader">
-            <div class="violationsCode"> 
-                <p> تعديل مبلغ القضية رقم (${caseNumber})</p>
-            </div>
-        </div> 
-        <div class="popupBody">
-            <div class="popupForm detailsPopupForm" id="detailsPopupForm">
+    <div class="popupHeader" style="display: flex; justify-content: space-between; align-items: center;">
+      <div class="violationsCode"> 
+        <p>تعديل مبلغ القضية رقم (${caseNumber})</p>
+      </div>
+      <div class="btnStyle cancelBtn popupBtn ${closeHeaderId}" id="${closeHeaderId}" style="color: #fff; cursor: pointer;" data-dismiss="modal" aria-label="Close">
+        <i class="fa-solid fa-x"></i>
+      </div>
+    </div> 
+    <div class="popupBody">
+      <div class="popupForm detailsPopupForm" id="detailsPopupForm">
 
-                <div class="formContent"> 
-                    <div class="formBox">
-                        <div class="formElements">
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="form-group customFormGroup">
-                                        <label for="oldViolationPrice" class="customLabel">المبلغ القديم (مبلغ المخالفة)</label>
-                                        <input class="form-control disabled customInput oldViolationPrice" id="oldViolationPrice" type="text" value="${functions.splitBigNumbersByComma(
-    TotalViolationPrice
-  )}" disabled>
-                                    </div> 
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="form-group customFormGroup">
-                                        <label for="newViolationPrice" class="customLabel">المبلغ المعدل</label>
-                                        <input class="form-control customInput newViolationPrice" id="newViolationPrice" type="text" placeholder="أدخل المبلغ الجديد">
-                                    </div>
-                                </div>
-                                <div class="col-12">
-                                    <div class="form-group customFormGroup">
-                                        <label for="editCasePriceAttach" class="customLabel">إرفاق مستند إعادة التقييم</label>
-                                        <div class="fileBox" id="dropContainer">
-                                            <div class="inputFileBox">
-                                                <img src="/Style Library/MiningViolations/images/fileIcon.svg" alt="File Icon">
-                                                <p class="dragDropFilesLabel">قم بالسحب والإفلات لرفع الملف , أو <a href="#!" class="attachFileLink">استعراض ملفاتي</a></p>
-                                                <input type="file" class="customInput attachFilesInput editCasePriceAttach form-control" id="editCasePriceAttach" accept="image/gif,image/svg,image/jpg,image/jpeg,image/png,.doc,.docx,.pdf,.xls,.xlsx,.pptx" multiple>
-                                            </div>
-                                        </div>
-                                        <div class="dropFilesArea" id="dropFilesArea"></div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+        <div class="formContent"> 
+          <div class="formBox">
+            <div class="formElements">
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="form-group customFormGroup">
+                    <label for="oldViolationPrice" class="customLabel">المبلغ القديم (مبلغ المخالفة)</label>
+                    <input class="form-control disabled customInput oldViolationPrice" id="oldViolationPrice" type="text" value="${functions.splitBigNumbersByComma(TotalViolationPrice)}" disabled>
+                  </div> 
                 </div>
-
-                <div class="formButtonsBox">
-                    <div class="row">
-                        <div class="col-12">
-                            <div class="buttonsBox centerButtonsBox">
-                                <div class="btnStyle confirmBtnGreen popupBtn editCasePriceBtn" id="editCasePriceBtn">تعديل</div>
-                                <div class="btnStyle cancelBtn popupBtn closeCasePricePopup" id="closeCasePricePopup" data-dismiss="modal" aria-label="Close">إلغاء</div>
-                            </div>
-                        </div>
-                    </div>
+                <div class="col-md-6">
+                  <div class="form-group customFormGroup">
+                    <label for="newViolationPrice" class="customLabel">المبلغ المعدل</label>
+                    <input class="form-control customInput newViolationPrice" id="newViolationPrice" type="text" placeholder="أدخل المبلغ الجديد">
+                  </div>
                 </div>
-
+                <div class="col-12">
+                  <div class="form-group customFormGroup">
+                    <label for="editCasePriceAttach" class="customLabel">إرفاق مستند إعادة التقييم</label>
+                    <div class="fileBox" id="dropContainer">
+                      <div class="inputFileBox">
+                        <img src="/Style Library/MiningViolations/images/fileIcon.svg" alt="File Icon">
+                        <p class="dragDropFilesLabel">قم بالسحب والإفلات لرفع الملف , أو <a href="#!" class="attachFileLink">استعراض ملفاتي</a></p>
+                        <input type="file" class="customInput attachFilesInput editCasePriceAttach form-control" id="editCasePriceAttach" accept="image/gif,image/svg,image/jpg,image/jpeg,image/png,.doc,.docx,.pdf,.xls,.xlsx,.pptx" multiple>
+                      </div>
+                    </div>
+                    <div class="dropFilesArea" id="dropFilesArea"></div>
+                  </div>
+                </div>
+              </div>
             </div>
-        </div>`;
+          </div>
+        </div>
+
+        <div class="formButtonsBox">
+          <div class="row">
+            <div class="col-12">
+              <div class="buttonsBox centerButtonsBox">
+                <div class="btnStyle confirmBtnGreen popupBtn editCasePriceBtn" id="editCasePriceBtn">تعديل</div>
+                <div class="btnStyle cancelBtn popupBtn ${closeFooterId}" id="${closeFooterId}" data-dismiss="modal" aria-label="Close">إلغاء</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>`;
+
   functions.declarePopup(
     ["generalPopupStyle", "greenPopup", "editPopup"],
     popupHtml
   );
+
+  // Add close button handlers
+  $(`#${closeHeaderId}, #${closeFooterId}`).on("click", function () {
+    functions.closePopup();
+  });
+
   let newPriceInput = $("#newViolationPrice").val();
   let filesExtension = [
     "gif",
@@ -651,11 +683,11 @@ violationsCases.editCasePrice = (
     }
     for (let i = 0; i < allAttachments.length; i++) {
       $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").append(`
-                <div class="file">
-                    <p class="fileName">${allAttachments[i].name}</p>
-                    <span class="deleteFile" data-index="${i}"><i class="fa-sharp fa-solid fa-x"></i></span>
-                </div>
-            `);
+        <div class="file">
+          <p class="fileName">${allAttachments[i].name}</p>
+          <span class="deleteFile" data-index="${i}"><i class="fa-sharp fa-solid fa-x"></i></span>
+        </div>
+      `);
     }
     $(".deleteFile").on("click", (event) => {
       let index = $(event.currentTarget).closest(".file").index();
@@ -667,7 +699,6 @@ violationsCases.editCasePrice = (
         }
       }
       allAttachments = fileBuffer.files;
-
       countOfFiles = allAttachments.length;
       if (countOfFiles == 0) {
         $(e.currentTarget)
@@ -691,9 +722,11 @@ violationsCases.editCasePrice = (
       }
     }
   });
+
   $("#newViolationPrice").on("keypress", (e) => {
     return functions.isDecimalNumberKey(e);
   });
+
   $("#newViolationPrice").on("keyup", (e) => {
     $(e.currentTarget).val($(e.currentTarget).val().split(",").join(""));
     $(e.currentTarget).val(
@@ -705,6 +738,7 @@ violationsCases.editCasePrice = (
     newPriceInput = newPriceInput.replace(/\,/g, "");
     newPriceInput = Number(newPriceInput);
   });
+
   $("#editCasePriceBtn").on("click", (e) => {
     if (newPriceInput != "" && PositiveDecimalNumbers.test(newPriceInput)) {
       if (allAttachments != null && allAttachments.length > 0) {
@@ -744,62 +778,75 @@ violationsCases.payCasePrice = (
   TotalViolationPrice
 ) => {
   $(".overlay").removeClass("active");
+
+  // Generate unique IDs for close buttons
+  const closeHeaderId = "closePayCaseHeader_" + Math.random().toString(36).substr(2, 9);
+  const closeFooterId = "closePayCaseFooter_" + Math.random().toString(36).substr(2, 9);
+
   let popupHtml = `
-        <div class="popupHeader">
-            <div class="violationsCode"> 
-                <p> تسديد القضية رقم (${caseNumber})</p>
+    <div class="popupHeader" style="display: flex; justify-content: space-between; align-items: center;">
+      <div class="violationsCode"> 
+        <p>تسديد القضية رقم (${caseNumber})</p>
+      </div>
+      <div class="btnStyle cancelBtn popupBtn ${closeHeaderId}" id="${closeHeaderId}" style="color: #fff; cursor: pointer;" data-dismiss="modal" aria-label="Close">
+        <i class="fa-solid fa-x"></i>
+      </div>
+    </div>
+    <div class="popupBody">
+      <div class="popupForm detailsPopupForm" id="detailsPopupForm">
+
+        <div class="formContent">
+          <div class="formBox">
+            <div class="formElements">
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="form-group customFormGroup">
+                    <label for="violationCasePrice" class="customLabel">المبلغ المطلوب سداده</label>
+                    <input class="form-control disabled customInput violationCasePrice" id="violationCasePrice" type="text" value="${functions.splitBigNumbersByComma(TotalViolationPrice)}" disabled>
+                  </div>
+                </div>
+                <div class="col-12">
+                  <div class="form-group customFormGroup">
+                    <label for="payCaseAttachment" class="customLabel">إرفاق إيصال السداد</label>
+                    <div class="fileBox" id="dropContainer">
+                      <div class="inputFileBox">
+                        <img src="/Style Library/MiningViolations/images/fileIcon.svg" alt="File Icon">
+                        <p class="dragDropFilesLabel">قم بالسحب والإفلات لرفع الملف , أو <a href="#!" class="attachFileLink">استعراض ملفاتي</a></p>
+                        <input type="file" class="customInput attachFilesInput payCaseAttachment form-control" id="payCaseAttachment" accept="image/gif,image/svg,image/jpg,image/jpeg,image/png,.doc,.docx,.pdf,.xls,.xlsx,.pptx" multiple>
+                      </div>
+                    </div>
+                    <div class="dropFilesArea" id="dropFilesArea"></div>
+                  </div>
+                </div>
+              </div>
             </div>
+          </div>
         </div>
-        <div class="popupBody">
-            <div class="popupForm detailsPopupForm" id="detailsPopupForm">
 
-                <div class="formContent">
-                    <div class="formBox">
-                        <div class="formElements">
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="form-group customFormGroup">
-                                        <label for="violationCasePrice" class="customLabel">المبلغ المطلوب سداده</label>
-                                        <input class="form-control disabled customInput violationCasePrice" id="violationCasePrice" type="text" value="${functions.splitBigNumbersByComma(
-    TotalViolationPrice
-  )}" disabled>
-                                    </div>
-                                </div>
-                                <div class="col-12">
-                                    <div class="form-group customFormGroup">
-                                        <label for="payCaseAttachment" class="customLabel">إرفاق إيصال السداد</label>
-                                        <div class="fileBox" id="dropContainer">
-                                            <div class="inputFileBox">
-                                                <img src="/Style Library/MiningViolations/images/fileIcon.svg" alt="File Icon">
-                                                <p class="dragDropFilesLabel">قم بالسحب والإفلات لرفع الملف , أو <a href="#!" class="attachFileLink">استعراض ملفاتي</a></p>
-                                                <input type="file" class="customInput attachFilesInput payCaseAttachment form-control" id="payCaseAttachment" accept="image/gif,image/svg,image/jpg,image/jpeg,image/png,.doc,.docx,.pdf,.xls,.xlsx,.pptx" multiple>
-                                            </div>
-                                        </div>
-                                        <div class="dropFilesArea" id="dropFilesArea"></div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="formButtonsBox">
-                    <div class="row">
-                        <div class="col-12">
-                            <div class="buttonsBox centerButtonsBox">
-                                <div class="btnStyle confirmBtnGreen popupBtn payCaseBtn" id="payCaseBtn">تأكيد</div>
-                                <div class="btnStyle cancelBtn popupBtn closePayCasePopup" id="closePayCasePopup" data-dismiss="modal" aria-label="Close">إلغاء</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
+        <div class="formButtonsBox">
+          <div class="row">
+            <div class="col-12">
+              <div class="buttonsBox centerButtonsBox">
+                <div class="btnStyle confirmBtnGreen popupBtn payCaseBtn" id="payCaseBtn">تأكيد</div>
+                <div class="btnStyle cancelBtn popupBtn ${closeFooterId}" id="${closeFooterId}" data-dismiss="modal" aria-label="Close">إلغاء</div>
+              </div>
             </div>
-        </div>`;
+          </div>
+        </div>
+
+      </div>
+    </div>`;
+
   functions.declarePopup(
     ["generalPopupStyle", "greenPopup", "editPopup"],
     popupHtml
   );
+
+  // Add close button handlers
+  $(`#${closeHeaderId}, #${closeFooterId}`).on("click", function () {
+    functions.closePopup();
+  });
+
   let filesExtension = [
     "gif",
     "svg",
@@ -816,6 +863,7 @@ violationsCases.payCasePrice = (
   let allAttachments;
   let countOfFiles;
   let request = {};
+
   $("#payCaseAttachment").on("change", (e) => {
     allAttachments = $(e.currentTarget)[0].files;
     if (allAttachments.length > 0) {
@@ -827,11 +875,11 @@ violationsCases.payCasePrice = (
     }
     for (let i = 0; i < allAttachments.length; i++) {
       $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").append(`
-                <div class="file">
-                    <p class="fileName">${allAttachments[i].name}</p>
-                    <span class="deleteFile" data-index="${i}"><i class="fa-sharp fa-solid fa-x"></i></span>
-                </div>
-            `);
+        <div class="file">
+          <p class="fileName">${allAttachments[i].name}</p>
+          <span class="deleteFile" data-index="${i}"><i class="fa-sharp fa-solid fa-x"></i></span>
+        </div>
+      `);
     }
     $(".deleteFile").on("click", (event) => {
       let index = $(event.currentTarget).closest(".file").index();
@@ -843,7 +891,6 @@ violationsCases.payCasePrice = (
         }
       }
       allAttachments = fileBuffer.files;
-
       countOfFiles = allAttachments.length;
       if (countOfFiles == 0) {
         $(e.currentTarget)
@@ -867,6 +914,7 @@ violationsCases.payCasePrice = (
       }
     }
   });
+
   $(".payCaseBtn").on("click", (e) => {
     if (allAttachments != null && allAttachments.length > 0) {
       request = {
@@ -895,55 +943,70 @@ violationsCases.payCasePrice = (
 
 violationsCases.saveCase = (CaseID, ViolationID, taskID, caseNumber) => {
   $(".overlay").removeClass("active");
+
+  // Generate unique IDs for close buttons
+  const closeHeaderId = "closeSaveCaseHeader_" + Math.random().toString(36).substr(2, 9);
+  const closeFooterId = "closeSaveCaseFooter_" + Math.random().toString(36).substr(2, 9);
+
   let popupHtml = `
-        <div class="popupHeader">
-            <div class="violationsCode"> 
-                <p> حفظ القضية رقم (${caseNumber})</p>
-            </div>
-        </div> 
-        <div class="popupBody">
-            <div class="popupForm detailsPopupForm" id="detailsPopupForm">
+    <div class="popupHeader" style="display: flex; justify-content: space-between; align-items: center;">
+      <div class="violationsCode"> 
+        <p>حفظ القضية رقم (${caseNumber})</p>
+      </div>
+      <div class="btnStyle cancelBtn popupBtn ${closeHeaderId}" id="${closeHeaderId}" style="color: #fff; cursor: pointer;" data-dismiss="modal" aria-label="Close">
+        <i class="fa-solid fa-x"></i>
+      </div>
+    </div> 
+    <div class="popupBody">
+      <div class="popupForm detailsPopupForm" id="detailsPopupForm">
 
-                <div class="formContent"> 
-                    <div class="formBox">
-                        <div class="formElements">
-                            <div class="row">
-                                <div class="col-12">
-                                    <div class="form-group customFormGroup">
-                                        <label for="saveCaseAttach" class="customLabel">إرفاق مستند تأكيد الحفظ</label>
-                                        <div class="fileBox" id="dropContainer">
-                                            <div class="inputFileBox">
-                                                <img src="/Style Library/MiningViolations/images/fileIcon.svg" alt="File Icon">
-                                                <p class="dragDropFilesLabel">قم بالسحب والإفلات لرفع الملف , أو <a href="#!" class="attachFileLink">استعراض ملفاتي</a></p>
-                                                <input type="file" class="customInput attachFilesInput saveCaseAttach form-control" id="saveCaseAttach" accept="image/gif,image/svg,image/jpg,image/jpeg,image/png,.doc,.docx,.pdf,.xls,.xlsx,.pptx" multiple>
-                                            </div>
-                                        </div>
-                                        <div class="dropFilesArea" id="dropFilesArea"></div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+        <div class="formContent"> 
+          <div class="formBox">
+            <div class="formElements">
+              <div class="row">
+                <div class="col-12">
+                  <div class="form-group customFormGroup">
+                    <label for="saveCaseAttach" class="customLabel">إرفاق مستند تأكيد الحفظ</label>
+                    <div class="fileBox" id="dropContainer">
+                      <div class="inputFileBox">
+                        <img src="/Style Library/MiningViolations/images/fileIcon.svg" alt="File Icon">
+                        <p class="dragDropFilesLabel">قم بالسحب والإفلات لرفع الملف , أو <a href="#!" class="attachFileLink">استعراض ملفاتي</a></p>
+                        <input type="file" class="customInput attachFilesInput saveCaseAttach form-control" id="saveCaseAttach" accept="image/gif,image/svg,image/jpg,image/jpeg,image/png,.doc,.docx,.pdf,.xls,.xlsx,.pptx" multiple>
+                      </div>
                     </div>
+                    <div class="dropFilesArea" id="dropFilesArea"></div>
+                  </div>
                 </div>
-
-                <div class="formButtonsBox">
-                    <div class="row">
-                        <div class="col-12">
-                            <div class="buttonsBox centerButtonsBox">
-                                <div class="btnStyle confirmBtnGreen popupBtn saveCaseBtn" id="saveCaseBtn">حفظ</div>
-                                <div class="btnStyle cancelBtn popupBtn closeSaveCasePopup" id="closeSaveCasePopup" data-dismiss="modal" aria-label="Close">إلغاء</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
+              </div>
             </div>
+          </div>
         </div>
-    `;
+
+        <div class="formButtonsBox">
+          <div class="row">
+            <div class="col-12">
+              <div class="buttonsBox centerButtonsBox">
+                <div class="btnStyle confirmBtnGreen popupBtn saveCaseBtn" id="saveCaseBtn">حفظ</div>
+                <div class="btnStyle cancelBtn popupBtn ${closeFooterId}" id="${closeFooterId}" data-dismiss="modal" aria-label="Close">إلغاء</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  `;
+
   functions.declarePopup(
     ["generalPopupStyle", "greenPopup", "editPopup"],
     popupHtml
   );
+
+  // Add close button handlers
+  $(`#${closeHeaderId}, #${closeFooterId}`).on("click", function () {
+    functions.closePopup();
+  });
+
   let filesExtension = [
     "gif",
     "svg",
@@ -972,11 +1035,11 @@ violationsCases.saveCase = (CaseID, ViolationID, taskID, caseNumber) => {
     }
     for (let i = 0; i < allAttachments.length; i++) {
       $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").append(`
-                  <div class="file">
-                      <p class="fileName">${allAttachments[i].name}</p>
-                      <span class="deleteFile" data-index="${i}"><i class="fa-sharp fa-solid fa-x"></i></span>
-                  </div>
-              `);
+        <div class="file">
+          <p class="fileName">${allAttachments[i].name}</p>
+          <span class="deleteFile" data-index="${i}"><i class="fa-sharp fa-solid fa-x"></i></span>
+        </div>
+      `);
     }
     $(".deleteFile").on("click", (event) => {
       let index = $(event.currentTarget).closest(".file").index();
@@ -988,7 +1051,6 @@ violationsCases.saveCase = (CaseID, ViolationID, taskID, caseNumber) => {
         }
       }
       allAttachments = fileBuffer.files;
-
       countOfFiles = allAttachments.length;
       if (countOfFiles == 0) {
         $(e.currentTarget)
@@ -1012,6 +1074,7 @@ violationsCases.saveCase = (CaseID, ViolationID, taskID, caseNumber) => {
       }
     }
   });
+
   $("#saveCaseBtn").on("click", (e) => {
     if (allAttachments != null && allAttachments.length > 0) {
       request = {
@@ -1039,58 +1102,73 @@ violationsCases.saveCase = (CaseID, ViolationID, taskID, caseNumber) => {
 
 violationsCases.addAttachmentToCase = (CaseID, ViolationID, caseNumber) => {
   $(".overlay").removeClass("active");
+
+  // Generate unique IDs for close buttons
+  const closeHeaderId = "closeAddAttachHeader_" + Math.random().toString(36).substr(2, 9);
+  const closeFooterId = "closeAddAttachFooter_" + Math.random().toString(36).substr(2, 9);
+
   let popupHtml = `
-        <div class="popupHeader">
-            <div class="violationsCode"> 
-                <p> حفظ القضية رقم (${caseNumber})</p>
-            </div>
-        </div> 
-        <div class="popupBody">
-            <div class="popupForm detailsPopupForm" id="detailsPopupForm">
+    <div class="popupHeader" style="display: flex; justify-content: space-between; align-items: center;">
+      <div class="violationsCode"> 
+        <p>إرفاق مستند للقضية رقم (${caseNumber})</p>
+      </div>
+      <div class="btnStyle cancelBtn popupBtn ${closeHeaderId}" id="${closeHeaderId}" style="color: #fff; cursor: pointer;" data-dismiss="modal" aria-label="Close">
+        <i class="fa-solid fa-x"></i>
+      </div>
+    </div> 
+    <div class="popupBody">
+      <div class="popupForm detailsPopupForm" id="detailsPopupForm">
 
-                <div class="formContent"> 
-                    <div class="formBox">
-                        <div class="formElements">
-                            <div class="row">
-                                <div class="col-12">
-                                    <div class="form-group customFormGroup">
-                                        <label for="addCaseAttachComments" class="customLabel">الملاحظات</label>
-                                        <textarea class="form-control addCaseAttachComments customTextArea" id="addCaseAttachComments" placeholder="أدخل سبب إضافة المستند"></textarea>
-                                    </div>
-                                    <div class="form-group customFormGroup">
-                                        <label for="addCaseAttach" class="customLabel">إرفاق مستند</label>
-                                        <div class="fileBox" id="dropContainer">
-                                            <div class="inputFileBox">
-                                                <img src="/Style Library/MiningViolations/images/fileIcon.svg" alt="File Icon">
-                                                <p class="dragDropFilesLabel">قم بالسحب والإفلات لرفع الملف , أو <a href="#!" class="attachFileLink">استعراض ملفاتي</a></p>
-                                                <input type="file" class="customInput attachFilesInput addCaseAttach form-control" id="addCaseAttach" accept="image/gif,image/svg,image/jpg,image/jpeg,image/png,.doc,.docx,.pdf,.xls,.xlsx,.pptx" multiple>
-                                            </div>
-                                        </div>
-                                        <div class="dropFilesArea" id="dropFilesArea"></div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+        <div class="formContent"> 
+          <div class="formBox">
+            <div class="formElements">
+              <div class="row">
+                <div class="col-12">
+                  <div class="form-group customFormGroup">
+                    <label for="addCaseAttachComments" class="customLabel">الملاحظات</label>
+                    <textarea class="form-control addCaseAttachComments customTextArea" id="addCaseAttachComments" placeholder="أدخل سبب إضافة المستند"></textarea>
+                  </div>
+                  <div class="form-group customFormGroup">
+                    <label for="addCaseAttach" class="customLabel">إرفاق مستند</label>
+                    <div class="fileBox" id="dropContainer">
+                      <div class="inputFileBox">
+                        <img src="/Style Library/MiningViolations/images/fileIcon.svg" alt="File Icon">
+                        <p class="dragDropFilesLabel">قم بالسحب والإفلات لرفع الملف , أو <a href="#!" class="attachFileLink">استعراض ملفاتي</a></p>
+                        <input type="file" class="customInput attachFilesInput addCaseAttach form-control" id="addCaseAttach" accept="image/gif,image/svg,image/jpg,image/jpeg,image/png,.doc,.docx,.pdf,.xls,.xlsx,.pptx" multiple>
+                      </div>
                     </div>
+                    <div class="dropFilesArea" id="dropFilesArea"></div>
+                  </div>
                 </div>
-
-                <div class="formButtonsBox">
-                    <div class="row">
-                        <div class="col-12">
-                            <div class="buttonsBox centerButtonsBox">
-                                <div class="btnStyle confirmBtnGreen popupBtn addCaseAttachBtn" id="addCaseAttachBtn">حفظ</div>
-                                <div class="btnStyle cancelBtn popupBtn closeAddCaseAttachPopup" id="closeAddCaseAttachPopup" data-dismiss="modal" aria-label="Close">إلغاء</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
+              </div>
             </div>
-        </div>`;
+          </div>
+        </div>
+
+        <div class="formButtonsBox">
+          <div class="row">
+            <div class="col-12">
+              <div class="buttonsBox centerButtonsBox">
+                <div class="btnStyle confirmBtnGreen popupBtn addCaseAttachBtn" id="addCaseAttachBtn">حفظ</div>
+                <div class="btnStyle cancelBtn popupBtn ${closeFooterId}" id="${closeFooterId}" data-dismiss="modal" aria-label="Close">إلغاء</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>`;
+
   functions.declarePopup(
     ["generalPopupStyle", "greenPopup", "editPopup"],
     popupHtml
   );
+
+  // Add close button handlers
+  $(`#${closeHeaderId}, #${closeFooterId}`).on("click", function () {
+    functions.closePopup();
+  });
+
   let caseAttachComments = $("#addCaseAttachComments").val();
   let filesExtension = [
     "gif",
@@ -1123,11 +1201,11 @@ violationsCases.addAttachmentToCase = (CaseID, ViolationID, caseNumber) => {
     }
     for (let i = 0; i < allAttachments.length; i++) {
       $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").append(`
-                  <div class="file">
-                      <p class="fileName">${allAttachments[i].name}</p>
-                      <span class="deleteFile" data-index="${i}"><i class="fa-sharp fa-solid fa-x"></i></span>
-                  </div>
-              `);
+        <div class="file">
+          <p class="fileName">${allAttachments[i].name}</p>
+          <span class="deleteFile" data-index="${i}"><i class="fa-sharp fa-solid fa-x"></i></span>
+        </div>
+      `);
     }
     $(".deleteFile").on("click", (event) => {
       let index = $(event.currentTarget).closest(".file").index();
@@ -1139,7 +1217,6 @@ violationsCases.addAttachmentToCase = (CaseID, ViolationID, caseNumber) => {
         }
       }
       allAttachments = fileBuffer.files;
-
       countOfFiles = allAttachments.length;
       if (countOfFiles == 0) {
         $(e.currentTarget)
@@ -1163,6 +1240,7 @@ violationsCases.addAttachmentToCase = (CaseID, ViolationID, caseNumber) => {
       }
     }
   });
+
   $("#addCaseAttachBtn").on("click", (e) => {
     if (caseAttachComments != "") {
       if (allAttachments != null && allAttachments.length > 0) {
@@ -1355,22 +1433,44 @@ violationsCases.caseAttachmentsDetailsPopup = (
   caseNumber,
   CaseAttachmentsRecords
 ) => {
+  // Generate unique IDs for close buttons
+  const closeHeaderId = "closeAttachHeader_" + Math.random().toString(36).substr(2, 9);
+  const closeFooterId = "closeAttachFooter_" + Math.random().toString(36).substr(2, 9);
+
   let popupHtml = `
-        <div class="popupHeader attachPopup">
-            <div class="violationsCode"> 
-                <p> مرفقات القضية رقم (${caseNumber})</p>
+    <div class="popupHeader attachPopup" style="display: flex; justify-content: space-between; align-items: center;">
+      <div class="violationsCode"> 
+        <p>مرفقات القضية رقم (${caseNumber})</p>
+      </div>
+      <div class="btnStyle cancelBtn popupBtn ${closeHeaderId}" id="${closeHeaderId}" style="color: #fff; cursor: pointer;" data-dismiss="modal" aria-label="Close">
+        <i class="fa-solid fa-x"></i>
+      </div>
+    </div> 
+    <div class="popupBody">
+      <div class="popupTableBox">
+        <table id="caseAttachmentsTable" class="table tableWithIcons popupTable"></table>
+      </div>
+      <div class="formButtonsBox">
+        <div class="row">
+          <div class="col-12">
+            <div class="buttonsBox centerButtonsBox">
+              <div class="btnStyle cancelBtn popupBtn ${closeFooterId}" id="${closeFooterId}" data-dismiss="modal" aria-label="Close">إغلاق</div>
             </div>
-            <div class="btnStyle cancelBtn popupBtn closeCaseAttachPopup" id="closeCaseAttachPopup" data-dismiss="modal" aria-label="Close"><i class="fa-solid fa-x"></i></div>
-        </div> 
-        <div class="popupBody">
-            <div class="popupTableBox">
-                <table id="caseAttachmentsTable" class="table tableWithIcons popupTable"></table>
-            </div>
-        </div>`;
+          </div>
+        </div>
+      </div>
+    </div>`;
+
   functions.declarePopup(
     ["generalPopupStyle", "greenPopup", "editPopup", "attachPopup"],
     popupHtml
   );
+
+  // Add close button handlers
+  $(`#${closeHeaderId}, #${closeFooterId}`).on("click", function () {
+    functions.closePopup();
+  });
+
   violationsCases.drawCaseAttachmentsPopupTable(
     "#caseAttachmentsTable",
     CaseAttachmentsRecords

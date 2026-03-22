@@ -11,7 +11,7 @@ registeredViolationsRecords.destroyTable = false;
 registeredViolationsRecords.getRegisteredViolations = (
   pageIndex = 1,
   destroyTable = false,
-  ViolationSector = Number($("#violationSector").children("option:selected").val()),
+  // ViolationSector = Number($("#violationSector").children("option:selected").val()),
   ViolationType = Number($("#TypeofViolation").children("option:selected").data("id")),
   ViolationGeneralSearch = $("#violationSearch").val()
 ) => {
@@ -43,8 +43,8 @@ registeredViolationsRecords.getRegisteredViolations = (
       ViolatorName: $("#violatorName").val(),
       NationalID: $("#nationalID").val(),
       ViolationCode: $("#violationCode").val(),
-      PaymentStatus: "قيد الإنتظار",
-      SectorConfigId: ViolationSector,
+      // PaymentStatus: "قيد الإنتظار",
+      // SectorConfigId: ViolationSector,
       GlobalSearch: ViolationGeneralSearch,
       Sector: UserId,
       ViolationType: ViolationType,
@@ -99,10 +99,6 @@ registeredViolationsRecords.setPaginations = (TotalPages, RowsPerPage) => {
 registeredViolationsRecords.filterViolationsLog = (e) => {
   let pageIndex = registeredViolationsRecords.pageIndex;
 
-
-  let ViolationSectorVal = $("#violationSector")
-    .children("option:selected")
-    .val();
   let ViolationTypeVal = $("#TypeofViolation")
     .children("option:selected")
     .data("id");
@@ -117,32 +113,31 @@ registeredViolationsRecords.filterViolationsLog = (e) => {
   }
 
   let ViolationType;
-  let ViolationSector;
 
+  // Check if at least one search criteria is provided
   if (
-    ViolationTypeVal == "" &&
-    ViolationSectorVal == "" &&
-    ViolationGeneralSearch == ""
+    ViolationTypeVal == "0" &&
+    ViolationGeneralSearch == "" &&
+    $("#violatorName").val() == "" &&
+    $("#nationalID").val() == "" &&
+    $("#violationCode").val() == "" &&
+    (violationCategoryValue == "" || violationCategoryValue == null) &&
+    $("#violationZone").val() == "" &&
+    $("#createdFrom").val() == "" &&
+    $("#createdTo").val() == "" &&
+    theCodeValue == ""
   ) {
     functions.warningAlert(
       "من فضلك قم بإدخال قيمة واحدة على الأقل من قيم البحث"
     );
-  } else if (
-    ViolationSectorVal != "" ||
-    ViolationTypeVal != "0" ||
-    ViolationGeneralSearch != ""
-  ) {
+  } else {
     $(".PreLoader").addClass("active");
-    ViolationSector = Number(
-      $("#violationSector").children("option:selected").val()
-    );
     ViolationType = Number(
       $("#TypeofViolation").children("option:selected").data("id")
     );
     registeredViolationsRecords.getRegisteredViolations(
       pageIndex,
       true,
-      ViolationSector,
       ViolationType,
       ViolationGeneralSearch
     );
@@ -154,7 +149,7 @@ registeredViolationsRecords.resetFilter = (e) => {
   $("#nationalID").val("");
   $("#violatorName").val("");
   $("#violationCode").val("");
-  $("#violationSector").val("0");
+  // $("#violationSector").val("0");
   $("#violationCategory").val("");
   $("#TypeofViolation").val("0");
   $("#violationZone").val("");
@@ -167,6 +162,42 @@ registeredViolationsRecords.resetFilter = (e) => {
   pagination.reset();
   registeredViolationsRecords.getRegisteredViolations();
 };
+
+// Add this function to handle violation category change
+registeredViolationsRecords.handleViolationCategoryChange = () => {
+  $("#violationCategory").on("change", function () {
+    const selectedCategory = $(this).val();
+    const $theCodeField = $("#theCode");
+    const $typeOfViolationField = $("#TypeofViolation");
+
+    // First, enable both fields
+    $theCodeField.prop("disabled", false);
+    $typeOfViolationField.prop("disabled", false);
+
+    // Handle "Equipment" selection
+    if (selectedCategory === "Equipment") {
+      $theCodeField.prop("disabled", true).val(""); // Disable and clear the field
+      $typeOfViolationField.prop("disabled", true).val("0"); // Disable and set to default
+    }
+
+    // Handle "Vehicle" selection
+    else if (selectedCategory === "Vehicle") {
+      $typeOfViolationField.prop("disabled", true).val("0"); // Disable and set to default
+      // theCode field remains enabled
+    }
+  });
+};
+
+const originalResetFilter = registeredViolationsRecords.resetFilter;
+registeredViolationsRecords.resetFilter = function (e) {
+  // Call the original resetFilter function
+  originalResetFilter.call(this, e);
+
+  // Re-enable both fields after reset
+  $("#theCode").prop("disabled", false);
+  $("#TypeofViolation").prop("disabled", false);
+};
+
 registeredViolationsRecords.dashBoardTable = (violationsData, destroyTable) => {
   let data = [];
   let taskViolation;
@@ -191,7 +222,7 @@ registeredViolationsRecords.dashBoardTable = (violationsData, destroyTable) => {
                       <li><a href="#" data-violationid="${taskViolation?.ID}" data-violationcode="${taskViolation?.ViolationCode}" class="violationHistory" data-toggle="modal" data-target="#trackHistoryModal">تتبع مرحلة المخالفة</a></li>
                   </ul>
               </div>
-          </div`,
+          </div>`,
         `<div class="violationArName">${functions.getViolationArabicName(
           taskViolation.OffenderType
         )}</div>`,
@@ -238,6 +269,10 @@ registeredViolationsRecords.dashBoardTable = (violationsData, destroyTable) => {
     "سجل المحاضر المسجلة.xlsx",
     "سجل المحاضر المسجلة"
   );
+
+  // 🔹 create column selector
+  functions.createColumnSelector(Table, "#columnSelector", 'blue');
+
   registeredViolationsRecords.destroyTable = true;
 
   $(".ellipsisButton").on("click", (e) => {
@@ -365,7 +400,9 @@ const ViolationHistoryLogs = () => {
   // ===============================
   // 🔥 فتح المودال
   // ===============================
-  $(".contentContainer").on("click", ".violationHistory", function () {
+  $(".contentContainer").on("click", ".violationHistory", function (e) {
+    e.preventDefault();
+    e.stopPropagation();
 
     selectedViolationId = $(this).data("violationid");
     selectedViolationCode = $(this).data("violationcode");
@@ -374,11 +411,47 @@ const ViolationHistoryLogs = () => {
   });
 
   // ===============================
+  // 🔥 إغلاق المودال - Close button handlers
+  // ===============================
+  const closeModal = () => {
+    $("#trackHistoryModal").modal("hide");
+
+    // Clear the modal content
+    $(".track-history-violation-code").text("");
+
+    if (trackHistoryTable) {
+      trackHistoryTable.clear().destroy();
+      trackHistoryTable = null;
+    }
+
+    $("#trackHistoryTable tbody").empty();
+  };
+
+  // Close button in header
+  $(document).on("click", "#closeViolationHistoryPopup", function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+    closeModal();
+  });
+
+  // // Close button in footer
+  // $(document).on("click", "#closeViolationHistoryPopupFooter", function (e) {
+  //   e.preventDefault();
+  //   e.stopPropagation();
+  //   closeModal();
+  // });
+
+  // Bootstrap modal hide event
+  $("#trackHistoryModal").on("hidden.bs.modal", function () {
+    closeModal();
+  });
+
+  // ===============================
   // 🔥 لما المودال يفتح
   // ===============================
   $(".track-history-modal").on("shown.bs.modal", function () {
 
-    $(".modal-violation-code").text(selectedViolationCode);
+    $(".track-history-violation-code").text(selectedViolationCode);
 
     const request = {
       Request: {
@@ -396,6 +469,9 @@ const ViolationHistoryLogs = () => {
         paging: false,
         responsive: true,
         destroy: true,
+        // ordering: false,
+        // searching: false,
+        // info: false,
 
         ajax: {
           url: "/_layouts/15/Uranium.Violations.SharePoint/ViolationHistoryLogs.aspx/Search",
@@ -409,15 +485,35 @@ const ViolationHistoryLogs = () => {
         },
 
         columns: [
-          { data: "Id" },
-          { data: "Status" },
+          {
+            data: null,
+            render: (data, type, row, meta) => {
+              return meta.row;
+            }
+          },
+          {
+            data: "Status",
+            render: (data) => {
+              return data || "-";
+            }
+          },
           {
             data: "Created",
             render: (data) =>
               data ? functions.getFormatedDate(data) : "-"
           },
-          { data: "CreatedBy" },
-          { data: "Comment" }
+          {
+            data: "CreatedBy",
+            render: (data) => {
+              return data || "-";
+            }
+          },
+          {
+            data: "Comment",
+            render: (data) => {
+              return data || "-";
+            }
+          }
         ],
 
         language: {
@@ -437,7 +533,7 @@ const ViolationHistoryLogs = () => {
   // ===============================
   $(".track-history-modal").on("hidden.bs.modal", function () {
 
-    $(".modal-violation-code").text("");
+    $(".track-history-violation-code").text("");
 
     if (trackHistoryTable) {
       trackHistoryTable.clear().destroy();

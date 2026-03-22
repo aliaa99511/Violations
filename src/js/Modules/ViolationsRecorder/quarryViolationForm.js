@@ -259,18 +259,15 @@ quarryViolation.violationDimensionsCoordsDetails = () => {
   let violationQuantity = $("#totalAreaSpace").val();
   let distanceToNearQuarry = $("#distanceToNearQuarry").val();
   let NearestQuarryCode = $("#NearestQuarryNumber").val();
-  let coordsResponse = quarryViolation.GetCoordinates();
-  let coordinates = quarryViolation.GetCoordinates().Decimal;
-  let coordinatesDegrees = quarryViolation.GetCoordinates().Degree;
-  let NumbersRegex =
-    /(?:^|\s)(?=.)((?:0|(?:[1-9](?:\d*|\d{0,2}(?:,\d{3})*)))?(?:\.\d*[1-9])?)(?!\S)/;
+  let coordsResponse = quarryViolation.GetCoordinates(); // Call once
 
-  if (violationDepth != "" && violationDepth != 0) {
-    if (violationAreaSpace != "" && violationAreaSpace != 0) {
-      // if (distanceToNearQuarry != "" && distanceToNearQuarry != 0) {
-      if (NearestQuarryCode != "") {
-        if (coordsResponse != false) {
-          // if(coordinates.length>=4){
+  if (coordsResponse != false) {
+    let coordinates = coordsResponse.Decimal;
+    let coordinatesDegrees = coordsResponse.Degree;
+
+    if (violationDepth != "" && violationDepth != 0) {
+      if (violationAreaSpace != "" && violationAreaSpace != 0) {
+        if (NearestQuarryCode != "") {
           violationDimensionsData = {
             violationDepth: Number(violationDepth),
             violationAreaSpace: Number(violationAreaSpace),
@@ -281,34 +278,28 @@ quarryViolation.violationDimensionsCoordsDetails = () => {
             coordinatesDegrees: coordinatesDegrees,
           };
           validDimensions = true;
-          // }else{
-          //     functions.warningAlert("من فضلك قم بإدخال جميع الاحداثيات وبشكل صحيح")
-          // }
         } else {
           functions.warningAlert(
-            "من فضلك قم بإدخال جميع الاحداثيات وبشكل صحيح",
-            "#coordinatesTable"
+            "من فضلك قم بإدخال رقم المحجر الأقرب للمخالفة",
+            "#NearestQuarryNumber"
           );
         }
       } else {
         functions.warningAlert(
-          "من فضلك قم بإدخال رقم المحجر الأقرب للمخالفة",
-          "#NearestQuarryNumber"
+          "من فضلك قم بادخال مساحة منطقة المخالفة بشكل صحيح",
+          "#AreaSpace"
         );
       }
-      // } else {
-      //     functions.warningAlert("من فضلك قم بادخال المسافة إلى أقرب محجر بشكل صحيح", "#distanceToNearQuarry")
-      // }
     } else {
       functions.warningAlert(
-        "من فضلك قم بادخال مساحة منطقة المخالفة بشكل صحيح",
-        "#AreaSpace"
+        "من فضلك قم بادخال عمق/ارتفاع المحجر الخاص بالمخالفة بشكل صحيح",
+        "#violationDepth"
       );
     }
   } else {
     functions.warningAlert(
-      "من فضلك قم بادخال عمق/ارتفاع المحجر الخاص بالمخالفة بشكل صحيح",
-      "#violationDepth"
+      "من فضلك قم بإدخال جميع الاحداثيات وبشكل صحيح (يجب إدخال 3 نقاط على الأقل)",
+      "#coordinatesTable"
     );
   }
 
@@ -645,7 +636,7 @@ quarryViolation.formActions = () => {
   });
   $("#cancelQuarryViolation").on("click", (e) => {
     window.location.href =
-      "/ViolationsRecorder/Pages/RegisteredViolationsRecords.aspx";
+      "/ViolationsRecorder/Pages/Registered-Violations.aspx";
   });
 
   let filesExtension = [
@@ -902,6 +893,9 @@ quarryViolation.validateForm = (e) => {
   let violatorDetails = quarryViolation.violatorDetails();
   let SectorMembers = $(".membersText").val();
 
+  // Check if calculate by ton checkbox is checked
+  let isCalculateByTon = $("#calculateByTon").is(":checked");
+
   let violationDateArr = violationDetails.violationDate.split("/");
   let violationDate = `${violationDateArr[1]}-${violationDateArr[0]}-${violationDateArr[2]}`;
   let violationTimeArr = violationDetails.violationTime.split("/");
@@ -969,6 +963,12 @@ quarryViolation.validateForm = (e) => {
                   SectorMembers: SectorMembers,
                   Sector: 0,
                 };
+
+                // Add MaterialUnit property if calculate by ton is checked
+                if (isCalculateByTon) {
+                  ViolationData.MaterialUnit = "طن";
+                }
+
                 quarryViolation.submitNewViolation(e, ViolationData);
               }
             } else {
@@ -1054,7 +1054,7 @@ quarryViolation.uploadAttachment = (NewViolationID, ListName) => {
       functions.sucessAlert(
         urlParams.get("taskId") ? "تم تعديل مخالفة محجر بنجاح" : "تم إضافة مخالفة محجر جديدة بنجاح",
         false,
-        "/ViolationsRecorder/Pages/RegisteredViolationsRecords.aspx"
+        "/ViolationsRecorder/Pages/Registered-Violations.aspx"
       );
     },
     error: (err) => {
@@ -1071,6 +1071,10 @@ quarryViolation.GetCoordinates = () => {
   let NumbersArr = "[";
   let IsValid = true;
   let pattern = new RegExp(/^\d*\.?\d*$/);
+
+  // We need exactly 3 valid points
+  let validPointsCount = 0;
+
   Rows.each((index, Row) => {
     let CurrentRow = $(Row);
     let Cells = CurrentRow.find("td");
@@ -1079,83 +1083,118 @@ quarryViolation.GetCoordinates = () => {
     let PointArr = [];
     let DecimalArr = [];
     let NumberArr = [];
+
+    // Check if this row has any non-empty inputs
+    let hasData = false;
     Cells.each((cellIndex, Cell) => {
-      let CurrentCell = $(Cell);
-      let firstTd = $(Cell)[0];
-      let lastTd = $(Cell)[1];
-      let firstEastInputVal = Number(EastTds.find("input:nth-child(1)").val());
-      let secondEastInputVal = Number(EastTds.find("input:nth-child(2)").val());
-      let thirdEastInputVal = Number(EastTds.find("input:nth-child(3)").val());
-      // let firstEastInput = EastTds.find("input:nth-child(1)")
-      let firstNorthInputVal = Number(
-        NorthTds.find("input:nth-child(1)").val()
-      );
-      let secondNorthInputVal = Number(
-        NorthTds.find("input:nth-child(2)").val()
-      );
-      let thirdNorthInputVal = Number(
-        NorthTds.find("input:nth-child(3)").val()
-      );
-      // let firstNorthInput = NorthTds.find("input:nth-child(1)")
-      let Fields = CurrentCell.find("input");
-      let Temp = [];
-      if (CurrentCell.index() != 3) {
-        Fields.each((index, Field) => {
-          let CurrentField = $(Field);
-          let Value = CurrentField.val().trim();
-          if (
-            Value != "" &&
-            pattern.test(Value) &&
-            37 >= firstEastInputVal &&
-            firstEastInputVal >= 24 &&
-            32 >= firstNorthInputVal &&
-            firstNorthInputVal >= 22 &&
-            60 >= secondEastInputVal &&
-            60 >= thirdEastInputVal &&
-            60 >= secondNorthInputVal &&
-            60 >= thirdNorthInputVal
-          ) {
-            Temp.push(Value);
-          } else {
-            IsValid = false;
-            return false;
+      if (cellIndex != 3) {
+        $(Cell).find("input").each((index, Field) => {
+          if ($(Field).val().trim() !== "") {
+            hasData = true;
           }
         });
-        PointArr.push(Temp[0] + "° " + Temp[1] + "' " + Temp[2] + '"');
-        NumberArr.push(Temp[0] + " " + Temp[1] + " " + Temp[2] + " ");
-        DecimalArr.push(
-          parseFloat(Temp[0]) +
-          parseFloat(Temp[1]) / 60 +
-          parseFloat(Temp[2]) / 3600
-        );
       }
     });
-    if (index == Rows.length - 1) {
-      PointsArr += "[" + PointArr + "]";
-      NumbersArr += "[" + NumberArr + "]";
-      DecimalsArr += "[" + DecimalArr + "]";
-    } else {
-      PointsArr += "[" + PointArr + "],";
-      NumbersArr += "[" + NumberArr + "],";
-      DecimalsArr += "[" + DecimalArr + "],";
+
+    // Skip if row is empty
+    if (!hasData) {
+      return;
+    }
+
+    let rowValid = true;
+    Cells.each((cellIndex, Cell) => {
+      let CurrentCell = $(Cell);
+
+      // Get values for validation
+      let firstEastInputVal = Number(EastTds.find("input:nth-child(1)").val() || 0);
+      let secondEastInputVal = Number(EastTds.find("input:nth-child(2)").val() || 0);
+      let thirdEastInputVal = Number(EastTds.find("input:nth-child(3)").val() || 0);
+      let firstNorthInputVal = Number(NorthTds.find("input:nth-child(1)").val() || 0);
+      let secondNorthInputVal = Number(NorthTds.find("input:nth-child(2)").val() || 0);
+      let thirdNorthInputVal = Number(NorthTds.find("input:nth-child(3)").val() || 0);
+
+      let Fields = CurrentCell.find("input");
+
+      if (cellIndex != 3) {
+        let Temp = [];
+        Fields.each((fieldIndex, Field) => {
+          let CurrentField = $(Field);
+          let Value = CurrentField.val().trim();
+
+          // Validate all rows
+          if (Value === "" || !pattern.test(Value) ||
+            (fieldIndex === 0 && (firstEastInputVal > 37 || firstEastInputVal < 24)) ||
+            (fieldIndex === 0 && (firstNorthInputVal > 32 || firstNorthInputVal < 22)) ||
+            (fieldIndex === 1 && (secondEastInputVal > 60 || secondNorthInputVal > 60)) ||
+            (fieldIndex === 2 && (thirdEastInputVal > 60 || thirdNorthInputVal > 60))) {
+            rowValid = false;
+            return false;
+          }
+          Temp.push(Value);
+        });
+
+        // Only add to arrays if we have all three values for this cell
+        if (Temp.length === 3) {
+          PointArr.push(Temp[0] + "° " + Temp[1] + "' " + Temp[2] + '"');
+          NumberArr.push(Temp[0] + " " + Temp[1] + " " + Temp[2] + " ");
+          DecimalArr.push(
+            parseFloat(Temp[0]) +
+            parseFloat(Temp[1]) / 60 +
+            parseFloat(Temp[2]) / 3600
+          );
+        }
+      }
+    });
+
+    // Only count this row as valid if both East and North cells have data
+    if (rowValid && PointArr.length === 2) {
+      validPointsCount++;
+
+      if (index === Rows.length - 1) {
+        PointsArr += "[" + PointArr + "]";
+        NumbersArr += "[" + NumberArr + "]";
+        DecimalsArr += "[" + DecimalArr + "]";
+      } else {
+        PointsArr += "[" + PointArr + "],";
+        NumbersArr += "[" + NumberArr + "],";
+        DecimalsArr += "[" + DecimalArr + "],";
+      }
     }
   });
+
   PointsArr += "]";
   NumbersArr += "]";
   DecimalsArr += "]";
-  if (IsValid) {
+
+  // Require exactly 3 valid points
+  if (IsValid && validPointsCount === 3) {
     return {
       Degree: PointsArr,
       Decimal: DecimalsArr,
       Numbers: NumbersArr,
     };
   } else {
-    // functions.warningAlert("من فضلك قم بإدخال جميع الاحداثيات وبشكل صحيح")
     return false;
   }
 };
 quarryViolation.AddCoordinatePoint = (e) => {
   let coordinatesTable = $("#coordinatesTable");
+  let currentRows = coordinatesTable.find("tr").length - 1; // Subtract header row
+
+  // Check if we already have 3 rows
+  if (currentRows >= 3) {
+    Swal.fire({
+      icon: "warning",
+      customClass: "sweetStyle",
+      title: "لا يمكن إضافة المزيد",
+      text: "يمكن إضافة 3 نقاط فقط للإحداثيات",
+      confirmButtonColor: "#3085d6",
+      confirmButtonText: "موافق",
+      heightAuto: true,
+    });
+    return;
+  }
+
   let cloneRow = $("#coordinatesTable")
     .find("tr.hideRow")
     .clone(true)
@@ -1175,8 +1214,9 @@ quarryViolation.AddCoordinatePoint = (e) => {
 };
 quarryViolation.DeleteCoordinatePoint = (e) => {
   var element = $(e.currentTarget);
-  let RowsLength = $("#coordinatesTable table").find("tr").length;
-  if (RowsLength - 1 > 4) {
+  let RowsLength = $("#coordinatesTable table").find("tr").length - 1; // Subtract header row
+
+  if (RowsLength > 3) {
     Swal.fire({
       icon: "warning",
       customClass: "sweetStyle",
@@ -1197,7 +1237,15 @@ quarryViolation.DeleteCoordinatePoint = (e) => {
       }
     });
   } else {
-    Swal.fire("لا يمكنك حذف هذه النقطة لا بد من وجود أربع نقاط على الاقل.");
+    Swal.fire({
+      icon: "warning",
+      customClass: "sweetStyle",
+      title: "لا يمكن الحذف",
+      text: "يجب أن يكون هناك 3 نقاط على الأقل للإحداثيات",
+      confirmButtonColor: "#3085d6",
+      confirmButtonText: "موافق",
+      heightAuto: true,
+    });
   }
 };
 quarryViolation.OrderTableRow = () => {

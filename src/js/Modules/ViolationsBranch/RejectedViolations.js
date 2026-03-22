@@ -127,7 +127,7 @@ rejectedViolations.rejectedViolationTable = (rejectedViolationDate, destroyTable
                                 
                             </ul>
                         </div>
-                    </div`,
+                    </div>`,
                     `<div class="violationArName">${functions.getViolationArabicName(taskViolation.OffenderType)}</div>`,
                     `<div class="violationCode">${taskViolation.OffenderType == "Vehicle" ? taskViolation.CarNumber : taskViolation.QuarryCode != "" ? taskViolation.QuarryCode : "---"}</div>`,
                     `<div class="companyName">${taskViolation.ViolatorCompany != "" ? taskViolation.ViolatorCompany : "-"}</div>`,
@@ -163,6 +163,9 @@ rejectedViolations.rejectedViolationTable = (rejectedViolationDate, destroyTable
         "المخالفات المرفوضة"
     );
 
+    // 🔹 create column selector
+    functions.createColumnSelector(Table, "#columnSelector", 'green');
+
     rejectedViolations.destroyTable = true;
 
     $(".ellipsisButton").on("click", (e) => {
@@ -176,9 +179,9 @@ rejectedViolations.rejectedViolationTable = (rejectedViolationDate, destroyTable
         let rejectReason = jQueryRecord.find(".violationId").data("rejectreason");
         let OffenderType = jQueryRecord.find(".violationId").data("offendertype");
         let hiddenListBox = jQueryRecord.find(".controls").children(".hiddenListBox")
-        if (hiddenListBox.height() > 110 && jQueryRecord.is(":nth-last-child(-n + 4)")) {
-            hiddenListBox.addClass("toTopDDL")
-        }
+        // if (hiddenListBox.height() > 110 && jQueryRecord.is(":nth-last-child(-n + 4)")) {
+        //     hiddenListBox.addClass("toTopDDL")
+        // }
         jQueryRecord.find(".controls").children(".hiddenListBox").find(".itemDetails").on("click", (e) => {
             $(".overlay").addClass("active");
             rejectedViolations.findViolationByID(e, violationTaskID);

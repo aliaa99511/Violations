@@ -19,7 +19,7 @@ approvedViolationsRecords.getApprovedViolations = () => {
       ColName: "created",
       SortOrder: "desc",
       Status: "Approved",
-      Sector: 0,
+      Sector: UserId,
       ViolationType: approvedViolationsRecords.dataObj.ViolationType,
       OffenderType: approvedViolationsRecords.dataObj.OffenderType,
     },
@@ -59,6 +59,34 @@ approvedViolationsRecords.setPaginations = (TotalPages, RowsPerPage) => {
   // pagination.scrollToElement(el, length)
   pagination.activateCurrentPage();
 };
+approvedViolationsRecords.handleViolationCategoryChange = () => {
+  $("#violationCategory").on("change", function () {
+    const selectedCategory = $(this).val();
+    const $typeOfViolationField = $("#TypeofViolation");
+
+    // First, enable both fields
+    $typeOfViolationField.prop("disabled", false);
+
+    // Handle "Equipment" selection
+    if (selectedCategory === "Equipment") {
+      $typeOfViolationField.prop("disabled", true).val("0"); // Disable and set to default
+    }
+
+    // Handle "Vehicle" selection
+    else if (selectedCategory === "Vehicle") {
+      $typeOfViolationField.prop("disabled", true).val("0"); // Disable and set to default
+    }
+  });
+};
+const originalResetFilter = approvedViolationsRecords.resetFilter;
+approvedViolationsRecords.resetFilter = function (e) {
+  // Call the original resetFilter function
+  originalResetFilter.call(this, e);
+
+  // Re-enable both fields after reset
+  $("#TypeofViolation").prop("disabled", false);
+};
+
 approvedViolationsRecords.dashBoardTable = (violationsData) => {
   let data = [];
   let taskViolation;
@@ -79,7 +107,7 @@ approvedViolationsRecords.dashBoardTable = (violationsData) => {
                         <li><a href="#" class="itemDetails"> المزيد من التفاصيل</a></li>                       
                     </ul>
                 </div>
-            </div`,
+            </div>`,
         `<div class="violationArName">${functions.getViolationArabicName(taskViolation.OffenderType)}</div>`,
         `<div class="violationCode">${taskViolation.OffenderType == "Vehicle" ? taskViolation.CarNumber : taskViolation.QuarryCode != "" ? taskViolation.QuarryCode : "---"}</div>`,
         `<div class="companyName">${taskViolation.ViolatorCompany != "" ? taskViolation.ViolatorCompany : "-"}</div>`,
@@ -111,6 +139,10 @@ approvedViolationsRecords.dashBoardTable = (violationsData) => {
     "سجل المحاضر الموافق عليها.xlsx",
     "سجل المحاضر الموافق عليها"
   );
+
+  // 🔹 create column selector
+  functions.createColumnSelector(Table, "#columnSelector", 'blue');
+
   $(".ellipsisButton").on("click", (e) => {
     $(".hiddenListBox").hide(300);
     $(e.currentTarget).siblings(".hiddenListBox").toggle(300);

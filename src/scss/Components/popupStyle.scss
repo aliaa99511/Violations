@@ -1,4 +1,5 @@
 .modal {
+
   // .modal-content{
   //     overflow: hidden;
   // }
@@ -10,33 +11,40 @@
       justify-content: center;
       max-width: 75%;
       direction: rtl;
+
       .modal-content {
         height: 100%;
         padding: 1.5rem 1.5rem 1.5rem 1rem;
+
         .modal-header {
           display: none !important;
         }
+
         .modal-body {
           direction: rtl;
           padding: 1rem;
           height: 100%;
           overflow: auto;
+
           &::-webkit-scrollbar {
             width: 8px;
             background: transparent;
           }
+
           &::-webkit-scrollbar-thumb {
             background: #efefef;
             border: 1px solid #efefef;
             border-radius: 5px;
           }
         }
+
         .modal-footer {
           display: none !important;
         }
       }
     }
   }
+
   &.detailsPopup {
     .popupHeader {
       @include flexRow;
@@ -46,8 +54,10 @@
       border-radius: 3px;
       // margin: 1rem;
       margin-bottom: 1.5rem;
+
       .violationsCode {
         @include flexRow;
+
         p {
           color: $customGreen;
           font-family: CairoB;
@@ -55,16 +65,19 @@
           margin-bottom: 0;
           margin-inline-end: 0.75rem;
         }
+
         .printBtn {
           cursor: pointer;
         }
       }
+
       .backBtn {
         .close {
           a {
             color: #6f8268;
             font-family: CairoSB;
             text-decoration: none;
+
             i {
               margin-inline-start: 0.25rem;
             }
@@ -72,14 +85,17 @@
         }
       }
     }
+
     .popupFormBoxHeader {
       display: none;
       margin: 1.5rem 0 0.75rem;
+
       .formBoxTitle {
         @include flexRow;
         font-size: 16px;
         font-family: CairoSB;
         color: $customGreen;
+
         .formNumber {
           width: 20px;
           height: 20px;
@@ -93,32 +109,40 @@
         }
       }
     }
+
     .popupBody {
       position: relative;
       padding: 1rem;
       background: #f9f9f9;
       // margin-top: 1.5rem;
       border-radius: 3px;
+
       .popupForm {
         padding: 1rem;
+
         .form-control {
           background-color: #efefef;
           color: #0c0c0c;
+
           &.greenInput {
             background-color: $customGreen;
             color: $white;
           }
+
           &.blueInput {
             background-color: $customBlue;
             color: $white;
           }
         }
+
         table {
           background-color: #efefef;
           font-family: CairoSB;
+
           th {
             height: 45px !important;
           }
+
           input {
             background-color: #efefef;
             color: #0c0c0c;
@@ -126,6 +150,7 @@
             height: 45px !important;
           }
         }
+
         .feildInfoBox {
           .titleLink {
             @include flexRow;
@@ -135,36 +160,46 @@
             font-family: CairoB;
             position: relative;
             transition: all 0.4s ease-in-out;
+
             i {
               margin-inline-end: 0.25rem;
             }
+
             &::after {
               @include linksAfter;
             }
+
             &.showOnMapBtn {
               display: none;
             }
+
             // &.showOnMapBtn,
             &.showFormula {
               color: #1779b9;
+
               &::after {
                 background-color: #1779b9;
               }
             }
+
             //Temporary
             &.showFormula {
               display: none;
             }
+
             &.downloadAllFiles {
               color: $customGreen;
+
               &::after {
                 background-color: $customGreen;
               }
             }
+
             //Temporary
             &.downloadAllFiles {
               display: none;
             }
+
             &:hover {
               &::after {
                 transform: scaleX(0);
@@ -172,9 +207,11 @@
             }
           }
         }
+
         .timeInput {
           direction: ltr;
         }
+
         .rejectReasonBox,
         .totalPriceBox,
         .confirmationAttachBox,
@@ -189,6 +226,7 @@
           display: none;
         }
       }
+
       .showMoreDetails {
         @include flexRow;
         justify-content: center;
@@ -197,14 +235,17 @@
         right: 50%;
         transform: translateX(50%);
         cursor: pointer;
+
         .moreDetailsInnerBox {
           @include flexRow;
           background-color: transparent;
           padding: 0.5rem 1rem;
+
           img {
             margin-inline-end: 0.75rem;
             transition: all 0.4s ease-in-out;
           }
+
           p {
             margin-bottom: 0;
             font-size: 13px;
@@ -212,32 +253,41 @@
             color: #666;
           }
         }
+
         display: none;
       }
+
       // .hiddenDetailsBox{
       //     display: none;
       // }
     }
+
     .paymentFormBody {
       padding: 1rem;
       border: 2px solid #efefef;
       border-radius: 5px;
+
       .popupForm {
         padding: 1rem;
+
         .disabledInput {
           background-color: #efefef;
           color: #0c0c0c;
         }
+
         .fileBox {
           height: 56px;
           min-height: 56px;
           padding: 1rem;
+
           .inputFileBox {
             @include flexRow;
             justify-content: space-between;
+
             img {
               margin-bottom: 0;
             }
+
             .dragDropFilesLabel {
               a {
                 color: $customGreen;
@@ -245,20 +295,25 @@
             }
           }
         }
+
         // .actualPayedPriceBox,.actualRemainigPriceBox {
         //     display: none;
         // }
       }
     }
+
     &.blueHeaderPopup {
       .popupHeader {
         background: $lightBlue;
+
         .violationsCode {
           @include flexRow;
+
           p {
             color: $customBlue;
           }
         }
+
         .backBtn {
           .close {
             a {
@@ -269,12 +324,14 @@
       }
     }
   }
+
   &.greenPopup {
     .popupHeader {
       background-color: $customGreen;
       padding: 1.5rem;
       border-top-left-radius: 6px;
       border-top-right-radius: 6px;
+
       .violationsCode {
         p {
           color: $white;
@@ -285,10 +342,12 @@
       }
     }
   }
+
   &.bluePopup {
     .popupHeader {
       background-color: $customBlue;
       padding: 1.5rem;
+
       .violationsCode {
         p {
           color: $white;
@@ -299,24 +358,31 @@
       }
     }
   }
+
   &.statusPopup {
     .modal-dialog {
       max-width: 45%;
+
       .modal-content {
         height: fit-content;
         padding: 0;
+
         .modal-body {
           padding: 0;
+
           .row {
             margin: 0;
           }
+
           .popupBody {
             padding: 2rem 5rem;
+
             .popupContent {
               width: 100%;
               @include flexRow;
               justify-content: center;
               margin-bottom: 1.75rem;
+
               .popupMessage {
                 font-size: 20px;
                 font-family: CairoSB;
@@ -331,33 +397,44 @@
       }
     }
   }
+
   &.editPopup {
     .modal-dialog {
       max-width: 60%;
+
       .modal-content {
         height: fit-content;
         padding: 0;
+
         .modal-body {
           padding: 0;
+
           .row {
             margin: 0;
           }
+
           .popupBody {
             padding: 2rem;
+
             .addCaseAttachComments {
               height: 120px;
+
               &:focus {
                 border: 2px solid $customGreen !important;
               }
             }
+
             .fileBox {
               height: 120px;
             }
+
             .customInput {
+
               // background-color: #EFEFEF;
               &.disabled {
                 color: #000;
               }
+
               &:focus {
                 border: 2px solid $customGreen !important;
               }
@@ -367,6 +444,7 @@
       }
     }
   }
+
   &.paymentFormDetailsPopup {
     .popupSectionWrapper {
       position: relative;
@@ -374,26 +452,31 @@
       padding: 1.2rem;
       margin-bottom: 1.2rem;
       z-index: 1;
+
       .WaterMark {
         z-index: -1;
         position: absolute;
         top: 50%;
         right: 50%;
         transform: translate(50%, -50%);
+
         img {
           max-width: 100%;
         }
       }
+
       &:first-child {
         .WaterMark {
           width: 25%;
         }
       }
+
       &:last-child {
         .WaterMark {
           width: 35%;
         }
       }
+
       .formTitle {
         @include flexRow;
         justify-content: center;
@@ -402,8 +485,10 @@
         color: #000;
         margin-bottom: 0.5rem;
       }
+
       .popupHeader {
         margin-bottom: 1rem;
+
         .violationsMetaBox {
           padding: 0.5rem;
           background-color: $white;
@@ -414,27 +499,33 @@
           font-size: 14px;
           @include flexRow;
           justify-content: space-between;
+
           .violationCode {
             margin-bottom: 0 !important;
           }
+
           .violationPrintTime {
             margin-bottom: 0;
             display: none;
           }
         }
       }
+
       .popupBody {
         .popupForm {
           .formElements {
             margin: 0 1rem;
           }
+
           .customFormGroup {
             margin-bottom: 0.75rem !important;
           }
+
           .customLabel {
             margin-bottom: 0.25rem !important;
             color: #000;
           }
+
           .inputIconBox {
             .currency {
               font-size: 10px !important;
@@ -442,19 +533,24 @@
               font-family: CairoSB !important;
             }
           }
+
           .form-control {
             background-color: $white;
             color: #000;
           }
+
           .customInput {
             height: 40px !important;
             padding: 0.25rem 0.5rem !important;
           }
+
           .payRowData {
             margin-bottom: 0.5rem;
+
             .customFormGroup {
               margin-bottom: 0 !important;
             }
+
             .headOfSection {
               height: 100%;
               display: flex;
@@ -463,10 +559,12 @@
               font-size: 14px;
               font-family: CairoB;
               padding: 0 10px;
+
               .SectionTitle {
                 margin-bottom: 0 !important;
               }
             }
+
             .hint {
               font-size: 13px;
               font-family: CairoSB;
@@ -474,55 +572,67 @@
               color: #000;
               margin-inline-start: 0.2rem;
             }
+
             .instructionsBox {
               @include flexCol;
               justify-content: flex-end !important;
               height: 100% !important;
+
               .paymentInstructions {
                 margin-bottom: 0 !important;
                 margin-top: 0.35rem;
                 font-family: CairoB;
                 font-size: 13px;
                 color: #000;
+
                 .payPeriod {
                   font-family: CairoB;
                   font-style: italic;
                   text-decoration: underline;
                   color: #000;
                 }
+
                 &:first-child {
                   margin-top: 0 !important;
                 }
               }
             }
           }
+
           .toolsBox {
+
             // background-color: #efefef;
             .tool {
               position: relative;
               width: calc((100% / 5) - 0.2rem);
               margin-inline-end: 0.2rem;
               margin-bottom: 0.2rem;
+
               label {
                 height: 40px;
                 padding: 0.25rem 0.5rem;
+
                 .checkmark {
                   background-color: $white;
                   border: none;
                   border-radius: 2px;
                 }
+
                 .checktext {
                   color: #000;
                 }
               }
+
               &:nth-child(5n) {
                 width: calc(100% / 5);
                 margin-inline-end: 0;
               }
             }
           }
+
           .coordinatesTable {
             background: $white;
+
             tr {
               &:first-child {
                 th {
@@ -531,6 +641,7 @@
                   font-family: CairoSB;
                 }
               }
+
               th {
                 &:first-child {
                   width: 40px;
@@ -538,17 +649,21 @@
                   font-family: CairoSB;
                 }
               }
+
               td {
                 input {
                   height: 40px;
                   color: #000;
                   font-family: CairoSB;
+
                   &:nth-child(1) {
                     width: 25% !important;
                   }
+
                   &:nth-child(2) {
                     width: 25%;
                   }
+
                   &:nth-child(3) {
                     width: 45%;
                   }
@@ -556,26 +671,32 @@
               }
             }
           }
+
           .coordinatesMap {
             height: 207px;
             min-height: 207px;
             max-height: 250px;
             background-color: $white;
           }
+
           .payFormCommentsBox {
             @include flexCol;
+
             // align-items: flex-start;
             label {
               margin-inline-end: 0.5rem;
             }
+
             textarea {
               width: 100%;
               height: 80px;
               background-color: $white;
             }
           }
+
           .managerSignatureBox {
             @include flexCol;
+
             p {
               margin-bottom: 0;
               font-size: 13px;
@@ -585,10 +706,12 @@
         }
       }
     }
+
     .cutPaperBox {
       position: relative;
       margin-bottom: 1.2rem;
       border-bottom: 2px dashed #707070;
+
       .cutLine {
         position: absolute;
         right: 0;
@@ -596,28 +719,36 @@
         transform: translateY(-50%);
       }
     }
+
     // .printConfirmationForm{
     //     display: none;
     // }
   }
+
   &.attachPopup {
     height: 100vh;
+
     .modal-dialog {
       max-width: 70% !important;
+
       .modal-content {
         height: 85%;
+
         .modal-body {
           overflow: unset;
+
           form {
             height: 100%;
           }
         }
       }
     }
+
     .popupHeader {
       &.attachPopup {
         @include flexRow;
         justify-content: space-between;
+
         .closeCaseAttachPopup {
           color: $white;
           font-size: 20px;
@@ -626,28 +757,35 @@
         }
       }
     }
+
     .popupBody {
       padding: 1.5rem 1.5rem 1.5rem 1rem !important;
       height: 100%;
+
       .popupTableBox {
-        height: calc(100% - 4.5rem);
+        height: calc(100% - 6.5rem);
         overflow: auto;
+
         table.table {
           padding-inline-end: 0.35rem;
+
           thead {
             th {
               padding: 1.25rem 0.75rem;
               font-family: CairoB;
               font-size: 15px;
               color: #0c0c0c;
+
               &.tableCounter {
                 width: 3% !important;
               }
+
               &.attachBoxHeader {
                 width: 35% !important;
               }
             }
           }
+
           tbody {
             tr {
               td {
@@ -657,6 +795,7 @@
                 font-size: 13px;
                 color: #000;
               }
+
               &:last-child {
                 td {
                   border-bottom: none;
@@ -665,13 +804,16 @@
             }
           }
         }
+
         .attachCount {
           font-family: CairoB;
           font-size: 13px;
         }
+
         .attachFiles {
           @include flexRow;
           flex-wrap: wrap;
+
           .attchedFile {
             margin-inline-end: 0.35rem;
             height: 42px;
@@ -680,10 +822,12 @@
             padding: 0.5rem !important;
           }
         }
+
         .attachUploadDate {
           direction: ltr;
           text-align: right;
         }
+
         .attachComments {
           // max-width: 100%;
           // max-height:80px;
@@ -691,10 +835,12 @@
           // max-height: 100px;
           line-height: 20px;
         }
+
         &::-webkit-scrollbar {
           width: 6px;
           background: transparent;
         }
+
         &::-webkit-scrollbar-thumb {
           background: #efefef;
           border-radius: 5px;
@@ -703,23 +849,30 @@
       }
     }
   }
+
   &.caseDetailsPopup {
     .modal-dialog {
       max-width: 75%;
+
       .modal-content {
         height: fit-content;
         padding: 0;
+
         .modal-body {
           padding: 0;
+
           .row {
             margin: 0;
           }
+
           .popupHeader {
             .popupTitleBox {
               @include flexRow;
               justify-content: space-between;
+
               .CaseNumberBox {
                 @include flexRow;
+
                 .caseNumber {
                   margin-bottom: 0;
                   margin-inline-end: 0.75rem;
@@ -727,10 +880,12 @@
                   font-family: CairoB;
                   font-size: 18px;
                 }
+
                 .printBtn {
                   cursor: pointer;
                 }
               }
+
               .closeCaseDetailsPopup {
                 color: $white;
                 font-size: 20px;
@@ -739,18 +894,23 @@
               }
             }
           }
+
           .popupBody {
             padding: 2rem;
+
             .formBoxTitle {
               color: $customGreen;
+
               .formNumber {
                 background: $customGreen;
               }
             }
+
             .customInput {
               background-color: #efefef;
               color: #000;
             }
+
             .formContent {
               margin-bottom: 1.5rem;
             }
@@ -759,26 +919,33 @@
       }
     }
   }
-  &.petitionPopup
-  // ,&.approvePetitionPopup
-  {
+
+  &.petitionPopup // ,&.approvePetitionPopup
+
+    {
     .modal-dialog {
       max-width: 75%;
+
       .modal-content {
         height: fit-content;
         padding: 0;
+
         .modal-body {
           padding: 0;
+
           .row {
             margin: 0;
           }
+
           .popupHeader {
             .popupTitleBox {
               @include flexRow;
               justify-content: space-between !important;
             }
+
             .PetitionNumberBox {
               @include flexRow;
+
               .PetitionNumber {
                 margin-bottom: 0;
                 margin-inline-end: 0.75rem;
@@ -786,10 +953,12 @@
                 font-family: CairoB;
                 font-size: 18px;
               }
+
               .printBtn {
                 cursor: pointer;
               }
             }
+
             .closePetitionDetailsPopup {
               color: $white;
               font-size: 20px;
@@ -797,18 +966,23 @@
               margin-inline-end: 0.25rem;
             }
           }
+
           .popupBody {
             padding: 2rem;
+
             .formBoxTitle {
               color: $customGreen;
+
               .formNumber {
                 background: $customGreen;
               }
             }
+
             .customInput {
               background-color: #efefef;
               color: #000;
             }
+
             .formContent {
               margin-bottom: 1.5rem;
             }
@@ -824,16 +998,20 @@
   margin-inline-end: 0 !important;
   margin-bottom: 0 !important;
 }
+
 .multibleFiles {
   width: calc((100% / 2) - 0.35rem) !important;
   margin-bottom: 0 !important;
+
   &:nth-child(2n) {
     width: calc(100% / 2) !important;
     margin-inline-end: 0 !important;
   }
 }
+
 .manyFiles {
   width: calc((100% / 3) - 0.35rem) !important;
+
   &:nth-child(3n) {
     width: calc(100% / 3) !important;
     margin-inline-end: 0 !important;
@@ -843,6 +1021,13 @@
 .rotateDetailsIcon {
   transform: rotate(180deg);
 }
+
 .displayBlock {
   display: block !important;
+}
+
+
+.attachPopup .table tbody tr.even,
+.attachPopup .table tbody tr.odd {
+  background-color: transparent !important;
 }

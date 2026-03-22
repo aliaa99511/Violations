@@ -100,7 +100,7 @@ completedViolations.CompletedViolationTable = (CompletedViolation, destroyTable)
                             <li><a href="#" class="itemDetails"> المزيد من التفاصيل</a></li>
                            </ul>
                     </div>
-                </div`,
+                </div>`,
             ]);
         });
     }
@@ -122,6 +122,9 @@ completedViolations.CompletedViolationTable = (CompletedViolation, destroyTable)
         "سجل القضايا.xlsx",
         "سجل القضايا"
     );
+
+    // 🔹 create column selector
+    functions.createColumnSelector(Table, "#columnSelector", 'green');
 
     let violationlog = Table.rows().nodes().to$();
     $.each(violationlog, (index, record) => {

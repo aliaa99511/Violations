@@ -10,98 +10,6 @@ functions.stripHTML = (html) => {
   div.innerHTML = html;
   return div.textContent || div.innerText || "";
 };
-// functions.exportDataTable = (options) => {
-//   const {
-//     tableSelector,
-//     fileName = "export.xlsx",
-//     sheetName = "Sheet1",
-//     headers = null,
-//     ignoreLastColumns = 0,
-//     onlyVisible = true,
-//     rtl = true,
-//     columnWidths = 25,
-//   } = options;
-
-//   let table = $(tableSelector).DataTable();
-//   let data = [];
-
-//   // Headers
-//   if (headers) {
-//     // Filter out empty headers or headers that should be ignored
-//     const filteredHeaders = headers.filter((header, index) => {
-//       // Skip the empty column (second column) and any columns at the end based on ignoreLastColumns
-//       return index !== 1; // Skip the second column (index 1) which contains the ellipsis button
-//     });
-//     data.push(filteredHeaders);
-//   } else {
-//     let autoHeaders = [];
-//     $(tableSelector + " thead th").each(function (index) {
-//       // Skip the second column (index 1) which contains the ellipsis button
-//       if (index !== 1) {
-//         autoHeaders.push($(this).text().trim());
-//       }
-//     });
-//     data.push(autoHeaders);
-//   }
-
-//   // Rows
-//   table.rows(onlyVisible ? { search: "applied" } : {}).every(function () {
-//     let row = this.data();
-//     let rowData = [];
-
-//     // Skip the second column (index 1) which contains the ellipsis button
-//     // Also apply ignoreLastColumns from the end
-//     for (let i = 0; i < row.length; i++) {
-//       // Skip the second column (index 1)
-//       if (i === 1) continue;
-
-//       // Handle ignoreLastColumns - keep all except the last specified columns
-//       if (i >= row.length - ignoreLastColumns) continue;
-
-//       let cell = row[i];
-//       let textContent = '';
-
-//       // Check if cell contains HTML
-//       if (typeof cell === 'string' && cell.trim().startsWith('<')) {
-//         // Create a temporary element to parse HTML and extract text
-//         let tempDiv = $('<div>').html(cell);
-
-//         // Try to get text from specific elements first
-//         let violationIdDiv = tempDiv.find('.violationId');
-//         if (violationIdDiv.length) {
-//           textContent = violationIdDiv.text().trim();
-//         } else {
-//           // Fallback to getting all text
-//           textContent = tempDiv.text().trim();
-//         }
-
-//         // If still empty, try to get from data attributes or other sources
-//         if (textContent === '' && violationIdDiv.length) {
-//           // Try to get from data-violationcode attribute
-//           textContent = violationIdDiv.data('violationcode') || '';
-//         }
-//       } else {
-//         // Not HTML, use as is
-//         textContent = functions.stripHTML ? functions.stripHTML(cell) : cell;
-//       }
-
-//       rowData.push(textContent);
-//     }
-
-//     data.push(rowData);
-//   });
-
-//   let ws = XLSX.utils.aoa_to_sheet(data);
-
-//   if (rtl) ws["!dir"] = "rtl";
-
-//   ws["!cols"] = data[0].map(() => ({ wch: columnWidths }));
-
-//   let wb = XLSX.utils.book_new();
-//   XLSX.utils.book_append_sheet(wb, ws, sheetName);
-
-//   XLSX.writeFile(wb, fileName);
-// };
 functions.exportDataTable = (options) => {
   const {
     tableSelector,
@@ -120,7 +28,9 @@ functions.exportDataTable = (options) => {
   // ================= Headers =================
   if (headers) {
     const filteredHeaders = headers.filter((header, index) => {
-      return index !== 1;
+      if (index === 1) return false;
+      if (!table.column(index).visible()) return false;
+      return true;
     });
     data.push(filteredHeaders);
   } else {
@@ -138,8 +48,14 @@ functions.exportDataTable = (options) => {
     let row = this.data();
 
     let filteredRow = row.filter((cell, index) => {
+
+      // skip control column
       if (index === 1) return false;
-      return index < row.length - ignoreLastColumns;
+
+      // export only visible columns
+      if (!table.column(index).visible()) return false;
+
+      return true;
     });
 
     let cleanRow = filteredRow.map((cell) => {
@@ -250,6 +166,52 @@ functions.tableDeclare = (
 
   return Table;
 };
+functions.createColumnSelector = (table, containerID, theme = 'blue') => {
+  const container = $(containerID);
+  container.html("");
+
+  // Add theme class to dropdown
+  container.addClass(`${theme}-theme`);
+
+  table.columns().every(function (index) {
+    let column = this;
+    let header = $(column.header()).text().trim();
+
+    // ignore controls column
+    if (index === 1) return;
+
+    let checked = column.visible() ? "checked" : "";
+
+    container.append(`
+      <label>
+        <input type="checkbox" data-column="${index}" ${checked}>
+        ${header}
+      </label>
+    `);
+  });
+
+  // toggle column
+  container.find("input").on("change", function () {
+    let columnIndex = $(this).data("column");
+    let column = table.column(columnIndex);
+    column.visible(!column.visible());
+  });
+
+  // Toggle dropdown button
+  $("#columnToggleBtn").off("click").on("click", function (e) {
+    e.stopPropagation();
+    container.toggleClass("active");
+  });
+
+  // click outside close dropdown
+  $(document).on("click", function () {
+    container.removeClass("active");
+  });
+
+  container.on("click", function (e) {
+    e.stopPropagation();
+  });
+};
 functions.tableSearch = (
   Table,
   colNumber,
@@ -262,6 +224,13 @@ functions.tableSearch = (
       Table.columns(colNumber).search(key).draw();
     } else {
       Table.columns(colNumber).search(key).draw();
+    }
+  });
+};
+functions.hideTargetElement = (element, targetEl) => {
+  $(document).on("click", (event) => {
+    if (!$(event.target).closest(element).length > 0) {
+      $(targetEl).hide(300);
     }
   });
 };
@@ -351,13 +320,6 @@ functions.declarePopup = (styleClassName, Content) => {
       $(".modal:last-child").addClass(styleClassName);
     },
     showclose: true,
-  });
-};
-functions.hideTargetElement = (element, targetEl) => {
-  $(document).on("click", (event) => {
-    if (!$(event.target).closest(element).length > 0) {
-      $(targetEl).hide(300);
-    }
   });
 };
 functions.showDropDownList = (e) => {
@@ -1191,7 +1153,344 @@ functions.getPetitionsStatus = (petitionStatus) => {
   return statusHtml;
 };
 
-export const closePopup = () => {
+functions.getCaseStatus = (CaseStatus) => {
+  let statusHtml = ``;
+
+  // Define status mappings with their Arabic display text, icon, and style class
+  const statusConfig = {
+    // Pending/Under Review statuses
+    "قيد مراجعة النيابة المختصة": {
+      text: "قيد مراجعة النيابة المختصة",
+      icon: 'fa-regular fa-clock',
+      class: 'pendingStatus'
+    },
+    "منظورة": {
+      text: "منظورة",
+      icon: 'fa-regular fa-eye',
+      class: 'pendingStatus'
+    },
+    "قيد انتظار القطاع": {
+      text: "قيد انتظار القطاع",
+      icon: 'fa-regular fa-clock',
+      class: 'pendingStatus'
+    },
+    "قيد انتظار رقم القضية": {
+      text: "قيد انتظار رقم القضية",
+      icon: 'fa-regular fa-clock',
+      class: 'pendingStatus'
+    },
+    "قيد الانتظار القطاع": {
+      text: "قيد الانتظار القطاع",
+      icon: 'fa-regular fa-clock',
+      class: 'pendingStatus'
+    },
+    "قيد انتظار رقم الإحالة": {
+      text: "قيد انتظار رقم الإحالة",
+      icon: 'fa-regular fa-clock',
+      class: 'refferedStatus'
+    },
+    "قيد انتظار تأشيرات النيابة": {
+      text: "قيد انتظار تأشيرات النيابة",
+      icon: 'fa-regular fa-clock',
+      class: 'pendingStatus'
+    },
+    "قيد انتظار المدعي العام العسكري": {
+      text: "قيد انتظار المدعي العام العسكري",
+      icon: 'fa-regular fa-clock',
+      class: 'pendingStatus'
+    },
+    "تم الإحالة إلى المدعي العام العسكري": {
+      text: "تم الإحالة إلى المدعي العام العسكري",
+      icon: 'fa-regular fa-clock',
+      class: 'closedStatus'
+    },
+    "قيد انتظار الرقم القضائي": {
+      text: "قيد انتظار الرقم القضائي",
+      icon: 'fa-regular fa-clock',
+      class: 'pendingStatusDark'
+    },
+    "قيد انتظار رقم القيد": {
+      text: "قيد انتظار رقم القيد",
+      icon: 'fa-regular fa-clock',
+      class: 'pendingStatus'
+    },
+
+    // Completed/Closed statuses
+    "مسددة": {
+      text: "مسددة",
+      icon: 'fa-regular fa-circle-check',
+      class: 'closedStatus'
+    },
+    "تم التسليم للتحريات": {
+      text: "تم التسليم للتحريات",
+      icon: 'fa-regular fa-circle-check',
+      class: 'closedStatus'
+    },
+    "تم إضافة الرقم القضائي": {
+      text: "تم إضافة الرقم القضائي",
+      icon: 'fa-regular fa-circle-check',
+      class: 'closedStatus'
+    },
+
+    // Saved/Cancelled statuses
+    "محفوظة": {
+      text: "محفوظة",
+      icon: 'fa-solid fa-ban',
+      class: 'killedStatus'
+    }
+  };
+
+  // Check if we have a configuration for this status
+  if (statusConfig[CaseStatus]) {
+    const config = statusConfig[CaseStatus];
+    statusHtml = `<div class="statusBox ${config.class}">
+            <i class="statusIcon ${config.icon}"></i>
+            <span class="statusText">${config.text}</span>
+        </div>`;
+  } else {
+    // Default fallback for any unhandled status
+    statusHtml = `<div class="statusBox pendingStatus">
+            <i class="statusIcon fa-regular fa-question-circle"></i>
+            <span class="statusText">${CaseStatus || "---"}</span>
+        </div>`;
+  }
+
+  return statusHtml;
+};
+
+functions.getQuarryViolationStatus = (ViolationStatus) => {
+  let statusHtml = ``;
+  switch (ViolationStatus) {
+    case "Pending":
+    case "Confirmed": {
+      statusHtml = `<div class="statusBox pendingStatus">
+                <i class="statusIcon fa-regular fa-clock"></i>
+                <span class="statusText">قيد الانتظار</span>
+            </div>`;
+      break;
+    }
+    case "Exceeded": {
+      statusHtml = `<div class="statusBox warningStatus">
+                <img class="statusIcon" src="/Style Library/MiningViolations/images/tringleIcon.svg" alt="warning">
+                <span class="statusText">تجاوز مدة السداد</span>
+            </div>`;
+      break;
+    }
+    case "Saved": {
+      statusHtml = `<div class="statusBox killedStatus">
+                <i class="statusIcon fa-solid fa-ban"></i> 
+                <span class="statusText">محفوظة</span>
+            </div>`;
+      break;
+    }
+    case "Paid After Reffered": {
+      statusHtml = `<div class="statusBox closedStatus">
+                <i class="statusIcon fa-regular fa-circle-check"></i>
+                <span class="statusText">سداد بعد الإحالة</span>
+            </div>`;
+      break;
+    }
+    case "Paid": {
+      statusHtml = `<div class="statusBox closedStatus">
+                <i class="statusIcon fa-regular fa-circle-check"></i>
+                <span class="statusText">مسددة</span>
+            </div>`;
+      break;
+    }
+    case "UnderPayment": {
+      statusHtml = `<div class="statusBox warningStatus">
+                <img class="statusIcon" src="/Style Library/MiningViolations/images/tringleIcon.svg" alt="warning">
+                <span class="statusText">قيد السداد</span>
+            </div>`;
+      break;
+    }
+    case "Approved": {
+      statusHtml = `<div class="statusBox closedStatus">
+                <i class="statusIcon fa-regular fa-circle-check"></i>
+                <span class="statusText">تم الموافقة</span>
+            </div>`;
+      break;
+    }
+    case "Rejected": {
+      statusHtml = `<div class="statusBox killedStatus">
+                <i class="statusIcon fa-solid fa-ban"></i> 
+                <span class="statusText">مرفوضة</span>
+            </div>`;
+      break;
+    }
+    case "Reffered": {
+      statusHtml = `<div class="statusBox pendingStatus">
+                <i class="statusIcon fa-regular fa-paper-plane"></i>
+                <span class="statusText">تم الإحالة</span>
+            </div>`;
+      break;
+    }
+    case "UnderReview": {
+      statusHtml = `<div class="statusBox pendingStatus">
+                <i class="statusIcon fa-regular fa-eye"></i>
+                <span class="statusText">منظورة</span>
+            </div>`;
+      break;
+    }
+    case "ExternalReviewed": {
+      statusHtml = `<div class="statusBox pendingStatus">
+                <i class="statusIcon fa-regular fa-external-link"></i>
+                <span class="statusText">خارجية</span>
+            </div>`;
+      break;
+    }
+    case "Completed": {
+      statusHtml = `<div class="statusBox closedStatus">
+                <i class="statusIcon fa-regular fa-circle-check"></i>
+                <span class="statusText">مكتملة</span>
+            </div>`;
+      break;
+    }
+    case "Cancelled": {
+      statusHtml = `<div class="statusBox killedStatus">
+                <i class="statusIcon fa-solid fa-ban"></i> 
+                <span class="statusText">ملغاه</span>
+            </div>`;
+      break;
+    }
+    default: {
+      statusHtml = `<div class="statusBox pendingStatus">
+                <i class="statusIcon fa-regular fa-question-circle"></i>
+                <span class="statusText">${ViolationStatus || "---"}</span>
+            </div>`;
+      break;
+    }
+  }
+
+  return statusHtml;
+};
+functions.getVehicleViolationStatus = (ViolationStatus) => {
+  let statusHtml = ``;
+  switch (ViolationStatus) {
+    case "Pending":
+    case "Confirmed": {
+      statusHtml = `<div class="statusBox pendingStatus">
+                <i class="statusIcon fa-regular fa-clock"></i>
+                <span class="statusText">قيد الانتظار</span>
+            </div>`;
+      break;
+    }
+    case "Exceeded": {
+      statusHtml = `<div class="statusBox warningStatus">
+                <img class="statusIcon" src="/Style Library/MiningViolations/images/tringleIcon.svg" alt="warning">
+                <span class="statusText">تجاوز مدة السداد</span>
+            </div>`;
+      break;
+    }
+    case "Saved": {
+      statusHtml = `<div class="statusBox killedStatus">
+                <i class="statusIcon fa-solid fa-ban"></i> 
+                <span class="statusText">محفوظة</span>
+            </div>`;
+      break;
+    }
+    case "Paid After Reffered": {
+      statusHtml = `<div class="statusBox closedStatus">
+                <i class="statusIcon fa-regular fa-circle-check"></i>
+                <span class="statusText">سداد بعد الإحالة</span>
+            </div>`;
+      break;
+    }
+    case "Paid": {
+      statusHtml = `<div class="statusBox closedStatus">
+                <i class="statusIcon fa-regular fa-circle-check"></i>
+                <span class="statusText">تم السداد</span>
+            </div>`;
+      break;
+    }
+    case "UnderPayment": {
+      statusHtml = `<div class="statusBox warningStatus">
+                <img class="statusIcon" src="/Style Library/MiningViolations/images/tringleIcon.svg" alt="warning">
+                <span class="statusText">قيد السداد</span>
+            </div>`;
+      break;
+    }
+    case "Approved": {
+      statusHtml = `<div class="statusBox closedStatus">
+                <i class="statusIcon fa-regular fa-circle-check"></i>
+                <span class="statusText">تم الموافقة</span>
+            </div>`;
+      break;
+    }
+    case "Rejected": {
+      statusHtml = `<div class="statusBox killedStatus">
+                <i class="statusIcon fa-solid fa-ban"></i> 
+                <span class="statusText">مرفوضة</span>
+            </div>`;
+      break;
+    }
+    case "Reffered": {
+      statusHtml = `<div class="statusBox pendingStatus">
+                <i class="statusIcon fa-regular fa-paper-plane"></i>
+                <span class="statusText">تم الإحالة</span>
+            </div>`;
+      break;
+    }
+    case "UnderReview": {
+      statusHtml = `<div class="statusBox pendingStatus">
+                <i class="statusIcon fa-regular fa-eye"></i>
+                <span class="statusText">قيد انتظار السداد</span>
+            </div>`;
+      break;
+    }
+    case "ExternalReviewed": {
+      statusHtml = `<div class="statusBox pendingStatus">
+                <i class="statusIcon fa-regular fa-external-link"></i>
+                <span class="statusText">خارجية</span>
+            </div>`;
+      break;
+    }
+    case "Completed": {
+      statusHtml = `<div class="statusBox closedStatus">
+                <i class="statusIcon fa-regular fa-circle-check"></i>
+                <span class="statusText">مكتملة</span>
+            </div>`;
+      break;
+    }
+    case "Cancelled": {
+      statusHtml = `<div class="statusBox killedStatus">
+                <i class="statusIcon fa-solid fa-ban"></i> 
+                <span class="statusText">ملغاه</span>
+            </div>`;
+      break;
+    }
+    default: {
+      statusHtml = `<div class="statusBox pendingStatus">
+                <i class="statusIcon fa-regular fa-question-circle"></i>
+                <span class="statusText">${ViolationStatus || "---"}</span>
+            </div>`;
+      break;
+    }
+  }
+
+  return statusHtml;
+};
+functions.getViolationStatusText = (status) => {
+  const statusMap = {
+    "Pending": "قيد الانتظار",
+    "Confirmed": "مؤكدة",
+    "Exceeded": "تجاوز مدة السداد",
+    "Saved": "محفوظة",
+    "Paid": "مسددة",
+    "Paid After Reffered": "سداد بعد الإحالة",
+    "UnderPayment": "قيد السداد",
+    "Approved": "تم الموافقة",
+    "Rejected": "مرفوضة",
+    "Reffered": "تم الإحالة",
+    "UnderReview": "منظورة",
+    "ExternalReviewed": "خارجية",
+    "Completed": "مكتملة",
+    "Cancelled": "ملغاه"
+  };
+
+  return statusMap[status] || status || "----";
+};
+functions.closePopup = () => {
   $(".popup").remove();
   $(".overlay").removeClass("active");
 };
@@ -1206,5 +1505,4 @@ functions.debounce = (func, wait) => {
     timeout = setTimeout(later, wait);
   };
 };
-
 export default functions;

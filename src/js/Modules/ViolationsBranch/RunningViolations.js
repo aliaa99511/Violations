@@ -122,6 +122,34 @@ runningViolations.resetFilter = (e) => {
   runningViolations.getRunningViolations();
 };
 
+runningViolations.handleViolationCategoryChange = () => {
+  $("#violationCategory").on("change", function () {
+    const selectedCategory = $(this).val();
+    const $typeOfViolationField = $("#TypeofViolation");
+
+    // First, enable both fields
+    $typeOfViolationField.prop("disabled", false);
+
+    // Handle "Equipment" selection
+    if (selectedCategory === "Equipment") {
+      $typeOfViolationField.prop("disabled", true).val("0"); // Disable and set to default
+    }
+
+    // Handle "Vehicle" selection
+    else if (selectedCategory === "Vehicle") {
+      $typeOfViolationField.prop("disabled", true).val("0"); // Disable and set to default
+    }
+  });
+};
+const originalResetFilter = runningViolations.resetFilter;
+runningViolations.resetFilter = function (e) {
+  // Call the original resetFilter function
+  originalResetFilter.call(this, e);
+
+  // Re-enable both fields after reset
+  $("#TypeofViolation").prop("disabled", false);
+};
+
 runningViolations.RunningViolationTable = (RunningViolation, destroyTable) => {
   let data = [];
   let taskViolation;
@@ -133,17 +161,17 @@ runningViolations.RunningViolationTable = (RunningViolation, destroyTable) => {
         data.push([
           `<div class="violationId" data-taskid="${record.ID}" data-violationid="${record.ViolationId}" data-offendertype="${taskViolation.OffenderType}">${taskViolation.ViolationCode}</div>`,
           `<div class='controls'>
-                        <div class='ellipsisButton'>
-                            <i class='fa-solid fa-ellipsis-vertical'></i>
-                        </div>
-                        <div class="hiddenListBox">
-                            <div class='arrow'></div>
-                            <ul class='list-unstyled controlsList'>
-                                <li><a href="#" class="itemDetails"> المزيد من التفاصيل</a></li>
-                                <li><a href="#" class="printPaymentForm"> نموذج التقييم </a></li>
-                            </ul>
-                        </div>
-                    </div`,
+              <div class='ellipsisButton'>
+                  <i class='fa-solid fa-ellipsis-vertical'></i>
+              </div>
+              <div class="hiddenListBox">
+                  <div class='arrow'></div>
+                  <ul class='list-unstyled controlsList'>
+                      <li><a href="#" class="itemDetails"> المزيد من التفاصيل</a></li>
+                      <li><a href="#" class="printPaymentForm"> نموذج التقييم </a></li>
+                  </ul>
+              </div>
+          </div>`,
           `<div class="violationArName">${functions.getViolationArabicName(
             taskViolation.OffenderType
           )}</div>`,
@@ -193,6 +221,9 @@ runningViolations.RunningViolationTable = (RunningViolation, destroyTable) => {
     "المخالفات القائمة.xlsx",
     "المخالفات القائمة"
   );
+
+  // 🔹 create column selector
+  functions.createColumnSelector(Table, "#columnSelector", 'green');
 
   runningViolations.destroyTable = true;
 

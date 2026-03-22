@@ -163,6 +163,40 @@ PendingViolations.resetFilter = (e) => {
   PendingViolations.getPendingViolations();
 };
 
+PendingViolations.handleViolationCategoryChange = () => {
+  $("#violationCategory").on("change", function () {
+    const selectedCategory = $(this).val();
+    const $theCodeField = $("#theCode");
+    const $typeOfViolationField = $("#TypeofViolation");
+
+    // First, enable both fields
+    $theCodeField.prop("disabled", false);
+    $typeOfViolationField.prop("disabled", false);
+
+    // Handle "Equipment" selection
+    if (selectedCategory === "Equipment") {
+      $theCodeField.prop("disabled", true).val(""); // Disable and clear the field
+      $typeOfViolationField.prop("disabled", true).val("0"); // Disable and set to default
+    }
+
+    // Handle "Vehicle" selection
+    else if (selectedCategory === "Vehicle") {
+      $typeOfViolationField.prop("disabled", true).val("0"); // Disable and set to default
+      // theCode field remains enabled
+    }
+  });
+};
+
+const originalResetFilter = PendingViolations.resetFilter;
+PendingViolations.resetFilter = function (e) {
+  // Call the original resetFilter function
+  originalResetFilter.call(this, e);
+
+  // Re-enable both fields after reset
+  $("#theCode").prop("disabled", false);
+  $("#TypeofViolation").prop("disabled", false);
+};
+
 PendingViolations.PendingviolationTable = (Pendingviolation, destroyTable) => {
   let data = [];
   let taskViolation;
@@ -178,8 +212,8 @@ PendingViolations.PendingviolationTable = (Pendingviolation, destroyTable) => {
 
         data.push([
           // Modified first column to include red circle when IsRejectedBefore is true
-          `<div class="violationId" data-taskid="${record.ID}" data-violationid="${taskViolation?.ID}" data-offendertype=${taskViolation.OffenderType} data-violationcode="${taskViolation.ViolationCode}">
-            ${rejectedIndicator}${taskViolation.ViolationCode}
+          `<div class="violationId" style="display: flex;align-items: center;" data-taskid="${record.ID}" data-violationid="${taskViolation?.ID}" data-offendertype=${taskViolation.OffenderType} data-violationcode="${taskViolation.ViolationCode}">
+            ${rejectedIndicator}${taskViolation.ViolationCode || "----"}
           </div>`,
           `<div class='controls'>
               <div class='ellipsisButton'>
@@ -192,7 +226,7 @@ PendingViolations.PendingviolationTable = (Pendingviolation, destroyTable) => {
                       <li><a href="#" data-violationid="${taskViolation?.ID}" data-violationcode="${taskViolation?.ViolationCode}" class="violationHistory" data-toggle="modal" data-target="#trackHistoryModal">تتبع مرحلة المخالفة</a></li>
                   </ul>
               </div>
-          </div`,
+          </div>`,
           `<div class="violationArName">${functions.getViolationArabicName(
             taskViolation.OffenderType
           )}</div>`,
@@ -213,16 +247,18 @@ PendingViolations.PendingviolationTable = (Pendingviolation, destroyTable) => {
             taskViolation.OffenderType,
             taskViolation?.ViolationTypes?.Title
           )}</div>`,
-          `<div class="violationZone">${taskViolation.ViolationsZone}</div>`,
+          `<div class="violationZone">${taskViolation.ViolationsZone || "----"}</div>`,
           `${functions.getFormatedDate(taskViolation.ViolationDate)}`,
           `${createdDate}`,
         ]);
       }
     });
   }
+
   if (PendingViolations.destroyTable || destroyTable) {
     $("#PendingViolation").DataTable().destroy();
   }
+
   let Table = functions.tableDeclare(
     "#PendingViolation",
     data,
@@ -237,20 +273,20 @@ PendingViolations.PendingviolationTable = (Pendingviolation, destroyTable) => {
       { title: "تاريخ الضبط" },
       { title: "تاريخ الإنشاء" },
     ],
-    false, // showPaging
-    false, // destroyTable
+    false,
+    false,
     "المخالفات قيد الانتظار.xlsx",
     "المخالفات قيد الانتظار"
   );
 
+  // 🔹 create column selector
+  functions.createColumnSelector(Table, "#columnSelector", 'green');
+
   PendingViolations.destroyTable = true;
 
-  $(".ellipsisButton").on("click", (e) => {
-    $(".hiddenListBox").hide(300);
-    $(e.currentTarget).siblings(".hiddenListBox").toggle(300);
-  });
   let violationlog = Table.rows().nodes().to$();
   let UserId = _spPageContextInfo.userId;
+
   functions.callSharePointListApi("Configurations").then((Users) => {
     let UserDetails = null; // Initialize as null
     let UsersData = Users.value;
@@ -267,13 +303,13 @@ PendingViolations.PendingviolationTable = (Pendingviolation, destroyTable) => {
       let violationCode = jQueryRecord.find(".violationId").data("violationcode");
       let hiddenListBox = jQueryRecord.find(".controls").children(".hiddenListBox");
 
-      if (
-        violationlog.length > 4 &&
-        hiddenListBox.height() > 110 &&
-        jQueryRecord.is(":nth-last-child(-n + 4)")
-      ) {
-        hiddenListBox.addClass("toTopDDL");
-      }
+      // if (
+      //   violationlog.length > 4 &&
+      //   hiddenListBox.height() > 110 &&
+      //   jQueryRecord.is(":nth-last-child(-n + 4)")
+      // ) {
+      //   hiddenListBox.addClass("toTopDDL");
+      // }
 
       jQueryRecord
         .find(".controls")
@@ -338,6 +374,15 @@ PendingViolations.PendingviolationTable = (Pendingviolation, destroyTable) => {
           $(".detailsPopupForm").addClass("pendingViolations");
           PendingViolations.findViolationByID(e, taskID, true);
         });
+    });
+
+    // Use event delegation to handle clicks on dynamically added elements
+    $(document).on("click", ".ellipsisButton", function (e) {
+      e.stopPropagation();
+      // Hide all other hiddenListBoxes first
+      $(".hiddenListBox").hide(300);
+      // Show the one related to this button
+      $(this).siblings(".hiddenListBox").toggle(300);
     });
   });
 
@@ -471,9 +516,12 @@ PendingViolations.approveTaskPopup = (
 ) => {
   $(".overlay").removeClass("active");
   let popupHtml = `
-      <div class="popupHeader">
+      <div class="popupHeader" style="display: flex; justify-content: space-between;">
           <div class="violationsCode"> 
               <p>قبول المخالفة رقم (${violationCode})</p>
+          </div>
+          <div class="btnStyle cancelBtn popupBtn closeApprovePopup" id="closeApprovePopup" style="color: #fff; cursor: pointer;" data-dismiss="modal" aria-label="Close">
+              <i class="fa-solid fa-x"></i>
           </div>
       </div>
       <div class="popupBody">
@@ -486,7 +534,7 @@ PendingViolations.approveTaskPopup = (
                       <div class="col-12">
                           <div class="buttonsBox centerButtonsBox ">
                               <div class="btnStyle confirmBtnGreen popupBtn approveVioltionTaskBtn" id="approveVioltionTaskBtn">تأكيد</div>
-                              <div class="btnStyle cancelBtn popupBtn closeApprovePopup" id="closeApprovePopup" data-dismiss="modal" aria-label="Close">إلغاء</div>
+                              <div class="btnStyle cancelBtn popupBtn" id="closeApprovePopupFooter" data-dismiss="modal" aria-label="Close">إلغاء</div>
                           </div>
                       </div>
                   </div>
@@ -494,10 +542,16 @@ PendingViolations.approveTaskPopup = (
           </div>
       </div>
   `;
+
   functions.declarePopup(
     ["generalPopupStyle", "greenPopup", "statusPopup"],
     popupHtml
   );
+
+  // Add close button handlers
+  $("#closeApprovePopup, #closeApprovePopupFooter").on("click", function () {
+    functions.closePopup();
+  });
 
   $(".approveVioltionTaskBtn").on("click", (e) => {
     e.preventDefault();
@@ -516,9 +570,12 @@ PendingViolations.editMinPriceTaskPopup = (
 ) => {
   $(".overlay").removeClass("active");
   let popupHtml = `
-      <div class="popupHeader">
+      <div class="popupHeader" style="display: flex; justify-content: space-between;">
           <div class="violationsCode"> 
               <p>تعديل الحد الأدنى للمخالفة رقم (${violationCode})</p>
+          </div>
+          <div class="btnStyle cancelBtn popupBtn closeEditMinPricePopup" id="closeEditMinPricePopup" style="color: #fff; cursor: pointer;" data-dismiss="modal" aria-label="Close">
+              <i class="fa-solid fa-x"></i>
           </div>
       </div>
       <div class="popupBody">
@@ -535,7 +592,7 @@ PendingViolations.editMinPriceTaskPopup = (
                       <div class="col-12">
                           <div class="buttonsBox centerButtonsBox ">
                               <div class="btnStyle confirmBtnGreen popupBtn approveVioltionTaskBtn" id="approveVioltionTaskBtn">تأكيد</div>
-                              <div class="btnStyle cancelBtn popupBtn closeApprovePopup" id="closeApprovePopup" data-dismiss="modal" aria-label="Close">إلغاء</div>
+                              <div class="btnStyle cancelBtn popupBtn" id="closeEditMinPricePopupFooter" data-dismiss="modal" aria-label="Close">إلغاء</div>
                           </div>
                       </div>
                   </div>
@@ -543,22 +600,16 @@ PendingViolations.editMinPriceTaskPopup = (
           </div>
       </div>
   `;
+
   functions.declarePopup(
     ["generalPopupStyle", "greenPopup", "statusPopup"],
     popupHtml
   );
 
-  // Fetch the material minimum price and display it in the popup
-  // PendingViolations.GetMaterialMinPrice(violationId)
-  // .then((materialMinPrice) => {
-  //   // If materialMinPrice is available, update the popup with the price
-  //   if (materialMinPrice !== null) {
-  //     console.log("from inside",materialMinPrice)
-  //     $("#materialMinPriceInput").val( materialMinPrice);
-  //   } else {
-  //     $("#materialMinPriceInput").val("لا توجد معلومات عن الحد الأدنى.");
-  //   }
-  // });
+  // Add close button handlers
+  $("#closeEditMinPricePopup, #closeEditMinPricePopupFooter").on("click", function () {
+    functions.closePopup();
+  });
 
   $(".approveVioltionTaskBtn").on("click", (e) => {
     let newMaterialMinPrice = parseFloat($("#materialMinPriceInput").val());
@@ -687,9 +738,12 @@ PendingViolations.approveTaskAction = (violationTaskID, violationId) => {
 PendingViolations.RejectTaskPopup = (violationCode, taskID, violationId) => {
   $(".overlay").removeClass("active");
   let popupHtml = ` 
-      <div class="popupHeader">
+      <div class="popupHeader" style="display: flex; justify-content: space-between;">
           <div class="violationsCode"> 
               <p> كود المخالفة رقم (${violationCode})</p>
+          </div>
+          <div class="btnStyle cancelBtn popupBtn closeRejectPopup" id="closeRejectPopup" style="color: #fff; cursor: pointer;" data-dismiss="modal" aria-label="Close">
+              <i class="fa-solid fa-x"></i>
           </div>
       </div>
       <div class="popupBody">
@@ -715,7 +769,7 @@ PendingViolations.RejectTaskPopup = (violationCode, taskID, violationId) => {
                     <div class="col-12">
                         <div class="buttonsBox centerButtonsBox ">
                             <div class="btnStyle confirmBtnGreen popupBtn rejectBtn" id="rejectBtn">تأكيد</div>
-                            <div class="btnStyle cancelBtn popupBtn closeRejectPopup" id="closeRejectPopup" data-dismiss="modal" aria-label="Close">إلغاء</div>
+                            <div class="btnStyle cancelBtn popupBtn" id="closeRejectPopupFooter" data-dismiss="modal" aria-label="Close">إلغاء</div>
                         </div>
                     </div>
                 </div>
@@ -723,15 +777,22 @@ PendingViolations.RejectTaskPopup = (violationCode, taskID, violationId) => {
           </div>
       </div>
 `;
+
   functions.declarePopup(
     ["generalPopupStyle", "greenPopup", "editPopup"],
     popupHtml
   );
 
+  // Add close button handlers
+  $("#closeRejectPopup, #closeRejectPopupFooter").on("click", function () {
+    functions.closePopup();
+  });
+
   let rejectComment = $(".rejectReason").val();
   $(".rejectReason").on("keyup", (e) => {
     rejectComment = $(e.currentTarget).val();
   });
+
   $(".rejectBtn").on("click", (e) => {
     e.preventDefault();
     if (rejectComment != "") {
@@ -781,7 +842,9 @@ const ViolationHistoryLogs = () => {
   // ===============================
   // 🔥 فتح المودال
   // ===============================
-  $(".contentContainer").on("click", ".violationHistory", function () {
+  $(".contentContainer").on("click", ".violationHistory", function (e) {
+    e.preventDefault();
+    e.stopPropagation();
 
     selectedViolationId = $(this).data("violationid");
     selectedViolationCode = $(this).data("violationcode");
@@ -790,11 +853,47 @@ const ViolationHistoryLogs = () => {
   });
 
   // ===============================
+  // 🔥 إغلاق المودال - Close button handlers
+  // ===============================
+  const closeModal = () => {
+    $("#trackHistoryModal").modal("hide");
+
+    // Clear the modal content
+    $(".track-history-violation-code").text("");
+
+    if (trackHistoryTable) {
+      trackHistoryTable.clear().destroy();
+      trackHistoryTable = null;
+    }
+
+    $("#trackHistoryTable tbody").empty();
+  };
+
+  // Close button in header
+  $(document).on("click", "#closeViolationHistoryPopup", function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+    closeModal();
+  });
+
+  // // Close button in footer
+  // $(document).on("click", "#closeViolationHistoryPopupFooter", function (e) {
+  //   e.preventDefault();
+  //   e.stopPropagation();
+  //   closeModal();
+  // });
+
+  // Bootstrap modal hide event
+  $("#trackHistoryModal").on("hidden.bs.modal", function () {
+    closeModal();
+  });
+
+  // ===============================
   // 🔥 لما المودال يفتح
   // ===============================
   $(".track-history-modal").on("shown.bs.modal", function () {
 
-    $(".modal-violation-code").text(selectedViolationCode);
+    $(".track-history-violation-code").text(selectedViolationCode);
 
     const request = {
       Request: {
@@ -812,6 +911,9 @@ const ViolationHistoryLogs = () => {
         paging: false,
         responsive: true,
         destroy: true,
+        // ordering: false,
+        // searching: false,
+        // info: false,
 
         ajax: {
           url: "/_layouts/15/Uranium.Violations.SharePoint/ViolationHistoryLogs.aspx/Search",
@@ -825,15 +927,35 @@ const ViolationHistoryLogs = () => {
         },
 
         columns: [
-          { data: "Id" },
-          { data: "Status" },
+          {
+            data: null,
+            render: (data, type, row, meta) => {
+              return meta.row;
+            }
+          },
+          {
+            data: "Status",
+            render: (data) => {
+              return data || "-";
+            }
+          },
           {
             data: "Created",
             render: (data) =>
               data ? functions.getFormatedDate(data) : "-"
           },
-          { data: "CreatedBy" },
-          { data: "Comment" }
+          {
+            data: "CreatedBy",
+            render: (data) => {
+              return data || "-";
+            }
+          },
+          {
+            data: "Comment",
+            render: (data) => {
+              return data || "-";
+            }
+          }
         ],
 
         language: {
@@ -853,7 +975,7 @@ const ViolationHistoryLogs = () => {
   // ===============================
   $(".track-history-modal").on("hidden.bs.modal", function () {
 
-    $(".modal-violation-code").text("");
+    $(".track-history-violation-code").text("");
 
     if (trackHistoryTable) {
       trackHistoryTable.clear().destroy();
@@ -864,7 +986,6 @@ const ViolationHistoryLogs = () => {
   });
 
 };
-
 ViolationHistoryLogs();
 
 

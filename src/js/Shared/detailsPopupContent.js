@@ -2,42 +2,89 @@ import functions from "./functions";
 
 let DetailsPopup = {};
 
+// Helper function to safely get nested properties
+const safeGet = (obj, path, defaultValue = "") => {
+    if (!obj) return defaultValue;
+    const keys = path.split('.');
+    let result = obj;
+    for (const key of keys) {
+        if (result === null || result === undefined || result[key] === undefined || result[key] === null) {
+            return defaultValue;
+        }
+        result = result[key];
+    }
+    return result;
+};
+
+// Helper function to check if value exists and is not empty
+const hasValue = (value) => {
+    return value !== null && value !== undefined && value !== "";
+};
+
 DetailsPopup.quarryDetailsPopupContent = (violationData, LogName = "") => {
-    let violationPriceType =
-        violationData.ViolationTypes != null
-            ? violationData.ViolationTypes.PriceType
-            : "";
-    let violationDate = functions.getFormatedDate(
-        violationData?.ViolationDate,
+    // Safely access nested properties
+    const violationPriceType = safeGet(violationData, 'ViolationTypes.PriceType');
+    const violationDate = functions.getFormatedDate(
+        safeGet(violationData, 'ViolationDate'),
         "DD-MM-YYYY",
-    );
-    let violationTime = functions.getFormatedDate(
-        violationData?.ViolationTime,
+    ) || "-----";
+    const violationTime = functions.getFormatedDate(
+        safeGet(violationData, 'ViolationTime'),
         "hh:mm A",
-    );
-    let ViolationCode =
-        violationData.ViolationCode != "" ? violationData.ViolationCode : "-----";
-    // Fix: Check if Equipments exists before using it
-    let Equipments = violationData.Equipments ?
-        DetailsPopup.getViolationEquipments(
+    ) || "-----";
+    const ViolationCode = hasValue(violationData?.ViolationCode) ? violationData.ViolationCode : "-----";
+
+    // Handle Equipments safely
+    let Equipments = '<div class="noEquipments">لم يتم إضافة معدات مضبوطة</div>';
+    if (violationData?.Equipments && Array.isArray(violationData.Equipments) && violationData.Equipments.length > 0) {
+        Equipments = DetailsPopup.getViolationEquipments(
             violationData.Equipments,
             violationData.Equipments_Count
-        ) :
-        '<div class="noEquipments">لم يتم إضافة معدات مضبوطة</div>';
-    let Coordinates = DetailsPopup.getViolationCoords(
-        violationData.CoordinatesDegrees,
-    );
-    // let Coordinates = DetailsPopup.getViolationCoords(violationData.Coordinates)
-    DetailsPopup.getViolationAttachmentsById(violationData.ID);
-
-    ///////////////////////////////////////////////////////
-    DetailsPopup.getCommitteeRecorder(violationData.SectorConfigId);
-
-    if (violationData?.CommiteeMember?.length > 0) {
-        // DetailsPopup.getCommitteeMember(violationData.CommiteeMember)
+        );
     }
-    // DetailsPopup.getCommitteeManager(violationData.Sector)
-    ///////////////////////////////////////////////////////
+
+    // Handle coordinates safely
+    let Coordinates = DetailsPopup.getViolationCoords(violationData?.CoordinatesDegrees);
+
+    // Only call if ID exists
+    if (violationData?.ID) {
+        DetailsPopup.getViolationAttachmentsById(violationData.ID);
+    }
+
+    if (violationData?.SectorConfigId) {
+        DetailsPopup.getCommitteeRecorder(violationData.SectorConfigId);
+    }
+
+    // Safely get values with defaults
+    const violatorName = safeGet(violationData, 'ViolatorName', '-----');
+    const nationalId = hasValue(violationData?.NationalID) ? violationData.NationalID : '-';
+    const prevViolations = safeGet(violationData, 'NumOfPreviousViolations', '0');
+    const violatorCompany = hasValue(violationData?.ViolatorCompany) ? violationData.ViolatorCompany : '-';
+    const commercialRegister = hasValue(violationData?.CommercialRegister) ? violationData.CommercialRegister : '-';
+    const governrate = safeGet(violationData, 'Governrates.Title', '-');
+    const violationZone = safeGet(violationData, 'ViolationsZone', '-----');
+    const violationType = safeGet(violationData, 'ViolationTypes.Title', '-');
+    const bonsNumber = safeGet(violationData, 'BonsNumber', '0');
+    const material = safeGet(violationData, 'Material.Title', '-');
+    const quarryType = safeGet(violationData, 'QuarryType', '-----');
+    const quarryCode = hasValue(violationData?.QuarryCode) ? violationData.QuarryCode : '-';
+    const depth = safeGet(violationData, 'Depth', '0');
+    const area = safeGet(violationData, 'Area', '0');
+    const totalQuantity = safeGet(violationData, 'TotalQuantity', '0');
+    const distanceToNearestQuarry = safeGet(violationData, 'DistanceToNearestQuarry', '0');
+    const nearestQuarryCode = safeGet(violationData, 'NearestQuarryCode', '-----');
+    const description = safeGet(violationData, 'Description', '');
+    const leaderOpinion = safeGet(violationData, 'LeaderOpinion', '');
+    const sectorMembers = safeGet(violationData, 'SectorMembers', '');
+    const committeeMember = safeGet(violationData, 'CommiteeMember', '');
+    const totalPriceDue = functions.splitBigNumbersByComma(
+        safeGet(violationData, 'TotalPriceDue', '0')
+    );
+
+    // Determine if BonesBox should be displayed
+    const isBonesViolation = violationData?.ViolationTypes?.Title &&
+        ["اصدار بونات فارغة", "بيع بونات", "استخدام بونات الغير", "تلاعب ببيانات البونات"]
+            .includes(violationData.ViolationTypes.Title);
 
     let popupHtml = `
         <div class="popupHeader">
@@ -50,7 +97,7 @@ DetailsPopup.quarryDetailsPopupContent = (violationData, LogName = "") => {
             </div>
             <div class="backBtn">
                 <div class="bootpopup-button close" data-dismiss="modal" aria-label="Close">
-                   <a href="#!"> العودة إلى سجل المخالفات ${LogName} <i class="fa-solid fa-angle-left"></i></a>
+                   <a href="#!"> العودة إلى سجل المخالفات ${LogName || ''} <i class="fa-solid fa-angle-left"></i></a>
                 </div>
             </div>
         </div>
@@ -67,58 +114,43 @@ DetailsPopup.quarryDetailsPopupContent = (violationData, LogName = "") => {
                                 <div class="col-md-6">
                                     <div class="form-group customFormGroup">
                                         <label for="violatorName" class="customLabel">اسم المخالف</label>
-                                        <input class="form-control customInput violatorName" id="violatorName" type="text" value="${violationData.ViolatorName
-        }" disabled>
+                                        <input class="form-control customInput violatorName" id="violatorName" type="text" value="${violatorName}" disabled>
                                     </div>
                                 </div>
                                 <div class="col-md-3">
                                     <div class="form-group customFormGroup">
                                         <label for="violatorNationalId" class="customLabel">الرقم القومي للمخالف</label>
-                                        <input class="form-control customInput violatorNationalId" id="violatorNationalId" type="text" value="${violationData.NationalID != ""
-            ? violationData.NationalID
-            : "-"
-        }" disabled>
+                                        <input class="form-control customInput violatorNationalId" id="violatorNationalId" type="text" value="${nationalId}" disabled>
                                     </div>
                                 </div>
                                 <div class="col-md-3">
                                     <div class="form-group customFormGroup">
                                         <label for="prevViolationsCount" class="customLabel">عدد المخالفات السابقة</label>
-                                        <input class="form-control customInput prevViolationsCount" id="prevViolationsCount" type="text" value="${violationData.NumOfPreviousViolations
-        }" disabled>
+                                        <input class="form-control customInput prevViolationsCount" id="prevViolationsCount" type="text" value="${prevViolations}" disabled>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
                                     <div class="form-group customFormGroup">
                                         <label for="companyName" class="customLabel">الشركة المخالفة التابع لها</label>
-                                        <input class="form-control customInput companyName" id="companyName" type="text" value="${violationData.ViolatorCompany != ""
-            ? violationData.ViolatorCompany
-            : "-"
-        }" disabled>
+                                        <input class="form-control customInput companyName" id="companyName" type="text" value="${violatorCompany}" disabled>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
                                     <div class="form-group customFormGroup">
                                         <label for="commercialRegister" class="customLabel">السجل التجاري للشركة</label>
-                                        <input class="form-control customInput commercialRegister" id="commercialRegister" type="text" value="${violationData.CommercialRegister != ""
-            ? violationData.CommercialRegister
-            : "-"
-        }" disabled>
+                                        <input class="form-control customInput commercialRegister" id="commercialRegister" type="text" value="${commercialRegister}" disabled>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
                                     <div class="form-group customFormGroup">
                                         <label for="violationGov" class="customLabel">المحافظة</label>
-                                        <input class="form-control customInput violationGov" id="violationGov" type="text" value="${violationData.Governrates != null
-            ? violationData.Governrates.Title
-            : "-"
-        }" disabled>
+                                        <input class="form-control customInput violationGov" id="violationGov" type="text" value="${governrate}" disabled>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
                                     <div class="form-group customFormGroup">
                                         <label for="violationArea" class="customLabel">منطقة الضبط</label>
-                                        <input class="form-control customInput violationArea" id="violationArea" type="text" value="${violationData.ViolationsZone
-        }" disabled>
+                                        <input class="form-control customInput violationArea" id="violationArea" type="text" value="${violationZone}" disabled>
                                     </div>
                                 </div>
                             </div>
@@ -132,38 +164,19 @@ DetailsPopup.quarryDetailsPopupContent = (violationData, LogName = "") => {
                                     <div class="col-md-6">
                                         <div class="form-group customFormGroup">
                                             <label for="violationType" class="customLabel">نوع المخالفة</label>
-                                            <input class="form-control customInput violationType" id="violationType" type="text" value="${violationData.ViolationTypes !=
-            null
-            ? violationData.ViolationTypes
-                .Title
-            : "-"
-        }" disabled>
+                                            <input class="form-control customInput violationType" id="violationType" type="text" value="${violationType}" disabled>
                                         </div>
                                     </div>
-                                    <div class="col-md-6 BonesBox" style="display:${violationData.ViolationTypes.Title ==
-            "اصدار بونات فارغة" ||
-            violationData.ViolationTypes.Title ==
-            "بيع بونات" ||
-            violationData.ViolationTypes.Title ==
-            "استخدام بونات الغير" ||
-            violationData.ViolationTypes.Title ==
-            "تلاعب ببيانات البونات"
-            ? "block !important"
-            : "none !important"
-        }">
+                                    <div class="col-md-6 BonesBox" style="display:${isBonesViolation ? "block !important" : "none !important"}">
                                         <div class="form-group customFormGroup">
                                             <label for="bonesCount" class="customLabel">عدد البونات</label>
-                                            <input class="form-control customInput bonesCount" id="bonesCount" type="text" value="${violationData.BonsNumber
-        }" disabled>
+                                            <input class="form-control customInput bonesCount" id="bonesCount" type="text" value="${bonsNumber}" disabled>
                                         </div>
                                     </div>
                                     <div class="col-md-6">
                                         <div class="form-group customFormGroup">
                                             <label for="violationRawType" class="customLabel">نوع الخام</label>
-                                            <input class="form-control customInput violationRawType" id="violationRawType" type="text" value="${violationData.Material != null
-            ? violationData.Material.Title
-            : "-"
-        }" disabled>
+                                            <input class="form-control customInput violationRawType" id="violationRawType" type="text" value="${material}" disabled>
                                         </div>
                                     </div>
                                     <div class="col-md-6">
@@ -188,26 +201,17 @@ DetailsPopup.quarryDetailsPopupContent = (violationData, LogName = "") => {
                                     <div class="col-md-6">
                                         <div class="form-group customFormGroup">
                                             <label for="quarryType" class="customLabel">نوع المحجر</label>
-                                            <input class="form-control customInput quarryType" id="quarryType" type="text" value="${violationData.QuarryType
-        }" disabled>
+                                            <input class="form-control customInput quarryType" id="quarryType" type="text" value="${quarryType}" disabled>
                                         </div>
                                     </div>
                                     <div class="col-md-6">
                                         <div class="form-group customFormGroup">
                                             <label for="quarryCode" class="customLabel">رقم المحجر</label>
-                                            <input class="form-control customInput quarryCode" id="quarryCode" type="text" value="${violationData.QuarryCode != ""
-            ? violationData.QuarryCode
-            : "-"
-        }" disabled>
+                                            <input class="form-control customInput quarryCode" id="quarryCode" type="text" value="${quarryCode}" disabled>
                                         </div>
                                     </div>
                                     
-                                    <div class="col-12" style="display:${(violationPriceType == "fixed" ||
-            violationPriceType == "store") &&
-            !Equipments
-            ? "none"
-            : "block"
-        }" >
+                                    <div class="col-12" style="display:${(violationPriceType == "fixed" || violationPriceType == "store") && !Equipments ? "none" : "block"}" >
                                         <div class="form-group customFormGroup">
                                             <label class="customLabel">ضبط معدات</label>
                                             ${Equipments}
@@ -226,8 +230,7 @@ DetailsPopup.quarryDetailsPopupContent = (violationData, LogName = "") => {
                                                 <label for="violationDepth" class="customLabel">العمق/الإرتفاع</label>
                                                 <span class="metaDataSpan">بالمتر</span>
                                             </div>
-                                            <input class="form-control customInput violationDepth" id="violationDepth" type="text" value="${violationData.Depth
-        }" disabled>
+                                            <input class="form-control customInput violationDepth" id="violationDepth" type="text" value="${depth}" disabled>
                                         </div>
                                     </div>
                                     <div class="col-md-6">
@@ -236,8 +239,7 @@ DetailsPopup.quarryDetailsPopupContent = (violationData, LogName = "") => {
                                                 <label for="AreaSpace" class="customLabel">مساحة منطقة المخالفة</label>
                                                 <span class="metaDataSpan">بالمتر المربع</span>
                                             </div>
-                                            <input class="form-control customInput AreaSpace" id="AreaSpace" type="text" value="${violationData.Area
-        }" disabled>
+                                            <input class="form-control customInput AreaSpace" id="AreaSpace" type="text" value="${area}" disabled>
                                         </div>
                                     </div>
                                     <div class="col-md-6">
@@ -246,8 +248,7 @@ DetailsPopup.quarryDetailsPopupContent = (violationData, LogName = "") => {
                                                 <label for="totalAreaSpace" class="customLabel">الكمية</label>
                                                 <span class="metaDataSpan">بالمتر المكعب</span>
                                             </div>
-                                            <input class="form-control customInput totalAreaSpace" id="totalAreaSpace" type="text" value="${violationData.TotalQuantity
-        }" disabled>
+                                            <input class="form-control customInput totalAreaSpace" id="totalAreaSpace" type="text" value="${totalQuantity}" disabled>
                                         </div>
                                     </div>
                                     <div class="col-md-6">
@@ -257,25 +258,22 @@ DetailsPopup.quarryDetailsPopupContent = (violationData, LogName = "") => {
                                                 <span class="metaDataSpan">متر</span>
                                             </div>
                                             <input class="form-control customInput distanceToNearQuarry"
-                                                id="distanceToNearQuarry" type="text" value="${violationData.DistanceToNearestQuarry
-        }" disabled>
+                                                id="distanceToNearQuarry" type="text" value="${distanceToNearestQuarry}" disabled>
                                         </div>
                                     </div>
                                     <div class="col-md-6">
                                         <div class="form-group customFormGroup">
                                             <label for="NearestQuarryNumber" class="customLabel">رقم أقرب محجر</label>
-                                            <input class="form-control customInput NearestQuarryNumber" id="NearestQuarryNumber" type="text" value="${violationData.NearestQuarryCode
-        }" disabled>
+                                            <input class="form-control customInput NearestQuarryNumber" id="NearestQuarryNumber" type="text" value="${nearestQuarryCode}" disabled>
                                         </div>
                                     </div>
                                     <div class="col-12">
                                         <div class="form-group customFormGroup">
                                             <div class="feildInfoBox">
                                                 <label class="customLabel">الإحداثيات</label>
-                                                <!--<a href="#!" class="titleLink showOnMapBtn"><i class="fa-solid fa-map-pin"></i> عرض على الخريطة</a>-->
                                             </div>
                                             <div class="coordinatesTable" id="coordinatesTable">
-                                                ${Coordinates}
+                                                ${Coordinates || '<p class="noCoordinates">لا توجد احداثيات</p>'}
                                             </div>
                                         </div>
                                     </div>
@@ -297,9 +295,7 @@ DetailsPopup.quarryDetailsPopupContent = (violationData, LogName = "") => {
                                     <div class="col-md-4 violationDescriptionBox">  
                                         <div class="form-group customFormGroup">
                                             <label for="violationDescription" class="customLabel">وصف المخالفة</label>
-                                            <textarea class="form-control violationDescription customTextArea" id="violationDescription" value="${violationData.Description
-        }" disabled>${violationData.Description
-        }</textarea>
+                                            <textarea class="form-control violationDescription customTextArea" id="violationDescription" disabled>${description}</textarea>
                                         </div>
                                     </div>
                                 </div>
@@ -312,9 +308,7 @@ DetailsPopup.quarryDetailsPopupContent = (violationData, LogName = "") => {
                                     <div class="col-12">
                                         <div class="form-group customFormGroup">
                                             <label for="sectorManegrOpinion" class="customLabel">رأي قائد القطاع</label>
-                                            <textarea class="form-control sectorManegrOpinion customTextArea" id="sectorManegrOpinion" value="${violationData.LeaderOpinion
-        }" disabled>${violationData.LeaderOpinion
-        }</textarea>
+                                            <textarea class="form-control sectorManegrOpinion customTextArea" id="sectorManegrOpinion" disabled>${leaderOpinion}</textarea>
                                         </div>
                                     </div>
                                 </div>
@@ -327,20 +321,13 @@ DetailsPopup.quarryDetailsPopupContent = (violationData, LogName = "") => {
                                     <div class="col-md-4 recorderBox committeeMembersDataBox">
                                         <div class="form-group customFormGroup">
                                             <label for="recorderNameText" class="customLabel"> عضو لجنة </label>
-                                            <textarea class="form-control recorderNameText customTextArea" rows="4" id="recorderNameText" value="${violationData.SectorMembers
-        }" disabled>${violationData.SectorMembers
-        }</textarea>
+                                            <textarea class="form-control recorderNameText customTextArea" rows="4" id="recorderNameText" disabled>${sectorMembers}</textarea>
                                         </div>
                                     </div>
-                                    <div class="col-md-6 memberBox committeeMembersDataBox" style="display:${violationData.CommiteeMember == ""
-            ? "none"
-            : "block"
-        }">
+                                    <div class="col-md-6 memberBox committeeMembersDataBox" style="display:${hasValue(violationData?.CommiteeMember) ? "block" : "none"}">
                                         <div class="form-group customFormGroup">
                                             <label for="memberName" class="customLabel">القائمون بالضبط</label>                                            
-                                            <textarea class="form-control memberName customTextArea" rows="4" id="memberName" value="${violationData.CommiteeMember
-        }" disabled>${violationData.CommiteeMember
-        }</textarea>
+                                            <textarea class="form-control memberName customTextArea" rows="4" id="memberName" disabled>${committeeMember}</textarea>
                                         </div>
                                     </div>
                                     <div class="col-md-4 leaderBox committeeMembersDataBox" style="display:none">
@@ -396,13 +383,7 @@ DetailsPopup.quarryDetailsPopupContent = (violationData, LogName = "") => {
                                                 <a href="#!" class="titleLink showFormula"> تفاصيل حساب المبلغ المستحق</a>
                                             </div>
                                             <div class="inputIconBox">
-                                                <input class="form-control customInput ${functions.getSiteName() ==
-            "ViolationsRecorder"
-            ? "blueInput"
-            : "greenInput"
-        } totalPrice" id="totalPrice" type="text" value="${functions.splitBigNumbersByComma(
-            violationData?.TotalPriceDue,
-        )}" disabled>
+                                                <input class="form-control customInput ${functions.getSiteName() == "ViolationsRecorder" ? "blueInput" : "greenInput"} totalPrice" id="totalPrice" type="text" value="${totalPriceDue}" disabled>
                                                 <span>جنيها</span>
                                             </div>
                                         </div>
@@ -410,21 +391,13 @@ DetailsPopup.quarryDetailsPopupContent = (violationData, LogName = "") => {
                                     <div class="col-md-6 dateLimitBox">
                                         <div class="form-group customFormGroup">
                                             <label class="customLabel">تاريخ مدة نهاية التصالح</label>
-                                            <input class="form-control customInput ${functions.getSiteName() ==
-            "ViolationsRecorder"
-            ? "blueInput"
-            : "greenInput"
-        } violationEndTime" id="violationEndTime" type="text" disabled>
+                                            <input class="form-control customInput ${functions.getSiteName() == "ViolationsRecorder" ? "blueInput" : "greenInput"} violationEndTime" id="violationEndTime" type="text" disabled>
                                         </div>
                                     </div>
                                     <div class="col-md-6 bankAccountBox">
                                         <div class="form-group customFormGroup">
                                             <label class="customLabel">رقم الحساب البنكي</label>
-                                            <input class="form-control customInput ${functions.getSiteName() ==
-            "ViolationsRecorder"
-            ? "blueInput"
-            : "greenInput"
-        } bankAccountNumber" id="bankAccountNumber" type="text" value="0074-20316180906-45" disabled>
+                                            <input class="form-control customInput ${functions.getSiteName() == "ViolationsRecorder" ? "blueInput" : "greenInput"} bankAccountNumber" id="bankAccountNumber" type="text" value="0074-20316180906-45" disabled>
                                         </div>
                                     </div>
                                 </div>
@@ -1401,6 +1374,7 @@ DetailsPopup.vehicleDetailsPopupContent = (violationData, LogName = "") => {
     $(".overlay").removeClass("active");
     return popupHtml;
 };
+// Update getViolationEquipments to handle undefined/null
 DetailsPopup.getViolationEquipments = (Equipments, EquipmentsCount) => {
     let equipmentsHtml = $(`
         <div>
@@ -1408,25 +1382,27 @@ DetailsPopup.getViolationEquipments = (Equipments, EquipmentsCount) => {
         </div>
     `);
 
-    // Check if Equipments exists and is an array
+    // Check if Equipments exists and is an array with items
     if (Equipments && Array.isArray(Equipments) && Equipments.length > 0) {
         Equipments.forEach((Equipment, index) => {
-            let Equipcount = "-";
+            if (Equipment && Equipment.Title) {
+                let Equipcount = "-";
 
-            // Check if EquipmentsCount exists and has data for this index
-            if (EquipmentsCount && EquipmentsCount[index]) {
-                Equipcount = EquipmentsCount[index]?.count || "-";
+                // Check if EquipmentsCount exists and has data for this index
+                if (EquipmentsCount && Array.isArray(EquipmentsCount) && EquipmentsCount[index]) {
+                    Equipcount = EquipmentsCount[index]?.count || "-";
+                }
+
+                equipmentsHtml.find(".quarryToolsBox").append(`
+                    <div class="tool tools-show popupTool">
+                        <label class="customelabel checkboxLabel" for="${Equipment.Title.replace(/\s+/g, '_')}">
+                            <input type="checkbox" class="toolInput checkboxInput" value="${Equipment.Title}" name="${Equipment.Title}" id="${Equipment.Title.replace(/\s+/g, '_')}" disabled>
+                            <span class="checkmark"></span>
+                            <span class="checktext">${Equipment.Title} [${Equipcount}]</span>
+                        </label>
+                    </div>
+                `);
             }
-
-            equipmentsHtml.find(".quarryToolsBox").append(`
-                <div class="tool tools-show popupTool">
-                    <label class="customelabel checkboxLabel" for="${Equipment.Title}">
-                        <input type="checkbox" class="toolInput checkboxInput" value="${Equipment.Title}" name="${Equipment.Title}" id="${Equipment.Title}" disabled>
-                        <span class="checkmark"></span>
-                        <span class="checktext">${Equipment.Title} [${Equipcount}]</span>
-                    </label>
-                </div>
-            `);
         });
     } else {
         equipmentsHtml.find(".quarryToolsBox").append(`
@@ -1436,51 +1412,70 @@ DetailsPopup.getViolationEquipments = (Equipments, EquipmentsCount) => {
 
     return equipmentsHtml.html();
 };
+
+// Update getViolationCoords to handle undefined/null values better
 DetailsPopup.getViolationCoords = (Coordinates) => {
     let CoordsHtml = $(`
-                        <div>
-                            <table class="table table-bordered">
-                                <tr class="coordinatesHead">
-                                    <th scope="col">م</th>
-                                    <th scope="col">شرقيات (E)</th>
-                                    <th scope="col">شماليات (N)</th>
-                                </tr>
-                            </table>
-                        </div>
-                    `);
-    if (Coordinates != "") {
-        let splitedCoords = Coordinates.split("],");
-        let filteredCoords;
-        splitedCoords.forEach((singleCoord, index) => {
-            filteredCoords = singleCoord
-                .replace(/[^0-9\.]+/g, " ")
-                .trim()
-                .split(" ");
-            CoordsHtml.find("table").append(`
-                <tr>
-                    <th>${index + 1}</th>
-                    <td>
-                        <input type="text" class="" value="${filteredCoords[0]
-                }" disabled>
-                        <input type="text" class="" value="${filteredCoords[1]
-                }" disabled>
-                        <input type="text" class="" value="${filteredCoords[2]
-                }" disabled>
-                    </td>
-                    <td>
-                        <input type="text" class="" value="${filteredCoords[3]
-                }" disabled>
-                        <input type="text" class="" value="${filteredCoords[4]
-                }" disabled>
-                        <input type="text" class="" value="${filteredCoords[5]
-                }" disabled>
-                    </td>
+        <div>
+            <table class="table table-bordered">
+                <tr class="coordinatesHead">
+                    <th scope="col">م</th>
+                    <th scope="col">شرقيات (E)</th>
+                    <th scope="col">شماليات (N)</th>
                 </tr>
+            </table>
+        </div>
+    `);
+
+    // Check if Coordinates exists and is a string
+    if (Coordinates && typeof Coordinates === 'string' && Coordinates.trim() !== '') {
+        try {
+            let splitedCoords = Coordinates.split("],");
+            let filteredCoords;
+            let hasValidCoords = false;
+
+            splitedCoords.forEach((singleCoord, index) => {
+                // Clean the coordinate string
+                const cleanedCoord = singleCoord.replace(/[^0-9\.\-]+/g, " ").trim();
+                if (cleanedCoord) {
+                    filteredCoords = cleanedCoord.split(" ");
+                    // Check if we have at least 2 valid coordinates
+                    if (filteredCoords.length >= 2) {
+                        hasValidCoords = true;
+                        CoordsHtml.find("table").append(`
+                            <tr>
+                                <th>${index + 1}</th>
+                                <td>
+                                    <input type="text" class="" value="${filteredCoords[0] || ''}" disabled>
+                                    <input type="text" class="" value="${filteredCoords[1] || ''}" disabled>
+                                    <input type="text" class="" value="${filteredCoords[2] || ''}" disabled>
+                                </td>
+                                <td>
+                                    <input type="text" class="" value="${filteredCoords[3] || ''}" disabled>
+                                    <input type="text" class="" value="${filteredCoords[4] || ''}" disabled>
+                                    <input type="text" class="" value="${filteredCoords[5] || ''}" disabled>
+                                </td>
+                            </tr>
+                        `);
+                    }
+                }
+            });
+
+            if (!hasValidCoords) {
+                CoordsHtml.find(".coordinatesHead").hide();
+                CoordsHtml.find(".table").prepend(`
+                    <p class="noCoordinates">لا توجد احداثيات صحيحة</p>
+                `);
+            }
+        } catch (error) {
+            console.error("Error parsing coordinates:", error);
+            CoordsHtml.find(".coordinatesHead").hide();
+            CoordsHtml.find(".table").prepend(`
+                <p class="noCoordinates">خطأ في قراءة الإحداثيات</p>
             `);
-        });
+        }
     } else {
         CoordsHtml.find(".coordinatesHead").hide();
-        // CoordsHtml.html("");
         CoordsHtml.find(".table").prepend(`
             <p class="noCoordinates">لا توجد احداثيات</p>
         `);
@@ -1488,32 +1483,50 @@ DetailsPopup.getViolationCoords = (Coordinates) => {
 
     return CoordsHtml.html();
 };
+// Update drawCoordinates to handle undefined/null values
 DetailsPopup.drawCoordinates = (Coords, TypeOfCoords) => {
-    let pointLat;
-    let pointLng;
-    let marker;
-    let splitedCoords;
-    let firstPoint;
-    let filteredFirstPoint;
-    let firstArg;
-    let secondArg;
-    if (TypeOfCoords == "Quarry") {
-        splitedCoords = Coords.split("],");
-        firstPoint = splitedCoords[0];
-        filteredFirstPoint = firstPoint.replace("[[", "").trim().split(",");
-        pointLat = filteredFirstPoint[0];
-        pointLng = filteredFirstPoint[1];
-    } else {
-        splitedCoords = Coords.split(",");
-        firstArg = splitedCoords[0];
-        secondArg = splitedCoords[1];
-        pointLat = firstArg.replace("[[", "").trim();
-        pointLng = secondArg.replace("]]", "").trim();
+    if (!Coords || typeof Coords !== 'string' || Coords.trim() === '') {
+        return ''; // Return empty string if no coordinates
     }
-    marker = `marker=${pointLat};${pointLng}`;
-    return marker;
+
+    try {
+        let pointLat = '';
+        let pointLng = '';
+        let splitedCoords;
+        let firstPoint;
+        let filteredFirstPoint;
+
+        if (TypeOfCoords == "Quarry") {
+            splitedCoords = Coords.split("],");
+            if (splitedCoords.length > 0) {
+                firstPoint = splitedCoords[0];
+                filteredFirstPoint = firstPoint.replace("[[", "").trim().split(",");
+                if (filteredFirstPoint.length >= 2) {
+                    pointLat = filteredFirstPoint[0]?.trim() || '';
+                    pointLng = filteredFirstPoint[1]?.trim() || '';
+                }
+            }
+        } else {
+            splitedCoords = Coords.split(",");
+            if (splitedCoords.length >= 2) {
+                pointLat = splitedCoords[0]?.replace("[[", "").trim() || '';
+                pointLng = splitedCoords[1]?.replace("]]", "").trim() || '';
+            }
+        }
+
+        if (pointLat && pointLng) {
+            return `marker=${pointLat};${pointLng}`;
+        }
+    } catch (error) {
+        console.error("Error drawing coordinates:", error);
+    }
+
+    return '';
 };
+// Update getViolationAttachmentsById to handle null responses
 DetailsPopup.getViolationAttachmentsById = (violationID) => {
+    if (!violationID) return;
+
     let request = {
         id: violationID,
         listName: "Violations",
@@ -1525,12 +1538,12 @@ DetailsPopup.getViolationAttachmentsById = (violationID) => {
         dataType: "json",
         data: JSON.stringify(request),
         success: (data) => {
-            if (data != null) {
+            if (data && data.d && Array.isArray(data.d) && data.d.length > 0) {
                 let attachmentsData = data.d;
-                if (attachmentsData.length > 0) {
-                    attachmentsData.forEach((attachData) => {
+                attachmentsData.forEach((attachData) => {
+                    if (attachData && attachData.Url && attachData.Name) {
                         $(".attachBox").append(`
-                            <a class="attachment" target="_blanck" href="${attachData.Url}" download="${attachData.Url}" title="${attachData.Name}">
+                            <a class="attachment" target="_blank" href="${attachData.Url}" download="${attachData.Url}" title="${attachData.Name}">
                                 <div class="attachImgBox">
                                     <img src="/Style Library/MiningViolations/images/file.png" alt="attach Image">
                                 </div>
@@ -1540,16 +1553,22 @@ DetailsPopup.getViolationAttachmentsById = (violationID) => {
                                 </div>
                             </a>
                         `);
-                    });
-                } else {
-                    $(".downloadAllFiles").hide();
-                    $(".attachBox").append(`
-                            <p class="noAttachments">لا يوجد مرفقات</p>
-                    `);
-                }
+                    }
+                });
+            } else {
+                $(".downloadAllFiles").hide();
+                $(".attachBox").append(`
+                    <p class="noAttachments">لا يوجد مرفقات</p>
+                `);
             }
         },
-        error: (xhr) => { },
+        error: (xhr) => {
+            console.error("Error fetching attachments:", xhr);
+            $(".downloadAllFiles").hide();
+            $(".attachBox").append(`
+                <p class="noAttachments">خطأ في تحميل المرفقات</p>
+            `);
+        },
     });
 };
 
@@ -1596,7 +1615,11 @@ DetailsPopup.getConfirmationAttachments = (TaskId) => {
 };
 
 ///////////////////////////////////////////////////////
+
+// Update getCommitteeRecorder to handle null/undefined
 DetailsPopup.getCommitteeRecorder = (SectorConfigId) => {
+    if (!SectorConfigId) return;
+
     let request = {
         Id: SectorConfigId,
     };
@@ -1606,22 +1629,26 @@ DetailsPopup.getCommitteeRecorder = (SectorConfigId) => {
             request,
         )
         .then((response) => {
-            if (response.ok) {
+            if (response && response.ok) {
                 return response.json();
             }
+            throw new Error('Invalid response');
         })
         .then((data) => {
-            let User = data.d;
-
-            $(".customFormGroup").find(".sectorRecorder").append(`${User.NameAr}`);
-
-            $(".CommiteeMembersBox")
-                .find(".recorderBox")
-                .find(".recorderName")
-                .val(`${User.Rank} / ${User.Title}`);
-            // DetailsPopup.getCommitteeManager(User.SectorLeader)
+            if (data && data.d) {
+                let User = data.d;
+                if (User) {
+                    $(".customFormGroup").find(".sectorRecorder").append(`${User.NameAr || ''}`);
+                    $(".CommiteeMembersBox")
+                        .find(".recorderBox")
+                        .find(".recorderName")
+                        .val(`${User.Rank || ''} / ${User.Title || ''}`);
+                }
+            }
         })
-        .catch((err) => { });
+        .catch((err) => {
+            console.error("Error fetching committee recorder:", err);
+        });
 };
 
 DetailsPopup.printPaymentForm = (TaskData) => {
@@ -1731,19 +1758,19 @@ DetailsPopup.printPaymentForm = (TaskData) => {
                                                 <div class="row" style="margin-top: 10px;">
                                                     <div class="col-md-4">
                                                         <div class="form-group customFormGroup">
-                                                            <label for="violatorName" class="customLabel">الكمية (${violationData?.MaterialUnit === "طن" ? "طن" : violationData?.MaterialUnit === "متر مكعب" ? "للمتر المكعب" : "للمتر المكعب / الطن"})</label>
+                                                            <label for="violatorName" class="customLabel">الكمية (${violationData?.MaterialUnit ? violationData?.MaterialUnit : "للمتر المكعب / الطن"})</label>
                                                             <input class="form-control customInput violatorName" id="violatorName" type="text" value="${violationData?.TotalQuantity != "" ? violationData?.TotalQuantity : "-"}" disabled>
                                                         </div>
                                                     </div>
                                                     <div class="col-md-4">
                                                         <div class="form-group customFormGroup">
-                                                            <label for="MaterialUnitAmount" class="customLabel">قيمة الوحدة الواحدة للمادة المحجرية (${violationData?.MaterialUnit === "طن" ? "طن" : violationData?.MaterialUnit === "متر مكعب" ? "للمتر المكعب" : "للمتر المكعب / الطن"})</label>
+                                                            <label for="MaterialUnitAmount" class="customLabel">قيمة الوحدة الواحدة للمادة المحجرية (${violationData?.MaterialUnit ? violationData?.MaterialUnit : "للمتر المكعب / الطن"})</label>
                                                             <input class="form-control customInput MaterialUnitAmount" id="MaterialUnitAmount" type="text" value="${violationData?.MaterialUnitAmount != "" ? violationData?.MaterialUnitAmount : "-"}" disabled>
                                                         </div>
                                                     </div>
                                                     <div class="col-md-4">
                                                         <div class="form-group customFormGroup">
-                                                            <label for="QuarryMaterialValue" class="customLabel">إجمالي قيمة المادة المحجرية (${violationData?.MaterialUnit === "طن" ? "طن" : violationData?.MaterialUnit === "متر مكعب" ? "للمتر المكعب" : "للمتر المكعب / الطن"})</label>
+                                                            <label for="QuarryMaterialValue" class="customLabel">إجمالي قيمة المادة المحجرية (${violationData?.MaterialUnit ? violationData?.MaterialUnit : "للمتر المكعب / الطن"})</label>
                                                             <input class="form-control customInput QuarryMaterialValue" id="QuarryMaterialValue" type="text" value="${violationData?.QuarryMaterialValue != "" ? violationData?.QuarryMaterialValue : "-"}" disabled>
                                                         </div>
                                                     </div>
@@ -1771,6 +1798,7 @@ DetailsPopup.printPaymentForm = (TaskData) => {
                                         <div class="formBox">
                                             <div class="formElements">
                                                 <div class="row">
+                                                    <!--
                                                     <div class="col-md-4">
                                                         <div class="form-group customFormGroup">
                                                             <label class="customLabel" for="quarryPrice">${labelText}</label>
@@ -1781,9 +1809,10 @@ DetailsPopup.printPaymentForm = (TaskData) => {
                                                             <span class="hint">يسدد بإيصال منفصل</span>
                                                         </div>
                                                     </div>
+                                                    -->
                                                     <div class="col-md-4">
                                                         <div class="form-group customFormGroup">
-                                                            <label class="customLabel" for="royaltyPrice">قيمة الإتاوة للوحدة الواحدة للمادة المحجرية (${violationData?.MaterialUnit === "طن" ? "طن" : violationData?.MaterialUnit === "متر مكعب" ? "للمتر المكعب" : "للمتر المكعب / الطن"})</label>
+                                                            <label class="customLabel" for="royaltyPrice">قيمة الإتاوة للوحدة الواحدة للمادة المحجرية (${violationData?.MaterialUnit ? violationData?.MaterialUnit : "للمتر المكعب / الطن"})</label>
                                                             <div class="inputIconBox">
                                                                 <input class="form-control customInput EetawaaUnitAmount" id="EetawaaUnitAmount" type="text" value="${violationData?.EetawaaUnitAmount ? violationData?.EetawaaUnitAmount : "-"}" disabled>
                                                                 <span class="currency">جنيها</span>
@@ -1793,7 +1822,7 @@ DetailsPopup.printPaymentForm = (TaskData) => {
                                                     </div>
                                                     <div class="col-md-4">
                                                         <div class="form-group customFormGroup">
-                                                            <label class="customLabel" for="royaltyPrice">إجمالي قيمة الإتاوة (${violationData?.MaterialUnit === "طن" ? "طن" : violationData?.MaterialUnit === "متر مكعب" ? "للمتر المكعب" : "للمتر المكعب / الطن"})</label>
+                                                            <label class="customLabel" for="royaltyPrice">إجمالي قيمة الإتاوة (${violationData?.MaterialUnit ? violationData?.MaterialUnit : "للمتر المكعب / الطن"})</label>
                                                             <div class="inputIconBox">
                                                                 <input class="form-control customInput royaltyPrice" id="royaltyPrice" type="text" value="${violationData?.LawRoyalty > 0 ? functions.splitBigNumbersByComma(violationData?.LawRoyalty,) : "-"}" disabled>
                                                                 <span class="currency">جنيها</span>

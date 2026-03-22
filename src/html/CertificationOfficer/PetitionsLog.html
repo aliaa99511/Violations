@@ -37,7 +37,7 @@
             </div>
             <div class="col-6 col-md-4">
               <div class="form-group customFormGroup">
-                <label for="theCode" class="customLabel greenLabel">رقم المحجر \ عربة \ معدة
+                <label for="theCode" class="customLabel greenLabel">رقم المحجر \ عربة
                 </label>
                 <div class="selectBox smallSelectBox">
                   <input id="theCode" type="text" class="form-control" placeholder="ادخل الرقم" />
@@ -114,6 +114,15 @@
 
         <div class="dashBoardTable">
           <div class="btnContainer">
+            <!-- Column Selector -->
+            <div class="columnSelectorWrapper">
+              <button type="button" id="columnToggleBtn" class="outlineGreenBtn selectColumnBtn">
+                تحديد الأعمدة
+                <i class="fa-solid fa-grip-lines-vertical"></i>
+              </button>
+              <div id="columnSelector" class="columnDropdown"></div>
+            </div>
+            <!-- Export Button -->
             <div id="exportBtn" class="outlineGreenBtn exportBtn">
               تصدير
               <i class="fa-solid fa-download"></i>
@@ -124,16 +133,22 @@
 
         <div id="paginationID" class="paginationBox" current="" total="" style="display: flex"></div>
 
-        <!-- Modal -->
+        <!-- Tracking Modal -->
         <div class="modal track-history-modal fade" id="trackHistoryModal" tabindex="-1" aria-labelledby="trackHistory"
           aria-hidden="true">
-          <div class="modal-dialog">
+          <div class="modal-dialog modal-lg">
             <div class="modal-content">
-              <div class="modal-header">
+
+              <div class="modal-header" style="display: flex !important; justify-content: space-between !important;">
                 <h5 class="modal-title-style">
-                  تتبع المخالفة رقم <span class="ms-3 modal-violation-code"></span>
+                  تتبع المخالفة رقم <span class="ms-3 track-history-violation-code"></span>
                 </h5>
+                <div class="btnStyle cancelBtn closeViolationHistoryPopup" id="closeViolationHistoryPopup"
+                  style="color: #fff; cursor: pointer;" data-dismiss="modal" aria-label="Close">
+                  <i class="fa-solid fa-x"></i>
+                </div>
               </div>
+
               <div class="modal-body">
                 <div class="track-history-table-node">
                   <table id="trackHistoryTable" class="track-history-table display" style="width: 100%">
@@ -149,6 +164,10 @@
                   </table>
                 </div>
               </div>
+              <!-- <div class="modal-footer">
+                <button type="button" class="btn btn-secondary closeViolationHistoryPopupFooter"
+                  id="closeViolationHistoryPopupFooter" data-bs-dismiss="modal">إغلاق</button>
+              </div> -->
             </div>
           </div>
         </div>

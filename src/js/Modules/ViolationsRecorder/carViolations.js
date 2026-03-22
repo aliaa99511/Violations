@@ -786,6 +786,9 @@ carViolation.validateForm = (e) => {
     let violationTimeArr = violationDetails.violationTime.split('/')
     let violationTime = `${violationTimeArr[1]}-${violationTimeArr[0]}-${violationTimeArr[2]}`
 
+    // Check if calculate by ton checkbox is checked
+    let isCalculateByTon = $("#calculateByTon").is(":checked");
+
     // if(violatorDetails != false){
     if (SectorMembers != "") {
 
@@ -844,6 +847,12 @@ carViolation.validateForm = (e) => {
                             SectorMembers: SectorMembers,
                             Sector: 0,
                         }
+
+                        // Add MaterialUnit property if calculate by ton is checked
+                        if (isCalculateByTon) {
+                            carViolationData.MaterialUnit = "طن";
+                        }
+
                         carViolation.submitNewViolation(carViolationData)
                     }
 

@@ -9,10 +9,11 @@ pendingPaymentRecords.destroyTable = false;
 pendingPaymentRecords.getPendingPayment = (
     pageIndex = 1,
     destroyTable = false,
-    ViolationSector = Number($("#violationSector").children("option:selected").val()),
     ViolationType = Number($("#TypeofViolation").children("option:selected").data("id")),
     ViolationGeneralSearch = ""
 ) => {
+    let UserId = _spPageContextInfo.userId;
+
     let request = {
         Data: {
             RowsPerPage: 10,
@@ -20,9 +21,8 @@ pendingPaymentRecords.getPendingPayment = (
             ColName: "created",
             SortOrder: "desc",
             Status: "UnderPayment",
-            Sector: 0,
+            Sector: UserId,
             ViolationType: ViolationType,
-            SectorConfigId: ViolationSector,
             GlobalSearch: $("#violationSearch").val(),
             OffenderType: $("#violationCategory").val(),
             CreatedFrom: $("#createdFrom").val()
@@ -74,66 +74,35 @@ pendingPaymentRecords.setPaginations = (TotalPages, RowsPerPage) => {
 
 pendingPaymentRecords.filterPaymentsLog = () => {
     let pageIndex = pendingPaymentRecords.pageIndex;
-    let ViolationSectorVal = $("#violationSector").children("option:selected").val();
     let ViolationTypeVal = $("#TypeofViolation").children("option:selected").data("id");
     let ViolationGeneralSearch = $("#violationSearch").val();
+    let violationCategory = $("#violationCategory").val(); // Get violation category value
 
-    let ViolationType;
-    let ViolationSector;
-
+    // Check if at least one filter has a value
     if (
-        ViolationTypeVal == "" &&
-        ViolationSectorVal == "" &&
-        ViolationGeneralSearch == ""
+        ViolationTypeVal == "0" &&
+        ViolationGeneralSearch == "" &&
+        (!violationCategory || violationCategory === "") && // Check if violationCategory is empty
+        $("#createdFrom").val() == "" &&
+        $("#createdTo").val() == ""
     ) {
         functions.warningAlert(
             "من فضلك قم بإدخال قيمة واحدة على الأقل من قيم البحث"
         );
-    } else if (
-        ViolationSectorVal != "" ||
-        ViolationTypeVal != "0" ||
-        ViolationGeneralSearch != ""
-    ) {
+    } else {
         $(".PreLoader").addClass("active");
-        ViolationSector = Number($("#violationSector").children("option:selected").val());
-        ViolationType = Number($("#TypeofViolation").children("option:selected").data("id"));
+        let ViolationType = Number($("#TypeofViolation").children("option:selected").data("id"));
         pendingPaymentRecords.getPendingPayment(
             pageIndex,
             true,
-            ViolationSector,
             ViolationType,
             ViolationGeneralSearch
         );
     }
 };
 
-// pendingPaymentRecords.filterPaymentsLog = () => {
-//     let pageIndex = pendingPaymentRecords.pageIndex;
-//     let ViolationSectorVal = $("#violationSector").children("option:selected").val();
-//     let ViolationTypeVal = $("#TypeofViolation").children("option:selected").data("id");
-//     let ViolationGeneralSearch = $("#violationSearch").val();
-
-//     // This condition is problematic - remove it or fix it
-//     // if (ViolationTypeVal == "" && ViolationSectorVal == "" && ViolationGeneralSearch == "") {
-//     //     functions.warningAlert("من فضلك قم بإدخال قيمة واحدة على الأقل من قيم البحث");
-//     // } else 
-//     if (ViolationSectorVal != "" || ViolationTypeVal != "0" || ViolationGeneralSearch != "") {
-//         $(".PreLoader").addClass("active");
-//         ViolationSector = Number($("#violationSector").children("option:selected").val());
-//         ViolationType = Number($("#TypeofViolation").children("option:selected").data("id"));
-//         pendingPaymentRecords.getPendingPayment(
-//             pageIndex,
-//             true,
-//             ViolationSector,
-//             ViolationType,
-//             ViolationGeneralSearch
-//         );
-//     }
-// };
-
 pendingPaymentRecords.resetFilter = (e) => {
     e.preventDefault();
-    $("#violationSector").val("0");
     $("#violationCategory").val("");
     $("#TypeofViolation").val("0");
     $("#violationSearch").val("");
@@ -143,6 +112,37 @@ pendingPaymentRecords.resetFilter = (e) => {
     $(".PreLoader").addClass("active");
     pagination.reset();
     pendingPaymentRecords.getPendingPayment();
+
+    // Re-enable the TypeofViolation field after reset
+    $("#TypeofViolation").prop("disabled", false);
+};
+
+pendingPaymentRecords.handleViolationCategoryChange = () => {
+    $("#violationCategory").on("change", function () {
+        const selectedCategory = $(this).val();
+        const $typeOfViolationField = $("#TypeofViolation");
+
+        // First, enable both fields
+        $typeOfViolationField.prop("disabled", false);
+
+        // Handle "Equipment" selection
+        if (selectedCategory === "Equipment") {
+            $typeOfViolationField.prop("disabled", true).val("0"); // Disable and set to default
+        }
+
+        // Handle "Vehicle" selection
+        else if (selectedCategory === "Vehicle") {
+            $typeOfViolationField.prop("disabled", true).val("0"); // Disable and set to default
+        }
+    });
+};
+const originalResetFilter = pendingPaymentRecords.resetFilter;
+pendingPaymentRecords.resetFilter = function (e) {
+    // Call the original resetFilter function
+    originalResetFilter.call(this, e);
+
+    // Re-enable both fields after reset
+    $("#TypeofViolation").prop("disabled", false);
 };
 
 pendingPaymentRecords.PendingPaymentTable = (PendingPaymentData, destroyTable) => {
@@ -243,6 +243,9 @@ pendingPaymentRecords.PendingPaymentTable = (PendingPaymentData, destroyTable) =
         "المخالفات قيد السداد.xlsx",
         "المخالفات قيد السداد"
     );
+
+    // 🔹 create column selector
+    functions.createColumnSelector(Table, "#columnSelector", 'blue');
 
     pendingPaymentRecords.destroyTable = true;
 

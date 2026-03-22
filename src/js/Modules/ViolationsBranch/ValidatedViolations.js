@@ -183,6 +183,40 @@ validatedViolations.setPaginations = (TotalPages, RowsPerPage) => {
   pagination.activateCurrentPage();
 };
 
+validatedViolations.handleViolationCategoryChange = () => {
+  $("#violationCategory").on("change", function () {
+    const selectedCategory = $(this).val();
+    const $theCodeField = $("#theCode");
+    const $typeOfViolationField = $("#TypeofViolation");
+
+    // First, enable both fields
+    $theCodeField.prop("disabled", false);
+    $typeOfViolationField.prop("disabled", false);
+
+    // Handle "Equipment" selection
+    if (selectedCategory === "Equipment") {
+      $theCodeField.prop("disabled", true).val(""); // Disable and clear the field
+      $typeOfViolationField.prop("disabled", true).val("0"); // Disable and set to default
+    }
+
+    // Handle "Vehicle" selection
+    else if (selectedCategory === "Vehicle") {
+      $typeOfViolationField.prop("disabled", true).val("0"); // Disable and set to default
+      // theCode field remains enabled
+    }
+  });
+};
+const originalResetFilter = validatedViolations.resetFilter;
+validatedViolations.resetFilter = function (e) {
+  // Call the original resetFilter function
+  originalResetFilter.call(this, e);
+
+  // Re-enable both fields after reset
+  $("#theCode").prop("disabled", false);
+  $("#TypeofViolation").prop("disabled", false);
+};
+
+
 /////////////////////////////////////////
 validatedViolations.ValidatedViolationTable = (ValidatedViolation, destroyTable) => {
   let data = [];
@@ -275,6 +309,9 @@ validatedViolations.ValidatedViolationTable = (ValidatedViolation, destroyTable)
     "المخالفات المصدق عليها"
   );
 
+  // 🔹 create column selector
+  functions.createColumnSelector(Table, "#columnSelector", 'green');
+
   validatedViolations.destroyTable = true;
 
   $(".ellipsisButton").on("click", (e) => {
@@ -312,7 +349,9 @@ validatedViolations.ValidatedViolationTable = (ValidatedViolation, destroyTable)
       if (offenderType === "Quarry") {
         referralButtonHtml = `<li><a href="#" class="reffereViolationQuarry">إحالة إلى النيابة المختصة</a></li>`;
       } else if (offenderType === "Vehicle") {
-        referralButtonHtml = `<li><a href="#" class="reffereViolationVehicle">حظر عربة \ معدة</a></li>`;
+        referralButtonHtml = `<li><a href="#" class="reffereViolationVehicle">حظر عربة</a></li>`;
+      } else if (offenderType === "Equipment") {
+        referralButtonHtml = `<li><a href="#" class="reffereViolationEquipment">حظر معدة</a></li>`;
       }
 
       switch (taskStatus) {
@@ -394,6 +433,16 @@ validatedViolations.ValidatedViolationTable = (ValidatedViolation, destroyTable)
       });
 
       jQueryRecord.find(".controls").children(".hiddenListBox").find(".reffereViolationVehicle").on("click", (e) => {
+        $(".overlay").addClass("active");
+        validatedViolations.reffereViolationToCase(
+          violationTaskID,
+          violationID,
+          violationCode,
+          offenderType,
+          TotalPrice
+        );
+      });
+      jQueryRecord.find(".controls").children(".hiddenListBox").find(".reffereViolationEquipment").on("click", (e) => {
         $(".overlay").addClass("active");
         validatedViolations.reffereViolationToCase(
           violationTaskID,
@@ -1422,7 +1471,11 @@ validatedViolations.reffereViolationToCase = (
     inputLabel = 'رقم الإحالة';
     inputPlaceholder = 'ادخل رقم الإحالة';
   } else if (OffenderType === "Vehicle") {
-    popupTitle = `حظر العربة/المعدة رقم (${ViolationCode})`;
+    popupTitle = `حظر العربة رقم (${ViolationCode})`;
+    inputLabel = 'رقم القيد';
+    inputPlaceholder = 'ادخل رقم القيد';
+  } else if (OffenderType === "Equipment") {
+    popupTitle = `حظر المعدة رقم (${ViolationCode})`;
     inputLabel = 'رقم القيد';
     inputPlaceholder = 'ادخل رقم القيد';
   } else {
@@ -1431,13 +1484,20 @@ validatedViolations.reffereViolationToCase = (
     inputPlaceholder = 'ادخل رقم الإحالة';
   }
 
+  // Generate unique IDs for close buttons
+  const closeHeaderId = "closeReffereHeader_" + Math.random().toString(36).substr(2, 9);
+  const closeFooterId = "closeReffereFooter_" + Math.random().toString(36).substr(2, 9);
+
   let popupHtml = `
-    <div class="popupHeader">
+    <div class="popupHeader" style="display: flex; justify-content: space-between;">
       <div class="violationsCode"> 
         <p>${popupTitle}</p>
       </div>
+      <div class="btnStyle cancelBtn popupBtn ${closeHeaderId}" id="${closeHeaderId}" style="color: #fff; cursor: pointer;" data-dismiss="modal" aria-label="Close">
+        <i class="fa-solid fa-x"></i>
+      </div>
     </div> 
-    <div class="popupBody">
+    <div class="popupBody scrollable-popup-body" style="max-height: 80vh; overflow-y: auto; padding: 15px;">
       <div class="popupForm detailsPopupForm" id="detailsPopupForm">
         <div class="formContent"> 
           <div class="formBox">
@@ -1478,19 +1538,19 @@ validatedViolations.reffereViolationToCase = (
                         <input type="file" class="customInput attachFilesInput reffereViolationAttach form-control" id="reffereViolationAttach" accept="image/gif,image/svg,image/jpg,image/jpeg,image/png,.doc,.docx,.pdf,.xls,.xlsx,.pptx" multiple>
                       </div>
                     </div>
-                    <div class="dropFilesArea" id="dropFilesArea"></div>
+                    <div class="dropFilesArea" id="dropFilesArea" style="max-height: 150px; overflow-y: auto;"></div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
-        <div class="formButtonsBox">
+        <div class="formButtonsBox" style="margin-top: 20px;">
           <div class="row">
             <div class="col-12">
               <div class="buttonsBox centerButtonsBox">
                 <div class="btnStyle confirmBtnGreen popupBtn reffereVioltionBtn" id="editCasePriceBtn">تأكيد</div>
-                <div class="btnStyle cancelBtn popupBtn closeReffereViolationPopup" id="closeReffereViolationPopup" data-dismiss="modal" aria-label="Close">إلغاء</div>
+                <div class="btnStyle cancelBtn popupBtn ${closeFooterId}" id="${closeFooterId}" data-dismiss="modal" aria-label="Close">إلغاء</div>
               </div>
             </div>
           </div>
@@ -1499,11 +1559,47 @@ validatedViolations.reffereViolationToCase = (
     </div>`;
 
   functions.declarePopup(["generalPopupStyle", "greenPopup", "editPopup"], popupHtml);
+
+  // Add custom CSS for scrollbar styling (optional)
+  const style = document.createElement('style');
+  style.textContent = `
+    .scrollable-popup-body::-webkit-scrollbar {
+      width: 8px;
+    }
+    .scrollable-popup-body::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 4px;
+    }
+    .scrollable-popup-body::-webkit-scrollbar-thumb {
+      background: #888;
+      border-radius: 4px;
+    }
+    .scrollable-popup-body::-webkit-scrollbar-thumb:hover {
+      background: #555;
+    }
+    .dropFilesArea::-webkit-scrollbar {
+      width: 5px;
+    }
+    .dropFilesArea::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 3px;
+    }
+    .dropFilesArea::-webkit-scrollbar-thumb {
+      background: #888;
+      border-radius: 3px;
+    }
+  `;
+  document.head.appendChild(style);
+
+  // Add close button handlers
+  $(`#${closeHeaderId}, #${closeFooterId}`).on("click", function () {
+    functions.closePopup();
+  });
+
   let numberOfDaysBefore = functions.getViolationStartDate(3);
   functions.inputDateFormat(".inputDate", numberOfDaysBefore, "today");
 
   let violationRefferedDate = $(".reffereViolationDate").val();
-  // let violationRefferedNumber = $(".reffereViolationNumber").val();
   let violationRefferedComments = $(".reffereViolationComments").val();
 
   let filesExtension = ["gif", "svg", "jpg", "jpeg", "png", "doc", "docx", "pdf", "xls", "xlsx", "pptx"];
@@ -1553,17 +1649,12 @@ validatedViolations.reffereViolationToCase = (
     violationRefferedDate = $(e.currentTarget).val();
   });
 
-  // $(".reffereViolationNumber").on("keyup", (e) => {
-  //   violationRefferedNumber = $(e.currentTarget).val().trim();
-  // });
-
   $(".reffereViolationComments").on("keyup", (e) => {
     violationRefferedComments = $(e.currentTarget).val().trim();
   });
 
   $(".reffereVioltionBtn").on("click", (e) => {
     if (violationRefferedDate != "") {
-      // if (violationRefferedNumber != "") {
       if (allAttachments != null && allAttachments.length > 0) {
         $(".overlay").addClass("active");
         validatedViolations.reffereViolationAPIResponse(
@@ -1572,21 +1663,12 @@ validatedViolations.reffereViolationToCase = (
           OffenderType,
           TotalPrice,
           violationRefferedDate,
-          // violationRefferedNumber,
           violationRefferedComments,
           "#reffereViolationAttach",
         );
       } else {
         functions.warningAlert("من فضلك قم بإرفاق المستند الخاص بالإحالة");
       }
-      // } else {
-      //   // Update alert message based on OffenderType
-      //   if (OffenderType === "Vehicle") {
-      //     functions.warningAlert("من فضلك قم بإدخال رقم القيد");
-      //   } else {
-      //     functions.warningAlert("من فضلك قم بإدخال رقم الإحالة");
-      //   }
-      // }
     } else {
       functions.warningAlert("من فضلك قم بتحديد تاريخ الإحالة الخاص بالمخالفة");
     }
@@ -1606,7 +1688,7 @@ validatedViolations.reffereViolationAPIResponse = (
   let request = {
     Data: {
       ID: TaskId,
-      Title: OffenderType == "Vehicle" ? "تم حظر عربة - معدة" : " تم إحالة الطلب للنيابة المختصة",
+      Title: OffenderType == "Vehicle" ? "تم حظر عربة" : OffenderType == "Equipment" ? "تم حظر معدة" : " تم إحالة الطلب للنيابة المختصة",
       Status: "UnderReview",
       ViolationId: ViolationId,
       TotalPriceDue: OffenderType == "Vehicle" ? DouplePrice : TotalPrice,
@@ -1668,10 +1750,10 @@ validatedViolations.addNewCase = (
         OffenderType: OffenderType
       },
     };
-  } else if (OffenderType === "Vehicle") {
+  } else if (OffenderType === "Vehicle" || OffenderType === "Equipment") {
     request = {
       Request: {
-        Title: "تم حظر عربة او معدة",
+        Title: OffenderType === "Vehicle" ? "تم حظر عربة" : "تم حظر معدة",
         // Status: "قيد انتظار الرقم القضائي",
         Status: "قيد انتظار رقم القيد",
         ViolationId: violationId,
@@ -1713,7 +1795,7 @@ validatedViolations.addNewCase = (
         // Get the Case ID from response
         let CaseId = data.d.Result?.Id;
         if (CaseId) {
-          // Add attachment record for the case (like in violationsCases)
+          // Add attachment record for the case 
           validatedViolations.addNewCaseAttachmentRecord(
             CaseId,
             "إحالة إلى النيابة",
@@ -1820,60 +1902,75 @@ validatedViolations.requestNewPetition = (
   violationCode,
 ) => {
   $(".overlay").removeClass("active");
+
+  // Generate unique IDs for close buttons
+  const closeHeaderId = "closePetitionHeader_" + Math.random().toString(36).substr(2, 9);
+  const closeFooterId = "closePetitionFooter_" + Math.random().toString(36).substr(2, 9);
+
   let popupHtml = `
-        <div class="popupHeader">
-            <div class="violationsCode"> 
-                <p>إضافة التماس للمخالفة رقم (${violationCode})</p>
-            </div>
-        </div> 
-        <div class="popupBody">
-            <div class="popupForm detailsPopupForm" id="detailsPopupForm">
+    <div class="popupHeader" style="display: flex; justify-content: space-between; align-items: center;">
+      <div class="violationsCode"> 
+        <p>إضافة التماس للمخالفة رقم (${violationCode})</p>
+      </div>
+      <div class="btnStyle cancelBtn popupBtn ${closeHeaderId}" id="${closeHeaderId}" style="color: #fff; cursor: pointer;" data-dismiss="modal" aria-label="Close">
+        <i class="fa-solid fa-x"></i>
+      </div>
+    </div> 
+    <div class="popupBody">
+      <div class="popupForm detailsPopupForm" id="detailsPopupForm">
 
-                <div class="formContent"> 
-                    <div class="formBox">
-                        <div class="formElements">
-                            <div class="row">
-                                <div class="col-12">
-                                    <div class="form-group customFormGroup">
-                                        <label for="addPetitionComments" class="customLabel">موضوع الالتماس</label>
-                                        <textarea class="form-control addPetitionComments petitionComments customTextArea" id="addPetitionComments" placeholder="أدخل سبب وموضوع تقديم الالتماس"></textarea>
-                                    </div>
-                                </div>
-                                <div class="col-12">
-                                    <div class="form-group customFormGroup">
-                                        <label for="addPetitionAttach" class="customLabel">إرفاق مستند الالتماس</label>
-                                        <div class="fileBox" id="dropContainer">
-                                            <div class="inputFileBox">
-                                                <img src="/Style Library/MiningViolations/images/fileIcon.svg" alt="File Icon">
-                                                <p class="dragDropFilesLabel">قم بالسحب والإفلات لرفع الملف , أو <a href="#!" class="attachFileLink">استعراض ملفاتي</a></p>
-                                                <input type="file" class="customInput attachFilesInput addPetitionAttach form-control" id="addPetitionAttach" accept="image/gif,image/svg,image/jpg,image/jpeg,image/png,.doc,.docx,.pdf,.xls,.xlsx,.pptx" multiple>
-                                            </div>
-                                        </div>
-                                        <div class="dropFilesArea" id="dropFilesArea"></div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+        <div class="formContent"> 
+          <div class="formBox">
+            <div class="formElements">
+              <div class="row">
+                <div class="col-12">
+                  <div class="form-group customFormGroup">
+                    <label for="addPetitionComments" class="customLabel">موضوع الالتماس</label>
+                    <textarea class="form-control addPetitionComments petitionComments customTextArea" id="addPetitionComments" placeholder="أدخل سبب وموضوع تقديم الالتماس"></textarea>
+                  </div>
                 </div>
-
-                <div class="formButtonsBox">
-                    <div class="row">
-                        <div class="col-12">   
-                            <div class="buttonsBox centerButtonsBox">
-                                <div class="btnStyle confirmBtnGreen popupBtn addPetitionBtn" id="addPetitionBtn">تأكيد</div>
-                                <div class="btnStyle cancelBtn popupBtn closeAddPetitionPopup" id="closeAddPetitionPopup" data-dismiss="modal" aria-label="Close">إلغاء</div>
-                            </div>
-                        </div>
+                <div class="col-12">
+                  <div class="form-group customFormGroup">
+                    <label for="addPetitionAttach" class="customLabel">إرفاق مستند الالتماس</label>
+                    <div class="fileBox" id="dropContainer">
+                      <div class="inputFileBox">
+                        <img src="/Style Library/MiningViolations/images/fileIcon.svg" alt="File Icon">
+                        <p class="dragDropFilesLabel">قم بالسحب والإفلات لرفع الملف , أو <a href="#!" class="attachFileLink">استعراض ملفاتي</a></p>
+                        <input type="file" class="customInput attachFilesInput addPetitionAttach form-control" id="addPetitionAttach" accept="image/gif,image/svg,image/jpg,image/jpeg,image/png,.doc,.docx,.pdf,.xls,.xlsx,.pptx" multiple>
+                      </div>
                     </div>
+                    <div class="dropFilesArea" id="dropFilesArea"></div>
+                  </div>
                 </div>
-
+              </div>
             </div>
-        </div>`;
+          </div>
+        </div>
+
+        <div class="formButtonsBox">
+          <div class="row">
+            <div class="col-12">   
+              <div class="buttonsBox centerButtonsBox">
+                <div class="btnStyle confirmBtnGreen popupBtn addPetitionBtn" id="addPetitionBtn">تأكيد</div>
+                <div class="btnStyle cancelBtn popupBtn ${closeFooterId}" id="${closeFooterId}" data-dismiss="modal" aria-label="Close">إلغاء</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>`;
+
   functions.declarePopup(
     ["generalPopupStyle", "greenPopup", "editPopup"],
     popupHtml,
   );
+
+  // Add close button handlers
+  $(`#${closeHeaderId}, #${closeFooterId}`).on("click", function () {
+    functions.closePopup();
+  });
+
   let petitionComments = $("#addPetitionComments").val();
   let filesExtension = [
     "gif",
@@ -1903,11 +2000,11 @@ validatedViolations.requestNewPetition = (
     }
     for (let i = 0; i < allAttachments.length; i++) {
       $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").append(`
-                <div class="file">
-                    <p class="fileName">${allAttachments[i].name}</p>
-                    <span class="deleteFile" data-index="${i}"><i class="fa-sharp fa-solid fa-x"></i></span>
-                </div>
-            `);
+        <div class="file">
+          <p class="fileName">${allAttachments[i].name}</p>
+          <span class="deleteFile" data-index="${i}"><i class="fa-sharp fa-solid fa-x"></i></span>
+        </div>
+      `);
     }
     $(".deleteFile").on("click", (event) => {
       let index = $(event.currentTarget).closest(".file").index();
@@ -1942,9 +2039,11 @@ validatedViolations.requestNewPetition = (
       }
     }
   });
+
   $("#addPetitionComments").on("keyup", (e) => {
     petitionComments = $(e.currentTarget).val().trim();
   });
+
   $(".addPetitionBtn").on("click", (e) => {
     if (petitionComments != "") {
       if (allAttachments != null && allAttachments.length > 0) {
@@ -2172,7 +2271,67 @@ validatedViolations.violationExceedTimeStatusChange = (taskId, violationId) => {
     })
     .catch((err) => { });
 };
+// // Common utility for popup close buttons
+// validatedViolations.popupUtils = {
+//   // Generate unique IDs for close buttons
+//   generateCloseIds: (prefix) => {
+//     const uniqueId = Math.random().toString(36).substr(2, 9);
+//     return {
+//       headerId: `${prefix}_header_${uniqueId}`,
+//       footerId: `${prefix}_footer_${uniqueId}`
+//     };
+//   },
 
+//   // Add close button handlers
+//   addCloseHandlers: (headerId, footerId) => {
+//     $(`#${headerId}, #${footerId}`).on("click", function () {
+//       functions.closePopup();
+//     });
+//   },
+
+//   // Create popup header with close button
+//   createHeader: (title, closeId) => `
+//     <div class="popupHeader" style="display: flex; justify-content: space-between;">
+//       <div class="violationsCode"> 
+//         <p>${title}</p>
+//       </div>
+//       <div class="btnStyle cancelBtn popupBtn ${closeId}" id="${closeId}" style="color: #fff; cursor: pointer;" data-dismiss="modal" aria-label="Close">
+//         <i class="fa-solid fa-x"></i>
+//       </div>
+//     </div>
+//   `,
+
+//   // Create footer with close button
+//   createFooter: (closeId, customButtons = '') => `
+//     <div class="formButtonsBox">
+//       <div class="row">
+//         <div class="col-12">
+//           <div class="buttonsBox centerButtonsBox">
+//             ${customButtons}
+//             <div class="btnStyle cancelBtn popupBtn ${closeId}" id="${closeId}" data-dismiss="modal" aria-label="Close">إغلاق</div>
+//           </div>
+//         </div>
+//       </div>
+//     </div>
+//   `,
+
+//   // Wrap content with header and footer
+//   wrapPopup: (title, content, customButtons = '') => {
+//     const ids = validatedViolations.popupUtils.generateCloseIds('popup');
+//     const header = validatedViolations.popupUtils.createHeader(title, ids.headerId);
+//     const footer = validatedViolations.popupUtils.createFooter(ids.footerId, customButtons);
+
+//     setTimeout(() => {
+//       validatedViolations.popupUtils.addCloseHandlers(ids.headerId, ids.footerId);
+//     }, 100);
+
+//     return `
+//       ${header}
+//       ${content}
+//       ${footer}
+//     `;
+//   }
+// };
 
 const ViolationHistoryLogs = () => {
 
@@ -2183,7 +2342,9 @@ const ViolationHistoryLogs = () => {
   // ===============================
   // 🔥 فتح المودال
   // ===============================
-  $(".contentContainer").on("click", ".violationHistory", function () {
+  $(".contentContainer").on("click", ".violationHistory", function (e) {
+    e.preventDefault();
+    e.stopPropagation();
 
     selectedViolationId = $(this).data("violationid");
     selectedViolationCode = $(this).data("violationcode");
@@ -2192,11 +2353,47 @@ const ViolationHistoryLogs = () => {
   });
 
   // ===============================
+  // 🔥 إغلاق المودال - Close button handlers
+  // ===============================
+  const closeModal = () => {
+    $("#trackHistoryModal").modal("hide");
+
+    // Clear the modal content
+    $(".track-history-violation-code").text("");
+
+    if (trackHistoryTable) {
+      trackHistoryTable.clear().destroy();
+      trackHistoryTable = null;
+    }
+
+    $("#trackHistoryTable tbody").empty();
+  };
+
+  // Close button in header
+  $(document).on("click", "#closeViolationHistoryPopup", function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+    closeModal();
+  });
+
+  // // Close button in footer
+  // $(document).on("click", "#closeViolationHistoryPopupFooter", function (e) {
+  //   e.preventDefault();
+  //   e.stopPropagation();
+  //   closeModal();
+  // });
+
+  // Bootstrap modal hide event
+  $("#trackHistoryModal").on("hidden.bs.modal", function () {
+    closeModal();
+  });
+
+  // ===============================
   // 🔥 لما المودال يفتح
   // ===============================
   $(".track-history-modal").on("shown.bs.modal", function () {
 
-    $(".modal-violation-code").text(selectedViolationCode);
+    $(".track-history-violation-code").text(selectedViolationCode);
 
     const request = {
       Request: {
@@ -2214,6 +2411,9 @@ const ViolationHistoryLogs = () => {
         paging: false,
         responsive: true,
         destroy: true,
+        // ordering: false,
+        // searching: false,
+        // info: false,
 
         ajax: {
           url: "/_layouts/15/Uranium.Violations.SharePoint/ViolationHistoryLogs.aspx/Search",
@@ -2227,15 +2427,35 @@ const ViolationHistoryLogs = () => {
         },
 
         columns: [
-          { data: "Id" },
-          { data: "Status" },
+          {
+            data: null,
+            render: (data, type, row, meta) => {
+              return meta.row;
+            }
+          },
+          {
+            data: "Status",
+            render: (data) => {
+              return data || "-";
+            }
+          },
           {
             data: "Created",
             render: (data) =>
               data ? functions.getFormatedDate(data) : "-"
           },
-          { data: "CreatedBy" },
-          { data: "Comment" }
+          {
+            data: "CreatedBy",
+            render: (data) => {
+              return data || "-";
+            }
+          },
+          {
+            data: "Comment",
+            render: (data) => {
+              return data || "-";
+            }
+          }
         ],
 
         language: {
@@ -2255,7 +2475,7 @@ const ViolationHistoryLogs = () => {
   // ===============================
   $(".track-history-modal").on("hidden.bs.modal", function () {
 
-    $(".modal-violation-code").text("");
+    $(".track-history-violation-code").text("");
 
     if (trackHistoryTable) {
       trackHistoryTable.clear().destroy();
@@ -2266,7 +2486,6 @@ const ViolationHistoryLogs = () => {
   });
 
 };
-
 ViolationHistoryLogs();
 
 

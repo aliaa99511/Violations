@@ -53,6 +53,10 @@ table.table {
                         color: #D27C2E;
                     }
 
+                    &.pendingStatusDark {
+                        color: #894100;
+                    }
+
                     &.warningStatus {
                         color: #B64142;
                     }

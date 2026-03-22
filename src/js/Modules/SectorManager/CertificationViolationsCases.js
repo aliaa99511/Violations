@@ -88,7 +88,7 @@ certificationCases.ViolationsCasesTable = (Cases) => {
                             
                         </ul>
                     </div>
-                </div`,
+                </div>`,
         `<div class="violationReffereDate noWrapContent">${functions.getFormatedDate(
           caseRecord.RefferedDate
         )}</div>`,
@@ -119,6 +119,10 @@ certificationCases.ViolationsCasesTable = (Cases) => {
     "سجل القضايا المسجلة.xlsx",
     "سجل القضايا المسجلة"
   );
+
+  // 🔹 create column selector
+  functions.createColumnSelector(Table, "#columnSelector", 'green');
+
   $(".ellipsisButton").on("click", (e) => {
     $(".hiddenListBox").hide(300);
     $(e.currentTarget).siblings(".hiddenListBox").toggle(300);

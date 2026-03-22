@@ -14,27 +14,25 @@ const counterMapping = {
 
   "/ViolationsBranch/Pages/ValidatedViolations.aspx": {
     type: "Violations",
-    keys: ["Confirmed", "Paid", "Exceeded", "Paid After Reffered", "Saved", "Cancelled"],
-    operation: "sum"
+    keys: ["Confirmed", "Paid", "Exceeded", "Paid After Reffered", "Saved", "Cancelled"]
   },
 
   "/ViolationsBranch/Pages/pendingPaymentLog.aspx": { type: "Violations", key: "UnderPayment" },
   "/ViolationsBranch/Pages/completedViolations.aspx": { type: "Violations", key: "Completed" },
 
-  // ✅ Cases Updated
+  // Cases
   "/ViolationsBranch/Pages/CasesLog.aspx": {
     type: "Cases",
-    keys: ["Quarry", "Vehicle", "Equipment"],
-    operation: "sum"
+    keys: ["Quarry", "Vehicle", "Equipment"]
   },
   "/ViolationsBranch/Pages/quarryViolationReferral.aspx": { type: "Cases", key: "Quarry" },
   "/ViolationsBranch/Pages/CarViolationReferral.aspx": { type: "Cases", key: "Vehicle" },
 
+  // Petitions
   "/ViolationsBranch/Pages/PendingPetitionsLog.aspx": { type: "Petitions", key: "التماس قيد الإنتظار" },
   "/ViolationsBranch/Pages/PetitionsLog.aspx": {
     type: "Petitions",
-    keys: ["التماس مرفوض", "قبول مع التعديل", "قبول وإلغاء المخالفة"],
-    operation: "sum"
+    keys: ["التماس مرفوض", "قبول مع التعديل", "قبول وإلغاء المخالفة"]
   },
 
   // ==========================
@@ -44,14 +42,12 @@ const counterMapping = {
 
   "/CertificationOfficer/Pages/ConfirmedLog.aspx": {
     type: "Violations",
-    keys: ["Confirmed", "Paid", "Exceeded", "Paid After Reffered", "Saved", "Cancelled"],
-    operation: "sum"
+    keys: ["Confirmed", "Paid", "Exceeded", "Paid After Reffered", "Saved", "Cancelled"]
   },
 
   "/CertificationOfficer/Pages/CasesLog.aspx": {
     type: "Cases",
-    keys: ["Quarry", "Vehicle", "Equipment"],
-    operation: "sum"
+    keys: ["Quarry", "Vehicle", "Equipment"]
   },
   "/CertificationOfficer/Pages/QuarryViolationReferralSector.aspx": { type: "Cases", key: "Quarry" },
   "/CertificationOfficer/Pages/Block-Car-Equipment.aspx": { type: "Cases", key: "Vehicle" },
@@ -59,8 +55,7 @@ const counterMapping = {
   "/CertificationOfficer/Pages/Pending-Petitions.aspx": { type: "Petitions", key: "التماس قيد الإنتظار" },
   "/CertificationOfficer/Pages/PetitionsLog.aspx": {
     type: "Petitions",
-    keys: ["التماس مرفوض", "قبول مع التعديل", "قبول وإلغاء المخالفة"],
-    operation: "sum"
+    keys: ["التماس مرفوض", "قبول مع التعديل", "قبول وإلغاء المخالفة"]
   },
 
   // ==========================
@@ -71,8 +66,7 @@ const counterMapping = {
 
   "/ViolationsRecorder/Pages/ValidatedViolationsRecords.aspx": {
     type: "Violations",
-    keys: ["Confirmed", "Paid", "Exceeded", "Paid After Reffered", "Saved", "Cancelled"],
-    operation: "sum"
+    keys: ["Confirmed", "Paid", "Exceeded", "Paid After Reffered", "Saved", "Cancelled"]
   },
 
   "/ViolationsRecorder/Pages/QuarryViolationReferralRecords.aspx": { type: "Cases", key: "Quarry" },
@@ -107,9 +101,28 @@ Object.keys(counterMapping).forEach(key => {
 // Fetch Navigation + Counters
 // ==========================
 sideMenuFunctions.getOnlyVisibleNavSubsites = async function () {
+
   try {
 
     const rootUrl = window.location.href.split("/Pages/")[0];
+    let UserId = _spPageContextInfo.userId;
+
+    const currentPage = this.normalizeUrl(window.location.pathname);
+
+    let payload = { Sector: 0 };
+
+    // For Violations Recorder, we need to pass the UserId as Sector to get the correct counters
+    const sectorPages = [
+      "registered-violations.aspx",
+      "pending-payment.aspx",
+      "approvedviolationsrecords.aspx",
+      "rejectedviolationsrecords.aspx",
+      "validatedviolationsrecords.aspx"
+    ];
+
+    if (sectorPages.some(page => currentPage.includes(page))) {
+      payload = { Sector: UserId };
+    }
 
     const [navResponse, countersResponse] = await Promise.all([
 
@@ -124,7 +137,7 @@ sideMenuFunctions.getOnlyVisibleNavSubsites = async function () {
         type: "POST",
         contentType: "application/json; charset=utf-8",
         dataType: "json",
-        data: JSON.stringify({})
+        data: JSON.stringify(payload)
       })
 
     ]);
@@ -164,6 +177,7 @@ sideMenuFunctions.attachCountersToNavigation = function (items) {
     }
 
   });
+
 };
 
 
@@ -180,37 +194,32 @@ sideMenuFunctions.attachCounterToItem = function (item) {
   if (!mapping) return;
 
   let total = 0;
-  const details = [];
-
   const counterType = this.counters[mapping.type];
+
   if (!counterType) return;
 
   if (mapping.keys) {
 
     mapping.keys.forEach(key => {
       const value = counterType[key];
-      if (value !== undefined && value !== null && value > 0) {
+      if (value !== undefined && value !== null) {
         total += value;
-        details.push({ status: key, count: value });
       }
     });
 
   } else if (mapping.key) {
 
     const value = counterType[mapping.key];
-    if (value !== undefined && value !== null && value > 0) {
+    if (value !== undefined && value !== null) {
       total = value;
-      details.push({ status: mapping.key, count: value });
     }
+
   }
 
-  if (total > 0) {
+  if (total !== undefined) {
     item.Count = total;
-    item.CountDetails = details;
-  } else {
-    delete item.Count;
-    delete item.CountDetails;
   }
+
 };
 
 
@@ -230,6 +239,7 @@ sideMenuFunctions.renderNavigationMenu = function (data) {
     const normalizedItemUrl = this.normalizeUrl(item.Url);
 
     const isActive = currentPage === normalizedItemUrl;
+
     let hasActiveChild = false;
 
     if (hasChildren) {
@@ -256,12 +266,12 @@ sideMenuFunctions.renderNavigationMenu = function (data) {
           ? "active-child"
           : "";
 
-        const count = child.Count || "";
+        const count = child.Count;
 
         html += `<li class="submenu-item ${childActive}">
           <a href="${child.Url}">
             <span>${child.Title}</span>
-            ${count ? `<span class="count-badge">${count}</span>` : ""}
+            ${count !== undefined ? `<span class="count-badge">${count}</span>` : ""}
           </a>
         </li>`;
       });
@@ -270,12 +280,12 @@ sideMenuFunctions.renderNavigationMenu = function (data) {
 
     } else {
 
-      const count = item.Count || "";
+      const count = item.Count;
 
       html += `<li class="${itemClass} ${activeClass}">
         <a href="${item.Url}" class="menu-link">
           <span>${item.Title}</span>
-          ${count ? `<span class="count-badge">${count}</span>` : ""}
+          ${count !== undefined ? `<span class="count-badge">${count}</span>` : ""}
         </a>
       </li>`;
     }
@@ -295,6 +305,7 @@ sideMenuFunctions.renderNavigationMenu = function (data) {
     .addClass("expanded")
     .children(".submenu")
     .show();
+
 };
 
 
@@ -302,8 +313,10 @@ sideMenuFunctions.renderNavigationMenu = function (data) {
 // Init
 // ==========================
 sideMenuFunctions.init = function () {
+
   this.getOnlyVisibleNavSubsites()
     .then(nav => this.renderNavigationMenu(nav));
+
 };
 
 export default sideMenuFunctions;

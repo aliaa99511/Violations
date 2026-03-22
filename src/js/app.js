@@ -11,7 +11,7 @@ import home from "./Modules/Home";
 import quarryViolation from "./Modules/ViolationsRecorder/quarryViolationForm";
 import equipmentViolation from "./Modules/ViolationsRecorder/equipmentViolationForm";
 import carViolation from "./Modules/ViolationsRecorder/carViolations";
-import violationRecords from "./Modules/ViolationsRecorder/registeredViolationsRecords";
+import registeredViolationsRecords from "./Modules/ViolationsRecorder/registeredViolationsRecords";
 import approvedViolationsRecords from "./Modules/ViolationsRecorder/approvedViolationsRecords";
 import rejectedViolationsRecords from "./Modules/ViolationsRecorder/rejectedViolationsRecords";
 import validatedViolationsRecords from "./Modules/ViolationsRecorder/validatedViolationsRecords";
@@ -122,20 +122,24 @@ $(window).on("load", () => {
         functions.inputDateFormat("#createdFrom", "", "", "dd-mm-yyyy");
         functions.inputDateFormat("#createdTo", "", "", "dd-mm-yyyy");
 
-        violationRecords.getRegisteredViolations();
+        registeredViolationsRecords.handleViolationCategoryChange();
+
+        registeredViolationsRecords.getRegisteredViolations();
         $(".searchBtn").on("click", (e) => {
           e.preventDefault();
           pagination.reset();
-          violationRecords.filterViolationsLog(e);
+          registeredViolationsRecords.filterViolationsLog(e);
         });
         $(".resetBtn").on("click", (e) => {
-          violationRecords.resetFilter(e);
+          registeredViolationsRecords.resetFilter(e);
         });
       }
       if (functions.getPageName() === "ApprovedViolationsRecords") {
         functions.setPageMetaData("سجل المحاضر الموافق عليها");
         sharedApis.getOffenderType("#violationCategory");
         sharedApis.getViolationType("#TypeofViolation");
+
+        approvedViolationsRecords.handleViolationCategoryChange()
 
         approvedViolationsRecords.getApprovedViolations();
 
@@ -161,6 +165,8 @@ $(window).on("load", () => {
         // Initialize datepickers for date inputs
         functions.inputDateFormat("#createdFrom", "", "", "dd-mm-yyyy");
         functions.inputDateFormat("#createdTo", "", "", "dd-mm-yyyy");
+
+        validatedViolationsRecords.handleViolationCategoryChange()
 
         validatedViolationsRecords.getViolations();
         $(".searchBtn").on("click", (e) => {
@@ -193,7 +199,7 @@ $(window).on("load", () => {
         functions.setPageMetaData("إحالة مخالفة محجرية");
 
         sharedApis.getCasesStatus("#CaseStatus");
-        sharedApis.getViolationStatus("#ViolationStatus");
+        sharedApis.getQuarryViolationStatus("#ViolationStatus");
 
         // Initialize datepickers for date inputs
         functions.inputDateFormat("#RefferedDateFrom", "", "", "dd-mm-yyyy");
@@ -219,7 +225,7 @@ $(window).on("load", () => {
         functions.inputDateFormat("#RefferedDateTo", "", "", "dd-mm-yyyy");
 
         sharedApis.getCasesStatus("#CaseStatus");
-        sharedApis.getViolationStatus("#ViolationStatus");
+        sharedApis.getVehicleViolationStatus("#ViolationStatus");
 
         // Call the API to get data
         vehicleViolationReferralRecords.getVehicleViolationReferralsRecords();
@@ -244,6 +250,8 @@ $(window).on("load", () => {
         // Initialize datepickers for date inputs
         functions.inputDateFormat("#createdFrom", "", "", "dd-mm-yyyy");
         functions.inputDateFormat("#createdTo", "", "", "dd-mm-yyyy");
+
+        pendingPaymentRecords.handleViolationCategoryChange()
 
         pendingPaymentRecords.getPendingPayment();
 
@@ -296,6 +304,8 @@ $(window).on("load", () => {
         functions.inputDateFormat("#createdFrom", "", "", "dd-mm-yyyy");
         functions.inputDateFormat("#createdTo", "", "", "dd-mm-yyyy");
 
+        PendingViolations.handleViolationCategoryChange();
+
         PendingViolations.getPendingViolations();
 
         $(".searchBtn").on("click", (e) => {
@@ -319,6 +329,8 @@ $(window).on("load", () => {
         // Initialize datepickers for date inputs
         functions.inputDateFormat("#createdFrom", "", "", "dd-mm-yyyy");
         functions.inputDateFormat("#createdTo", "", "", "dd-mm-yyyy");
+
+        validatedViolations.handleViolationCategoryChange()
 
         validatedViolations.getValidatedViolations();
 
@@ -358,6 +370,8 @@ $(window).on("load", () => {
         // Initialize datepickers for date inputs
         functions.inputDateFormat("#createdFrom", "", "", "dd-mm-yyyy");
         functions.inputDateFormat("#createdTo", "", "", "dd-mm-yyyy");
+
+        runningViolations.handleViolationCategoryChange()
 
         runningViolations.getRunningViolations();
         $(".searchBtn").on("click", (e) => {
@@ -405,6 +419,8 @@ $(window).on("load", () => {
         functions.inputDateFormat("#createdFrom", "", "", "dd-mm-yyyy");
         functions.inputDateFormat("#createdTo", "", "", "dd-mm-yyyy");
 
+        petitionsLog.handleViolationCategoryChange()
+
         // Initial load with pending status
         petitionsLog.getPetitions("التماس قيد الإنتظار", 1, false);
 
@@ -427,6 +443,8 @@ $(window).on("load", () => {
         sharedApis.getPetitionsStatus("#petitionStatus");
         functions.inputDateFormat("#createdFrom", "", "", "dd-mm-yyyy");
         functions.inputDateFormat("#createdTo", "", "", "dd-mm-yyyy");
+
+        petitionsLog.handleViolationCategoryChange()
 
         // Initial load with all petitions
         petitionsLog.getPetitions("All", 1, false);
@@ -478,6 +496,8 @@ $(window).on("load", () => {
         functions.inputDateFormat("#createdFrom", "", "", "dd-mm-yyyy");
         functions.inputDateFormat("#createdTo", "", "", "dd-mm-yyyy");
 
+        pendingPayment.handleViolationCategoryChange()
+
         pendingPayment.getPendingPayment();
 
         $(".searchBtn").on("click", (e) => {
@@ -495,7 +515,7 @@ $(window).on("load", () => {
         functions.setPageMetaData("إحالة مخالفة محجرية");
 
         sharedApis.getCasesStatus("#CaseStatus");
-        sharedApis.getViolationStatus("#ViolationStatus");
+        sharedApis.getQuarryViolationStatus("#ViolationStatus");
 
         // Initialize datepickers for date inputs
         functions.inputDateFormat("#RefferedDateFrom", "", "", "dd-mm-yyyy");
@@ -528,7 +548,7 @@ $(window).on("load", () => {
 
         // Load status dropdown first
         sharedApis.getCasesStatus("#CaseStatus");
-        sharedApis.getViolationStatus("#ViolationStatus");
+        sharedApis.getVehicleViolationStatus("#ViolationStatus");
 
         vehicleViolationReferral.getVehicleViolationReferrals();
 
@@ -575,6 +595,7 @@ $(window).on("load", () => {
         // sharedApis.getViolationZones("#violationZone");
         sharedApis.getViolationSectors("#violationSector");
         sharedApis.getViolationType("#TypeofViolation");
+
         runningSectorTask.getRunningTasks();
         $(".searchBtn").on("click", (e) => {
           e.preventDefault();
@@ -595,6 +616,8 @@ $(window).on("load", () => {
         // Initialize datepickers for date inputs
         functions.inputDateFormat("#createdFrom", "", "", "dd-mm-yyyy");
         functions.inputDateFormat("#createdTo", "", "", "dd-mm-yyyy");
+
+        confirmedViolationLog.handleViolationCategoryChange()
 
         confirmedViolationLog.getConfirmedLog();
         $(".searchBtn").on("click", (e) => {
@@ -626,6 +649,8 @@ $(window).on("load", () => {
         functions.inputDateFormat("#createdFrom", "", "", "dd-mm-yyyy");
         functions.inputDateFormat("#createdTo", "", "", "dd-mm-yyyy");
 
+        petitionsLog.handleViolationCategoryChange()
+
         // Initial load with pending status
         petitionsLog.getPetitions("التماس قيد الإنتظار", 1, false);
 
@@ -648,6 +673,8 @@ $(window).on("load", () => {
         functions.inputDateFormat("#createdFrom", "", "", "dd-mm-yyyy");
         functions.inputDateFormat("#createdTo", "", "", "dd-mm-yyyy");
 
+        petitionsLog.handleViolationCategoryChange()
+
         // Initial load with all petitions
         petitionsLog.getPetitions("All", 1, false);
 
@@ -664,7 +691,7 @@ $(window).on("load", () => {
         functions.setPageMetaData("إحالة مخالفة محجرية");
 
         sharedApis.getCasesStatus("#CaseStatus");
-        sharedApis.getViolationStatus("#ViolationStatus");
+        sharedApis.getQuarryViolationStatus("#ViolationStatus");
 
         // Initialize datepickers for date inputs
         functions.inputDateFormat("#RefferedDateFrom", "", "", "dd-mm-yyyy");
@@ -693,7 +720,7 @@ $(window).on("load", () => {
         functions.inputDateFormat("#RefferedDateTo", "", "", "dd-mm-yyyy");
 
         sharedApis.getCasesStatus("#CaseStatus");
-        sharedApis.getViolationStatus("#ViolationStatus");
+        sharedApis.getVehicleViolationStatus("#ViolationStatus");
 
         // Call the API to get data
         vehicleViolationReferralSector.getVehicleViolationReferralsRecords();

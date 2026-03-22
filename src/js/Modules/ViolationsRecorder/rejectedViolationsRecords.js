@@ -9,10 +9,11 @@ rejectedViolationsRecords.destroyTable = false;
 rejectedViolationsRecords.getViolations = (
   pageIndex = 1,
   destroyTable = false,
-  ViolationSector = Number($("#violationSector").children("option:selected").val()),
   ViolationType = Number($("#TypeofViolation").children("option:selected").data("id")),
   ViolationGeneralSearch = ""
 ) => {
+  let UserId = _spPageContextInfo.userId;
+
   let request = {
     Data: {
       RowsPerPage: 10,
@@ -20,8 +21,8 @@ rejectedViolationsRecords.getViolations = (
       ColName: "created",
       SortOrder: "desc",
       Status: "Rejected",
+      Sector: UserId,
       ViolationType: ViolationType,
-      SectorConfigId: ViolationSector,
       GlobalSearch: $("#violationSearch").val(),
     },
   };
@@ -68,7 +69,6 @@ rejectedViolationsRecords.dashBoardTable = (violationsData, destroyTable) => {
       taskViolation = record.Violation;
       let createdDate = functions.getFormatedDate(record.Created);
       let editLink;
-      console.log(taskViolation.OffenderType);
       if (taskViolation.OffenderType == "Quarry") {
         editLink = "/ViolationsRecorder/Pages/quarryViolationForm.aspx?taskId=" + record.ID
       } else if (taskViolation.OffenderType == "Vehicle") {
@@ -90,7 +90,7 @@ rejectedViolationsRecords.dashBoardTable = (violationsData, destroyTable) => {
                      
                     </ul>
                 </div>
-            </div`,
+            </div>`,
         `<div class="violationArName">${functions.getViolationArabicName(taskViolation.OffenderType)}</div>`,
         `<div class="violationCode">${taskViolation.OffenderType == "Vehicle" ? taskViolation.CarNumber : taskViolation.QuarryCode != "" ? taskViolation.QuarryCode : "---"}</div>`,
         `<div class="companyName">${taskViolation.ViolatorCompany != "" ? taskViolation.ViolatorCompany : "-"}</div>`,
@@ -125,6 +125,9 @@ rejectedViolationsRecords.dashBoardTable = (violationsData, destroyTable) => {
     "سجل المحاضر المرفوضة.xlsx",
     "سجل المحاضر المرفوضة"
   );
+
+  // 🔹 create column selector
+  functions.createColumnSelector(Table, "#columnSelector", 'blue');
 
   rejectedViolationsRecords.destroyTable = true;
 
@@ -210,33 +213,27 @@ rejectedViolationsRecords.findViolationByID = (event, taskID, print = false) => 
 };
 rejectedViolationsRecords.filterViolationsLog = (e) => {
   let pageIndex = rejectedViolationsRecords.pageIndex
-  let ViolationSectorVal = $("#violationSector").children("option:selected").val();
   let ViolationTypeVal = $("#TypeofViolation").children("option:selected").data("id");
   let ViolationGeneralSearch = $("#violationSearch").val();
 
   let ViolationType;
-  let ViolationSector;
 
   if (
     ViolationTypeVal == "" &&
-    ViolationSectorVal == "" &&
     ViolationGeneralSearch == ""
   ) {
     functions.warningAlert(
       "من فضلك قم بإدخال قيمة واحدة على الأقل من قيم البحث"
     );
   } else if (
-    ViolationSectorVal != "" ||
     ViolationTypeVal != "0" ||
     ViolationGeneralSearch != ""
   ) {
     $(".PreLoader").addClass("active");
-    ViolationSector = Number($("#violationSector").children("option:selected").val());
     ViolationType = Number($("#TypeofViolation").children("option:selected").data("id"));
     rejectedViolationsRecords.getViolations(
       pageIndex,
       true,
-      ViolationSector,
       ViolationType,
       ViolationGeneralSearch
     );
@@ -244,7 +241,6 @@ rejectedViolationsRecords.filterViolationsLog = (e) => {
 };
 rejectedViolationsRecords.resetFilter = (e) => {
   e.preventDefault();
-  $("#violationSector").val("0");
   $("#TypeofViolation").val("0");
   $("#violationSearch").val("");
 

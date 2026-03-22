@@ -16,18 +16,18 @@
       <div class="contentContainer">
         <div class="filterBox blueFilterBox">
           <div class="row">
-            <div class="col-6 col-md-3">
+            <!-- <div class="col-6 col-md-3">
               <div class="form-group customFormGroup">
-                <label for="violationSector" class="customLabel greenLabel">القطاع
+                <label for="violationSector" class="customLabel blueLabel">القطاع
                 </label>
                 <div class="selectBox smallSelectBox">
-                  <select class="form-control violationSector greenSelect" id="violationSector">
+                  <select class="form-control violationSector blueSelect" id="violationSector">
                     <option value="0" disabled selected hidden>الكل</option>
                   </select>
                   <i class="fa-solid fa-sort-down"></i>
                 </div>
               </div>
-            </div>
+            </div> -->
             <div class="col-6 col-md-3">
               <div class="form-group customFormGroup">
                 <label for="violationCategory" class="customLabel">تصنيف المخالفة
@@ -105,7 +105,7 @@
             </div>
             <div class="col-6 col-md-3">
               <div class="form-group customFormGroup">
-                <label for="theCode" class="customLabel">رقم المحجر \ عربة \ معدة
+                <label for="theCode" class="customLabel">رقم المحجر \ عربة
                 </label>
                 <div class="selectBox smallSelectBox">
                   <input id="theCode" type="text" class="form-control" placeholder="ادخل الرقم" />
@@ -151,52 +151,77 @@
         </div>
 
         <div class="dashBoardTable">
+
+          <!-- btnContainer -->
           <div class="btnContainer">
+            <!-- Column Selector -->
+            <div class="columnSelectorWrapper">
+              <button type="button" id="columnToggleBtn" class="outlineBlueBtn selectColumnBtn">
+                تحديد الأعمدة
+                <i class="fa-solid fa-grip-lines-vertical"></i>
+              </button>
+              <div id="columnSelector" class="columnDropdown"></div>
+            </div>
+
+            <!-- Export Button -->
             <div id="exportBtn" class="outlineBlueBtn exportBtn">
               تصدير
               <i class="fa-solid fa-download"></i>
             </div>
           </div>
+          <!-- btnContainer -->
+
           <table id="RegisteredViolationsTable" class="table tableWithIcons blueTable"></table>
         </div>
-
         <!-- <iframe src="/Reports/powerbi/Violation1962023" style="width:100%;height:800px"></iframe> -->
 
         <!-- <div id="paginationBox" class="paginationBox"></div> -->
         <div id="paginationID" class="paginationBox" current="" total="" style="display: flex"></div>
+      </div>
 
-        <!-- Modal -->
-        <div class="modal track-history-modal fade" id="trackHistoryModal" tabindex="-1" aria-labelledby="trackHistory"
-          aria-hidden="true">
-          <div class="modal-dialog">
-            <div class="modal-content">
-              <div class="modal-header">
-                <h5 class="modal-title-style">
-                  تتبع المخالفة رقم <span class="ms-3 modal-violation-code"></span>
-                </h5>
-              </div>
-              <div class="modal-body">
-                <div class="track-history-table-node">
-                  <table id="trackHistoryTable" class="track-history-table display" style="width: 100%">
-                    <thead>
-                      <tr class="data-header">
-                        <th>م</th>
-                        <th>الإجراء</th>
-                        <th>تاريخ الإجراء</th>
-                        <th>القائم بالإجراء</th>
-                        <th>ملاحظات</th>
-                      </tr>
-                    </thead>
-                  </table>
-                </div>
+      <!-- Tracking Modal -->
+      <div class="modal track-history-modal fade" id="trackHistoryModal" tabindex="-1" aria-labelledby="trackHistory"
+        aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+          <div class="modal-content">
+
+            <div class="modal-header"
+              style="display: flex !important; justify-content: space-between !important;background-color: #083a77 !important; color: #fff !important;">
+              <h5 class="modal-title-style">
+                تتبع المخالفة رقم <span class="ms-3 track-history-violation-code"></span>
+              </h5>
+              <div class="btnStyle cancelBtn closeViolationHistoryPopup" id="closeViolationHistoryPopup"
+                style="color: #fff; cursor: pointer;" data-dismiss="modal" aria-label="Close">
+                <i class="fa-solid fa-x"></i>
               </div>
             </div>
+
+            <div class="modal-body">
+              <div class="track-history-table-node">
+                <table id="trackHistoryTable" class="track-history-table display" style="width: 100%">
+                  <thead>
+                    <tr class="data-header">
+                      <th>م</th>
+                      <th>الإجراء</th>
+                      <th>تاريخ الإجراء</th>
+                      <th>القائم بالإجراء</th>
+                      <th>ملاحظات</th>
+                    </tr>
+                  </thead>
+                </table>
+              </div>
+            </div>
+            <!-- <div class="modal-footer">
+                <button type="button" class="btn btn-secondary closeViolationHistoryPopupFooter"
+                  id="closeViolationHistoryPopupFooter" data-bs-dismiss="modal">إغلاق</button>
+              </div> -->
           </div>
         </div>
-
-
       </div>
+
+
     </div>
+  </div>
   </div>
 
 </body>

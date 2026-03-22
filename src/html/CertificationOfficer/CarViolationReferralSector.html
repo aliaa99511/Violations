@@ -72,10 +72,10 @@
                         </div>
                         <div class="col-6 col-md-4">
                             <div class="form-group customFormGroup">
-                                <label for="TrafficName" class="customLabel greenLabel">اسم السائق</label>
+                                <label for="TrafficName" class="customLabel greenLabel">اسم المخالف</label>
                                 <div class="selectBox smallSelectBox">
                                     <input id="TrafficName" type="text" class="form-control"
-                                        placeholder="ادخل اسم السائق" />
+                                        placeholder="ادخل اسم المخالف" />
                                 </div>
                             </div>
                         </div>
@@ -129,6 +129,15 @@
 
                 <div class="dashBoardTable">
                     <div class="btnContainer">
+                        <!-- Column Selector -->
+                        <div class="columnSelectorWrapper">
+                            <button type="button" id="columnToggleBtn" class="outlineGreenBtn selectColumnBtn">
+                                تحديد الأعمدة
+                                <i class="fa-solid fa-grip-lines-vertical"></i>
+                            </button>
+                            <div id="columnSelector" class="columnDropdown"></div>
+                        </div>
+                        <!-- Export Button -->
                         <div id="exportBtn" class="outlineGreenBtn exportBtn">
                             تصدير
                             <i class="fa-solid fa-download"></i>
@@ -137,7 +146,7 @@
                     <table id="VehicleViolationReferralSectorTable" class="table tableWithIcons greenTable"></table>
                 </div>
 
-                <div id="paginationIDRecords" class="paginationBox" current="" total="" style="display: flex"></div>
+                <div id="paginationID" class="paginationBox" current="" total="" style="display: flex"></div>
             </div>
         </div>
     </div>

@@ -9,10 +9,11 @@ validatedViolationsRecords.destroyTable = false;
 validatedViolationsRecords.getViolations = (
   pageIndex = 1,
   destroyTable = false,
-  ViolationSector = Number($("#violationSector").children("option:selected").val()),
   ViolationType = Number($("#TypeofViolation").children("option:selected").data("id")),
   ViolationGeneralSearch = $("#violationSearch").val()
 ) => {
+  let UserId = _spPageContextInfo.userId;
+
   // Check if theCode field has a value but violationCategory is empty
   const theCodeValue = $("#theCode").val();
   const violationCategoryValue = $("#violationCategory").val();
@@ -62,9 +63,8 @@ validatedViolationsRecords.getViolations = (
       NationalID: $("#nationalID").val(),
       ViolationCode: $("#violationCode").val(),
       ViolationType: ViolationType,
-      SectorConfigId: ViolationSector,
       GlobalSearch: ViolationGeneralSearch,
-      Sector: 0,
+      Sector: UserId,
       OffenderType: $("#violationCategory").val(),
       ViolationsZone: $("#violationZone").val(),
       CreatedFrom: $("#createdFrom").val()
@@ -117,9 +117,9 @@ validatedViolationsRecords.setPaginations = (TotalPages, RowsPerPage) => {
 
 validatedViolationsRecords.filterViolationsLog = (e) => {
   let pageIndex = validatedViolationsRecords.pageIndex;
-  let ViolationSectorVal = $("#violationSector").children("option:selected").val();
   let ViolationTypeVal = $("#TypeofViolation").children("option:selected").data("id");
   let ViolationGeneralSearch = $("#violationSearch").val();
+  let violationCategory = $("#violationCategory").val(); // Get violation category value
 
   // Check if theCode has value but violationCategory is empty
   const theCodeValue = $("#theCode").val();
@@ -130,41 +130,41 @@ validatedViolationsRecords.filterViolationsLog = (e) => {
     return;
   }
 
-  let ViolationType;
-  let ViolationSector;
-
+  // Check if at least one filter has a value
   if (
-    ViolationTypeVal == "" &&
-    ViolationSectorVal == "" &&
-    ViolationGeneralSearch == ""
+    ViolationTypeVal == "0" &&
+    ViolationGeneralSearch == "" &&
+    (!violationCategory || violationCategory === "") && // Check if violationCategory is empty
+    $("#violatorName").val() == "" &&
+    $("#nationalID").val() == "" &&
+    $("#violationCode").val() == "" &&
+    $("#violationZone").val() == "" &&
+    $("#createdFrom").val() == "" &&
+    $("#createdTo").val() == "" &&
+    $("#theCode").val() == "" &&
+    $("#ViolationStatus").val() == ""
   ) {
     functions.warningAlert(
       "من فضلك قم بإدخال قيمة واحدة على الأقل من قيم البحث"
     );
-  } else if (
-    ViolationSectorVal != "" ||
-    ViolationTypeVal != "0" ||
-    ViolationGeneralSearch != ""
-  ) {
+  } else {
     $(".PreLoader").addClass("active");
-    ViolationSector = Number($("#violationSector").children("option:selected").val());
-    ViolationType = Number($("#TypeofViolation").children("option:selected").data("id"));
+    let ViolationType = Number($("#TypeofViolation").children("option:selected").data("id"));
 
     validatedViolationsRecords.getViolations(
       pageIndex,
       true,
-      ViolationSector,
       ViolationType,
       ViolationGeneralSearch
     );
   }
 };
+
 validatedViolationsRecords.resetFilter = (e) => {
   e.preventDefault();
   $("#nationalID").val("");
   $("#violatorName").val("");
   $("#violationCode").val("");
-  $("#violationSector").val("0");
   $("#violationCategory").val("");
   $("#TypeofViolation").val("0");
   $("#violationZone").val("");
@@ -177,6 +177,40 @@ validatedViolationsRecords.resetFilter = (e) => {
   $(".PreLoader").addClass("active");
   pagination.reset();
   validatedViolationsRecords.getViolations();
+};
+
+validatedViolationsRecords.handleViolationCategoryChange = () => {
+  $("#violationCategory").on("change", function () {
+    const selectedCategory = $(this).val();
+    const $theCodeField = $("#theCode");
+    const $typeOfViolationField = $("#TypeofViolation");
+
+    // First, enable both fields
+    $theCodeField.prop("disabled", false);
+    $typeOfViolationField.prop("disabled", false);
+
+    // Handle "Equipment" selection
+    if (selectedCategory === "Equipment") {
+      $theCodeField.prop("disabled", true).val(""); // Disable and clear the field
+      $typeOfViolationField.prop("disabled", true).val("0"); // Disable and set to default
+    }
+
+    // Handle "Vehicle" selection
+    else if (selectedCategory === "Vehicle") {
+      $typeOfViolationField.prop("disabled", true).val("0"); // Disable and set to default
+      // theCode field remains enabled
+    }
+  });
+};
+
+const originalResetFilter = validatedViolationsRecords.resetFilter;
+validatedViolationsRecords.resetFilter = function (e) {
+  // Call the original resetFilter function
+  originalResetFilter.call(this, e);
+
+  // Re-enable both fields after reset
+  $("#theCode").prop("disabled", false);
+  $("#TypeofViolation").prop("disabled", false);
 };
 
 validatedViolationsRecords.dashBoardTable = (violationsData, destroyTable) => {
@@ -206,7 +240,7 @@ validatedViolationsRecords.dashBoardTable = (violationsData, destroyTable) => {
                         <li><a href="#" class="itemDetails">المزيد من التفاصيل</a></li>                     
                     </ul>
                 </div>
-            </div`,
+            </div>`,
         `<div class="violationArName">${functions.getViolationArabicName(
           taskViolation.OffenderType
         )}</div>`,
@@ -242,10 +276,9 @@ validatedViolationsRecords.dashBoardTable = (violationsData, destroyTable) => {
         }`,
         `${createdDate}`,
       ]);
-      // }
-      // <li><a href="#" class="printViolationDetails">طباعة التقرير</a></li>
     });
   }
+
   let Table = functions.tableDeclare(
     "#validatedViolationsRecords",
     data,
@@ -267,6 +300,9 @@ validatedViolationsRecords.dashBoardTable = (violationsData, destroyTable) => {
     "سجل المحاضر المصدق عليها.xlsx",
     "سجل المحاضر المصدق عليها"
   );
+
+  // 🔹 create column selector
+  functions.createColumnSelector(Table, "#columnSelector", 'blue');
 
   validatedViolationsRecords.destroyTable = true;
 
@@ -406,6 +442,7 @@ validatedViolationsRecords.getViolationStatus = (ViolationStatus) => {
 
   return statusHtml;
 };
+
 validatedViolationsRecords.findViolationByID = (
   event,
   taskID,

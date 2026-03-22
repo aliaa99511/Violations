@@ -1,25 +1,56 @@
-.paginationBox{
-    margin-top: 1.5rem;
+.paginationBox {
+  margin-top: 1.5rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  padding: 0 1rem;
 }
 
 #paginationID {
   display: flex;
   justify-content: center;
+  align-items: center;
   width: fit-content;
   margin: 1rem auto 0;
   max-width: 100%;
-  .pages-holder {
-    @include flexRow;
-    max-width: 80vw;
-    overflow-x: auto;
-    margin: 0px 10px;
-    // border: 1px solid #ddd;
-  }
+  background-color: #fff;
+  border-radius: 40px;
+  padding: 0.5rem;
+  // box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
-  
+
+#paginationID .pages-holder {
+  display: flex;
+  align-items: center;
+  max-width: 70vw;
+  overflow-x: auto;
+  margin: 0 10px;
+  padding: 5px;
+  scrollbar-width: thin;
+  scrollbar-color: #bbb #f0f0f0;
+}
+
+#paginationID .pages-holder::-webkit-scrollbar {
+  height: 4px;
+}
+
+#paginationID .pages-holder::-webkit-scrollbar-track {
+  background: #f0f0f0;
+  border-radius: 10px;
+}
+
+#paginationID .pages-holder::-webkit-scrollbar-thumb {
+  background: #bbb;
+  border-radius: 10px;
+}
+
 #paginationID .page-item {
-  @include flexRow;
+  display: flex;
   justify-content: center;
+  align-items: center;
   color: #bbb;
   padding: 8px;
   text-decoration: none;
@@ -27,29 +58,139 @@
   border: 1px solid #bbb;
   border-radius: 50%;
   height: 40px;
-  width:40px;
+  width: 40px;
   margin-inline-end: 0.35rem;
   cursor: pointer;
+  min-width: 40px;
+}
+
+#paginationID .page-item:last-child {
+  margin-inline-end: 0;
+}
+
+#paginationID .page-item.prev,
+#paginationID .page-item.next {
+  background-color: #f5f5f5;
+  border-color: #999;
+  color: #666;
+  font-size: 14px;
+}
+
+#paginationID .page-item.prev:hover:not(.disabled),
+#paginationID .page-item.next:hover:not(.disabled) {
+  background-color: #e0e0e0;
+  border-color: #666;
+  color: #333;
+}
+
+#paginationID .page-item.prev.disabled,
+#paginationID .page-item.next.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+  background-color: #f0f0f0;
+  border-color: #ddd;
+  color: #aaa;
 }
 
 #paginationID .page.active {
   background-color: #bbb;
   border: 1px solid #bbb;
-  color: $white;
+  color: #fff;
   cursor: default;
 }
 
-// #paginationID .page.activeGreen {
-//   background-color: $customGreen !important;
-//   border: 1px solid $customGreen !important;
-// }
-
-// #paginationID .page.activeBlue {
-//   background-color: $customBlue !important;
-//   border: 1px solid $customBlue !important;
-// }
-
 #paginationID .page:hover:not(.active) {
   background-color: #bbb;
-  color: $white;
+  color: #fff;
 }
+
+/* Green theme for active page */
+#paginationID .page.active-green {
+  background-color: #28a745 !important;
+  border-color: #28a745 !important;
+  color: #fff !important;
+}
+
+/* Optional: Add responsive styles */
+@media (max-width: 768px) {
+  #paginationID {
+    padding: 0.25rem;
+  }
+
+  #paginationID .pages-holder {
+    max-width: 250px;
+  }
+
+  #paginationID .page-item {
+    height: 35px;
+    width: 35px;
+    min-width: 35px;
+    font-size: 14px;
+  }
+}
+
+
+
+
+
+
+
+
+
+
+// .paginationBox{
+//     margin-top: 1.5rem;
+// }
+
+// #paginationID {
+//   display: flex;
+//   justify-content: center;
+//   width: fit-content;
+//   margin: 1rem auto 0;
+//   max-width: 100%;
+//   .pages-holder {
+//     @include flexRow;
+//     max-width: 80vw;
+//     overflow-x: auto;
+//     margin: 0px 10px;
+//     // border: 1px solid #ddd;
+//   }
+// }
+
+// #paginationID .page-item {
+//   @include flexRow;
+//   justify-content: center;
+//   color: #bbb;
+//   padding: 8px;
+//   text-decoration: none;
+//   transition: all 0.4s ease-in-out;
+//   border: 1px solid #bbb;
+//   border-radius: 50%;
+//   height: 40px;
+//   width:40px;
+//   margin-inline-end: 0.35rem;
+//   cursor: pointer;
+// }
+
+// #paginationID .page.active {
+//   background-color: #bbb;
+//   border: 1px solid #bbb;
+//   color: $white;
+//   cursor: default;
+// }
+
+// // #paginationID .page.activeGreen {
+// //   background-color: $customGreen !important;
+// //   border: 1px solid $customGreen !important;
+// // }
+
+// // #paginationID .page.activeBlue {
+// //   background-color: $customBlue !important;
+// //   border: 1px solid $customBlue !important;
+// // }
+
+// #paginationID .page:hover:not(.active) {
+//   background-color: #bbb;
+//   color: $white;
+// }

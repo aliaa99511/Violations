@@ -128,342 +128,6 @@ quarryViolationReferral.resetFilter = (e) => {
     quarryViolationReferral.getQuarryViolationReferrals();
 };
 
-// quarryViolationReferral.QuarryViolationReferralTable = (Referrals, destroyTable) => {
-//     let data = [];
-
-//     if (quarryViolationReferral.destroyTable || destroyTable) {
-//         $("#QuarryViolationReferralTable").DataTable().destroy();
-//     }
-
-//     if (Referrals && Referrals.length > 0) {
-//         Referrals.forEach((referral) => {
-//             let violation = referral?.Violation;
-//             let refferedDate = functions.getFormatedDate(referral.RefferedDate);
-//             let violationStatus = referral.ViolationStatus || "";
-//             let caseStatus = referral.Status || "";
-//             let referralNumber = referral.ReferralNumber || "";
-//             let caseNumber = referral.CaseNumber || "";
-//             let ReferredAmount = violation.ReferredAmount || 0;
-
-//             // Determine which actions to show based on business rules
-//             let hasAddReferralNumberAction = false;
-//             // let hasEditAmountAction = false;
-//             let hasPayCaseBeforeEditAction = false; // سداد على نموذج التقييم
-//             let hasPayCaseAfterEditAction = false;  // سداد على الإحالة
-//             let hasSaveCaseAction = false; // NEW: حفظ القضية
-//             let canShowDetailsOnly = false;
-
-//             // Business Rule 1: Add Referral Number
-//             if (!referralNumber &&
-//                 caseStatus == "قيد انتظار رقم الإحالة" &&
-//                 violationStatus == "UnderReview") {
-//                 hasAddReferralNumberAction = true;
-//             }
-
-//             // // Business Rule 2: Edit Amount
-//             // if (referralNumber &&
-//             //     ReferredAmount <= 0 &&
-//             //     caseStatus == "تم التسليم للتحريات" &&
-//             //     violationStatus == "UnderReview") {
-//             //     hasEditAmountAction = true;
-//             // }
-
-//             // Business Rule 3: Pay Case Before Edit (سداد على نموذج التقييم)
-//             if (referralNumber &&
-//                 // ReferredAmount <= 0 &&
-//                 caseStatus == "قيد انتظار تأشيرات النيابة" &&
-//                 violationStatus == "UnderReview") {
-//                 hasPayCaseBeforeEditAction = true;
-//             }
-
-//             // Business Rule 4: Pay Case After Edit (سداد على الإحالة)
-//             if (referralNumber &&
-//                 // ReferredAmount > 0 &&
-//                 caseStatus == "تم التسليم للتحريات" &&
-//                 violationStatus == "UnderReview") {
-//                 hasPayCaseAfterEditAction = true;
-//             }
-
-//             // NEW Business Rule 5: Save Case - based on your requirements
-//             if (violationStatus !== "Paid" && // Violation status is not "Paid"
-//                 (caseStatus === "قيد انتظار رقم الإحالة" ||
-//                     caseStatus === "قيد انتظار تأشيرات النيابة" ||
-//                     caseStatus === "تم التسليم للتحريات")) {
-//                 hasSaveCaseAction = true;
-//             }
-
-//             // Business Rule 6: Paid - show details only
-//             if (violationStatus == "Paid") {
-//                 canShowDetailsOnly = true;
-//             }
-
-//             // Build actions menu HTML
-//             let actionsMenuHTML = '';
-//             if (canShowDetailsOnly) {
-//                 actionsMenuHTML = `
-//                 <ul class='list-unstyled controlsList'>
-//                     <li><a href="#" class="itemDetails">المزيد من التفاصيل</a></li>
-//                 </ul>`;
-//             } else {
-//                 actionsMenuHTML = `
-//                 <ul class='list-unstyled controlsList'>
-//                     <li><a href="#" class="itemDetails">المزيد من التفاصيل</a></li>`;
-
-//                 if (hasAddReferralNumberAction) {
-//                     actionsMenuHTML += `
-//                     <li><a href="#" class="addReferralNumberAction" 
-//                            data-referralid="${referral.ID}"
-//                            data-violationid="${referral.ViolationId}"
-//                            data-taskid="${referral.TaskId}"
-//                            data-violationcode="${referral.ViolationCode}">إضافة رقم الإحالة</a></li>`;
-//                 }
-
-//                 // if (hasEditAmountAction) {
-//                 //     actionsMenuHTML += `
-//                 //     <li><a href="#" class="editAmountAction"
-//                 //            data-referralid="${referral.ID}"
-//                 //            data-violationid="${referral.ViolationId}"
-//                 //            data-taskid="${referral.TaskId}"
-//                 //            data-totaloldprice="${violation?.TotalPriceDue || 0}"
-//                 //            data-referralnumber="${referral.ReferralNumber || ''}">تعديل مبلغ الإحالة</a></li>`;
-//                 // }
-
-//                 if (hasPayCaseBeforeEditAction) {
-//                     actionsMenuHTML += `
-//                     <li><a href="#" class="payCaseBeforeEditAction"
-//                            data-referralid="${referral.ID}"
-//                            data-violationid="${violation?.ID}"
-//                            data-taskid="${referral.TaskId}"
-//                            data-referralnumber="${referral.ReferralNumber || ''}"
-//                            data-violationcode="${referral.ViolationCode}"
-//                            data-totalprice="${violation?.TotalPriceDue || 0}"
-//                            data-oldprice="${violation?.TotalOldPrice || 0}">سداد على نموذج التقييم</a></li>`;
-//                 }
-
-//                 if (hasPayCaseAfterEditAction) {
-//                     actionsMenuHTML += `
-//                     <li><a href="#" class="payCaseAfterEditAction"
-//                            data-referralid="${referral.ID}"
-//                            data-violationid="${violation?.ID}"
-//                            data-taskid="${referral.TaskId}"
-//                            data-referralnumber="${referral.ReferralNumber || ''}"
-//                            data-violationcode="${referral.ViolationCode}"
-//                            data-totalprice="${violation?.TotalPriceDue || 0}"
-//                            data-referredamount="${ReferredAmount}"
-//                            data-oldprice="${violation?.TotalOldPrice || 0}">سداد على الإحالة</a></li>`;
-//                 }
-
-//                 // Add Save Case Action (NEW)
-//                 if (hasSaveCaseAction) {
-//                     actionsMenuHTML += `
-//                     <li><a href="#" class="saveCaseAction"
-//                            data-referralid="${referral.ID}"
-//                            data-violationid="${referral.ViolationId}"
-//                            data-taskid="${referral.TaskId}"
-//                            data-referralnumber="${referral.ReferralNumber || ''}"
-//                            data-violationcode="${referral.ViolationCode}"
-//                            data-casestatus="${caseStatus}">حفظ</a></li>`;
-//                 }
-
-//                 actionsMenuHTML += `</ul>`;
-//             }
-
-//             let displayViolationStatus = quarryViolationReferral.getViolationStatus(violationStatus);
-//             // let displayCaseStatus = quarryViolationReferral.getCaseStatus(caseStatus); // Use the new function
-//             // `<div class="referralStatus">${displayCaseStatus || "-----"}</div>`, // Updated this line
-
-//             data.push([
-//                 `<div class="violationCode noWrapContent" 
-//                         data-referralid="${referral.ID}" 
-//                         data-violationid="${referral.ViolationId}" 
-//                         data-taskid="${referral.TaskId}" 
-//                         data-referralstatus="${referral.Status}" 
-//                         data-referralnumber="${referral.ReferralNumber}" 
-//                         data-violationcode="${referral.ViolationCode}" 
-//                         data-oldprice="${violation?.TotalOldPrice}" 
-//                         data-newprice="${violation?.TotalPriceDue}"
-//                         data-referredamount="${ReferredAmount}"
-//                         data-offendertype="${violation?.OffenderType}"
-//                         data-casenumber="${caseNumber}"
-//                         data-violationstatus="${violationStatus}">
-//                         ${referral.ViolationCode}
-//                 </div>`,
-//                 `<div class='controls'>
-//                     <div class='ellipsisButton'>
-//                         <i class='fa-solid fa-ellipsis-vertical'></i>
-//                     </div>
-//                     <div class="hiddenListBox">
-//                         <div class='arrow'></div>
-//                         ${actionsMenuHTML}
-//                     </div>
-//                 </div>`,
-//                 `<div class="refferedDate noWrapContent">${refferedDate}</div>`,
-//                 `<div class="referralNumber">${referralNumber || "-----"}</div>`,
-//                 `<div class="violationStatus">${displayViolationStatus || "-----"}</div>`,
-//                 `<div class="referralStatus">${caseStatus || "-----"}</div>`,
-//                 `<div class="totalPriceDue">${functions.splitBigNumbersByComma(violation.TotalPriceDue || 0) || "-----"}</div>`,
-//                 `<div class="referralAttachments caseAttachments"><a href="#!" style="color: black;">المرفقات</a></div>`,
-//             ]);
-//         });
-//     } else {
-//         data.push([
-//             `<div class="no-data">لا توجد بيانات متاحة</div>`,
-//             "",
-//             "",
-//             "",
-//             "",
-//             "",
-//             "",
-//             ""
-//         ]);
-//     }
-
-//     let Table = functions.tableDeclare(
-//         "#QuarryViolationReferralTable",
-//         data,
-//         [
-//             { title: "رقم المخالفة" },
-//             { title: "", class: "all" },
-//             { title: "تاريخ الإحالة" },
-//             { title: "رقم الإحالة" },
-//             { title: "حالة المخالفة" },
-//             { title: "موقف الإحالة" },
-//             { title: "المبلغ المستحق" },
-//             { title: "المرفقات" },
-//         ],
-//         false,
-//         false,
-//         "سجل إحالات المخالفات المحجرية.xlsx",
-//         "سجل إحالات المخالفات المحجرية"
-//     );
-
-//     quarryViolationReferral.destroyTable = true;
-
-//     $(".ellipsisButton").on("click", (e) => {
-//         $(".hiddenListBox").hide(300);
-//         $(e.currentTarget).siblings(".hiddenListBox").toggle(300);
-//     });
-
-//     let referralsLog = Table.rows().nodes().to$();
-
-//     $.each(referralsLog, (index, record) => {
-//         let jQueryRecord = $(record);
-//         let referralID = jQueryRecord.find(".violationCode").data("referralid");
-//         let referralNumber = jQueryRecord.find(".violationCode").data("referralnumber");
-//         let hiddenListBox = jQueryRecord.find(".controls").children(".hiddenListBox");
-
-//         // Attachments click handler - USING SAME STRUCTURE AS violationsCases
-//         jQueryRecord.find(".referralAttachments").find("a").off('click').on('click', function (e) {
-//             e.preventDefault();
-//             $(".overlay").addClass("active");
-//             quarryViolationReferral.getReferralAttachmentsByReferralId(referralID, referralNumber);
-//         });
-
-//         // Details click handler
-//         jQueryRecord.find(".itemDetails").off('click').on('click', function (e) {
-//             e.preventDefault();
-//             e.stopPropagation();
-//             $(".overlay").addClass("active");
-//             quarryViolationReferral.FindReferralById(referralID);
-//         });
-
-//         if (
-//             referralsLog.length > 4 &&
-//             hiddenListBox.height() > 110 &&
-//             jQueryRecord.is(":nth-last-child(-n + 4)")
-//         ) {
-//             hiddenListBox.addClass("toTopDDL");
-//         }
-//     });
-
-//     // Add Referral Number Action - MATCHING violationsCases STRUCTURE
-//     $(document).off('click', '.addReferralNumberAction').on('click', '.addReferralNumberAction', function (e) {
-//         e.preventDefault();
-//         e.stopPropagation();
-
-//         let referralId = $(this).data('referralid');
-//         let violationId = $(this).data('violationid');
-//         let taskId = $(this).data('taskid');
-//         let violationCode = $(this).data('violationcode');
-
-//         // Show popup similar to violationsCases.addCaseNumberPopup
-//         quarryViolationReferral.addReferralNumberPopup(referralId, violationId, violationCode, taskId);
-
-//         $(".hiddenListBox").hide(300);
-//     });
-
-//     // // Edit Amount Action - MATCHING violationsCases STRUCTURE
-//     // $(document).off('click', '.editAmountAction').on('click', '.editAmountAction', function (e) {
-//     //     e.preventDefault();
-//     //     e.stopPropagation();
-
-//     //     let referralId = $(this).data('referralid');
-//     //     let violationId = $(this).data('violationid');
-//     //     let taskId = $(this).data('taskid');
-//     //     let totalOldPrice = $(this).data('totaloldprice');
-//     //     let referralNumber = $(this).data('referralnumber');
-
-//     //     // Show popup similar to violationsCases.editCasePrice
-//     //     quarryViolationReferral.editReferralAmountPopup(referralId, violationId, taskId, referralNumber, totalOldPrice);
-
-//     //     $(".hiddenListBox").hide(300);
-//     // });
-
-//     // Pay Case Before Edit Action (سداد على نموذج التقييم)
-//     $(document).off('click', '.payCaseBeforeEditAction').on('click', '.payCaseBeforeEditAction', function (e) {
-//         e.preventDefault();
-//         e.stopPropagation();
-
-//         let referralId = $(this).data('referralid');
-//         let violationId = $(this).data('violationid');
-//         let taskId = $(this).data('taskid');
-//         let referralNumber = $(this).data('referralnumber');
-//         let violationCode = $(this).data('violationcode');
-//         let totalPrice = $(this).data('totalprice');
-//         let oldPrice = $(this).data('oldprice');
-
-//         quarryViolationReferral.payCaseBeforeEditPopup(
-//             referralId,
-//             violationId,
-//             taskId,
-//             referralNumber,
-//             violationCode,
-//             totalPrice
-//         );
-
-//         $(".hiddenListBox").hide(300);
-//     });
-
-//     // Pay Case After Edit Action (سداد على الإحالة)
-//     $(document).off('click', '.payCaseAfterEditAction').on('click', '.payCaseAfterEditAction', function (e) {
-//         e.preventDefault();
-//         e.stopPropagation();
-
-//         let referralId = $(this).data('referralid');
-//         let violationId = $(this).data('violationid');
-//         let taskId = $(this).data('taskid');
-//         let referralNumber = $(this).data('referralnumber');
-//         let violationCode = $(this).data('violationcode');
-//         let totalPrice = $(this).data('totalprice');
-//         let oldPrice = $(this).data('oldprice');
-//         let referredAmount = $(this).data('referredamount');
-
-//         quarryViolationReferral.payCaseAfterEditPopup(
-//             referralId,
-//             violationId,
-//             taskId,
-//             referralNumber,
-//             violationCode,
-//             totalPrice,
-//             oldPrice,
-//             referredAmount
-//         );
-
-//         $(".hiddenListBox").hide(300);
-//     });
-
-//     functions.hideTargetElement(".controls", ".hiddenListBox");
-// };
 quarryViolationReferral.QuarryViolationReferralTable = (Referrals, destroyTable) => {
     let data = [];
 
@@ -479,7 +143,7 @@ quarryViolationReferral.QuarryViolationReferralTable = (Referrals, destroyTable)
             let caseStatus = referral.Status || "";
             let referralNumber = referral.ReferralNumber || "";
             let caseNumber = referral.CaseNumber || "";
-            let ReferredAmount = violation.ReferredAmount || 0;
+            let ReferredAmount = referral.ReferredAmount || 0;
 
             // Determine which actions to show based on business rules
             let hasAddReferralNumberAction = false;
@@ -557,7 +221,7 @@ quarryViolationReferral.QuarryViolationReferralTable = (Referrals, destroyTable)
                 actionsMenuHTML += `</ul>`;
             }
 
-            let displayViolationStatus = quarryViolationReferral.getViolationStatus(violationStatus);
+            let displayViolationStatus = functions.getQuarryViolationStatus(violationStatus);
 
             // Prepare all data attributes in a single object
             const violationCodeData = {
@@ -567,10 +231,10 @@ quarryViolationReferral.QuarryViolationReferralTable = (Referrals, destroyTable)
                 'referralstatus': referral.Status,
                 'referralnumber': referral.ReferralNumber,
                 'violationcode': referral.ViolationCode,
-                'oldprice': violation?.TotalOldPrice || 0,
-                'newprice': violation?.TotalPriceDue || 0,
+                'oldprice': referral?.TotalOldPrice || 0,
+                'newprice': referral?.TotalPriceDue || 0,
                 'referredamount': ReferredAmount,
-                'offendertype': violation?.OffenderType,
+                'offendertype': referral?.OffenderType,
                 'casenumber': caseNumber,
                 'violationstatus': violationStatus,
                 'hasaddreferralnumber': hasAddReferralNumberAction,
@@ -578,8 +242,8 @@ quarryViolationReferral.QuarryViolationReferralTable = (Referrals, destroyTable)
                 'haspaycaseafteredit': hasPayCaseAfterEditAction,
                 'hassavecase': hasSaveCaseAction,
                 'canshowdetailsonly': canShowDetailsOnly,
-                'totalprice': violation?.TotalPriceDue || 0,
-                'totaloldprice': violation?.TotalOldPrice || 0
+                'totalprice': referral?.TotalPriceDue || 0,
+                'totaloldprice': referral?.TotalOldPrice || 0
             };
 
             // Convert data object to data-attributes string
@@ -589,7 +253,7 @@ quarryViolationReferral.QuarryViolationReferralTable = (Referrals, destroyTable)
 
             data.push([
                 `<div class="violationCode noWrapContent" ${dataAttributes}>
-                    ${referral.ViolationCode}
+                    ${referral.ViolationCode || "-----"}
                 </div>`,
                 `<div class='controls'>
                     <div class='ellipsisButton'>
@@ -600,13 +264,15 @@ quarryViolationReferral.QuarryViolationReferralTable = (Referrals, destroyTable)
                         ${actionsMenuHTML}
                     </div>
                 </div>`,
-                `<div class="refferedDate noWrapContent">${refferedDate}</div>`,
+                `<div class="refferedDate noWrapContent">${refferedDate || "-----"}</div>`,
                 `<div class="referralNumber">${referralNumber || "-----"}</div>`,
                 `<div class="violationStatus">${displayViolationStatus || "-----"}</div>`,
-                `<div class="referralStatus">${caseStatus || "-----"}</div>`,
-                `<div class="totalPriceDue">${functions.splitBigNumbersByComma(violation.TotalPriceDue || 0) || "-----"}</div>`,
+                `<div class="referralStatus">${functions.getCaseStatus(caseStatus)}</div>`,
+                `<div class="totalPriceDue">${functions.splitBigNumbersByComma(referral.TotalPriceDue || 0) || "-----"}</div>`,
                 `<div class="referralAttachments caseAttachments"><a href="#!" style="color: black;">المرفقات</a></div>`,
             ]);
+            // `<div class="referralStatus">${quarryViolationReferral.getCaseStatus(caseStatus)}</div>`,
+
         });
     } else {
         data.push([
@@ -639,6 +305,9 @@ quarryViolationReferral.QuarryViolationReferralTable = (Referrals, destroyTable)
         "سجل إحالات المخالفات المحجرية.xlsx",
         "سجل إحالات المخالفات المحجرية"
     );
+
+    // 🔹 create column selector
+    functions.createColumnSelector(Table, "#columnSelector", 'green');
 
     quarryViolationReferral.destroyTable = true;
 
@@ -783,9 +452,12 @@ quarryViolationReferral.QuarryViolationReferralTable = (Referrals, destroyTable)
 quarryViolationReferral.addReferralNumberPopup = (ReferralID, ViolationID, ViolationCode, TaskID) => {
     $(".overlay").removeClass("active");
     let popupHtml = `
-        <div class="popupHeader">
+        <div class="popupHeader" style="display: flex; justify-content: space-between;">
             <div class="violationsCode"> 
                 <p>إضافة رقم الإحالة للمخالفة رقم (${ViolationCode})</p>
+            </div>
+            <div class="btnStyle cancelBtn popupBtn closeReferralNumberPopup" id="closeReferralNumberPopup" style="color: #fff; cursor: pointer;" data-dismiss="modal" aria-label="Close">
+                <i class="fa-solid fa-x"></i>
             </div>
         </div>
         <div class="popupBody">
@@ -836,7 +508,7 @@ quarryViolationReferral.addReferralNumberPopup = (ReferralID, ViolationID, Viola
                         <div class="col-12">
                             <div class="buttonsBox centerButtonsBox">
                                 <div class="btnStyle confirmBtnGreen popupBtn AddReferralNumberBtn" id="AddReferralNumberBtn">تأكيد</div>
-                                <div class="btnStyle cancelBtn popupBtn closeReferralNumberPopup" id="closeReferralNumberPopup" data-dismiss="modal" aria-label="Close">إلغاء</div>
+                                <div class="btnStyle cancelBtn popupBtn" id="closeReferralNumberPopupFooter" data-dismiss="modal" aria-label="Close">إلغاء</div>
                             </div>
                         </div>
                     </div>
@@ -849,6 +521,11 @@ quarryViolationReferral.addReferralNumberPopup = (ReferralID, ViolationID, Viola
         ["generalPopupStyle", "greenPopup", "editPopup"],
         popupHtml
     );
+
+    // Add close button handlers
+    $("#closeReferralNumberPopup, #closeReferralNumberPopupFooter").on("click", function () {
+        functions.closePopup();
+    });
 
     let ReferralNumberInput = $("#referralNumber").val();
     let ReferralAmountInput = $("#referredAmount").val();
@@ -1326,7 +1003,7 @@ quarryViolationReferral.referralAttachmentsDetailsPopup = (
     ReferralAttachmentsRecords
 ) => {
     let popupHtml = `
-        <div class="popupHeader attachPopup">
+        <div class="popupHeader attachPopup" style="display: flex; justify-content: space-between;">
             <div class="violationsCode"> 
                 <p>مرفقات الإحالة رقم (${referralNumber || "-----"})</p>
             </div>
@@ -1337,6 +1014,15 @@ quarryViolationReferral.referralAttachmentsDetailsPopup = (
         <div class="popupBody">
             <div class="popupTableBox">
                 <table id="referralAttachmentsTable" class="table tableWithIcons popupTable"></table>
+            </div>
+            <div class="formButtonsBox">
+                <div class="row">
+                    <div class="col-12">
+                        <div class="buttonsBox centerButtonsBox">
+                            <div class="btnStyle cancelBtn popupBtn closeReferralAttachPopupFooter" id="closeReferralAttachPopupFooter" data-dismiss="modal" aria-label="Close">إغلاق</div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>`;
 
@@ -1350,8 +1036,8 @@ quarryViolationReferral.referralAttachmentsDetailsPopup = (
         ReferralAttachmentsRecords
     );
 
-    // Add close button handler
-    $("#closeReferralAttachPopup").on("click", function () {
+    // Add close button handlers
+    $("#closeReferralAttachPopup, #closeReferralAttachPopupFooter").on("click", function () {
         functions.closePopup();
     });
 };
@@ -1459,10 +1145,10 @@ quarryViolationReferral.FindReferralById = (ReferralID, popupType = "") => {
 
             if (data != null) {
                 referralData = data.d.Result;
-                // Fix: Ensure Equipments exists
-                if (referralData.Violation && !referralData.Violation.Equipments) {
-                    referralData.Violation.Equipments = [];
-                }
+                // // Fix: Ensure Equipments exists
+                // if (referralData.Violation && !referralData.Violation.Equipments) {
+                //     referralData.Violation.Equipments = [];
+                // }
 
                 // Create a popup with both violation details and referral/case details
                 $(".overlay").removeClass("active");
@@ -1497,218 +1183,12 @@ quarryViolationReferral.FindReferralById = (ReferralID, popupType = "") => {
 };
 
 ///////////////////////////////////////////
-quarryViolationReferral.getViolationStatus = (ViolationStatus) => {
-    let statusHtml = ``;
-    switch (ViolationStatus) {
-        case "Pending":
-        case "Confirmed": {
-            statusHtml = `<div class="statusBox pendingStatus">
-                <i class="statusIcon fa-regular fa-clock"></i>
-                <span class="statusText">قيد الانتظار</span>
-            </div>`;
-            break;
-        }
-        case "Exceeded": {
-            statusHtml = `<div class="statusBox warningStatus">
-                <img class="statusIcon" src="/Style Library/MiningViolations/images/tringleIcon.svg" alt="warning">
-                <span class="statusText">تجاوز مدة السداد</span>
-            </div>`;
-            break;
-        }
-        case "Saved": {
-            statusHtml = `<div class="statusBox killedStatus">
-                <i class="statusIcon fa-solid fa-ban"></i> 
-                <span class="statusText">محفوظة</span>
-            </div>`;
-            break;
-        }
-        case "Paid After Reffered": {
-            statusHtml = `<div class="statusBox closedStatus">
-                <i class="statusIcon fa-regular fa-circle-check"></i>
-                <span class="statusText">سداد بعد الإحالة</span>
-            </div>`;
-            break;
-        }
-        case "Paid": {
-            statusHtml = `<div class="statusBox closedStatus">
-                <i class="statusIcon fa-regular fa-circle-check"></i>
-                <span class="statusText">مسددة</span>
-            </div>`;
-            break;
-        }
-        case "UnderPayment": {
-            statusHtml = `<div class="statusBox warningStatus">
-                <img class="statusIcon" src="/Style Library/MiningViolations/images/tringleIcon.svg" alt="warning">
-                <span class="statusText">قيد السداد</span>
-            </div>`;
-            break;
-        }
-        case "Approved": {
-            statusHtml = `<div class="statusBox closedStatus">
-                <i class="statusIcon fa-regular fa-circle-check"></i>
-                <span class="statusText">تم الموافقة</span>
-            </div>`;
-            break;
-        }
-        case "Rejected": {
-            statusHtml = `<div class="statusBox killedStatus">
-                <i class="statusIcon fa-solid fa-ban"></i> 
-                <span class="statusText">مرفوضة</span>
-            </div>`;
-            break;
-        }
-        case "Reffered": {
-            statusHtml = `<div class="statusBox pendingStatus">
-                <i class="statusIcon fa-regular fa-paper-plane"></i>
-                <span class="statusText">تم الإحالة</span>
-            </div>`;
-            break;
-        }
-        case "UnderReview": {
-            statusHtml = `<div class="statusBox pendingStatus">
-                <i class="statusIcon fa-regular fa-eye"></i>
-                <span class="statusText">منظورة</span>
-            </div>`;
-            break;
-        }
-        case "ExternalReviewed": {
-            statusHtml = `<div class="statusBox pendingStatus">
-                <i class="statusIcon fa-regular fa-external-link"></i>
-                <span class="statusText">خارجية</span>
-            </div>`;
-            break;
-        }
-        case "Completed": {
-            statusHtml = `<div class="statusBox closedStatus">
-                <i class="statusIcon fa-regular fa-circle-check"></i>
-                <span class="statusText">مكتملة</span>
-            </div>`;
-            break;
-        }
-        case "Cancelled": {
-            statusHtml = `<div class="statusBox killedStatus">
-                <i class="statusIcon fa-solid fa-ban"></i> 
-                <span class="statusText">ملغاه</span>
-            </div>`;
-            break;
-        }
-        default: {
-            statusHtml = `<div class="statusBox pendingStatus">
-                <i class="statusIcon fa-regular fa-question-circle"></i>
-                <span class="statusText">${ViolationStatus || "---"}</span>
-            </div>`;
-            break;
-        }
-    }
-
-    return statusHtml;
-};
-// quarryViolationReferral.getCaseStatus = (caseStatus) => {
-//     let statusHtml = ``;
-
-//     switch (caseStatus) {
-//         case "قيد مراجعة النيابة المختصة": {
-//             statusHtml = `<div class="statusBox pendingStatus">
-//                 <i class="statusIcon fa-regular fa-eye"></i>
-//                 <span class="statusText">${caseStatus}</span>
-//             </div>`;
-//             break;
-//         }
-//         case "منظورة": {
-//             statusHtml = `<div class="statusBox pendingStatus">
-//                 <i class="statusIcon fa-regular fa-eye"></i>
-//                 <span class="statusText">${caseStatus}</span>
-//             </div>`;
-//             break;
-//         }
-//         case "مسددة": {
-//             statusHtml = `<div class="statusBox closedStatus">
-//                 <i class="statusIcon fa-regular fa-circle-check"></i>
-//                 <span class="statusText">${caseStatus}</span>
-//             </div>`;
-//             break;
-//         }
-//         case "محفوظة": {
-//             statusHtml = `<div class="statusBox savedStatus"> <!-- Added savedStatus class -->
-//                 <i class="statusIcon fa-solid fa-box-archive"></i>
-//                 <span class="statusText">${caseStatus}</span>
-//             </div>`;
-//             break;
-//         }
-//         case "قيد انتظار القطاع": {
-//             statusHtml = `<div class="statusBox waitingStatus">
-//                 <i class="statusIcon fa-regular fa-clock"></i>
-//                 <span class="statusText">${caseStatus}</span>
-//             </div>`;
-//             break;
-//         }
-//         case "قيد انتظار رقم القضية": {
-//             statusHtml = `<div class="statusBox waitingStatus">
-//                 <i class="statusIcon fa-solid fa-hashtag"></i>
-//                 <span class="statusText">${caseStatus}</span>
-//             </div>`;
-//             break;
-//         }
-//         case "قيد انتظار رقم الإحالة": {
-//             statusHtml = `<div class="statusBox waitingStatus">
-//                 <i class="statusIcon fa-regular fa-paper-plane"></i>
-//                 <span class="statusText">${caseStatus}</span>
-//             </div>`;
-//             break;
-//         }
-//         case "قيد انتظار تأشيرات النيابة": {
-//             statusHtml = `<div class="statusBox waitingStatus">
-//                 <i class="statusIcon fa-solid fa-stamp"></i>
-//                 <span class="statusText">${caseStatus}</span>
-//             </div>`;
-//             break;
-//         }
-//         case "تم التسليم للتحريات": {
-//             statusHtml = `<div class="statusBox deliveredStatus"> <!-- Added deliveredStatus class -->
-//                 <i class="statusIcon fa-solid fa-truck-arrow-right"></i>
-//                 <span class="statusText">${caseStatus}</span>
-//             </div>`;
-//             break;
-//         }
-//         case "قيد انتظار المدعي العام العسكري": {
-//             statusHtml = `<div class="statusBox waitingStatus">
-//                 <i class="statusIcon fa-solid fa-gavel"></i>
-//                 <span class="statusText">${caseStatus}</span>
-//             </div>`;
-//             break;
-//         }
-//         case "قيد انتظار الرقم القضائي": {
-//             statusHtml = `<div class="statusBox waitingStatus">
-//                 <i class="statusIcon fa-solid fa-scale-balanced"></i>
-//                 <span class="statusText">${caseStatus}</span>
-//             </div>`;
-//             break;
-//         }
-//         case "تم إضافة الرقم القضائي": {
-//             statusHtml = `<div class="statusBox completedStatus">
-//                 <i class="statusIcon fa-solid fa-check-double"></i>
-//                 <span class="statusText">${caseStatus}</span>
-//             </div>`;
-//             break;
-//         }
-//         default: {
-//             statusHtml = `<div class="statusBox pendingStatus">
-//                 <i class="statusIcon fa-regular fa-question-circle"></i>
-//                 <span class="statusText">${caseStatus || "---"}</span>
-//             </div>`;
-//             break;
-//         }
-//     }
-
-//     return statusHtml;
-// };
-///////////////////////////////////////////
 
 
 ///////////////////////////////////////////
 quarryViolationReferral.getReferralDetails = (referralData) => {
     let violation = referralData.Violation;
-    let violationOffenderType = violation?.OffenderType || "Quarry";
+    let violationOffenderType = referralData.OffenderType || "Quarry";
     let popupTitle;
 
     if (referralData.ReferralNumber) {
@@ -1760,7 +1240,7 @@ quarryViolationReferral.getReferralDetails = (referralData) => {
                                 <div class="col-md-4">
                                     <div class="form-group customFormGroup">
                                         <label for="violationStatus" class="customLabel">حالة المخالفة</label>
-                                        <input class="form-control customInput violationStatus" id="violationStatus" type="text" value="${quarryViolationReferral.getViolationStatusText(referralData.ViolationStatus)}" disabled>
+                                        <input class="form-control customInput violationStatus" id="violationStatus" type="text" value="${functions.getViolationStatusText(referralData.ViolationStatus)}" disabled>
                                     </div>
                                 </div>
                                 <div class="col-md-4">
@@ -1819,26 +1299,6 @@ quarryViolationReferral.getReferralDetails = (referralData) => {
     </div>`;
 
     return popupHtml;
-};
-quarryViolationReferral.getViolationStatusText = (status) => {
-    const statusMap = {
-        "Pending": "قيد الانتظار",
-        "Confirmed": "مؤكدة",
-        "Exceeded": "تجاوز مدة السداد",
-        "Saved": "محفوظة",
-        "Paid": "مسددة",
-        "Paid After Reffered": "سداد بعد الإحالة",
-        "UnderPayment": "قيد السداد",
-        "Approved": "تم الموافقة",
-        "Rejected": "مرفوضة",
-        "Reffered": "تم الإحالة",
-        "UnderReview": "منظورة",
-        "ExternalReviewed": "خارجية",
-        "Completed": "مكتملة",
-        "Cancelled": "ملغاه"
-    };
-
-    return statusMap[status] || status || "----";
 };
 quarryViolationReferral.referralQuarryDetails = (violationData) => {
     let detailsHtml = `
@@ -2096,9 +1556,12 @@ quarryViolationReferral.payCaseBeforeEditPopup = (
 ) => {
     $(".overlay").removeClass("active");
     let popupHtml = `
-        <div class="popupHeader">
+        <div class="popupHeader" style="display: flex; justify-content: space-between;">
             <div class="violationsCode"> 
                 <p>سداد على نموذج التقييم - الإحالة رقم (${referralNumber})</p>
+            </div>
+            <div class="btnStyle cancelBtn popupBtn closePayCaseBeforeEditPopup" id="closePayCaseBeforeEditPopup" style="color: #fff; cursor: pointer;" data-dismiss="modal" aria-label="Close">
+                <i class="fa-solid fa-x"></i>
             </div>
         </div>
         <div class="popupBody">
@@ -2137,7 +1600,7 @@ quarryViolationReferral.payCaseBeforeEditPopup = (
                         <div class="col-12">
                             <div class="buttonsBox centerButtonsBox">
                                 <div class="btnStyle confirmBtnGreen popupBtn payCaseBeforeEditBtn" id="payCaseBeforeEditBtn">تأكيد السداد</div>
-                                <div class="btnStyle cancelBtn popupBtn closePayCasePopup" id="closePayCasePopup" data-dismiss="modal" aria-label="Close">إلغاء</div>
+                                <div class="btnStyle cancelBtn popupBtn" id="closePayCaseBeforeEditPopupFooter" data-dismiss="modal" aria-label="Close">إلغاء</div>
                             </div>
                         </div>
                     </div>
@@ -2150,6 +1613,11 @@ quarryViolationReferral.payCaseBeforeEditPopup = (
         ["generalPopupStyle", "greenPopup", "editPopup"],
         popupHtml
     );
+
+    // Add close button handlers
+    $("#closePayCaseBeforeEditPopup, #closePayCaseBeforeEditPopupFooter").on("click", function () {
+        functions.closePopup();
+    });
 
     let filesExtension = [
         "gif", "svg", "jpg", "jpeg", "png",
@@ -2233,9 +1701,12 @@ quarryViolationReferral.payCaseAfterEditPopup = (
 ) => {
     $(".overlay").removeClass("active");
     let popupHtml = `
-        <div class="popupHeader">
+        <div class="popupHeader" style="display: flex; justify-content: space-between;">
             <div class="violationsCode"> 
                 <p>سداد على الإحالة - الإحالة رقم (${violationCode})</p>
+            </div>
+            <div class="btnStyle cancelBtn popupBtn closePayCaseAfterEditPopup" id="closePayCaseAfterEditPopup" style="color: #fff; cursor: pointer;" data-dismiss="modal" aria-label="Close">
+                <i class="fa-solid fa-x"></i>
             </div>
         </div>
         <div class="popupBody">
@@ -2288,7 +1759,7 @@ quarryViolationReferral.payCaseAfterEditPopup = (
                         <div class="col-12">
                             <div class="buttonsBox centerButtonsBox">
                                 <div class="btnStyle confirmBtnGreen popupBtn payCaseAfterEditBtn" id="payCaseAfterEditBtn">تأكيد السداد</div>
-                                <div class="btnStyle cancelBtn popupBtn closePayCasePopup" id="closePayCasePopup" data-dismiss="modal" aria-label="Close">إلغاء</div>
+                                <div class="btnStyle cancelBtn popupBtn" id="closePayCaseAfterEditPopupFooter" data-dismiss="modal" aria-label="Close">إلغاء</div>
                             </div>
                         </div>
                     </div>
@@ -2301,6 +1772,11 @@ quarryViolationReferral.payCaseAfterEditPopup = (
         ["generalPopupStyle", "greenPopup", "editPopup"],
         popupHtml
     );
+
+    // Add close button handlers
+    $("#closePayCaseAfterEditPopup, #closePayCaseAfterEditPopupFooter").on("click", function () {
+        functions.closePopup();
+    });
 
     let filesExtension = [
         "gif", "svg", "jpg", "jpeg", "png",
@@ -2459,8 +1935,6 @@ quarryViolationReferral.uploadTaskAttachment = (TaskId, attachInput, ListName = 
 //     $(".PreLoader").addClass("active");
 //     quarryViolationReferral.getQuarryViolationReferrals();
 // };
-
-// Also update the filter function to check for empty filters similar to validatedViolations
 
 // quarryViolationReferral.getQuarryViolationReferrals = (
 //     pageIndex = 1,

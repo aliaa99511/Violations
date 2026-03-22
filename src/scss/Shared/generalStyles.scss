@@ -187,11 +187,13 @@
 
 .btnContainer {
   display: flex;
+  // justify-content: flex-end;
   justify-content: flex-end;
   align-items: center;
 }
 
-.exportBtn {
+.exportBtn,
+.selectColumnBtn {
   margin-bottom: 1rem;
   padding: 5px 10px;
   min-width: 100px;
@@ -201,17 +203,22 @@
   justify-content: center;
   align-items: center;
   gap: 10px;
+  margin-right: 8px;
 }
 
 .exportBtn.outlineGreenBtn,
-.exportBtn.customGreenBtn:hover {
+.exportBtn.customGreenBtn:hover,
+.selectColumnBtn.outlineGreenBtn,
+.selectColumnBtn.customGreenBtn:hover {
   border: 1px solid $customGreen;
   color: $customGreen;
   background-color: #f1f5f2;
 }
 
 .exportBtn.outlineBlueBtn,
-.exportBtn.customBlueBtn:hover {
+.exportBtn.customBlueBtn:hover,
+.selectColumnBtn.outlineBlueBtn,
+.selectColumnBtn.customBlueBtn:hover {
   border: 1px solid $customBlue;
   color: $customBlue;
   background-color: #eef1f6;
@@ -268,4 +275,172 @@
 /* For tooltip styling */
 .rejected-indicator:hover {
   // cursor: help;
+}
+
+/* Container toolbar */
+.tableToolbar {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+
+
+/* Column Selector Dropdown */
+.columnDropdown {
+  position: absolute;
+  background: #fff;
+  border: 1px solid #ddd;
+  padding: 12px 16px;
+  display: none;
+  min-width: 220px;
+  z-index: 1000;
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  transition: all 0.2s ease-in-out;
+}
+
+/* Show dropdown */
+.columnDropdown.active {
+  display: block;
+}
+
+/* Each label inside dropdown */
+.columnDropdown label {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  margin-bottom: 10px;
+  font-size: 15px;
+  color: #333;
+  gap: 8px;
+  transition: color 0.2s;
+}
+
+/* Dynamic checkbox styling */
+.columnDropdown input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  border: 2px solid;
+  border-radius: 4px;
+  outline: none;
+  transition: all 0.2s ease;
+  position: relative;
+  margin: 0;
+}
+
+/* Blue theme checkbox (default) */
+.columnDropdown input[type="checkbox"] {
+  border-color: $customBlue;
+  background-color: #fff;
+}
+
+.columnDropdown input[type="checkbox"]:checked {
+  background-color: $customBlue;
+  border-color: $customBlue;
+}
+
+/* Green theme checkbox - when applied to parent or specific context */
+.columnDropdown.green-theme input[type="checkbox"] {
+  border-color: $customGreen;
+}
+
+.columnDropdown.green-theme input[type="checkbox"]:checked {
+  background-color: $customGreen;
+  border-color: $customGreen;
+}
+
+/* Checkmark styling */
+.columnDropdown input[type="checkbox"]:checked::before {
+  content: '✓';
+  position: absolute;
+  color: white;
+  font-size: 14px;
+  line-height: 1;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-weight: bold;
+}
+
+/* Hover effects */
+.columnDropdown input[type="checkbox"]:hover {
+  transform: scale(1.1);
+  box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+}
+
+.columnDropdown input[type="checkbox"]:checked:hover {
+  opacity: 0.9;
+}
+
+/* Focus state for accessibility */
+.columnDropdown input[type="checkbox"]:focus {
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+}
+
+/* Optional: add a subtle divider */
+.columnDropdown label:not(:last-child) {
+  border-bottom: 1px solid #eee;
+  padding-bottom: 6px;
+}
+
+
+
+
+/* calculate-by-ton-checkbox checkbox */
+.calculate-by-ton-checkbox {
+  border-color: $customBlue !important;
+  background-color: #fff;
+}
+
+.calculate-by-ton-checkbox:checked {
+  background-color: $customBlue !important;
+  border-color: $customBlue !important;
+}
+
+.calculate-by-ton-checkbox:hover {
+  transform: scale(1.1);
+  box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+}
+
+.calculate-by-ton-checkbox:checked:hover {
+  opacity: 0.9;
+}
+
+/* Focus state */
+.calculate-by-ton-checkbox:focus {
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+}
+
+///// track-history-modal ///
+.track-history-modal .modal-body {
+  max-height: 80vh;
+  overflow-y: auto;
+  padding: 1rem;
+}
+
+.track-history-table-node {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.track-history-table {
+  width: 100% !important;
+}
+
+.modal-title-style {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.form-control:disabled {
+  background-color: #f5f5f5;
+  opacity: 0.7;
+  cursor: not-allowed;
 }

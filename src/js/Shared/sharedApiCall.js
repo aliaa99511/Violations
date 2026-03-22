@@ -23,53 +23,43 @@ let sharedApis = {};
 
 // test
 sharedApis.getGovernrates = (Selector) => {
-  let UserId = _spPageContextInfo.userId;
-  functions.callSharePointListApi("Configurations")
-    .then((Users) => {
-      let UsersData = Users.value;
+  return new Promise((resolve, reject) => {
+    let UserId = _spPageContextInfo.userId;
 
-      // Check if user exists in Configurations
-      let userFound = false;
+    // First, clear the select and add default option
+    $(Selector).empty().append(`<option value="" disabled selected hidden>المحافظة</option>`);
 
-      UsersData.forEach((User) => {
-        if (User.UserIdId && User.UserIdId.find((id) => id == UserId)) {
-          userFound = true;
-          functions.callSharePointListApi("Governrates")
-            .then((Govs) => {
-              let GovsData = Govs.value;
+    functions.callSharePointListApi("Configurations")
+      .then((Users) => {
+        let UsersData = Users.value;
+        let userFound = false;
 
-              if (GovsData.length === 0) {
-                return;
-              }
+        // Check if user exists in Configurations
+        UsersData.forEach((User) => {
+          if (User.UserIdId && User.UserIdId.find((id) => id == UserId)) {
+            userFound = true;
+          }
+        });
 
-              GovsData.forEach((Gov) => {
-                $(Selector).append(`
-                  <option value="${Gov.Code}" data-id="${Gov.ID}">${Gov.Title}</option>
-                `);
-              });
-            })
-            .catch((error) => {
-              console.error("Error fetching Governrates:", error);
-            });
-        }
+        // Now fetch Governrates
+        return functions.callSharePointListApi("Governrates");
+      })
+      .then((Govs) => {
+        let GovsData = Govs.value;
+
+        GovsData.forEach((Gov) => {
+          $(Selector).append(`
+            <option value="${Gov.Code}" data-id="${Gov.ID}">${Gov.Title}</option>
+          `);
+        });
+
+        resolve(GovsData);
+      })
+      .catch((error) => {
+        console.error("Error fetching Governrates:", error);
+        reject(error);
       });
-
-      if (!userFound) {
-        // Optional: Load all governrates if user not found
-        functions.callSharePointListApi("Governrates")
-          .then((Govs) => {
-            let GovsData = Govs.value;
-            GovsData.forEach((Gov) => {
-              $(Selector).append(`
-                <option value="${Gov.Code}" data-id="${Gov.ID}">${Gov.Title}</option>
-              `);
-            });
-          });
-      }
-    })
-    .catch((error) => {
-      console.error("Error fetching Configurations:", error);
-    });
+  });
 };
 
 // that found in release
@@ -203,24 +193,28 @@ sharedApis.getViolationSectors = (Selector) => {
   });
 };
 sharedApis.getViolationType = (Selector) => {
-  functions.callSharePointListApi("ViolationsTypes").then((Types) => {
-    let unsortedViolationsTypes = Types.value;
-    let sortedViolationsType = unsortedViolationsTypes.sort((a, b) => {
-      if (a.Title < b.Title) {
-        return -1;
-      }
-      if (a.Title > b.Title) {
-        return 1;
-      }
-      return 0;
+  return new Promise((resolve, reject) => {
+    functions.callSharePointListApi("ViolationsTypes").then((Types) => {
+      let unsortedViolationsTypes = Types.value;
+      let sortedViolationsType = unsortedViolationsTypes.sort((a, b) => {
+        if (a.Title < b.Title) {
+          return -1;
+        }
+        if (a.Title > b.Title) {
+          return 1;
+        }
+        return 0;
+      });
+      sortedViolationsType.forEach((Type) => {
+        $(Selector).append(`
+          <option value="${Type.Title}" data-id="${Type.ID}" data-category="${Type.OffenderType}">${Type.Title}</option>
+        `);
+      });
+      resolve(sortedViolationsType);
+    }).catch((error) => {
+      console.error("Error loading violation types:", error);
+      reject(error);
     });
-    sortedViolationsType.forEach((Type) => {
-      $(Selector).append(`
-                <option value="${Type.Title}" data-id="${Type.ID}" data-category="${Type.OffenderType}">${Type.Title}</option>
-            `);
-    });
-    // ViolationsTypes.forEach(Type => {
-    // });
   });
 };
 sharedApis.getProsecutions = (Selector) => {
@@ -320,38 +314,46 @@ sharedApis.getQuarryType = (Selector) => {
     });
 };
 sharedApis.getOffenderType = (Selector) => {
-  let Request = {
-    ColumnName: "OffenderType",
-  };
-  functions
-    .requester(
-      "/_layouts/15/Uranium.Violations.SharePoint/Violations.aspx/GetChoices",
-      { Request },
-    )
-    .then((response) => {
-      if (response.ok) {
-        return response.json();
-      }
-    })
-    .then((data) => {
-      let OffenderTypes = data.d.Result;
-      let OffenderArabicName;
-      OffenderTypes.forEach((offenderType) => {
-        if (offenderType == "Quarry") {
-          OffenderArabicName = "محجر مخالف";
-        } else if (offenderType == "Vehicle") {
-          OffenderArabicName = "عربة مخالفة";
-        } else {
-          OffenderArabicName = "معدة مخالفة";
+  return new Promise((resolve, reject) => {
+    let Request = {
+      ColumnName: "OffenderType",
+    };
+
+    functions
+      .requester(
+        "/_layouts/15/Uranium.Violations.SharePoint/Violations.aspx/GetChoices",
+        { Request },
+      )
+      .then((response) => {
+        if (response.ok) {
+          return response.json();
         }
-        $(Selector).append(`
-                <option value="${offenderType}">${OffenderArabicName}</option>
-            `);
+        throw new Error('Network response was not ok');
+      })
+      .then((data) => {
+        let OffenderTypes = data.d.Result;
+        let OffenderArabicName;
+
+        OffenderTypes.forEach((offenderType) => {
+          if (offenderType == "Quarry") {
+            OffenderArabicName = "محجر مخالف";
+          } else if (offenderType == "Vehicle") {
+            OffenderArabicName = "عربة مخالفة";
+          } else {
+            OffenderArabicName = "معدة مخالفة";
+          }
+          $(Selector).append(`
+            <option value="${offenderType}">${OffenderArabicName}</option>
+          `);
+        });
+
+        resolve(OffenderTypes);
+      })
+      .catch((err) => {
+        console.error("Error loading offender types:", err);
+        reject(err);
       });
-    })
-    .catch((err) => {
-      console.log(err);
-    });
+  });
 };
 sharedApis.getMaterialAmmount = (Selector) => {
   let Request = {
@@ -666,8 +668,197 @@ sharedApis.getViolationStatus = (Selector) => {
     })
     .then((data) => {
       let ViolationsStatus = data.d.Result;
-      let arabicStatusName;
+      // let arabicStatusName;
       ViolationsStatus.forEach((violationStatus) => {
+        let arabicStatusName = "";
+
+        switch (violationStatus) {
+          case "Pending":
+          case "Confirmed": {
+            arabicStatusName = "قيد الإنتظار";
+            break;
+          }
+          case "Exceeded": {
+            arabicStatusName = "تجاوز مدة السداد";
+            break;
+          }
+          case "Saved": {
+            arabicStatusName = "محفوظة";
+            break;
+          }
+          case "Paid After Reffered": {
+            arabicStatusName = "سداد بعد الإحالة";
+            break;
+          }
+          case "Paid": {
+            arabicStatusName = "مسددة";
+            // arabicStatusName = "تم السداد";
+            // arabicStatusName = "تم السداد / مسددة";
+            break;
+          }
+          case "UnderPayment": {
+            arabicStatusName = "قيد السداد";
+            break;
+          }
+          case "Approved": {
+            arabicStatusName = "تم الموافقة";
+            break;
+          }
+          case "Rejected": {
+            arabicStatusName = "مرفوضة";
+            break;
+          }
+          case "Reffered": {
+            arabicStatusName = "تم الإحالة";
+            break;
+          }
+          case "UnderReview": {
+            arabicStatusName = "منظورة";
+            // arabicStatusName = "قيد انتظار السداد / منظورة";
+            break;
+          }
+          case "ExternalReviewed": {
+            arabicStatusName = "خارجية";
+            break;
+          }
+          case "Completed": {
+            arabicStatusName = "مكتملة";
+            break;
+          }
+          case "Cancelled": {
+            arabicStatusName = "ملغاة";
+            break;
+          }
+        }
+
+        if (
+          violationStatus != "Pending" &&
+          violationStatus != "Approved" &&
+          violationStatus != "Rejected" &&
+          violationStatus != "Reffered"
+        ) {
+          $(Selector).append(`
+                    <option value="${violationStatus}">${arabicStatusName}</option>
+                `);
+        }
+      });
+    })
+    .catch((err) => {
+      console.log(err);
+    });
+};
+sharedApis.getQuarryViolationStatus = (Selector) => {
+  let Request = {
+    ColumnName: "Status",
+  };
+  functions
+    .requester(
+      "/_layouts/15/Uranium.Violations.SharePoint/Tasks.aspx/GetChoices",
+      { Request },
+    )
+    .then((response) => {
+      if (response.ok) {
+        return response.json();
+      }
+    })
+    .then((data) => {
+      let ViolationsStatus = data.d.Result;
+      // let arabicStatusName;
+      ViolationsStatus.forEach((violationStatus) => {
+        let arabicStatusName = "";
+
+        switch (violationStatus) {
+          case "Pending":
+          case "Confirmed": {
+            arabicStatusName = "قيد الإنتظار";
+            break;
+          }
+          case "Exceeded": {
+            arabicStatusName = "تجاوز مدة السداد";
+            break;
+          }
+          case "Saved": {
+            arabicStatusName = "محفوظة";
+            break;
+          }
+          case "Paid After Reffered": {
+            arabicStatusName = "سداد بعد الإحالة";
+            break;
+          }
+          case "Paid": {
+            arabicStatusName = "مسددة";
+            break;
+          }
+          case "UnderPayment": {
+            arabicStatusName = "قيد السداد";
+            break;
+          }
+          case "Approved": {
+            arabicStatusName = "تم الموافقة";
+            break;
+          }
+          case "Rejected": {
+            arabicStatusName = "مرفوضة";
+            break;
+          }
+          case "Reffered": {
+            arabicStatusName = "تم الإحالة";
+            break;
+          }
+          case "UnderReview": {
+            arabicStatusName = "منظورة";
+            break;
+          }
+          case "ExternalReviewed": {
+            arabicStatusName = "خارجية";
+            break;
+          }
+          case "Completed": {
+            arabicStatusName = "مكتملة";
+            break;
+          }
+          case "Cancelled": {
+            arabicStatusName = "ملغاة";
+            break;
+          }
+        }
+
+        if (
+          violationStatus != "Pending" &&
+          violationStatus != "Approved" &&
+          violationStatus != "Rejected" &&
+          violationStatus != "Reffered"
+        ) {
+          $(Selector).append(`
+                    <option value="${violationStatus}">${arabicStatusName}</option>
+                `);
+        }
+      });
+    })
+    .catch((err) => {
+      console.log(err);
+    });
+};
+sharedApis.getVehicleViolationStatus = (Selector) => {
+  let Request = {
+    ColumnName: "Status",
+  };
+  functions
+    .requester(
+      "/_layouts/15/Uranium.Violations.SharePoint/Tasks.aspx/GetChoices",
+      { Request },
+    )
+    .then((response) => {
+      if (response.ok) {
+        return response.json();
+      }
+    })
+    .then((data) => {
+      let ViolationsStatus = data.d.Result;
+      // let arabicStatusName;
+      ViolationsStatus.forEach((violationStatus) => {
+        let arabicStatusName = "";
+
         switch (violationStatus) {
           case "Pending":
           case "Confirmed": {
@@ -707,7 +898,7 @@ sharedApis.getViolationStatus = (Selector) => {
             break;
           }
           case "UnderReview": {
-            arabicStatusName = "منظورة";
+            arabicStatusName = "قيد انتظار السداد";
             break;
           }
           case "ExternalReviewed": {
@@ -723,6 +914,7 @@ sharedApis.getViolationStatus = (Selector) => {
             break;
           }
         }
+
         if (
           violationStatus != "Pending" &&
           violationStatus != "Approved" &&

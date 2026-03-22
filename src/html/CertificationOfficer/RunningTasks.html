@@ -15,7 +15,7 @@
       <div class="contentContainer">
         <div class="filterBox greenFilterBox">
           <div class="row">
-            <div class="col-6 col-sm-4 col-lg-4">
+            <div class="col-6 col-md-3">
               <div class="form-group customFormGroup">
                 <label for="violationSector" class="customLabel greenLabel">القطاع
                 </label>
@@ -27,7 +27,7 @@
                 </div>
               </div>
             </div>
-            <div class="col-6 col-sm-4 col-lg-4">
+            <div class="col-6 col-md-3">
               <div class="form-group customFormGroup">
                 <label for="TypeofViolation" class="customLabel">نوع المخالفة
                 </label>
@@ -41,7 +41,7 @@
                 </div>
               </div>
             </div>
-            <div class="col-6 col-md-3 col-xxl-3">
+            <div class="col-6 col-md-3">
               <div class="form-group customFormGroup">
                 <label for="violationSearch" class="customLabel greenLabel">البحث عن مخالفة
                 </label>
@@ -50,7 +50,7 @@
                 </div>
               </div>
             </div>
-            <div class="col-6 col-sm-2 col-lg-1 FilterationBtnsBox">
+            <div class="col-6 col-md-1 FilterationBtnsBox">
               <div class="buttonsBox pt-3">
                 <div class="btnStyle resetBtn resetGreenBtn">
                   <i class="fa-solid fa-rotate-left"></i>
@@ -69,6 +69,15 @@
 
         <div class="dashBoardTable">
           <div class="btnContainer">
+            <!-- Column Selector -->
+            <div class="columnSelectorWrapper">
+              <button type="button" id="columnToggleBtn" class="outlineGreenBtn selectColumnBtn">
+                تحديد الأعمدة
+                <i class="fa-solid fa-grip-lines-vertical"></i>
+              </button>
+              <div id="columnSelector" class="columnDropdown"></div>
+            </div>
+            <!-- Export Button -->
             <div id="exportBtn" class="outlineGreenBtn exportBtn">
               تصدير
               <i class="fa-solid fa-download"></i>

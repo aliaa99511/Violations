@@ -16,18 +16,7 @@
             <div class="contentContainer">
                 <div class="filterBox blueFilterBox">
                     <div class="row">
-                        <div class="col-6 col-md-3">
-                            <div class="form-group customFormGroup">
-                                <label for="violationSector" class="customLabel blueLabel">القطاع
-                                </label>
-                                <div class="selectBox smallSelectBox">
-                                    <select class="form-control violationSector blueSelect" id="violationSector">
-                                        <option value="0" disabled selected hidden>الكل</option>
-                                    </select>
-                                    <i class="fa-solid fa-sort-down"></i>
-                                </div>
-                            </div>
-                        </div>
+                        <!-- Removed violationSector column -->
                         <div class="col-6 col-md-3">
                             <div class="form-group customFormGroup">
                                 <label for="violationCategory" class="customLabel blueLabel">تصنيف المخالفة
@@ -104,6 +93,15 @@
 
                 <div class="dashBoardTable">
                     <div class="btnContainer">
+                        <!-- Column Selector -->
+                        <div class="columnSelectorWrapper">
+                            <button type="button" id="columnToggleBtn" class="outlineBlueBtn selectColumnBtn">
+                                تحديد الأعمدة
+                                <i class="fa-solid fa-grip-lines-vertical"></i>
+                            </button>
+                            <div id="columnSelector" class="columnDropdown"></div>
+                        </div>
+                        <!-- Export Button -->
                         <div id="exportBtn" class="outlineBlueBtn exportBtn">
                             تصدير
                             <i class="fa-solid fa-download"></i>

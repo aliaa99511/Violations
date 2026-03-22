@@ -184,6 +184,39 @@ confirmedViolationLog.resetFilter = (e) => {
   confirmedViolationLog.getConfirmedLog();
 };
 
+confirmedViolationLog.handleViolationCategoryChange = () => {
+  $("#violationCategory").on("change", function () {
+    const selectedCategory = $(this).val();
+    const $theCodeField = $("#theCode");
+    const $typeOfViolationField = $("#TypeofViolation");
+
+    // First, enable both fields
+    $theCodeField.prop("disabled", false);
+    $typeOfViolationField.prop("disabled", false);
+
+    // Handle "Equipment" selection
+    if (selectedCategory === "Equipment") {
+      $theCodeField.prop("disabled", true).val(""); // Disable and clear the field
+      $typeOfViolationField.prop("disabled", true).val("0"); // Disable and set to default
+    }
+
+    // Handle "Vehicle" selection
+    else if (selectedCategory === "Vehicle") {
+      $typeOfViolationField.prop("disabled", true).val("0"); // Disable and set to default
+      // theCode field remains enabled
+    }
+  });
+};
+const originalResetFilter = confirmedViolationLog.resetFilter;
+confirmedViolationLog.resetFilter = function (e) {
+  // Call the original resetFilter function
+  originalResetFilter.call(this, e);
+
+  // Re-enable both fields after reset
+  $("#theCode").prop("disabled", false);
+  $("#TypeofViolation").prop("disabled", false);
+};
+
 confirmedViolationLog.ConfirmedViolationTable = (
   ConfirmedViolation,
   destroyTable
@@ -274,6 +307,9 @@ confirmedViolationLog.ConfirmedViolationTable = (
     "سجل المحاضر المصدق عليها.xlsx",
     "سجل المحاضر المصدق عليها"
   );
+
+  // 🔹 create column selector
+  functions.createColumnSelector(Table, "#columnSelector", 'green');
 
   confirmedViolationLog.destroyTable = true;
 
@@ -516,7 +552,9 @@ const ViolationHistoryLogs = () => {
   // ===============================
   // 🔥 فتح المودال
   // ===============================
-  $(".contentContainer").on("click", ".violationHistory", function () {
+  $(".contentContainer").on("click", ".violationHistory", function (e) {
+    e.preventDefault();
+    e.stopPropagation();
 
     selectedViolationId = $(this).data("violationid");
     selectedViolationCode = $(this).data("violationcode");
@@ -525,11 +563,47 @@ const ViolationHistoryLogs = () => {
   });
 
   // ===============================
+  // 🔥 إغلاق المودال - Close button handlers
+  // ===============================
+  const closeModal = () => {
+    $("#trackHistoryModal").modal("hide");
+
+    // Clear the modal content
+    $(".track-history-violation-code").text("");
+
+    if (trackHistoryTable) {
+      trackHistoryTable.clear().destroy();
+      trackHistoryTable = null;
+    }
+
+    $("#trackHistoryTable tbody").empty();
+  };
+
+  // Close button in header
+  $(document).on("click", "#closeViolationHistoryPopup", function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+    closeModal();
+  });
+
+  // // Close button in footer
+  // $(document).on("click", "#closeViolationHistoryPopupFooter", function (e) {
+  //   e.preventDefault();
+  //   e.stopPropagation();
+  //   closeModal();
+  // });
+
+  // Bootstrap modal hide event
+  $("#trackHistoryModal").on("hidden.bs.modal", function () {
+    closeModal();
+  });
+
+  // ===============================
   // 🔥 لما المودال يفتح
   // ===============================
   $(".track-history-modal").on("shown.bs.modal", function () {
 
-    $(".modal-violation-code").text(selectedViolationCode);
+    $(".track-history-violation-code").text(selectedViolationCode);
 
     const request = {
       Request: {
@@ -547,6 +621,9 @@ const ViolationHistoryLogs = () => {
         paging: false,
         responsive: true,
         destroy: true,
+        // ordering: false,
+        // searching: false,
+        // info: false,
 
         ajax: {
           url: "/_layouts/15/Uranium.Violations.SharePoint/ViolationHistoryLogs.aspx/Search",
@@ -560,15 +637,35 @@ const ViolationHistoryLogs = () => {
         },
 
         columns: [
-          { data: "Id" },
-          { data: "Status" },
+          {
+            data: null,
+            render: (data, type, row, meta) => {
+              return meta.row;
+            }
+          },
+          {
+            data: "Status",
+            render: (data) => {
+              return data || "-";
+            }
+          },
           {
             data: "Created",
             render: (data) =>
               data ? functions.getFormatedDate(data) : "-"
           },
-          { data: "CreatedBy" },
-          { data: "Comment" }
+          {
+            data: "CreatedBy",
+            render: (data) => {
+              return data || "-";
+            }
+          },
+          {
+            data: "Comment",
+            render: (data) => {
+              return data || "-";
+            }
+          }
         ],
 
         language: {
@@ -588,7 +685,7 @@ const ViolationHistoryLogs = () => {
   // ===============================
   $(".track-history-modal").on("hidden.bs.modal", function () {
 
-    $(".modal-violation-code").text("");
+    $(".track-history-violation-code").text("");
 
     if (trackHistoryTable) {
       trackHistoryTable.clear().destroy();

@@ -8,35 +8,6 @@
     <!-- Add necessary CSS and JS includes -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
-    <!-- <style>
-        .PreLoader {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(255, 255, 255, 0.8);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 9999;
-        }
-
-        .overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            z-index: 9998;
-            display: none;
-        }
-
-        .overlay.active {
-            display: block;
-        }
-    </style> -->
 </head>
 
 <body>
@@ -51,6 +22,7 @@
         <div class="mainContainer">
             <div class="contentContainer">
                 <div class="formContent">
+
                     <div class="formBox">
                         <div class="formBoxHeader">
                             <p class="formBoxTitle">
@@ -86,6 +58,14 @@
                                             </select>
                                             <i class="fa-solid fa-sort-down"></i>
                                         </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-group customFormGroup">
+                                        <label for="violatorNationalId" class="customLabel">الرقم القومي للمخالف</label>
+                                        <input class="form-control customInput violatorNationalId"
+                                            id="violatorNationalId" type="text" maxlength="14"
+                                            placeholder="ادخل الرقم القومي الخاص بالمخالف" />
                                     </div>
                                 </div>
                                 <div class="col-md-6">
@@ -146,6 +126,14 @@
                                             <i class="fa-solid fa-sort-down"></i>
                                         </div>
                                     </div>
+                                    <div class="col-md-6 BonesBox" style="display: none;">
+                                        <div class="form-group customFormGroup">
+                                            <label for="BonesCount" class="customLabel">عدد البونات<span
+                                                    class="redAstric">*</span></label>
+                                            <input class="form-control customInput BonesCount" id="BonesCount"
+                                                type="text" placeholder="ادخل عدد البونات" />
+                                        </div>
+                                    </div>
                                 </div>
                                 <div class="col-md-6">
                                     <div class="form-group customFormGroup">
@@ -169,7 +157,136 @@
                             </div>
                         </div>
                     </div>
+
                     <div class="formBox">
+                        <div class="formBoxHeader">
+                            <p class="formBoxTitle">
+                                <span class="formNumber">3</span> الأبعاد والإحداثيات
+                            </p>
+                        </div>
+                        <div class="formElements">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="form-group customFormGroup">
+                                        <div class="feildInfoBox">
+                                            <label for="violationDepth" class="customLabel">العمق/الإرتفاع<span
+                                                    class="redAstric">*</span></label>
+                                            <span class="metaDataSpan">بالمتر</span>
+                                        </div>
+                                        <input class="form-control customInput violationDepth" id="violationDepth"
+                                            type="text" placeholder="ادخل العمق/الإرتفاع بالمتر" />
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-group customFormGroup">
+                                        <div class="feildInfoBox">
+                                            <label for="AreaSpace" class="customLabel">مساحة منطقة المخالفة<span
+                                                    class="redAstric">*</span></label>
+                                            <span class="metaDataSpan">بالمتر المربع</span>
+                                        </div>
+                                        <input class="form-control customInput AreaSpace" id="AreaSpace" type="text"
+                                            placeholder="ادخل مساحة منطقة المخالفة بالمتر المربع" />
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-group customFormGroup">
+                                        <div class="feildInfoBox">
+                                            <label for="totalAreaSpace" class="customLabel">الكمية<span
+                                                    class="redAstric">*</span></label>
+                                            <span class="metaDataSpan">بالمتر المكعب</span>
+                                        </div>
+                                        <input class="form-control customInput totalAreaSpace" id="totalAreaSpace"
+                                            type="text" placeholder="الكمية بالمتر المكعب" disabled />
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-group customFormGroup">
+                                        <div class="feildInfoBox">
+                                            <label for="distanceToNearQuarry" class="customLabel">المسافة لأقرب
+                                                محجر</label>
+                                            <span class="metaDataSpan">بالمتر</span>
+                                        </div>
+                                        <input class="form-control customInput distanceToNearQuarry"
+                                            id="distanceToNearQuarry" type="text"
+                                            placeholder="ادخل المسافة لأقرب محجر بالمتر" />
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-group customFormGroup">
+                                        <label for="NearestQuarryNumber" class="customLabel">رقم أقرب محجر<span
+                                                class="redAstric">*</span></label>
+                                        <input class="form-control customInput NearestQuarryNumber"
+                                            id="NearestQuarryNumber" type="text"
+                                            placeholder="ادخل الرقم الخاص لأقرب محجر" />
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <div class="form-group customFormGroup">
+                                        <label class="customLabel">الإحداثيات<span class="redAstric">*</span></label>
+                                        <div class="coordinatesTable" id="coordinatesTable">
+                                            <table class="table table-bordered">
+                                                <tr>
+                                                    <th scope="col">م</th>
+                                                    <th scope="col">شرقيات (E)</th>
+                                                    <th scope="col">شماليات (N)</th>
+                                                    <th data-attr-ignore></th>
+                                                </tr>
+                                                <tr class="hideRow">
+                                                    <th>1</th>
+                                                    <td>
+                                                        <input type="text" minlength="2" maxlength="2" required />
+                                                        <input type="text" maxlength="2" required />
+                                                        <input type="text" maxlength="5" required />
+                                                    </td>
+                                                    <td>
+                                                        <input type="text" minlength="2" maxlength="2" required />
+                                                        <input type="text" maxlength="2" required />
+                                                        <input type="text" maxlength="5" required />
+                                                    </td>
+                                                    <td></td>
+                                                </tr>
+                                                <tr>
+                                                    <th>2</th>
+                                                    <td>
+                                                        <input type="text" minlength="2" maxlength="2" required />
+                                                        <input type="text" maxlength="2" required />
+                                                        <input type="text" maxlength="5" required />
+                                                    </td>
+                                                    <td>
+                                                        <input type="text" minlength="2" maxlength="2" required />
+                                                        <input type="text" maxlength="2" required />
+                                                        <input type="text" maxlength="5" required />
+                                                    </td>
+                                                    <td></td>
+                                                </tr>
+                                                <tr>
+                                                    <th>3</th>
+                                                    <td>
+                                                        <input type="text" minlength="2" maxlength="2" required />
+                                                        <input type="text" maxlength="2" required />
+                                                        <input type="text" maxlength="5" required />
+                                                    </td>
+                                                    <td>
+                                                        <input type="text" minlength="2" maxlength="2" required />
+                                                        <input type="text" maxlength="2" required />
+                                                        <input type="text" maxlength="5" required />
+                                                    </td>
+                                                    <td></td>
+                                                </tr>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-12 AddNewPointBox">
+                                    <div class="AddPoint" id="AddPoint">
+                                        <i class="fas fa-plus table-add"></i>إضافة نقطة جديدة
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="formBox" style="margin-bottom: 30px;border-bottom: 1px solid rgba(112, 112, 112, 0.2);">
                         <div class="formElements">
                             <div class="row">
                                 <div class="col-md-6">
@@ -194,8 +311,266 @@
                                     </div>
                                 </div>
                             </div>
+
+                            <div class="row AddNewPointBox" style="margin-top: 20px; margin-bottom: 10px;">
+                                <div class="col-md-6">
+                                    <div class="AddPoint" id="addCarSectionBtn"
+                                        style="width: 100%; margin-inline-end: 0;">
+                                        <i class="fas fa-plus table-add"></i> إضافة عربة
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="AddPoint" id="addEquipmentSectionBtn"
+                                        style="width: 100%; margin-inline-end: 0;">
+                                        <i class="fas fa-plus table-add"></i> إضافة معدة
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Container for dynamic car sections -->
+                            <div id="carSectionsContainer"></div>
+
+                            <!-- Container for dynamic equipment sections -->
+                            <div id="equipmentSectionsContainer"></div>
+
+                            <!-- Hidden templates for dynamic sections -->
+                            <div style="display: none;">
+                                <!-- Car Section Template -->
+                                <div id="carSectionTemplate">
+                                    <div class="formBox dynamic-section car-section"
+                                        style="border: 1px solid #dee2e6; border-radius: 5px; margin-bottom: 20px; background-color: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                                        <div style="position: relative;">
+                                            <div style="position: absolute; left: 15px; top: 15px; z-index: 10;">
+                                                <span class="delete-section car-delete"
+                                                    style="cursor: pointer; color: #dc3545; font-size: 18px; background-color: rgba(255,255,255,0.9); width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 4px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+                                                    <i class="fas fa-trash-alt"></i>
+                                                </span>
+                                            </div>
+                                            <div class="formBoxHeader"
+                                                style="background-color: #f8f9fa; padding: 15px; border-bottom: 1px solid #dee2e6; border-radius: 5px 5px 0 0;">
+                                                <p class="formBoxTitle"
+                                                    style="margin: 0; color: #17a2b8; font-weight: bold;">
+                                                    <span class="formNumber"
+                                                        style="background-color: #17a2b8; display: inline-block; width: 25px; height: 25px; border-radius: 50%; color: white; text-align: center; line-height: 25px; margin-left: 10px;">1</span>
+                                                    بيانات رخصة المركبة
+                                                </p>
+                                            </div>
+                                            <div class="formElements" style="padding: 20px;">
+                                                <div class="row">
+                                                    <div class="col-md-6">
+                                                        <div class="form-group customFormGroup">
+                                                            <label for="violationCarType_dynamic"
+                                                                class="customLabel">نوع العربة <span
+                                                                    class="redAstric">*</span></label>
+                                                            <div class="selectBox">
+                                                                <select class="form-control violationCarType"
+                                                                    id="violationCarType_dynamic">
+                                                                    <option value="" disabled selected hidden>نوع العربة
+                                                                    </option>
+                                                                    <option value="عربة فردي">عربة فردي</option>
+                                                                    <option value="عربة بمقطورة">عربة بمقطورة</option>
+                                                                </select>
+                                                                <i class="fa-solid fa-sort-down"></i>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="col-md-6 checkboxInput">
+                                                        <label class="customelabel checkboxLabel"
+                                                            for="unmarkedCheckbox_dynamic">
+                                                            <input type="checkbox"
+                                                                class="unmarkedCheckbox checkboxInput customeInputs"
+                                                                id="unmarkedCheckbox_dynamic" />
+                                                            <span class="checktext">بدون لوحات</span>
+                                                        </label>
+                                                    </div>
+
+                                                    <div class="col-md-12 tractorBox_dynamic" style="display: none;">
+                                                        <div class="row">
+                                                            <div class="col-md-6">
+                                                                <div class="form-group customFormGroup">
+                                                                    <label for="tractorLetters_dynamic"
+                                                                        class="customLabel">حروف المقطورة</label>
+                                                                    <input
+                                                                        class="form-control customInput tractorLetters"
+                                                                        id="tractorLetters_dynamic" type="text"
+                                                                        minlength="4" maxlength="7"
+                                                                        placeholder="ادخل حروف المقطورة" />
+                                                                </div>
+                                                            </div>
+                                                            <div class="col-md-6">
+                                                                <div class="form-group customFormGroup">
+                                                                    <label for="tractorNumbers_dynamic"
+                                                                        class="customLabel">أرقام المقطورة</label>
+                                                                    <input
+                                                                        class="form-control customInput tractorNumbers"
+                                                                        id="tractorNumbers_dynamic" type="text"
+                                                                        minlength="3" maxlength="7"
+                                                                        placeholder="ادخل أرقام المقطورة" />
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="col-12">
+                                                        <p class="formSectionLabel">* رخصة تسيير مركبة</p>
+                                                    </div>
+
+                                                    <div class="col-md-12">
+                                                        <div class="row">
+                                                            <div class="col-md-5">
+                                                                <div class="form-group customFormGroup">
+                                                                    <label for="carLicenseLetters_dynamic"
+                                                                        class="customLabel">حروف<span
+                                                                            class="redAstric">*</span></label>
+                                                                    <input
+                                                                        class="form-control customInput carLicenseLetters"
+                                                                        id="carLicenseLetters_dynamic" type="text"
+                                                                        minlength="4" maxlength="7"
+                                                                        placeholder="أحرف العربة" />
+                                                                </div>
+                                                            </div>
+                                                            <div class="col-md-5">
+                                                                <div class="form-group customFormGroup">
+                                                                    <label for="carLicenseNumbers_dynamic"
+                                                                        class="customLabel">أرقام<span
+                                                                            class="redAstric">*</span></label>
+                                                                    <input
+                                                                        class="form-control customInput carLicenseNumbres"
+                                                                        id="carLicenseNumbers_dynamic" type="text"
+                                                                        minlength="3" maxlength="7"
+                                                                        placeholder="أرقام العربة" />
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="col-md-12" style="margin-top: 15px;">
+                                                        <div class="row">
+                                                            <div class="col-md-4">
+                                                                <div class="form-group customFormGroup">
+                                                                    <label for="carLicenseColor_dynamic"
+                                                                        class="customLabel">اللون<span
+                                                                            class="redAstric">*</span></label>
+                                                                    <input
+                                                                        class="form-control customInput carLicenseColor"
+                                                                        id="carLicenseColor_dynamic" type="text"
+                                                                        placeholder="لون العربة" />
+                                                                </div>
+                                                            </div>
+
+                                                            <div class="col-md-4">
+                                                                <div class="form-group customFormGroup">
+                                                                    <label for="carBrand_dynamic"
+                                                                        class="customLabel">النوع<span
+                                                                            class="redAstric">*</span></label>
+                                                                    <input type="text"
+                                                                        class="form-control customInput carBrand"
+                                                                        id="carBrand_dynamic"
+                                                                        placeholder="ادخل النوع" />
+                                                                </div>
+                                                            </div>
+
+                                                            <div class="col-md-4">
+                                                                <div class="form-group customFormGroup">
+                                                                    <label for="carLicenseTraffic_dynamic"
+                                                                        class="customLabel">ترخيص المرور</label>
+                                                                    <input type="text"
+                                                                        class="form-control customInput carLicenseTraffic"
+                                                                        id="carLicenseTraffic_dynamic"
+                                                                        placeholder="ترخيص المرور" />
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="col-12">
+                                                        <p class="formSectionLabel">* رخصة القيادة</p>
+                                                    </div>
+
+                                                    <div class="col-md-6">
+                                                        <div class="form-group customFormGroup">
+                                                            <label for="driverLicenseNumber_dynamic"
+                                                                class="customLabel">رقم رخصة القيادة</label>
+                                                            <input class="form-control customInput driverLicenseNumber"
+                                                                id="driverLicenseNumber_dynamic" type="text"
+                                                                maxlength="14" placeholder="رقم رخصة السائق" />
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="col-md-3">
+                                                        <div class="form-group customFormGroup">
+                                                            <label for="driverLicenseTraffic_dynamic"
+                                                                class="customLabel">ترخيص المرور</label>
+                                                            <input type="text"
+                                                                class="form-control customInput driverLicenseTraffic"
+                                                                id="driverLicenseTraffic_dynamic"
+                                                                placeholder="ترخيص المرور" />
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="col-12 previous-violations-display"
+                                                        style="display: none;">
+                                                        <div class="form-group customFormGroup">
+                                                            <div class=""
+                                                                style="margin-bottom: 0; padding: 10px 15px; background-color: #e9ecef; border-radius: 5px;">
+                                                                <strong>عدد المخالفات السابقة: </strong>
+                                                                <span class="previous-violations-count-value"
+                                                                    style="font-size: 18px; font-weight: bold;">0</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Equipment Section Template -->
+                                <div id="equipmentSectionTemplate">
+                                    <div class="formBox dynamic-section equipment-section"
+                                        style="border: 1px solid #dee2e6; border-radius: 5px; margin-bottom: 20px; background-color: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                                        <div style="position: relative;">
+                                            <div style="position: absolute; left: 15px; top: 15px; z-index: 10;">
+                                                <span class="delete-section equipment-delete"
+                                                    style="cursor: pointer; color: #dc3545; font-size: 18px; background-color: rgba(255,255,255,0.9); width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 4px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+                                                    <i class="fas fa-trash-alt"></i>
+                                                </span>
+                                            </div>
+                                            <div class="formBoxHeader"
+                                                style="background-color: #f8f9fa; padding: 15px; border-bottom: 1px solid #dee2e6; border-radius: 5px 5px 0 0;">
+                                                <p class="formBoxTitle"
+                                                    style="margin: 0; color: #17a2b8; font-weight: bold;">
+                                                    <span class="formNumber"
+                                                        style="background-color: #17a2b8; display: inline-block; width: 25px; height: 25px; border-radius: 50%; color: white; text-align: center; line-height: 25px; margin-left: 10px;">1</span>
+                                                    ضبط معدات
+                                                </p>
+                                            </div>
+                                            <div class="formElements" style="padding: 20px;">
+                                                <div class="row">
+                                                    <div class="col-12">
+                                                        <div class="form-group customFormGroup">
+                                                            <label class="customLabel">المعدات المضبوطة</label>
+                                                            <div class="toolsBox equipmentToolsBox"
+                                                                id="equipmentToolsBox_dynamic">
+                                                                <div class="addNewToolBtn">
+                                                                    <div class="addNewToolText">
+                                                                        <i class="fa-solid fa-plus"></i>
+                                                                        <span>إضافة أخرى</span>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
+
                 </div>
 
                 <div class="formButtonsBox">
@@ -213,6 +588,7 @@
             </div>
         </div>
     </div>
+
 </body>
 
 </html>

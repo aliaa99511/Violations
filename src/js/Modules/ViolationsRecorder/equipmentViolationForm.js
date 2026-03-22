@@ -497,7 +497,7 @@ equipmentViolation.formActions = () => {
   });
   $("#cancelQuarryViolation").on("click", (e) => {
     window.location.href =
-      "/ViolationsRecorder/Pages/RegisteredViolationsRecords.aspx";
+      "/ViolationsRecorder/Pages/Registered-Violations.aspx";
   });
 
   let filesExtension = [
@@ -757,6 +757,10 @@ equipmentViolation.validateForm = (e) => {
   let violationDate = `${violationDateArr[1]}-${violationDateArr[0]}-${violationDateArr[2]}`;
   let violationTimeArr = violationDetails.violationTime.split("/");
   let violationTime = `${violationTimeArr[1]}-${violationTimeArr[0]}-${violationTimeArr[2]}`;
+
+  // Check if calculate by ton checkbox is checked
+  let isCalculateByTon = $("#calculateByTon").is(":checked");
+
   if (SectorMembers != "") {
     if (violatorDetails != false) {
       if (violationDetails != false) {
@@ -818,6 +822,12 @@ equipmentViolation.validateForm = (e) => {
                   SectorMembers: SectorMembers,
                   Sector: 0,
                 };
+
+                // Add MaterialUnit property if calculate by ton is checked
+                if (isCalculateByTon) {
+                  ViolationData.MaterialUnit = "طن";
+                }
+
                 equipmentViolation.submitNewViolation(e, ViolationData);
               }
             } else {
@@ -905,7 +915,7 @@ equipmentViolation.uploadAttachment = (NewViolationID, ListName) => {
           ? "تم تعديل مخالفة معدة بنجاح"
           : "تم إضافة مخالفة معدة جديدة بنجاح",
         false,
-        "/ViolationsRecorder/Pages/RegisteredViolationsRecords.aspx"
+        "/ViolationsRecorder/Pages/Registered-Violations.aspx"
       );
     },
     error: (err) => {

@@ -82,7 +82,7 @@ runningSectorTask.runningSectorTaskTable = (runningTasks) => {
                      
                   </ul>
               </div>
-          </div`,
+          </div>`,
         `<div class="violationArName">${functions.getViolationArabicName(
           taskViolation.OffenderType
         )}</div>`,
@@ -119,6 +119,10 @@ runningSectorTask.runningSectorTaskTable = (runningTasks) => {
     "المخالفات القائمة.xlsx",
     "المخالفات القائمة"
   );
+
+  // 🔹 create column selector
+  functions.createColumnSelector(Table, "#columnSelector", 'green');
+
   $(".popupForm").addClass("Pendingform");
   $(".Pendingform").find(".totalPriceBox").show();
   $(".Pendingform").find(".dateLimitBox").hide();
@@ -333,13 +337,15 @@ runningSectorTask.findViolationByID = (event, taskID, print = false, UserJopTitl
       console.log(err);
     });
 };
-
 runningSectorTask.violationConfirmPopup = (TaskId, violationID, violationCode) => {
   $(".overlay").removeClass("active");
   let popupHtml = `
-    <div class="popupHeader">
+    <div class="popupHeader" style="display: flex; justify-content: space-between;">
       <div class="violationsCode"> 
           <p> كود المخالفة رقم ${violationCode}</p>
+      </div>
+      <div class="btnStyle cancelBtn popupBtn closeViolationConfirmPopup" id="closeViolationConfirmPopup" style="color: #fff; cursor: pointer;" data-dismiss="modal" aria-label="Close">
+          <i class="fa-solid fa-x"></i>
       </div>
     </div>
     <div class="popupBody">
@@ -372,7 +378,7 @@ runningSectorTask.violationConfirmPopup = (TaskId, violationID, violationCode) =
                   <div class="col-12">
                       <div class="buttonsBox centerButtonsBox ">
                           <div class="btnStyle confirmBtnGreen popupBtn confirmViolation" id="confirmViolation">تصديق</div>
-                          <div class="btnStyle cancelBtn popupBtn closeDetailsPopup" id="closeDetailsPopup" data-dismiss="modal" aria-label="Close">إلغاء</div>
+                          <div class="btnStyle cancelBtn popupBtn" id="closeViolationConfirmPopupFooter" data-dismiss="modal" aria-label="Close">إلغاء</div>
                       </div>
                   </div>
               </div>
@@ -380,7 +386,14 @@ runningSectorTask.violationConfirmPopup = (TaskId, violationID, violationCode) =
       </div>
     </div>
   `;
+
   functions.declarePopup(["generalPopupStyle", "greenPopup", "editPopup"], popupHtml);
+
+  // Add close button handlers
+  $("#closeViolationConfirmPopup, #closeViolationConfirmPopupFooter").on("click", function () {
+    functions.closePopup();
+  });
+
   let request = {}
   let editFiles;
   let countOfFiles;

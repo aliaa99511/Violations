@@ -120,6 +120,33 @@ pendingPayment.resetFilter = (e) => {
     pagination.reset();
     pendingPayment.getPendingPayment();
 };
+pendingPayment.handleViolationCategoryChange = () => {
+    $("#violationCategory").on("change", function () {
+        const selectedCategory = $(this).val();
+        const $typeOfViolationField = $("#TypeofViolation");
+
+        // First, enable both fields
+        $typeOfViolationField.prop("disabled", false);
+
+        // Handle "Equipment" selection
+        if (selectedCategory === "Equipment") {
+            $typeOfViolationField.prop("disabled", true).val("0"); // Disable and set to default
+        }
+
+        // Handle "Vehicle" selection
+        else if (selectedCategory === "Vehicle") {
+            $typeOfViolationField.prop("disabled", true).val("0"); // Disable and set to default
+        }
+    });
+};
+const originalResetFilter = pendingPayment.resetFilter;
+pendingPayment.resetFilter = function (e) {
+    // Call the original resetFilter function
+    originalResetFilter.call(this, e);
+
+    // Re-enable both fields after reset
+    $("#TypeofViolation").prop("disabled", false);
+};
 
 pendingPayment.PendingPaymentTable = (PendingPaymentData, destroyTable) => {
     let data = [];
@@ -220,6 +247,9 @@ pendingPayment.PendingPaymentTable = (PendingPaymentData, destroyTable) => {
         "المخالفات قيد السداد"
     );
 
+    // 🔹 create column selector
+    functions.createColumnSelector(Table, "#columnSelector", 'green');
+
     pendingPayment.destroyTable = true;
 
     $(".ellipsisButton").on("click", (e) => {
@@ -242,17 +272,6 @@ pendingPayment.PendingPaymentTable = (PendingPaymentData, destroyTable) => {
         $.each(paymentLog, (index, record) => {
             let jQueryRecord = $(record);
             let taskID = jQueryRecord.find(".violationId").data("taskid");
-            let violationId = jQueryRecord.find(".violationId").data("violationid");
-            let violationCode = jQueryRecord.find(".violationId").data("violationcode");
-            let totalPrice = jQueryRecord.find(".violationId").data("totalprice");
-            let actualPaid = jQueryRecord.find(".violationId").data("actualpaid");
-            let remainingAmount = jQueryRecord.find(".violationId").data("remainingamount");
-            let offenderType = jQueryRecord.find(".violationId").data("offendertype");
-            let lawRoyalty = jQueryRecord.find(".violationId").data("lawroyalty");
-            let totalEquipmentsPrice = jQueryRecord.find(".violationId").data("totalequipmentsprice");
-            let violationPriceType = jQueryRecord.find(".violationId").data("violationpricetype");
-            let printedCount = jQueryRecord.find(".violationId").data("printedcount");
-            let totalInstallmentsPaidAmount = jQueryRecord.find(".violationId").data("totalinstallmentspaidamount");
 
             let hiddenListBox = jQueryRecord.find(".controls").children(".hiddenListBox");
 
@@ -279,20 +298,7 @@ pendingPayment.PendingPaymentTable = (PendingPaymentData, destroyTable) => {
                 .find(".payInstallment")
                 .on("click", (e) => {
                     $(".overlay").addClass("active");
-                    pendingPayment.getViolationDetailsForPayment(
-                        taskID,
-                        violationId,
-                        violationCode,
-                        totalPrice,
-                        actualPaid,
-                        remainingAmount,
-                        offenderType,
-                        lawRoyalty,
-                        totalEquipmentsPrice,
-                        violationPriceType,
-                        printedCount,
-                        totalInstallmentsPaidAmount
-                    );
+                    pendingPayment.getViolationDetailsForPayment(taskID);
                 });
         });
     });
@@ -300,21 +306,7 @@ pendingPayment.PendingPaymentTable = (PendingPaymentData, destroyTable) => {
     functions.hideTargetElement(".controls", ".hiddenListBox");
 };
 
-pendingPayment.getViolationDetailsForPayment = (
-    taskID,
-    violationId,
-    violationCode,
-    totalPrice,
-    actualPaid,
-    remainingAmount,
-    offenderType,
-    lawRoyalty,
-    totalEquipmentsPrice,
-    violationPriceType,
-    printedCount,
-    totalInstallmentsPaidAmount
-) => {
-
+pendingPayment.getViolationDetailsForPayment = (taskID) => {
     let request = {
         Id: taskID,
     };
@@ -332,14 +324,294 @@ pendingPayment.getViolationDetailsForPayment = (
         .then((data) => {
             $(".overlay").removeClass("active");
             let TaskData = data.d;
-            pendingPayment.showInstallmentPaymentPopup(TaskData);
+
+            let violationData = TaskData.Violation;
+            let offenderType = violationData.OffenderType;
+            let Content = '';
+
+            // Get the appropriate details popup content based on offender type
+            if (offenderType == "Quarry") {
+                Content = DetailsPopup.quarryDetailsPopupContent(
+                    violationData,
+                    "قيد السداد"
+                );
+            } else if (offenderType == "Vehicle") {
+                Content = DetailsPopup.vehicleDetailsPopupContent(
+                    violationData,
+                    "قيد السداد"
+                );
+            } else if (offenderType == "Equipment") {
+                Content = DetailsPopup.equipmentDetailsPopupContent(
+                    violationData,
+                    "قيد السداد"
+                );
+            }
+
+            // Find the last section (the "تسديد المخالفة" section) and replace it with our payment form
+            let lastSectionStart = Content.lastIndexOf('<div class="popupFormBoxHeader">');
+            if (lastSectionStart !== -1) {
+                // Find where this section ends - look for the closing tag of the section
+                // The section likely ends with a closing div after the formButtonsBox
+                let sectionEnd = Content.lastIndexOf('</div>', Content.length - 10);
+                if (sectionEnd !== -1 && sectionEnd > lastSectionStart) {
+                    // Keep everything before this section
+                    Content = Content.substring(0, lastSectionStart);
+                }
+            }
+
+            // Add our payment form (which already includes its own header with "تسديد القسط")
+            let paymentForm = pendingPayment.paymentFormHtml(TaskData);
+            Content += paymentForm;
+
+            // Wrap in printBox and declare popup
+            let printBox = `<div class="printBox" id="printJS-form">${Content}</div>`;
+            functions.declarePopup(
+                ["generalPopupStyle", "detailsPopup"],
+                printBox
+            );
+
+            // Add vehicle type specific handling
+            if (offenderType == "Vehicle") {
+                let VehcleType = violationData.VehicleType;
+                if (VehcleType == "عربة بمقطورة") {
+                    $(".TrailerNumberBox").show();
+                } else {
+                    $(".TrailerNumberBox").hide();
+                }
+            }
+
+            // Get the expiration date
+            let ExDate = functions.getFormatedDate(TaskData?.ReconciliationExpiredDate);
+
+            // Call popupPermissionShowTypes to handle visibility and toggle functionality
+            pendingPayment.popupPermissionShowTypes("PaymentForm", taskID, ExDate);
+
+            // Setup payment form actions
+            pendingPayment.paymentFormActions(TaskData);
+
+            // Add print functionality
+            $(".printBtn").on("click", (e) => {
+                functions.PrintDetails(e);
+            });
+
+            // Hide action buttons specific to pending payment
+            $(".approveViolation, .rejectViolation, .confirmViolation, .editMaterialMinPrice").hide();
+            $(".detailsPopupForm").addClass("pendingPayment");
+
         })
         .catch((err) => {
             console.log(err);
             $(".overlay").removeClass("active");
         });
 };
+pendingPayment.paymentFormHtml = (TaskData) => {
+    let violationData = TaskData.Violation;
+    let offenderType = violationData.OffenderType;
+    let violationPriceType = violationData.ViolationTypes?.PriceType || "";
+    let TotalViolationPrice = violationData.TotalPriceDue;
+    let RoyaltyPrice = violationData.LawRoyalty;
+    let QuarryMaterialValue = violationData.QuarryMaterialValue;
+    let totalInstallmentsPaidAmount = violationData?.TotalInstallmentsPaidAmount || 0;
 
+    // Get formatted end date (or "-" if null)
+    let endDate = functions.getFormatedDate(TaskData?.ReconciliationExpiredDate);
+    endDate = endDate === "01-01-2001" ? "-" : endDate;
+
+    let violationTypeLastPrice;
+    let labelText;
+    let inputVal;
+
+    if (offenderType == "Quarry") {
+        violationTypeLastPrice = DetailsPopup.getQuarryViolationValueByType(
+            violationPriceType,
+            TotalViolationPrice,
+            QuarryMaterialValue,
+        );
+        labelText = violationTypeLastPrice.labelText;
+        inputVal = violationTypeLastPrice.InputVal;
+    } else {
+        violationTypeLastPrice = DetailsPopup.getVechileViolationValueByType(
+            TotalViolationPrice,
+            RoyaltyPrice,
+        );
+        labelText = violationTypeLastPrice.labelText;
+        inputVal = violationTypeLastPrice.InputVal;
+    }
+
+    let quarryPriceInDetails = `
+        <div class="col-md-4 violationPriceBox">
+            <div class="form-group customFormGroup">
+                <label for="quarryPrice" class="customLabel">${labelText}</label>
+                <input class="form-control customInput quarryPrice disabledInput" id="quarryPrice" type="text" value="${functions.splitBigNumbersByComma(inputVal)}" disabled>
+            </div>
+        </div>
+        <div class="col-md-4 royaltyPriceBox">
+            <div class="form-group customFormGroup">
+                <label for="royaltyPrice" class="customLabel">قيمة الإتاوة</label>
+                <input class="form-control customInput royaltyPrice disabledInput" id="royaltyPrice" type="text" value="${functions.splitBigNumbersByComma(violationData?.LawRoyalty)}" disabled>
+            </div>
+        </div>
+        <div class="col-md-4 equipmentsPriceBox">
+            <div class="form-group customFormGroup">
+                <label for="equipmentsPrice" class="customLabel">غرامة المعدات</label>
+                <input class="form-control customInput equipmentsPrice disabledInput" id="equipmentsPrice" type="text" value="${functions.splitBigNumbersByComma(violationData?.TotalEquipmentsPrice)}" disabled>
+            </div>
+        </div>
+    `;
+
+    let vehiclePriceInDetails = `
+        <div class="col-md-6">
+            <div class="form-group customFormGroup">
+                <label for="quarryPrice" class="customLabel">${labelText}</label>
+                <input class="form-control customInput quarryPrice disabledInput" id="quarryPrice" type="text" value="${functions.splitBigNumbersByComma(inputVal)}" disabled>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="form-group customFormGroup">
+                <label for="royaltyPrice" class="customLabel">قيمة الإتاوة</label>
+                <input class="form-control customInput royaltyPrice disabledInput" id="royaltyPrice" type="text" value="${functions.splitBigNumbersByComma(violationData?.LawRoyalty)}" disabled>
+            </div>
+        </div>
+    `;
+
+    let equipmentsPriceInDetails = `
+        <div class="col-md-6 equipmentsPriceBox">
+            <div class="form-group customFormGroup">
+                <label for="equipmentsPrice" class="customLabel">غرامة المعدات</label>
+                <input class="form-control customInput equipmentsPrice disabledInput" id="equipmentsPrice" type="text" value="${functions.splitBigNumbersByComma(violationData?.TotalEquipmentsPrice)}" disabled>
+            </div>
+        </div>
+    `;
+
+    let paymentFormHtml = `
+        <div class="popupFormBoxHeader">
+            <p class="formBoxTitle"><span class="formNumber">2</span> تسديد القسط</p>
+        </div>
+        <div class="paymentFormBody">
+            <div class="popupForm paymentForm" id="paymentForm" 
+                    data-taskid="${TaskData.ID}" 
+                    data-violationid="${TaskData.ViolationId}" 
+                    data-actualprice="${violationData.ActualAmountPaid}" 
+                    data-lawroyalty="${violationData.LawRoyalty}" 
+                    data-totalequipmentsprice="${violationData.TotalEquipmentsPrice}" 
+                    data-totalprice="${violationData.TotalPriceDue}" 
+                    data-offendertype="${violationData.OffenderType}" 
+                    data-violationpricetype="${offenderType == "Quarry" ? violationPriceType : 0}"
+                    data-totalinstallmentspaidamount="${totalInstallmentsPaidAmount}">
+                <div class="formContent">
+                    <div class="formBox">
+                        <div class="formElements">
+                            <div class="row">
+                                ${offenderType == "Quarry" ? quarryPriceInDetails :
+            offenderType == "Vehicle" ? vehiclePriceInDetails :
+                offenderType == "Equipment" ? equipmentsPriceInDetails : ""}
+                                
+                                <div class="col-md-6">
+                                    <div class="form-group customFormGroup">
+                                        <label for="totalPrice" class="customLabel">إجمالي قيمة المخالفة</label>
+                                        <input class="form-control customInput totalPrice disabledInput" id="totalPrice" type="text" 
+                                              value="${functions.splitBigNumbersByComma(violationData?.TotalPriceDue) || ""}" disabled>
+                                    </div>
+                                    
+                                    <div class="form-group customFormGroup">
+                                        <label for="reconciliationPeriod" class="customLabel">تاريخ نهاية مدة التصالح</label>
+                                        <div class="inputIconBox">
+                                            <input class="form-control customInput reconciliationPeriod disabledInput" id="reconciliationPeriod" type="text" 
+                                                    value="${endDate}" disabled>
+                                            <i class="fa-solid fa-calendar-days"></i>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="form-group customFormGroup actualRemainigPriceBox">
+                                        <label class="customLabel">المبلغ المتبقي</label>
+                                        <input class="form-control customInput disabledInput remainingAmount" type="text" 
+                                               value="${functions.splitBigNumbersByComma(violationData?.RemainingAmount) || ""}" disabled>
+                                    </div>
+                                    
+                                    <div class="form-group customFormGroup">
+                                        <div class="feildInfoBox">
+                                            <label for="payedPrice" class="customLabel">المبلغ المراد تسديده *</label>
+                                            <span class="metaDataSpan">بالجنيه المصري</span>
+                                        </div>
+                                        <input class="form-control customInput payedPrice greenCustomInput" id="payedPrice" type="text" placeholder="ادخل المبلغ المراد تسديده">
+                                    </div>
+                                    
+                                    <!---------------------  سداد بالتقسيط - ALWAYS CHECKED IN PENDING PAYMENT -->
+                                    <div class="form-group customFormGroup installmentBox">
+                                      <label class="checkboxLabel">
+                                        <input
+                                          type="checkbox"
+                                          class="installmentCheckbox"
+                                          checked
+                                          disabled
+                                        />
+                                        سداد بالتقسيط
+                                      </label>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    ${offenderType != "Equipment" ? `
+                                    <div class="form-group customFormGroup payQuarryAttachBox">
+                                        <label for="attachQuarryPaymentReceipt" class="customLabel">إرفاق إيصال غرامة القيمة المحجرية</label>
+                                        <div class="fileBox" id="dropContainer">
+                                            <div class="inputFileBox">
+                                                <p class="dragDropFilesLabel">قم بالسحب والإفلات لرفع الملف , أو <a href="#!" class="attachFileLink">استعراض ملفاتي</a></p>
+                                                <img src="/Style Library/MiningViolations/images/fileIcon.svg" alt="File Icon">
+                                                <input type="file" class="customInput attachFilesInput attachQuarryPaymentReceipt form-control" id="attachQuarryPaymentReceipt" accept="image/gif,image/svg,image/jpg,image/jpeg,image/png,.doc,.docx,.pdf,.xls,.xlsx,.pptx">
+                                            </div>
+                                        </div>
+                                        <div class="dropFilesArea" id="dropFilesArea"></div>
+                                    </div>
+                                    <div class="form-group customFormGroup payRoyaltyAttachBox">
+                                        <label for="attachLawRoyaltyPaymentReceipt" class="customLabel">إرفاق إيصال الإتاوة</label>
+                                        <div class="fileBox" id="dropContainer">
+                                            <div class="inputFileBox">
+                                                <p class="dragDropFilesLabel">قم بالسحب والإفلات لرفع الملف , أو <a href="#!" class="attachFileLink">استعراض ملفاتي</a></p>
+                                                <img src="/Style Library/MiningViolations/images/fileIcon.svg" alt="File Icon">
+                                                <input type="file" class="customInput attachFilesInput attachLawRoyaltyPaymentReceipt form-control" id="attachLawRoyaltyPaymentReceipt" accept="image/gif,image/svg,image/jpg,image/jpeg,image/png,.doc,.docx,.pdf,.xls,.xlsx,.pptx">
+                                            </div>
+                                        </div>
+                                        <div class="dropFilesArea" id="dropFilesArea"></div>
+                                    </div>
+                                    ` : ""}
+                                    
+                                    <div class="form-group customFormGroup payEquipmentsAttachBox" 
+                                          style="display:${offenderType == "Quarry" || offenderType == "Equipment" ? "block !important" : "none !important"}">
+                                        <label for="attachEquipmentsPaymentReceipt" class="customLabel">إرفاق إيصال غرامة المعدات</label>
+                                        <div class="fileBox" id="dropContainer">
+                                            <div class="inputFileBox">
+                                                <p class="dragDropFilesLabel">قم بالسحب والإفلات لرفع الملف , أو <a href="#!" class="attachFileLink">استعراض ملفاتي</a></p>
+                                                <img src="/Style Library/MiningViolations/images/fileIcon.svg" alt="File Icon">
+                                                <input type="file" class="customInput attachFilesInput attachEquipmentsPaymentReceipt form-control" id="attachEquipmentsPaymentReceipt" accept="image/gif,image/svg,image/jpg,image/jpeg,image/png,.doc,.docx,.pdf,.xls,.xlsx,.pptx">
+                                            </div>
+                                        </div>
+                                        <div class="dropFilesArea" id="dropFilesArea"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="formButtonsBox">
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="buttonsBox centerButtonsBox ">
+                                <div class="btnStyle confirmBtnGreen popupBtn payInstallmentBtn">
+                                  تسديد قسط
+                                </div>
+                                <div class="btnStyle cancelBtn popupBtn closeDetailsPopup" id="closeDetailsPopup" data-dismiss="modal" aria-label="Close">إلغاء</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    return paymentFormHtml;
+};
 pendingPayment.showInstallmentPaymentPopup = (TaskData) => {
     let violationData = TaskData.Violation;
     let offenderType = violationData.OffenderType;
@@ -800,7 +1072,40 @@ pendingPayment.paymentFormActions = (TaskData) => {
         pendingPayment.payRequest(taskId, request, offenderType);
     });
 };
+pendingPayment.popupPermissionShowTypes = (popupType, TaskId, ExDate) => {
+    if (popupType == "Details") {
+        $(".totalPriceBox")
+            .show()
+            .find(".violationEndTime")
+            .val(ExDate == "01-01-2001" ? "-" : ExDate);
+        $(".confirmationAttachBox").show();
+        DetailsPopup.getConfirmationAttachments(TaskId);
+    } else if (popupType == "PaymentForm") {
+        $(".hiddenDetailsBox").addClass("showHiddenDetailsBox");
+        $(".totalPriceBox")
+            .show()
+            .find(".violationEndTime")
+            .val(ExDate == "01-01-2001" ? "-" : ExDate);
+        $(".popupFormBoxHeader").show();
+        $(".confirmationAttachBox").hide(); // Hide confirmation attachments for payment
+        $(".detailsPopupForm").find(".formButtonsBox").hide();
+        $(".hiddenDetailsBox").hide();
+        $(".showMoreDetails").css("display", "flex");
 
+        // Remove any existing event handlers and attach new one
+        $(".showMoreDetails").off("click").on("click", (e) => {
+            $(".hiddenDetailsBox").slideToggle();
+            $(".showMoreDetails").find("img").toggleClass("rotateDetailsIcon");
+            $(".showMoreDetails")
+                .find("p")
+                .text(
+                    $(".showMoreDetails").find("p").text() == "إظهار المزيد من التفاصيل"
+                        ? "إخفاء التفاصيل"
+                        : "إظهار المزيد من التفاصيل"
+                );
+        });
+    }
+};
 pendingPayment.payRequest = (TaskId, request, offenderType) => {
     // Store the request data in the form element
     $(".paymentForm").data("lastRequest", request);

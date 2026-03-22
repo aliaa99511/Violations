@@ -196,7 +196,7 @@ prevViolations.dashBoardTable = (violationsData = []) => {
                         <li><a href="#" class="itemDetails"> المزيد من التفاصيل</a></li>
                     </ul>
                 </div>
-            </div`,
+            </div>`,
         `<div class="violationArName">${prevViolations.getViolationStatus(record.Status)}</div>`,
         // `<div class="violationArName">${functions.getViolationArabicName(taskViolation.OffenderType)}</div>`,
         `<div class="violationCode">${taskViolation.OffenderType == "Vehicle" ? taskViolation.CarNumber : taskViolation.QuarryCode != "" ? taskViolation.QuarryCode : "---"}</div>`,
@@ -230,6 +230,18 @@ prevViolations.dashBoardTable = (violationsData = []) => {
     "سجل المخالفات السابقة.xlsx",
     "سجل المخالفات السابقة"
   );
+
+  // 🔹 Determine theme based on site name
+  const siteName = functions.getSiteName();
+  let theme = 'blue';
+
+  if (siteName === 'ViolationsBranch') {
+    theme = 'green';
+  } else if (siteName === 'ViolationsRecorder') {
+    theme = 'blue';
+  }
+
+  functions.createColumnSelector(Table, "#columnSelector", theme);
   $(".ellipsisButton").on("click", (e) => {
     $(".hiddenListBox").hide(300);
     $(e.currentTarget).siblings(".hiddenListBox").toggle(300);

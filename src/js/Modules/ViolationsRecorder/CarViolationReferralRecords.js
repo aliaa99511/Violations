@@ -71,8 +71,8 @@ vehicleViolationReferralRecords.getVehicleViolationReferralsRecords = (
 };
 
 vehicleViolationReferralRecords.setPaginations = (TotalPages, RowsPerPage) => {
-    pagination.draw("#paginationIDRecords", TotalPages, RowsPerPage);
-    pagination.start("#paginationIDRecords", vehicleViolationReferralRecords.getVehicleViolationReferralsRecords);
+    pagination.draw("#paginationID", TotalPages, RowsPerPage);
+    pagination.start("#paginationID", vehicleViolationReferralRecords.getVehicleViolationReferralsRecords);
     pagination.activateCurrentPage();
 };
 
@@ -132,143 +132,6 @@ vehicleViolationReferralRecords.resetFilter = (e) => {
     vehicleViolationReferralRecords.getVehicleViolationReferralsRecords();
 };
 
-// vehicleViolationReferralRecords.VehicleViolationReferralRecordsTable = (Referrals, destroyTable) => {
-//     let data = [];
-
-//     if (vehicleViolationReferralRecords.destroyTable || destroyTable) {
-//         $("#VehicleViolationReferralRecordsTable").DataTable().destroy();
-//     }
-
-//     if (Referrals && Referrals.length > 0) {
-//         Referrals.forEach((referral) => {
-//             let violation = referral?.Violation;
-//             let refferedDate = functions.getFormatedDate(referral.RefferedDate);
-//             let violationStatus = referral.ViolationStatus || "";
-//             let caseStatus = referral.Status || "";
-//             let referralNumber = referral.ReferralNumber || "";
-//             let caseNumber = referral.CaseNumber || "";
-//             let vehicleRegistrationNumber = referral.VehicleRegistrationNumber || "";
-//             let courtCaseNumber = referral.CourtCaseNumber || "";
-
-//             // For records view, we only show details action
-//             let actionsMenuHTML = `
-//                 <ul class='list-unstyled controlsList'>
-//                     <li><a href="#" class="itemDetails">المزيد من التفاصيل</a></li>
-//                 </ul>`;
-
-//             let displayViolationStatus = vehicleViolationReferralRecords.getViolationStatus(violationStatus);
-
-//             data.push([
-//                 `<div class="violationCode noWrapContent" 
-//                         data-referralid="${referral.ID}" 
-//                         data-violationid="${referral.ViolationId}" 
-//                         data-taskid="${referral.TaskId}" 
-//                         data-referralstatus="${referral.Status}" 
-//                         data-referralnumber="${referral.ReferralNumber}" 
-//                         data-vehicleregistrationnumber="${vehicleRegistrationNumber}"
-//                         data-courtcasenumber="${courtCaseNumber}"
-//                         data-violationcode="${referral.ViolationCode}" 
-//                         data-oldprice="${violation?.TotalOldPrice}" 
-//                         data-newprice="${violation?.TotalPriceDue}"
-//                         data-offendertype="${violation?.OffenderType}"
-//                         data-casenumber="${caseNumber}"
-//                         data-violationstatus="${violationStatus}">
-//                         ${referral.ViolationCode}
-//                 </div>`,
-//                 `<div class='controls'>
-//                     <div class='ellipsisButton'>
-//                         <i class='fa-solid fa-ellipsis-vertical'></i>
-//                     </div>
-//                     <div class="hiddenListBox">
-//                         <div class='arrow'></div>
-//                         ${actionsMenuHTML}
-//                     </div>
-//                 </div>`,
-//                 `<div class="refferedDate noWrapContent">${refferedDate}</div>`,
-//                 `<div class="vehicleRegistrationNumber">${vehicleRegistrationNumber || "-----"}</div>`,
-//                 `<div class="courtCaseNumber">${courtCaseNumber || "-----"}</div>`,
-//                 `<div class="violationStatus">${displayViolationStatus || "-----"}</div>`,
-//                 `<div class="referralStatus">${caseStatus || "-----"}</div>`,
-//                 `<div class="referralAttachments caseAttachments"><a href="#!" style="color: black;">المرفقات</a></div>`,
-//             ]);
-//         });
-//     } else {
-//         data.push([
-//             `<div class="no-data">لا توجد بيانات متاحة</div>`,
-//             "",
-//             "",
-//             "",
-//             "",
-//             "",
-//             "",
-//             ""
-//         ]);
-//     }
-
-
-//     let Table = functions.tableDeclare(
-//         "#VehicleViolationReferralRecordsTable",
-//         data,
-//         [
-//             { title: "رقم المخالفة" },
-//             { title: "", class: "all" },
-//             { title: "تاريخ القضية" },
-//             { title: "رقم القيد" },
-//             { title: "الرقم القضائي" },
-//             { title: "حالة المخالفة" },
-//             { title: "موقف الإحالة" },
-//             { title: "المرفقات" },
-//         ],
-//         false,
-//         false,
-//         "سجل إحالات مخالفات المركبات.xlsx",
-//         "سجل إحالات مخالفات المركبات"
-//     );
-
-
-//     vehicleViolationReferralRecords.destroyTable = true;
-
-//     $(".ellipsisButton").on("click", (e) => {
-//         $(".hiddenListBox").hide(300);
-//         $(e.currentTarget).siblings(".hiddenListBox").toggle(300);
-//     });
-
-//     let referralsLog = Table.rows().nodes().to$();
-
-//     $.each(referralsLog, (index, record) => {
-//         let jQueryRecord = $(record);
-
-//         let referralID = jQueryRecord.find(".violationCode").data("referralid");
-//         let referralNumber = jQueryRecord.find(".violationCode").data("referralnumber");
-//         let hiddenListBox = jQueryRecord.find(".controls").children(".hiddenListBox");
-
-//         // Attachments click handler - MOVED HERE from table options
-//         jQueryRecord.find(".referralAttachments").find("a").off('click').on('click', function (e) {
-//             e.preventDefault();
-//             $(".overlay").addClass("active");
-//             vehicleViolationReferralRecords.getReferralAttachmentsByReferralId(referralID, referralNumber);
-//         });
-
-//         // Details click handler
-//         jQueryRecord.find(".itemDetails").off('click').on('click', function (e) {
-//             e.preventDefault();
-//             e.stopPropagation();
-//             $(".overlay").addClass("active");
-//             vehicleViolationReferralRecords.FindReferralById(referralID);
-//         });
-
-//         if (
-//             referralsLog.length > 4 &&
-//             hiddenListBox.height() > 110 &&
-//             jQueryRecord.is(":nth-last-child(-n + 4)")
-//         ) {
-//             hiddenListBox.addClass("toTopDDL");
-//         }
-//     });
-
-//     functions.hideTargetElement(".controls", ".hiddenListBox");
-// };
-
 vehicleViolationReferralRecords.VehicleViolationReferralRecordsTable = (Referrals, destroyTable) => {
     let data = [];
 
@@ -293,7 +156,7 @@ vehicleViolationReferralRecords.VehicleViolationReferralRecordsTable = (Referral
                     <li><a href="#" class="itemDetails">المزيد من التفاصيل</a></li>
                 </ul>`;
 
-            let displayViolationStatus = vehicleViolationReferralRecords.getViolationStatus(violationStatus);
+            let displayViolationStatus = functions.getVehicleViolationStatus(violationStatus);
 
             // Prepare all data attributes in a single object
             const violationCodeData = {
@@ -320,7 +183,7 @@ vehicleViolationReferralRecords.VehicleViolationReferralRecordsTable = (Referral
 
             data.push([
                 `<div class="violationCode noWrapContent" ${dataAttributes}>
-                    ${referral.ViolationCode}
+                    ${referral.ViolationCode || "-----"}
                 </div>`,
                 `<div class='controls'>
                     <div class='ellipsisButton'>
@@ -331,11 +194,11 @@ vehicleViolationReferralRecords.VehicleViolationReferralRecordsTable = (Referral
                         ${actionsMenuHTML}
                     </div>
                 </div>`,
-                `<div class="refferedDate noWrapContent">${refferedDate}</div>`,
+                `<div class="refferedDate noWrapContent">${refferedDate || "-----"}</div>`,
                 `<div class="vehicleRegistrationNumber">${vehicleRegistrationNumber || "-----"}</div>`,
                 `<div class="courtCaseNumber">${courtCaseNumber || "-----"}</div>`,
                 `<div class="violationStatus">${displayViolationStatus || "-----"}</div>`,
-                `<div class="referralStatus">${caseStatus || "-----"}</div>`,
+                `<div class="referralStatus">${functions.getCaseStatus(caseStatus)}</div>`,
                 `<div class="referralAttachments caseAttachments"><a href="#!" style="color: black;">المرفقات</a></div>`,
             ]);
         });
@@ -370,6 +233,9 @@ vehicleViolationReferralRecords.VehicleViolationReferralRecordsTable = (Referral
         "سجل إحالات مخالفات المركبات.xlsx",
         "سجل إحالات مخالفات المركبات"
     );
+
+    // 🔹 create column selector
+    functions.createColumnSelector(Table, "#columnSelector", 'blue');
 
     vehicleViolationReferralRecords.destroyTable = true;
 
@@ -630,113 +496,6 @@ vehicleViolationReferralRecords.FindReferralById = (ReferralID, popupType = "") 
         });
 };
 
-vehicleViolationReferralRecords.getViolationStatus = (ViolationStatus) => {
-    let statusHtml = ``;
-    switch (ViolationStatus) {
-        case "Pending":
-        case "Confirmed": {
-            statusHtml = `<div class="statusBox pendingStatus">
-                <i class="statusIcon fa-regular fa-clock"></i>
-                <span class="statusText">قيد الانتظار</span>
-            </div>`;
-            break;
-        }
-        case "Exceeded": {
-            statusHtml = `<div class="statusBox warningStatus">
-                <img class="statusIcon" src="/Style Library/MiningViolations/images/tringleIcon.svg" alt="warning">
-                <span class="statusText">تجاوز مدة السداد</span>
-            </div>`;
-            break;
-        }
-        case "Saved": {
-            statusHtml = `<div class="statusBox killedStatus">
-                <i class="statusIcon fa-solid fa-ban"></i> 
-                <span class="statusText">محفوظة</span>
-            </div>`;
-            break;
-        }
-        case "Paid After Reffered": {
-            statusHtml = `<div class="statusBox closedStatus">
-                <i class="statusIcon fa-regular fa-circle-check"></i>
-                <span class="statusText">سداد بعد الإحالة</span>
-            </div>`;
-            break;
-        }
-        case "Paid": {
-            statusHtml = `<div class="statusBox closedStatus">
-                <i class="statusIcon fa-regular fa-circle-check"></i>
-                <span class="statusText">تم السداد</span>
-            </div>`;
-            break;
-        }
-        case "UnderPayment": {
-            statusHtml = `<div class="statusBox warningStatus">
-                <img class="statusIcon" src="/Style Library/MiningViolations/images/tringleIcon.svg" alt="warning">
-                <span class="statusText">قيد السداد</span>
-            </div>`;
-            break;
-        }
-        case "Approved": {
-            statusHtml = `<div class="statusBox closedStatus">
-                <i class="statusIcon fa-regular fa-circle-check"></i>
-                <span class="statusText">تم الموافقة</span>
-            </div>`;
-            break;
-        }
-        case "Rejected": {
-            statusHtml = `<div class="statusBox killedStatus">
-                <i class="statusIcon fa-solid fa-ban"></i> 
-                <span class="statusText">مرفوضة</span>
-            </div>`;
-            break;
-        }
-        case "Reffered": {
-            statusHtml = `<div class="statusBox pendingStatus">
-                <i class="statusIcon fa-regular fa-paper-plane"></i>
-                <span class="statusText">تم الإحالة</span>
-            </div>`;
-            break;
-        }
-        case "UnderReview": {
-            statusHtml = `<div class="statusBox pendingStatus">
-                <i class="statusIcon fa-regular fa-eye"></i>
-                <span class="statusText">قيد انتظار السداد</span>
-            </div>`;
-            break;
-        }
-        case "ExternalReviewed": {
-            statusHtml = `<div class="statusBox pendingStatus">
-                <i class="statusIcon fa-regular fa-external-link"></i>
-                <span class="statusText">خارجية</span>
-            </div>`;
-            break;
-        }
-        case "Completed": {
-            statusHtml = `<div class="statusBox closedStatus">
-                <i class="statusIcon fa-regular fa-circle-check"></i>
-                <span class="statusText">مكتملة</span>
-            </div>`;
-            break;
-        }
-        case "Cancelled": {
-            statusHtml = `<div class="statusBox killedStatus">
-                <i class="statusIcon fa-solid fa-ban"></i> 
-                <span class="statusText">ملغاه</span>
-            </div>`;
-            break;
-        }
-        default: {
-            statusHtml = `<div class="statusBox pendingStatus">
-                <i class="statusIcon fa-regular fa-question-circle"></i>
-                <span class="statusText">${ViolationStatus || "---"}</span>
-            </div>`;
-            break;
-        }
-    }
-
-    return statusHtml;
-};
-
 ///////////////////////////////////////////
 vehicleViolationReferralRecords.getReferralDetails = (referralData) => {
     let violation = referralData.Violation;
@@ -804,7 +563,7 @@ vehicleViolationReferralRecords.getReferralDetails = (referralData) => {
                                 <div class="col-md-4">
                                     <div class="form-group customFormGroup">
                                         <label for="violationStatus" class="customLabel">حالة المخالفة</label>
-                                        <input class="form-control customInput violationStatus" id="violationStatus" type="text" value="${vehicleViolationReferralRecords.getViolationStatusText(referralData.ViolationStatus)}" disabled>
+                                        <input class="form-control customInput violationStatus" id="violationStatus" type="text" value="${functions.getViolationStatusText(referralData.ViolationStatus)}" disabled>
                                     </div>
                                 </div>
                                 <div class="col-md-4">
@@ -863,27 +622,6 @@ vehicleViolationReferralRecords.getReferralDetails = (referralData) => {
     </div>`;
 
     return popupHtml;
-};
-
-vehicleViolationReferralRecords.getViolationStatusText = (status) => {
-    const statusMap = {
-        "Pending": "قيد الانتظار",
-        "Confirmed": "مؤكدة",
-        "Exceeded": "تجاوز مدة السداد",
-        "Saved": "محفوظة",
-        "Paid": "مسددة",
-        "Paid After Reffered": "سداد بعد الإحالة",
-        "UnderPayment": "قيد السداد",
-        "Approved": "تم الموافقة",
-        "Rejected": "مرفوضة",
-        "Reffered": "تم الإحالة",
-        "UnderReview": "منظورة",
-        "ExternalReviewed": "خارجية",
-        "Completed": "مكتملة",
-        "Cancelled": "ملغاه"
-    };
-
-    return statusMap[status] || status || "----";
 };
 
 vehicleViolationReferralRecords.referralQuarryDetails = (violationData) => {

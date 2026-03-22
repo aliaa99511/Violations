@@ -154,6 +154,10 @@ ExternalViolationLog.ExternalViolationTable = (ExternalViolationDate, destroyTab
         "سجل المخالفات الخارجية.xlsx",
         "سجل المخالفات الخارجية"
     );
+
+    // 🔹 create column selector
+    functions.createColumnSelector(Table, "#columnSelector", 'green');
+
     ExternalViolationLog.destroyTable = true;
 
     $(".ellipsisButton").on("click", (e) => {
@@ -195,16 +199,13 @@ ExternalViolationLog.ExternalViolationTable = (ExternalViolationDate, destroyTab
                     ExternalViolationLog.findViolationByID(
                         e,
                         taskID,
-                        false,
-                        UserDetails ? UserDetails.JobTitle1 : ""
+                        false
                     );
                 });
         });
     });
 
     functions.hideTargetElement(".controls", ".hiddenListBox");
-
-    // ExternalViolationLog.bindTableEvents(table);
 };
 
 // ExternalViolationLog.bindTableEvents = (table) => {
@@ -232,39 +233,104 @@ ExternalViolationLog.ExternalViolationTable = (ExternalViolationDate, destroyTab
 //     functions.hideTargetElement(".controls", ".hiddenListBox");
 // };
 
-ExternalViolationLog.findViolationByID = (
-    event,
-    taskID,
-    print = false,
-    UserJopTitle = ""
-) => {
+ExternalViolationLog.findViolationByID = (event, taskID, print = false) => {
+    let request = {
+        Id: taskID,
+    };
+
     functions
         .requester(
             "/_layouts/15/Uranium.Violations.SharePoint/Tasks.aspx/FindbyId",
-            { Id: taskID }
+            request
         )
-        .then(res => res.ok ? res.json() : null)
-        .then(data => {
-            let v = data?.d?.Violation;
-            if (!v) return;
-
-            let content;
-            if (v.OffenderType === "Quarry")
-                content = DetailsPopup.quarryDetailsPopupContent(v, "منظورة خارجياً");
-            else if (v.OffenderType === "Vehicle")
-                content = DetailsPopup.vehicleDetailsPopupContent(v, "منظورة خارجياً");
-            else
-                content = DetailsPopup.equipmentDetailsPopupContent(v, "منظورة خارجياً");
-
-            functions.declarePopup(
-                ["generalPopupStyle", "detailsPopup"],
-                `<div class="printBox" id="printJS-form">${content}</div>`
-            );
-
-            $(".printBtn").on("click", functions.PrintDetails);
-            $(".detailsPopupForm").addClass("externalViolations");
+        .then((response) => {
+            if (response.ok) {
+                return response.json();
+            }
         })
-        .catch(console.error);
+        .then((data) => {
+            let violationData;
+            let violationOffenderType;
+            let Content;
+            let printBox;
+            let violationID;
+
+            if (data != null) {
+                violationData = data.d.Violation;
+                violationID = data.d.ViolationId;
+                violationOffenderType = violationData.OffenderType;
+
+                if (violationOffenderType == "Quarry") {
+                    Content = DetailsPopup.quarryDetailsPopupContent(
+                        violationData,
+                        "منظورة خارجياً"
+                    );
+                    printBox = `<div class="printBox" id="printJS-form">${Content}</div>`;
+                    functions.declarePopup(
+                        ["generalPopupStyle", "detailsPopup"],
+                        printBox
+                    );
+                } else if (violationOffenderType == "Vehicle") {
+                    Content = DetailsPopup.vehicleDetailsPopupContent(
+                        violationData,
+                        "منظورة خارجياً"
+                    );
+                    printBox = `<div class="printBox" id="printJS-form">${Content}</div>`;
+                    functions.declarePopup(
+                        ["generalPopupStyle", "detailsPopup"],
+                        printBox
+                    );
+
+                    // Handle vehicle type for trailer
+                    let VehcleType = violationData.VehicleType;
+                    if (VehcleType == "عربة بمقطورة") {
+                        $(".TrailerNumberBox").show();
+                    } else {
+                        $(".TrailerNumberBox").hide();
+                    }
+                } else if (violationOffenderType == "Equipment") {
+                    Content = DetailsPopup.equipmentDetailsPopupContent(
+                        violationData,
+                        "منظورة خارجياً"
+                    );
+                    printBox = `<div class="printBox" id="printJS-form">${Content}</div>`;
+                    functions.declarePopup(
+                        ["generalPopupStyle", "detailsPopup"],
+                        printBox
+                    );
+                }
+
+                // Add class to identify this popup
+                $(".popupForm").addClass("Externalform");
+
+                // Hide/show appropriate sections based on context
+                $(".totalPriceBox").show().find(".dateLimitBox").hide();
+                $(".confirmationAttachBox").show();
+                $(".Externalform").find(".addConfirmationAttchBox").hide();
+                $(".Externalform").find(".rejectReasonBox").hide();
+                $(".Externalform").find(".showFormula").hide();
+
+                // Handle print functionality
+                if (print) {
+                    $(".Externalform").find(".confirmationAttachBox").show();
+                    functions.PrintDetails(event);
+                }
+
+                $(".printBtn").on("click", (e) => {
+                    functions.PrintDetails(e);
+                });
+
+                $(".detailsPopupForm").addClass("externalTasks");
+
+                // Get attachments if needed
+                DetailsPopup.getConfirmationAttachments(taskID);
+            } else {
+                violationData = null;
+            }
+        })
+        .catch((err) => {
+            console.log(err);
+        });
 };
 
 export default ExternalViolationLog;
