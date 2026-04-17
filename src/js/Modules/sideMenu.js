@@ -98,16 +98,38 @@ Object.keys(counterMapping).forEach(key => {
 
 
 // ==========================
-// Fetch Navigation + Counters
+// Fetch Navigation Only (Fast)
 // ==========================
-sideMenuFunctions.getOnlyVisibleNavSubsites = async function () {
-
+sideMenuFunctions.fetchNavigation = async function () {
   try {
-
     const rootUrl = window.location.href.split("/Pages/")[0];
-    let UserId = _spPageContextInfo.userId;
 
+    const navResponse = await $.ajax({
+      url: rootUrl + "/_api/web/navigation/QuickLaunch?$select=Title,Url,Children&$expand=Children",
+      method: "GET",
+      headers: { Accept: "application/json;odata=verbose" }
+    });
+
+    const arabicPages = navResponse.d.results.filter(link =>
+      /[\u0600-\u06FF]/.test(link.Title)
+    );
+
+    return arabicPages;
+
+  } catch (error) {
+    console.error("Navigation error:", error);
+    return [];
+  }
+};
+
+
+// ==========================
+// Fetch Counters Only (Async after render)
+// ==========================
+sideMenuFunctions.fetchCounters = async function () {
+  try {
     const currentPage = this.normalizeUrl(window.location.pathname);
+    let UserId = _spPageContextInfo.userId;
 
     let payload = { Sector: 0 };
 
@@ -124,120 +146,115 @@ sideMenuFunctions.getOnlyVisibleNavSubsites = async function () {
       payload = { Sector: UserId };
     }
 
-    const [navResponse, countersResponse] = await Promise.all([
-
-      $.ajax({
-        url: rootUrl + "/_api/web/navigation/QuickLaunch?$select=Title,Url,Children&$expand=Children",
-        method: "GET",
-        headers: { Accept: "application/json;odata=verbose" }
-      }),
-
-      $.ajax({
-        url: "/_layouts/15/Uranium.Violations.SharePoint/Dashboard.aspx/GetCounters",
-        type: "POST",
-        contentType: "application/json; charset=utf-8",
-        dataType: "json",
-        data: JSON.stringify(payload)
-      })
-
-    ]);
+    const countersResponse = await $.ajax({
+      url: "/_layouts/15/Uranium.Violations.SharePoint/Dashboard.aspx/GetCounters",
+      type: "POST",
+      contentType: "application/json; charset=utf-8",
+      dataType: "json",
+      data: JSON.stringify(payload)
+    });
 
     this.counters = countersResponse?.d?.Result?.Counters || {};
 
-    const arabicPages = navResponse.d.results.filter(link =>
-      /[\u0600-\u06FF]/.test(link.Title)
-    );
-
-    this.attachCountersToNavigation(arabicPages);
-
-    return arabicPages;
+    // Update existing menu with counters
+    this.updateCountersInMenu();
 
   } catch (error) {
-    console.error("Navigation error:", error);
-    return [];
+    console.error("Counters error:", error);
   }
 };
 
 
 // ==========================
-// Attach Counters To Navigation
+// Calculate Counter Value
 // ==========================
-sideMenuFunctions.attachCountersToNavigation = function (items) {
+sideMenuFunctions.calculateCounter = function (normalizedUrl) {
+  if (!this.counters) return null;
 
-  if (!Array.isArray(items)) return;
-
-  items.forEach(item => {
-
-    this.attachCounterToItem(item);
-
-    if (item.Children?.results?.length) {
-      item.Children.results.forEach(child => {
-        this.attachCounterToItem(child);
-      });
-    }
-
-  });
-
-};
-
-
-// ==========================
-// Attach Counter To Single Item
-// ==========================
-sideMenuFunctions.attachCounterToItem = function (item) {
-
-  if (!this.counters) return;
-
-  const normalizedUrl = this.normalizeUrl(item.Url);
   const mapping = this.normalizedCounterMapping[normalizedUrl];
+  if (!mapping) return null;
 
-  if (!mapping) return;
+  const counterType = this.counters[mapping.type];
+  if (!counterType) return null;
 
   let total = 0;
-  const counterType = this.counters[mapping.type];
-
-  if (!counterType) return;
 
   if (mapping.keys) {
-
     mapping.keys.forEach(key => {
       const value = counterType[key];
       if (value !== undefined && value !== null) {
         total += value;
       }
     });
-
   } else if (mapping.key) {
-
     const value = counterType[mapping.key];
     if (value !== undefined && value !== null) {
       total = value;
     }
-
   }
 
-  if (total !== undefined) {
-    item.Count = total;
-  }
-
+  return total !== undefined ? total : null;
 };
 
 
 // ==========================
-// Render Menu
+// Update Counters in Already Rendered Menu
+// ==========================
+sideMenuFunctions.updateCountersInMenu = function () {
+  const menuContainer = $(".SideMenu .menuLinksBox");
+
+  // Update top-level items
+  menuContainer.find(".menu-link").each((index, element) => {
+    const $link = $(element);
+    const url = $link.attr("href");
+
+    if (url) {
+      const normalizedUrl = this.normalizeUrl(url);
+      const count = this.calculateCounter(normalizedUrl);
+
+      if (count !== null) {
+        // Remove existing badge if any
+        $link.find(".count-badge").remove();
+
+        // Add new badge
+        $link.append(`<span class="count-badge">${count}</span>`);
+      }
+    }
+  });
+
+  // Update submenu items
+  menuContainer.find(".submenu-item a").each((index, element) => {
+    const $link = $(element);
+    const url = $link.attr("href");
+
+    if (url) {
+      const normalizedUrl = this.normalizeUrl(url);
+      const count = this.calculateCounter(normalizedUrl);
+
+      if (count !== null) {
+        // Remove existing badge if any
+        $link.find(".count-badge").remove();
+
+        // Add new badge
+        $link.append(`<span class="count-badge">${count}</span>`);
+      }
+    }
+  });
+};
+
+
+// ==========================
+// Render Menu (Without Counters First)
 // ==========================
 sideMenuFunctions.renderNavigationMenu = function (data) {
-
   const currentPage = this.normalizeUrl(window.location.pathname);
   const menuContainer = $(".SideMenu .menuLinksBox");
 
   let html = '<ul class="navigationMenu">';
 
   data.forEach(item => {
-
     const hasChildren = item.Children?.results?.length > 0;
     const normalizedItemUrl = this.normalizeUrl(item.Url);
-
     const isActive = currentPage === normalizedItemUrl;
 
     let hasActiveChild = false;
@@ -252,7 +269,6 @@ sideMenuFunctions.renderNavigationMenu = function (data) {
     const itemClass = hasChildren ? "menu-item has-children" : "menu-item";
 
     if (hasChildren) {
-
       html += `<li class="${itemClass} ${activeClass}">
         <div class="menu-header">
           <span>${item.Title}</span>
@@ -261,17 +277,14 @@ sideMenuFunctions.renderNavigationMenu = function (data) {
         <ul class="submenu">`;
 
       item.Children.results.forEach(child => {
-
         const childActive = currentPage === this.normalizeUrl(child.Url)
           ? "active-child"
           : "";
 
-        const count = child.Count;
-
+        // Render without count initially - will be updated later
         html += `<li class="submenu-item ${childActive}">
           <a href="${child.Url}">
             <span>${child.Title}</span>
-            ${count !== undefined ? `<span class="count-badge">${count}</span>` : ""}
           </a>
         </li>`;
       });
@@ -279,23 +292,20 @@ sideMenuFunctions.renderNavigationMenu = function (data) {
       html += "</ul></li>";
 
     } else {
-
-      const count = item.Count;
-
+      // Render without count initially - will be updated later
       html += `<li class="${itemClass} ${activeClass}">
         <a href="${item.Url}" class="menu-link">
           <span>${item.Title}</span>
-          ${count !== undefined ? `<span class="count-badge">${count}</span>` : ""}
         </a>
       </li>`;
     }
-
   });
 
   html += "</ul>";
 
   menuContainer.html(html);
 
+  // Add event listeners
   $(".menu-header").on("click", function () {
     $(this).parent().toggleClass("expanded");
     $(this).next(".submenu").slideToggle(300);
@@ -305,18 +315,25 @@ sideMenuFunctions.renderNavigationMenu = function (data) {
     .addClass("expanded")
     .children(".submenu")
     .show();
-
 };
 
 
 // ==========================
-// Init
+// Init - Render Fast, Then Fetch Counters
 // ==========================
-sideMenuFunctions.init = function () {
+sideMenuFunctions.init = async function () {
+  try {
+    // Step 1: Fetch and render navigation immediately
+    const navData = await this.fetchNavigation();
+    this.renderNavigationMenu(navData);
 
-  this.getOnlyVisibleNavSubsites()
-    .then(nav => this.renderNavigationMenu(nav));
+    // Step 2: Fetch counters in background and update menu when ready
+    // Don't await - let it run asynchronously
+    this.fetchCounters().catch(err => console.error("Failed to fetch counters:", err));
 
+  } catch (error) {
+    console.error("Init error:", error);
+  }
 };
 
 export default sideMenuFunctions;

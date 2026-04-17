@@ -318,37 +318,68 @@ prevViolations.findViolationByID = (event, taskID, print = false) => {
     });
 };
 prevViolations.filterViolationsLog = (e) => {
-  let isValid = false
-  // let pageIndex = prevViolations.pageIndex;
   let ViolatorName = $(".filterBox").find("#violatorName").val();
   let NationalID = $(".filterBox").find("#violatorNationalId").val();
   let CarNumber = $(".filterBox").find("#violatorCarNumber").val();
   let ViolatorCompany = $(".filterBox").find("#companyName").val();
-  let CommercialRegister = $(".filterBox").find("#commercialRegister").val();
   let QuarryCode = $(".filterBox").find("#quarryCode").val();
-  let NationalIdRegExp = /^(2|3)[0-9][0-9][0-1][0-9][0-3][0-9](01|02|03|04|11|12|13|14|15|16|17|18|19|21|22|23|24|25|26|27|28|29|31|32|33|34|35|88)\d\d\d\d\d$/;
-  let ViolationCode = $("#violationCode").val();
+  let ViolationCode = $(".filterBox").find("#violationCode").val();
+
+  // let NationalIdRegExp = /^(2|3)[0-9][0-9][0-1][0-9][0-3][0-9](01|02|03|04|11|12|13|14|15|16|17|18|19|21|22|23|24|25|26|27|28|29|31|32|33|34|35|88)\d\d\d\d\d$/;
+
+  // Check if at least one filter has value
   if (ViolatorName == "" && NationalID == "" && CarNumber == "" && ViolatorCompany == "" && QuarryCode == "" && ViolationCode == "") {
     functions.warningAlert("من فضلك قم بإدخال قيمة واحدة على الأقل من قيم البحث");
+    return;
   }
-  if (ViolatorName != "" || NationalID != "" || CarNumber != "" || ViolatorCompany != "" || QuarryCode != "" || ViolationCode != "") {
-    // if (ViolatorName != "" || (NationalID != "" && NationalIdRegExp.test(NationalID)) || CarNumber != "" || ViolatorCompany != "" || CommercialRegister != "" || QuarryCode != "") {
-    isValid = true
-    $(".PreLoader").addClass("active");
-    prevViolations.dataObj.ViolatorName = $(".filterBox").find("#violatorName").val();
-    prevViolations.dataObj.NationalID = $(".filterBox").find("#violatorNationalId").val();
-    prevViolations.dataObj.CarNumber = $(".filterBox").find("#violatorCarNumber").val();
-    prevViolations.dataObj.ViolatorCompany = $(".filterBox").find("#companyName").val();
-    prevViolations.dataObj.CommercialRegister = $(".filterBox").find("#commercialRegister").val();
-    prevViolations.dataObj.QuarryCode = $(".filterBox").find("#quarryCode").val();
-    prevViolations.dataObj.ViolationCode = $(".filterBox").find("#violationCode").val();
-    prevViolations.dataObj.destroyTable = true;
-    prevViolations.dataObj.pageIndex = pagination.currentPage
-    prevViolations.getViolations()
-  } else {
-    isValid = false
-    functions.warningAlert("من فضلك أدخل جميع بيانات البحث بشكل صحيح");
-  }
+
+  // // Validate National ID if provided
+  // if (NationalID != "" && !NationalIdRegExp.test(NationalID)) {
+  //   functions.warningAlert("من فضلك أدخل الرقم القومي بشكل صحيح");
+  //   return;
+  // }
+
+  $(".PreLoader").addClass("active");
+  prevViolations.dataObj.ViolatorName = ViolatorName;
+  prevViolations.dataObj.NationalID = NationalID;
+  prevViolations.dataObj.CarNumber = CarNumber;
+  prevViolations.dataObj.ViolatorCompany = ViolatorCompany;
+  prevViolations.dataObj.QuarryCode = QuarryCode;
+  prevViolations.dataObj.ViolationCode = ViolationCode;
+  prevViolations.dataObj.destroyTable = true;
+  prevViolations.getViolations();
+};
+
+prevViolations.resetFilter = (e) => {
+  if (e) e.preventDefault();
+
+  // Clear all filter input fields
+  $(".filterBox").find("#violatorName").val("");
+  $(".filterBox").find("#violatorNationalId").val("");
+  $(".filterBox").find("#violatorCarNumber").val("");
+  $(".filterBox").find("#companyName").val("");
+  $(".filterBox").find("#commercialRegister").val("");
+  $(".filterBox").find("#quarryCode").val("");
+  $(".filterBox").find("#violationCode").val("");
+
+  // Reset pagination to first page
+  pagination.reset();
+
+  // Reset data object
+  prevViolations.dataObj = {
+    destroyTable: true,
+    ViolatorName: "",
+    NationalID: "",
+    CarNumber: "",
+    ViolatorCompany: "",
+    CommercialRegister: "",
+    QuarryCode: "",
+    ViolationCode: "",
+  };
+
+  // Show loader and fetch all violations
+  $(".PreLoader").addClass("active");
+  prevViolations.getViolations();
 };
 
 export default prevViolations;

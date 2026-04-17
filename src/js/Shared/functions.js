@@ -2,170 +2,9 @@ import bootpopup from "../Libraries/bootpopup";
 import Swal from "sweetalert2";
 import printJS from "print-js";
 import XLSX from "xlsx";
+
 const functions = {};
 
-functions.stripHTML = (html) => {
-  if (!html) return "";
-  let div = document.createElement("div");
-  div.innerHTML = html;
-  return div.textContent || div.innerText || "";
-};
-functions.exportDataTable = (options) => {
-  const {
-    tableSelector,
-    fileName = "export.xlsx",
-    sheetName = "Sheet1",
-    headers = null,
-    ignoreLastColumns = 0,
-    onlyVisible = true,
-    rtl = true,
-    columnWidths = 25,
-  } = options;
-
-  let table = $(tableSelector).DataTable();
-  let data = [];
-
-  // ================= Headers =================
-  if (headers) {
-    const filteredHeaders = headers.filter((header, index) => {
-      if (index === 1) return false;
-      if (!table.column(index).visible()) return false;
-      return true;
-    });
-    data.push(filteredHeaders);
-  } else {
-    let autoHeaders = [];
-    $(tableSelector + " thead th").each(function (index) {
-      if (index !== 1) {
-        autoHeaders.push($(this).text().trim());
-      }
-    });
-    data.push(autoHeaders);
-  }
-
-  // ================= Rows =================
-  table.rows(onlyVisible ? { search: "applied" } : {}).every(function () {
-    let row = this.data();
-
-    let filteredRow = row.filter((cell, index) => {
-
-      // skip control column
-      if (index === 1) return false;
-
-      // export only visible columns
-      if (!table.column(index).visible()) return false;
-
-      return true;
-    });
-
-    let cleanRow = filteredRow.map((cell) => {
-      let value = functions.stripHTML(cell);
-
-      // Detect SharePoint Date
-      if (typeof value === "string" && value.includes("/Date(")) {
-        return functions.parseSharePointDate(value);
-      }
-
-      // Detect numeric values
-      if (!isNaN(value) && value !== "") {
-        return Number(value);
-      }
-
-      return value;
-    });
-
-    data.push(cleanRow);
-  });
-
-  // ================= Create Sheet =================
-  let ws = XLSX.utils.aoa_to_sheet(data);
-
-  if (rtl) ws["!dir"] = "rtl";
-
-  // Column width
-  ws["!cols"] = data[0].map(() => ({ wch: columnWidths }));
-
-  // Format date cells
-  data.forEach((row, rowIndex) => {
-    row.forEach((cell, colIndex) => {
-      if (cell instanceof Date) {
-        let cellRef = XLSX.utils.encode_cell({ r: rowIndex, c: colIndex });
-        ws[cellRef].t = "d";
-        ws[cellRef].z = "dd-mm-yyyy";
-      }
-    });
-  });
-
-  let wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, sheetName);
-
-  XLSX.writeFile(wb, fileName);
-};
-functions.tableDeclare = (
-  tableID,
-  tableData,
-  tableColumns,
-  showPaging,
-  destroyTable = false,
-  exportFileName = "Violations.xlsx",
-  exportSheetName = "Violations"
-) => {
-  let tableOptions = {
-    dom: "t<'Tablepaginate'p>",
-    responsive: true,
-    fixedColumns: true,
-    pageLength: 10,
-    data: tableData,
-    paging: showPaging,
-    ordering: false,
-    language: {
-      info: "_START_ - _END_ / _TOTAL_",
-      infoFiltered: "",
-      infoEmpty: "0 - 0 / 0",
-      emptyTable: `لا يوجد بيانات`,
-      zeroRecords: `لا يوجد بيانات بنتيجة البحث`,
-      paginate: {
-        next: `<i class="fa-solid fa-chevron-right"></i>`,
-        previous: `<i class="fa-solid fa-chevron-left"></i>`,
-      },
-    },
-    columns: tableColumns,
-    columnDefs: [
-      {
-        ordering: false,
-        orderable: true,
-        targets: "sort",
-      },
-      {
-        orderable: false,
-        targets: "no-sort",
-      },
-    ],
-  };
-
-  if (destroyTable) {
-    $(tableID).DataTable().destroy();
-  }
-
-  let Table = $(tableID).DataTable(tableOptions);
-
-  $("#exportBtn")
-    .off("click")
-    .on("click", () => {
-      functions.exportDataTable({
-        tableSelector: tableID,
-        fileName: exportFileName,
-        sheetName: exportSheetName,
-        headers: tableColumns.map((col) => col.title),
-        ignoreLastColumns: 0,
-        onlyVisible: true,
-        rtl: true,
-        columnWidths: 25,
-      });
-    });
-
-  return Table;
-};
 functions.createColumnSelector = (table, containerID, theme = 'blue') => {
   const container = $(containerID);
   container.html("");
@@ -226,6 +65,458 @@ functions.tableSearch = (
       Table.columns(colNumber).search(key).draw();
     }
   });
+};
+functions.tableDeclare = (
+  tableID,
+  tableData,
+  tableColumns,
+  showPaging,
+  destroyTable = false,
+  exportFileName = "Violations.xlsx",
+  exportSheetName = "Violations"
+) => {
+  let tableOptions = {
+    dom: "t<'Tablepaginate'p>",
+    responsive: true,
+    fixedColumns: true,
+    pageLength: 10,
+    data: tableData,
+    paging: showPaging,
+    ordering: false,
+    language: {
+      info: "_START_ - _END_ / _TOTAL_",
+      infoFiltered: "",
+      infoEmpty: "0 - 0 / 0",
+      emptyTable: `لا يوجد بيانات`,
+      zeroRecords: `لا يوجد بيانات بنتيجة البحث`,
+      paginate: {
+        next: `<i class="fa-solid fa-chevron-right"></i>`,
+        previous: `<i class="fa-solid fa-chevron-left"></i>`,
+      },
+    },
+    columns: tableColumns,
+    columnDefs: [
+      {
+        ordering: false,
+        orderable: true,
+        targets: "sort",
+      },
+      {
+        orderable: false,
+        targets: "no-sort",
+      },
+    ],
+  };
+
+  if (destroyTable) {
+    $(tableID).DataTable().destroy();
+  }
+
+  let Table = $(tableID).DataTable(tableOptions);
+
+  // Store export configuration on the table element for later use
+  $(tableID).data("export-config", {
+    fileName: exportFileName,
+    sheetName: exportSheetName,
+    columns: tableColumns
+  });
+
+  return Table;
+};
+functions.exportCasesFromAPI = async (options) => {
+  const {
+    searchUrl,
+    requestData,
+    columns,
+    fileName = "export.xlsx",
+    sheetName = "Sheet1",
+    columnWidths = 25,
+    rtl = true,
+    dataPath = "d.Result.GridData",
+    exportButtonSelector = "#exportBtn",
+    tableSelector = "#QuarryViolationReferralTable"
+  } = options;
+
+  const $exportBtn = $(exportButtonSelector);
+
+  const showExportLoading = () => {
+    $exportBtn.addClass("loading");
+    $exportBtn.find(".btn-text").text("جاري التصدير...");
+  };
+
+  const hideExportLoading = () => {
+    $exportBtn.removeClass("loading");
+    $exportBtn.find(".btn-text").text("تصدير");
+  };
+
+  showExportLoading();
+
+  try {
+    const table = $.fn.DataTable.isDataTable(tableSelector)
+      ? $(tableSelector).DataTable()
+      : null;
+
+    // ✅ NEW CLEAN LOGIC (skip instead of index hack)
+    const visibleColumns = [];
+
+    columns.forEach((col, index) => {
+      if (col.skip) return; // ✅ ignore control column
+
+      const isVisible = table
+        ? table.column(index).visible()
+        : true;
+
+      if (isVisible) {
+        visibleColumns.push({ ...col, originalIndex: index });
+      }
+    });
+
+    const response = await functions.requester(searchUrl, requestData);
+
+    if (!response.ok) throw new Error("API Error");
+
+    const data = await response.json();
+
+    let apiData = data;
+    dataPath.split(".").forEach(part => {
+      apiData = apiData?.[part];
+    });
+
+    const gridData = apiData || [];
+
+    if (!gridData.length) {
+      functions.warningAlert("لا توجد بيانات للتصدير");
+      return;
+    }
+
+    let exportData = [];
+
+    // Headers
+    exportData.push(visibleColumns.map(col => col.title));
+
+    // Rows
+    gridData.forEach(record => {
+      let row = [];
+
+      visibleColumns.forEach(column => {
+        let value = "";
+
+        if (column.data) {
+          value = column.data
+            .split(".")
+            .reduce((obj, key) => obj?.[key], record);
+        } else if (column.render) {
+          value = column.render(record);
+        }
+
+        // تنظيف البيانات
+        if (value == null) {
+          value = "";
+        } else if (typeof value === "string") {
+          value = functions.stripHTML(value);
+
+          if (value.includes("/Date(")) {
+            value = functions.parseSharePointDate(value);
+          }
+        } else if (value instanceof Date) {
+          // keep as is
+        } else if (typeof value === "object") {
+          value = JSON.stringify(value);
+        }
+
+        row.push(value);
+      });
+
+      exportData.push(row);
+    });
+
+    const ws = XLSX.utils.aoa_to_sheet(exportData);
+
+    if (rtl) ws["!dir"] = "rtl";
+
+    ws["!cols"] = visibleColumns.map(() => ({ wch: columnWidths }));
+
+    // Date format
+    exportData.forEach((row, r) => {
+      row.forEach((cell, c) => {
+        if (cell instanceof Date) {
+          const ref = XLSX.utils.encode_cell({ r, c });
+          if (ws[ref]) {
+            ws[ref].t = "d";
+            ws[ref].z = "dd-mm-yyyy";
+          }
+        }
+      });
+    });
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, sheetName);
+
+    XLSX.writeFile(wb, fileName);
+
+  } catch (err) {
+    console.error(err);
+    functions.warningAlert("خطأ في التصدير");
+  } finally {
+    hideExportLoading();
+  }
+};
+functions.exportFromAPI = async (options) => {
+  const {
+    searchUrl,
+    requestData,
+    columns,
+    fileName = "export.xlsx",
+    sheetName = "Sheet1",
+    columnWidths = 25,
+    rtl = true,
+    dataMapper = null,
+    dataPath = "d.Result.GridData",
+    exportButtonSelector = "#exportBtn",
+    tableSelector = "#PendingViolation"
+  } = options;
+
+  const $exportBtn = $(exportButtonSelector);
+
+  const showExportLoading = () => {
+    $exportBtn.addClass("loading");
+    $exportBtn.find(".btn-text").text("جاري التصدير...");
+    $exportBtn.find(".fa-download").hide();
+    $exportBtn.find(".spinner-border").show();
+  };
+
+  const hideExportLoading = () => {
+    $exportBtn.removeClass("loading");
+    $exportBtn.find(".btn-text").text("تصدير");
+    $exportBtn.find(".fa-download").show();
+    $exportBtn.find(".spinner-border").hide();
+  };
+
+  showExportLoading();
+
+  try {
+    const table = $(tableSelector).DataTable();
+
+    const visibleColumns = [];
+
+    // ✅ FIX: indexes now match DataTable EXACTLY
+    columns.forEach((col, index) => {
+      if (col.skip) return; // skip control column
+
+      const isVisible = table.column(index).visible();
+
+      if (isVisible) {
+        visibleColumns.push({ ...col, originalIndex: index });
+      }
+    });
+
+    const response = await functions.requester(searchUrl, { request: requestData });
+
+    if (!response.ok) throw new Error("Failed to fetch data");
+
+    const data = await response.json();
+
+    let apiData = data;
+    const dataPathParts = dataPath.split(".");
+    for (const part of dataPathParts) {
+      apiData = apiData?.[part];
+    }
+
+    const gridData = apiData || [];
+
+    if (!gridData.length) {
+      functions.warningAlert("لا توجد بيانات للتصدير");
+      hideExportLoading();
+      return;
+    }
+
+    let exportData = [];
+
+    // Headers
+    exportData.push(visibleColumns.map(col => col.title));
+
+    // Rows
+    gridData.forEach((record) => {
+      const row = [];
+
+      visibleColumns.forEach((column) => {
+        let cellValue = "";
+
+        if (dataMapper) {
+          cellValue = dataMapper(record, column, column.originalIndex);
+        } else {
+          if (column.data) {
+            cellValue = column.data.split('.').reduce((obj, key) => obj?.[key], record);
+          } else if (column.render) {
+            cellValue = column.render(record);
+          }
+        }
+
+        if (cellValue == null) {
+          cellValue = "";
+        } else if (typeof cellValue === "string") {
+          cellValue = functions.stripHTML(cellValue);
+
+          if (cellValue.includes("/Date(")) {
+            cellValue = functions.parseSharePointDate(cellValue);
+          }
+        } else if (cellValue instanceof Date) {
+          // keep as Date
+        } else if (typeof cellValue === "object") {
+          cellValue = JSON.stringify(cellValue);
+        }
+
+        row.push(cellValue);
+      });
+
+      exportData.push(row);
+    });
+
+    const ws = XLSX.utils.aoa_to_sheet(exportData);
+
+    if (rtl) ws["!dir"] = "rtl";
+
+    ws["!cols"] = visibleColumns.map(() => ({ wch: columnWidths }));
+
+    // format dates
+    exportData.forEach((row, r) => {
+      row.forEach((cell, c) => {
+        if (cell instanceof Date) {
+          const ref = XLSX.utils.encode_cell({ r, c });
+          if (ws[ref]) {
+            ws[ref].t = "d";
+            ws[ref].z = "dd-mm-yyyy";
+          }
+        }
+      });
+    });
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, sheetName);
+
+    setTimeout(() => {
+      XLSX.writeFile(wb, fileName);
+    }, 100);
+
+  } catch (error) {
+    console.error("Export error:", error);
+  } finally {
+    hideExportLoading();
+  }
+};
+functions.exportPetitionFromAPI = async (options) => {
+  const {
+    searchUrl,
+    requestData,
+    columns,
+    fileName = "export.xlsx",
+    sheetName = "Sheet1",
+    columnWidths = 25,
+    rtl = true,
+    dataMapper = null,
+    dataPath = "d.Result.GridData",
+    exportButtonSelector = "#exportBtn",
+    tableSelector = "#PendingViolation"
+  } = options;
+
+  const $exportBtn = $(exportButtonSelector);
+
+  const showExportLoading = () => {
+    $exportBtn.addClass("loading");
+    $exportBtn.find(".btn-text").text("جاري التصدير...");
+    $exportBtn.find(".fa-download").hide();
+    $exportBtn.find(".spinner-border").show();
+  };
+
+  const hideExportLoading = () => {
+    $exportBtn.removeClass("loading");
+    $exportBtn.find(".btn-text").text("تصدير");
+    $exportBtn.find(".fa-download").show();
+    $exportBtn.find(".spinner-border").hide();
+  };
+
+  showExportLoading();
+
+  try {
+    const response = await functions.requester(searchUrl, requestData);
+    if (!response.ok) throw new Error("Failed to fetch data");
+
+    const data = await response.json();
+
+    let apiData = data;
+    const parts = dataPath.split(".");
+    for (const p of parts) apiData = apiData?.[p];
+
+    const gridData = apiData || [];
+
+    if (!gridData.length) {
+      functions.warningAlert("لا توجد بيانات للتصدير");
+      hideExportLoading();
+      return;
+    }
+
+    const table = $(tableSelector).DataTable();
+
+    const visibleColumns = columns
+      .map((col, index) => ({ ...col, originalIndex: index }))
+      .filter(col => !col.skip);
+
+    let exportData = [];
+
+    // headers
+    exportData.push(visibleColumns.map(c => c.title));
+
+    // rows
+    gridData.forEach(record => {
+      const row = [];
+
+      visibleColumns.forEach(column => {
+        let value = "";
+
+        if (dataMapper) {
+          value = dataMapper(record, column);
+        }
+
+        if (value == null) value = "";
+        if (typeof value === "string") {
+          value = functions.stripHTML(value);
+
+          if (value.includes("/Date(")) {
+            value = functions.parseSharePointDate(value);
+          }
+        }
+
+        row.push(value);
+      });
+
+      exportData.push(row);
+    });
+
+    const ws = XLSX.utils.aoa_to_sheet(exportData);
+
+    if (rtl) ws["!dir"] = "rtl";
+
+    ws["!cols"] = visibleColumns.map(() => ({
+      wch: columnWidths
+    }));
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, sheetName);
+
+    setTimeout(() => {
+      XLSX.writeFile(wb, fileName);
+    }, 100);
+  } catch (err) {
+    console.error("Export error:", err);
+  } finally {
+    hideExportLoading();
+  }
+};
+functions.stripHTML = (html) => {
+  if (!html) return "";
+  let div = document.createElement("div");
+  div.innerHTML = html;
+  return div.textContent || div.innerText || "";
 };
 functions.hideTargetElement = (element, targetEl) => {
   $(document).on("click", (event) => {

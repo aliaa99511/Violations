@@ -63,19 +63,16 @@ vehicleViolationReferralRecords.getVehicleViolationReferralsRecords = (
             vehicleViolationReferralRecords.setPaginations(ItemsData.TotalPageCount, ItemsData.RowsPerPage);
             vehicleViolationReferralRecords.VehicleViolationReferralRecordsTable(Referrals, destroyTable);
             vehicleViolationReferralRecords.pageIndex = ItemsData.CurrentPage;
-            // functions.getCurrentUserActions();
         })
         .catch((err) => {
             console.log(err);
         });
 };
-
 vehicleViolationReferralRecords.setPaginations = (TotalPages, RowsPerPage) => {
     pagination.draw("#paginationID", TotalPages, RowsPerPage);
     pagination.start("#paginationID", vehicleViolationReferralRecords.getVehicleViolationReferralsRecords);
     pagination.activateCurrentPage();
 };
-
 vehicleViolationReferralRecords.filterVehicleViolationReferralsRecords = (e) => {
     let pageIndex = vehicleViolationReferralRecords.pageIndex;
 
@@ -131,7 +128,75 @@ vehicleViolationReferralRecords.resetFilter = (e) => {
     pagination.reset();
     vehicleViolationReferralRecords.getVehicleViolationReferralsRecords();
 };
+vehicleViolationReferralRecords.exportToExcel = () => {
+    const currentFilters = {
+        RowsPerPage: 10000000,
+        PageIndex: 1,
+        ColName: "created",
+        SortOrder: "desc",
+        CarNumber: $("#theCode").val(),
+        ViolationCode: $("#violationCode").val(),
+        ViolationStatus: $("#ViolationStatus").children("option:selected").val(),
+        CourtCaseNumber: $("#CourtCaseNumber").val(),
+        ViolatorName: $("#TrafficName").val(),
+        ViolatorCompany: $("#ViolatorCompany").val(),
+        VehicleRegistrationNumber: $("#vehicleRegistrationNumber").val(),
+        Status: $("#CaseStatus").children("option:selected").val(),
+        OffenderType: "Vehicle",
+        RefferedDateFrom: $("#RefferedDateFrom").val()
+            ? moment($("#RefferedDateFrom").val(), "DD-MM-YYYY").format("YYYY-MM-DD")
+            : null,
+        RefferedDateTo: $("#RefferedDateTo").val()
+            ? moment($("#RefferedDateTo").val(), "DD-MM-YYYY").format("YYYY-MM-DD")
+            : null,
+    };
 
+    const columns = [
+        {
+            title: "رقم المخالفة",
+            render: (record) => record.ViolationCode || "-----",
+        },
+        {
+            title: "",
+            skip: true // control column
+        },
+        {
+            title: "تاريخ القضية",
+            render: (record) => functions.getFormatedDate(record.RefferedDate),
+        },
+        {
+            title: "رقم القيد",
+            data: "VehicleRegistrationNumber",
+        },
+        {
+            title: "الرقم القضائي",
+            data: "CourtCaseNumber",
+        },
+        {
+            title: "حالة المخالفة",
+            render: (record) =>
+                functions.getVehicleViolationStatus(record.ViolationStatus) || "-----",
+        },
+        {
+            title: "موقف الإحالة",
+            render: (record) =>
+                functions.getCaseStatus(record.Status) || "-----",
+        }
+    ];
+
+    functions.exportCasesFromAPI({
+        searchUrl: "/_layouts/15/Uranium.Violations.SharePoint/Cases.aspx/Search",
+        requestData: { Request: currentFilters },
+        columns,
+        fileName: "سجل إحالات مخالفات المركبات.xlsx",
+        sheetName: "سجل إحالات مخالفات المركبات",
+        columnWidths: 25,
+        rtl: true,
+        dataPath: "d.Result.GridData",
+        exportButtonSelector: "#exportBtn",
+        tableSelector: "#VehicleViolationReferralRecordsTable"
+    });
+};
 vehicleViolationReferralRecords.VehicleViolationReferralRecordsTable = (Referrals, destroyTable) => {
     let data = [];
 
@@ -238,6 +303,10 @@ vehicleViolationReferralRecords.VehicleViolationReferralRecordsTable = (Referral
     functions.createColumnSelector(Table, "#columnSelector", 'blue');
 
     vehicleViolationReferralRecords.destroyTable = true;
+
+    $("#exportBtn").off("click").on("click", () => {
+        vehicleViolationReferralRecords.exportToExcel();
+    });
 
     $(".ellipsisButton").on("click", (e) => {
         $(".hiddenListBox").hide(300);

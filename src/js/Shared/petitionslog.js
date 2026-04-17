@@ -133,7 +133,6 @@ petitionsLog.getPetitions = (Status = "All", pageIndex = 1, isFiltered = false, 
       console.error("Error fetching petitions:", err);
     });
 };
-
 petitionsLog.setPaginations = (TotalPages, RowsPerPage) => {
   if (TotalPages > 0) {
     // Clear existing pagination first
@@ -171,36 +170,6 @@ petitionsLog.setPaginations = (TotalPages, RowsPerPage) => {
     $("#paginationID").hide();
   }
 };
-
-// petitionsLog.setPaginations = (TotalPages, RowsPerPage) => {
-//   if (TotalPages > 0) {
-//     pagination.draw("#paginationID", TotalPages, RowsPerPage);
-//     pagination.start("#paginationID", () => {
-//       // When pagination changes, get current filter state
-//       const currentStatus = $("#petitionStatus").val() ||
-//         (functions.getPageName() === "PendingPetitionsLog" ? "التماس قيد الإنتظار" : "All");
-
-//       // Check if we're in filtered mode
-//       const hasFilters = $("#violationCode").val() ||
-//         $("#violationCategory").val() ||
-//         $("#theCode").val() ||
-//         $("#createdFrom").val() ||
-//         $("#createdTo").val() ||
-//         $("#ViolatorCompany").val() ||
-//         $("#ViolatorName").val();
-
-//       if (hasFilters) {
-//         // Re-apply filters with new page
-//         petitionsLog.filterPetitionsLog(new Event('click'), currentStatus);
-//       } else {
-//         // Just fetch with current page
-//         petitionsLog.getPetitions(currentStatus, pagination.currentPage, false);
-//       }
-//     });
-//     pagination.activateCurrentPage();
-//   }
-// };
-
 petitionsLog.filterPetitionsLog = (e, defaultStatus = "All") => {
   e.preventDefault();
 
@@ -265,7 +234,6 @@ petitionsLog.filterPetitionsLog = (e, defaultStatus = "All") => {
     PetitionStatus
   );
 };
-
 petitionsLog.resetFilter = (e, defaultStatus = "All") => {
   e.preventDefault();
 
@@ -304,7 +272,6 @@ petitionsLog.resetFilter = (e, defaultStatus = "All") => {
   // Fetch all petitions with default status
   petitionsLog.getPetitions(defaultStatus, 1, false);
 };
-
 petitionsLog.handleViolationCategoryChange = () => {
   $("#violationCategory").on("change", function () {
     const selectedCategory = $(this).val();
@@ -319,7 +286,6 @@ petitionsLog.handleViolationCategoryChange = () => {
     }
   });
 };
-
 const originalResetFilter = petitionsLog.resetFilter;
 petitionsLog.resetFilter = function (e) {
   // Call the original resetFilter function
@@ -328,7 +294,100 @@ petitionsLog.resetFilter = function (e) {
   // Re-enable both fields after reset
   $("#theCode").prop("disabled", false);
 };
+petitionsLog.exportToExcel = () => {
+  const pageName = functions.getPageName();
+  const defaultStatus =
+    pageName === "PendingPetitionsLog"
+      ? "التماس قيد الإنتظار"
+      : "All";
 
+  const violationCategoryValue = $("#violationCategory").val();
+  const theCodeValue = $("#theCode").val();
+  const petitionStatusValue =
+    $("#petitionStatus").val() || defaultStatus;
+
+  const theCode =
+    violationCategoryValue === "Quarry"
+      ? { QuarryCode: theCodeValue || "" }
+      : { CarNumber: theCodeValue || "" };
+
+  const currentFilters = {
+    ...theCode,
+    RowsPerPage: 10000000,
+    PageIndex: 1,
+    ColName: "Created",
+    SortOrder: "desc",
+    ViolationId: 0,
+    ViolationCode: $("#violationCode").val() || "",
+    Status: petitionStatusValue,
+    IsPetition: true,
+    ViolatorCompany: $("#ViolatorCompany").val() || "",
+    ViolatorName: $("#ViolatorName").val() || "",
+    OffenderType: violationCategoryValue || "",
+    CreatedFrom: $("#createdFrom").val()
+      ? moment($("#createdFrom").val(), "DD-MM-YYYY").format("YYYY-MM-DD")
+      : "",
+    CreatedTo: $("#createdTo").val()
+      ? moment($("#createdTo").val(), "DD-MM-YYYY").format("YYYY-MM-DD")
+      : ""
+  };
+
+  const columns = [
+    { title: "رقم المخالفة", skip: false },
+    { title: "", skip: true }, // controls column
+    { title: "تاريخ الالتماس", skip: false },
+    { title: "تصنيف المخالفة", skip: false },
+    { title: "حالة الالتماس", skip: false }
+  ];
+
+  const fileName =
+    pageName === "PendingPetitionsLog"
+      ? "الالتماسات قيد الانتظار.xlsx"
+      : "سجل الالتماسات.xlsx";
+
+  const sheetName =
+    pageName === "PendingPetitionsLog"
+      ? "الالتماسات قيد الانتظار"
+      : "سجل الالتماسات";
+
+  const customDataMapper = (record, column) => {
+    const violation = record.Task?.Violation;
+
+    switch (column.title) {
+      case "رقم المخالفة":
+        return violation?.ViolationCode || "---";
+
+      case "تاريخ الالتماس":
+        return functions.getFormatedDate(record.Created);
+
+      case "تصنيف المخالفة":
+        return violation
+          ? functions.getViolationArabicName(violation.OffenderType)
+          : "---";
+
+      case "حالة الالتماس":
+        return record.Status || "---";
+
+      default:
+        return "";
+    }
+  };
+
+  functions.exportPetitionFromAPI({
+    searchUrl:
+      "/_layouts/15/Uranium.Violations.SharePoint/Petitions.aspx/Search",
+    requestData: { Request: currentFilters },
+    columns: columns,
+    fileName: fileName,
+    sheetName: sheetName,
+    columnWidths: 25,
+    rtl: true,
+    dataPath: "d.Result.GridData",
+    exportButtonSelector: "#exportBtn",
+    tableSelector: "#PetitionsTable",
+    dataMapper: customDataMapper
+  });
+};
 petitionsLog.ValidatedPetitionsTable = (Petitions, destroyTable) => {
   let data = [];
   if (petitionsLog.destroyTable || destroyTable) {
@@ -372,7 +431,7 @@ petitionsLog.ValidatedPetitionsTable = (Petitions, destroyTable) => {
           petitionViolation.OffenderType,
         )}</div>`,
         `${functions.getPetitionsStatus(Petition?.Status)}`,
-        `<div class="petitionAttachments" data-petitionid="${Petition?.ID}" data-petitionnumber="${Petition?.ID}"><a href="#!" style="color: black;">المرفقات</a></div>`, // NEW: Attachments column
+        `<div class="petitionAttachments" data-petitionid="${Petition?.ID}" data-petitionnumber="${Petition?.ID}"><a href="#!" style="color: black;">المرفقات</a></div>`,
       ]);
     });
   }
@@ -387,7 +446,7 @@ petitionsLog.ValidatedPetitionsTable = (Petitions, destroyTable) => {
       { title: "تاريخ الالتماس" },
       { title: "تصنيف المخالفة" },
       { title: "حالة الالتماس" },
-      { title: "المرفقات" }, // NEW: Attachments column header
+      { title: "المرفقات" },
     ],
     false,
     false,
@@ -397,6 +456,10 @@ petitionsLog.ValidatedPetitionsTable = (Petitions, destroyTable) => {
 
   // 🔹 create column selector
   functions.createColumnSelector(Table, "#columnSelector", 'green');
+
+  $("#exportBtn").off("click").on("click", () => {
+    petitionsLog.exportToExcel();
+  });
 
   $(".ellipsisButton").on("click", (e) => {
     $(".hiddenListBox").hide(300);
@@ -531,10 +594,10 @@ petitionsLog.ValidatedPetitionsTable = (Petitions, destroyTable) => {
           petitionsLog.rejectPetition(petitionID, ViolationId, violationCode);
         });
     });
-    functions.getCurrentUserActions();
   });
   functions.hideTargetElement(".controls", ".hiddenListBox");
 };
+
 petitionsLog.findPetitionsByID = (petitionID, exDate) => {
   let request = {
     Id: petitionID,

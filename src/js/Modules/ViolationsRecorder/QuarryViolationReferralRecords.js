@@ -125,7 +125,72 @@ quarryViolationReferralRecords.resetFilter = (e) => {
     pagination.reset();
     quarryViolationReferralRecords.getQuarryViolationReferralsRecords();
 };
+quarryViolationReferralRecords.exportToExcel = () => {
+    const currentFilters = {
+        RowsPerPage: 10000000,
+        PageIndex: 1,
+        ColName: "created",
+        SortOrder: "desc",
+        QuarryCode: $("#theCode").val(),
+        ViolationCode: $("#violationCode").val(),
+        ViolationStatus: $("#ViolationStatus").children("option:selected").val(),
+        ReferralNumber: $("#CaseNumber").val(),
+        Status: $("#CaseStatus").children("option:selected").val(),
+        OffenderType: "Quarry",
+        RefferedDateFrom: $("#RefferedDateFrom").val()
+            ? moment($("#RefferedDateFrom").val(), "DD-MM-YYYY").format("YYYY-MM-DD")
+            : null,
+        RefferedDateTo: $("#RefferedDateTo").val()
+            ? moment($("#RefferedDateTo").val(), "DD-MM-YYYY").format("YYYY-MM-DD")
+            : null,
+    };
 
+    const columns = [
+        {
+            title: "رقم المخالفة",
+            render: (record) => record.ViolationCode || "-----",
+        },
+        {
+            title: "",
+            skip: true // ✅ control column
+        },
+        {
+            title: "تاريخ الإحالة",
+            render: (record) => functions.getFormatedDate(record.RefferedDate),
+        },
+        {
+            title: "رقم الإحالة",
+            data: "ReferralNumber",
+        },
+        {
+            title: "حالة المخالفة",
+            render: (record) =>
+                functions.getQuarryViolationStatus(record.ViolationStatus) || "-----",
+        },
+        {
+            title: "موقف الإحالة",
+            render: (record) =>
+                functions.getCaseStatus(record.Status) || "-----",
+        },
+        {
+            title: "المبلغ المستحق",
+            render: (record) => record.TotalPriceDue || 0,
+        }
+    ];
+
+    functions.exportCasesFromAPI({
+        searchUrl: "/_layouts/15/Uranium.Violations.SharePoint/Cases.aspx/Search",
+        requestData: { Request: currentFilters },
+        columns,
+        fileName: "سجل إحالات المخالفات المحجرية.xlsx",
+        sheetName: "سجل إحالات المخالفات المحجرية",
+        columnWidths: 25,
+        rtl: true,
+        dataPath: "d.Result.GridData",
+        exportButtonSelector: "#exportBtn",
+        tableSelector: "#QuarryViolationReferralRecordsTable"
+    });
+};
 quarryViolationReferralRecords.QuarryViolationReferralRecordsTable = (Referrals, destroyTable) => {
     let data = [];
 
@@ -249,6 +314,10 @@ quarryViolationReferralRecords.QuarryViolationReferralRecordsTable = (Referrals,
     functions.createColumnSelector(Table, "#columnSelector", 'blue');
 
     quarryViolationReferralRecords.destroyTable = true;
+
+    $("#exportBtn").off("click").on("click", () => {
+        quarryViolationReferralRecords.exportToExcel();
+    });
 
     $(".ellipsisButton").on("click", (e) => {
         $(".hiddenListBox").hide(300);

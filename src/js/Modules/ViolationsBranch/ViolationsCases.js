@@ -304,7 +304,6 @@ violationsCases.ViolationsCasesTable = (Cases) => {
           // violationsCases.findCaseByID(e,caseID,"Details");
         });
     });
-    functions.getCurrentUserActions();
   });
   functions.hideTargetElement(".controls", ".hiddenListBox");
 };

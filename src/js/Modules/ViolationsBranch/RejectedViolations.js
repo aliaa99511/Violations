@@ -6,7 +6,6 @@ let rejectedViolations = {};
 rejectedViolations.pageIndex = 1;
 rejectedViolations.destroyTable = false;
 
-
 rejectedViolations.getRejectedViolations = (
     pageIndex = 1,
     destroyTable = false,
@@ -48,7 +47,6 @@ rejectedViolations.getRejectedViolations = (
             rejectedViolations.setPaginations(ItemsData.TotalPageCount, ItemsData.RowsPerPage)
             rejectedViolations.rejectedViolationTable(rejectedViolationDate, destroyTable);
             rejectedViolations.pageIndex = ItemsData.CurrentPage;
-            functions.getCurrentUserActions();
         })
         .catch((err) => {
             console.log(err);
@@ -95,6 +93,7 @@ rejectedViolations.filterViolationsLog = (e) => {
         );
     }
 };
+
 rejectedViolations.resetFilter = (e) => {
     e.preventDefault();
     $("#violationSector").val("0");
@@ -104,6 +103,82 @@ rejectedViolations.resetFilter = (e) => {
     $(".PreLoader").addClass("active");
     pagination.reset();
     rejectedViolations.getRejectedViolations();
+};
+
+rejectedViolations.exportToExcel = () => {
+    const currentFilters = {
+        RowsPerPage: 10000000,
+        PageIndex: 1,
+        ColName: "created",
+        SortOrder: "desc",
+        Status: "Rejected",
+        ViolationType: Number($("#TypeofViolation").children("option:selected").data("id")),
+        SectorConfigId: Number($("#violationSector").children("option:selected").val()),
+        GlobalSearch: $("#violationSearch").val(),
+    };
+
+    const columns = [
+        {
+            title: "رقم المخالفة",
+            data: "Violation.ViolationCode"
+        },
+        {
+            title: "",
+            skip: true
+        },
+
+        {
+            title: "تصنيف المخالفة",
+            render: (record) => functions.getViolationArabicName(record.Violation?.OffenderType),
+        },
+        {
+            title: "رقم المحجر/العربة",
+            render: (record) => {
+                const v = record.Violation;
+                if (!v) return "---";
+                return v.OffenderType === "Vehicle"
+                    ? (v.CarNumber || "---")
+                    : (v.QuarryCode || "---");
+            }
+        },
+        {
+            title: "إسم الشركة المخالفة",
+            data: "Violation.ViolatorCompany"
+        },
+        {
+            title: "نوع المخالفة",
+            render: (record) =>
+                functions.getViolationArabicName(
+                    record.Violation?.OffenderType,
+                    record.Violation?.ViolationTypes?.Title
+                )
+        },
+        {
+            title: "المنطقة",
+            data: "Violation.ViolationsZone"
+        },
+        {
+            title: "تاريخ الضبط",
+            render: (record) => functions.getFormatedDate(record.Violation?.ViolationDate)
+        },
+        {
+            title: "تاريخ الإنشاء",
+            render: (record) => functions.getFormatedDate(record.Created)
+        }
+    ];
+
+    functions.exportFromAPI({
+        searchUrl: "/_layouts/15/Uranium.Violations.SharePoint/Tasks.aspx/Search",
+        requestData: { Data: currentFilters },
+        columns,
+        fileName: "المخالفات المرفوضة.xlsx",
+        sheetName: "المخالفات المرفوضة",
+        columnWidths: 25,
+        rtl: true,
+        dataPath: "d.Result.GridData",
+        exportButtonSelector: "#exportBtn",
+        tableSelector: "#RejectedViolation"
+    });
 };
 
 rejectedViolations.rejectedViolationTable = (rejectedViolationDate, destroyTable) => {
@@ -168,10 +243,16 @@ rejectedViolations.rejectedViolationTable = (rejectedViolationDate, destroyTable
 
     rejectedViolations.destroyTable = true;
 
+    // Update export button handler
+    $("#exportBtn").off("click").on("click", () => {
+        rejectedViolations.exportToExcel();
+    });
+
     $(".ellipsisButton").on("click", (e) => {
         $(".hiddenListBox").hide(300);
         $(e.currentTarget).siblings(".hiddenListBox").toggle(300);
     });
+
     let violationlog = Table.rows().nodes().to$();
     $.each(violationlog, (index, record) => {
         let jQueryRecord = $(record);
@@ -179,9 +260,7 @@ rejectedViolations.rejectedViolationTable = (rejectedViolationDate, destroyTable
         let rejectReason = jQueryRecord.find(".violationId").data("rejectreason");
         let OffenderType = jQueryRecord.find(".violationId").data("offendertype");
         let hiddenListBox = jQueryRecord.find(".controls").children(".hiddenListBox")
-        // if (hiddenListBox.height() > 110 && jQueryRecord.is(":nth-last-child(-n + 4)")) {
-        //     hiddenListBox.addClass("toTopDDL")
-        // }
+
         jQueryRecord.find(".controls").children(".hiddenListBox").find(".itemDetails").on("click", (e) => {
             $(".overlay").addClass("active");
             rejectedViolations.findViolationByID(e, violationTaskID);

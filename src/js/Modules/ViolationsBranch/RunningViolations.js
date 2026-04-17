@@ -60,7 +60,6 @@ runningViolations.getRunningViolations = (
       runningViolations.setPaginations(ItemsData.TotalPageCount, ItemsData.RowsPerPage);
       runningViolations.RunningViolationTable(RunningViolation, destroyTable);
       runningViolations.pageIndex = ItemsData.CurrentPage;
-      functions.getCurrentUserActions();
     })
     .catch((err) => {
       console.log(err);
@@ -72,6 +71,7 @@ runningViolations.setPaginations = (TotalPages, RowsPerPage) => {
   pagination.start("#paginationID", runningViolations.getRunningViolations);
   pagination.activateCurrentPage();
 };
+
 runningViolations.filterViolationsLog = (e) => {
   let pageIndex = runningViolations.pageIndex;
   let ViolationSectorVal = $("#violationSector").children("option:selected").val();
@@ -141,6 +141,7 @@ runningViolations.handleViolationCategoryChange = () => {
     }
   });
 };
+
 const originalResetFilter = runningViolations.resetFilter;
 runningViolations.resetFilter = function (e) {
   // Call the original resetFilter function
@@ -148,6 +149,83 @@ runningViolations.resetFilter = function (e) {
 
   // Re-enable both fields after reset
   $("#TypeofViolation").prop("disabled", false);
+};
+
+runningViolations.exportToExcel = () => {
+  // Get current filter values
+  const currentFilters = {
+    RowsPerPage: 10000000, // Get all records for export
+    PageIndex: 1,
+    ColName: "created",
+    SortOrder: "desc",
+    Status: "Approved",
+    PaymentStatus: "",
+    ViolationType: Number($("#TypeofViolation").children("option:selected").data("id")),
+    SectorConfigId: Number($("#violationSector").children("option:selected").val()),
+    GlobalSearch: $("#violationSearch").val(),
+    Sector: 0,
+    OffenderType: $("#violationCategory").val(),
+    ViolationsZone: $("#violationZone").val(),
+    CreatedFrom: $("#createdFrom").val() ? moment($("#createdFrom").val(), "DD-MM-YYYY").format("YYYY-MM-DD") : null,
+    CreatedTo: $("#createdTo").val() ? moment($("#createdTo").val(), "DD-MM-YYYY").format("YYYY-MM-DD") : null,
+  };
+
+  // Define columns with their data mapping
+  const columns = [
+    {
+      title: "رقم المخالفة",
+      data: "Violation.ViolationCode",
+    },
+    {
+      title: "",
+      skip: true
+    },
+    {
+      title: "تصنيف المخالفة",
+      render: (record) => functions.getViolationArabicName(record.Violation?.OffenderType),
+    },
+    {
+      title: "رقم المحجر/العربة",
+      render: (record) => {
+        const violation = record.Violation;
+        if (!violation) return "---";
+        return violation.OffenderType === "Vehicle" ? (violation.CarNumber || "---") : (violation.QuarryCode || "---");
+      },
+    },
+    {
+      title: "إسم الشركة المخالفة",
+      data: "Violation.ViolatorCompany",
+    },
+    {
+      title: "نوع المخالفة",
+      render: (record) => functions.getViolationArabicName(record.Violation?.OffenderType, record.Violation?.ViolationTypes?.Title),
+    },
+    {
+      title: "المنطقة",
+      data: "Violation.ViolationsZone",
+    },
+    {
+      title: "تاريخ الضبط",
+      render: (record) => functions.getFormatedDate(record.Violation?.ViolationDate),
+    },
+    {
+      title: "تاريخ الإنشاء",
+      render: (record) => functions.getFormatedDate(record.Created),
+    },
+  ];
+
+  functions.exportFromAPI({
+    searchUrl: "/_layouts/15/Uranium.Violations.SharePoint/Tasks.aspx/Search",
+    requestData: { Data: currentFilters },
+    columns: columns,
+    fileName: "المخالفات القائمة.xlsx",
+    sheetName: "المخالفات القائمة",
+    columnWidths: 25,
+    rtl: true,
+    dataPath: "d.Result.GridData",
+    exportButtonSelector: "#exportBtn",
+    tableSelector: "#RunningViolations"
+  });
 };
 
 runningViolations.RunningViolationTable = (RunningViolation, destroyTable) => {
@@ -226,6 +304,11 @@ runningViolations.RunningViolationTable = (RunningViolation, destroyTable) => {
   functions.createColumnSelector(Table, "#columnSelector", 'green');
 
   runningViolations.destroyTable = true;
+
+  // Update export button handler
+  $("#exportBtn").off("click").on("click", () => {
+    runningViolations.exportToExcel();
+  });
 
   $(".ellipsisButton").on("click", (e) => {
     $(".hiddenListBox").hide(300);
@@ -385,6 +468,5 @@ runningViolations.findViolationByID = (
       console.log(err);
     });
 };
-
 
 export default runningViolations;

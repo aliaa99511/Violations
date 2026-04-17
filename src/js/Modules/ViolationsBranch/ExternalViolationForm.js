@@ -10,6 +10,7 @@ externalViolationForm.violatorDetails = () => {
     let violatorDetails = {};
     let violatorName = $("#violatorName").val();
     let violatorNationalId = $("#violatorNationalId").val();
+    let violatorMobileNumber = $("#violatorMobileNumber").val();
     let companyName = $("#companyName").val();
     let violationGov = $("#violationGov").children("option:selected").val();
     let violationGovId = $("#violationGov").children("option:selected").data("id");
@@ -19,9 +20,23 @@ externalViolationForm.violatorDetails = () => {
     if (violatorName && violatorName.trim() !== "") {
         if (violationGov && violationGov !== "") {
             if (assignedProsecution && assignedProsecution !== "") {
+
+                //  Check National ID if provided
+                if (violatorNationalId !== "") {
+                    // Check if exactly 14 digits
+                    if (!/^\d{14}$/.test(violatorNationalId)) {
+                        functions.warningAlert(
+                            "الرقم القومي يجب أن يتكون من 14 رقمًا بالضبط",
+                            "#violatorNationalId"
+                        );
+                        return false;
+                    }
+                }
+
                 violatorDetails = {
                     violatorName: violatorName.trim(),
                     violatorNationalId: violatorNationalId && violatorNationalId.trim() !== "" ? violatorNationalId.trim() : "",
+                    violatorMobileNumber: violatorMobileNumber != "" ? violatorMobileNumber : "",
                     companyName: companyName && companyName.trim() !== "" ? companyName.trim() : "",
                     violationGov: violationGovId,
                     violationGovText: violationGov,
@@ -63,29 +78,23 @@ externalViolationForm.violationDetails = () => {
     let isBonesViolation = violationTypeText.includes("بون") || violationTypeText.includes("بونات");
 
     if (offenderType && offenderType !== "") {
-        if (violationType && violationType !== "") {
+
+        // For Vehicle and Equipment, skip violation type validation (it's disabled)
+        if (offenderType === "Vehicle" || offenderType === "Equipment") {
+            // Skip violation type validation for Vehicle and Equipment
             if (violationDate && violationDate !== "") {
                 if (caseNumber && caseNumber.trim() !== "") {
-
-                    // Validate bones count if it's a bones violation and the box is visible
-                    if (isBonesViolation && $(".BonesBox").is(":visible")) {
-                        if (!bonesCount || bonesCount.trim() === "" || isNaN(bonesCount) || Number(bonesCount) <= 0) {
-                            functions.warningAlert("من فضلك قم بادخال عدد البونات بشكل صحيح", "#BonesCount");
-                            return false;
-                        }
-                    }
-
                     violationsData = {
                         offenderType: offenderType,
                         offenderTypeText: offenderType,
                         offenderTypeId: offenderTypeId,
-                        violationType: violationTypeId,
-                        violationTypeText: violationType,
+                        violationType: 0, // Set to 0 or null for Vehicle/Equipment
+                        violationTypeText: "", // Empty string for Vehicle/Equipment
                         violationDate: violationDate,
                         caseNumber: caseNumber.trim(),
                         rawViolationDate: violationDate,
-                        bonesCount: isBonesViolation && $(".BonesBox").is(":visible") ? Number(bonesCount) : 0,
-                        isBonesViolation: isBonesViolation
+                        bonesCount: 0,
+                        isBonesViolation: false
                     };
                     validViolation = true;
                 } else {
@@ -95,7 +104,41 @@ externalViolationForm.violationDetails = () => {
                 functions.warningAlert("من فضلك قم بتحديد تاريخ الضبط", "#violationDate");
             }
         } else {
-            functions.warningAlert("من فضلك قم باختيار نوع المخالفة", "#violationType");
+            // Original validation for other types (Quarry, etc.)
+            if (violationType && violationType !== "") {
+                if (violationDate && violationDate !== "") {
+                    if (caseNumber && caseNumber.trim() !== "") {
+
+                        // Validate bones count if it's a bones violation and the box is visible
+                        if (isBonesViolation && $(".BonesBox").is(":visible")) {
+                            if (!bonesCount || bonesCount.trim() === "" || isNaN(bonesCount) || Number(bonesCount) <= 0) {
+                                functions.warningAlert("من فضلك قم بادخال عدد البونات بشكل صحيح", "#BonesCount");
+                                return false;
+                            }
+                        }
+
+                        violationsData = {
+                            offenderType: offenderType,
+                            offenderTypeText: offenderType,
+                            offenderTypeId: offenderTypeId,
+                            violationType: violationTypeId,
+                            violationTypeText: violationType,
+                            violationDate: violationDate,
+                            caseNumber: caseNumber.trim(),
+                            rawViolationDate: violationDate,
+                            bonesCount: isBonesViolation && $(".BonesBox").is(":visible") ? Number(bonesCount) : 0,
+                            isBonesViolation: isBonesViolation
+                        };
+                        validViolation = true;
+                    } else {
+                        functions.warningAlert("من فضلك قم بادخال رقم القضية", "#caseNumber");
+                    }
+                } else {
+                    functions.warningAlert("من فضلك قم بتحديد تاريخ الضبط", "#violationDate");
+                }
+            } else {
+                functions.warningAlert("من فضلك قم باختيار نوع المخالفة", "#violationType");
+            }
         }
     } else {
         functions.warningAlert("من فضلك قم باختيار تصنيف المخالفة", "#offenderType");
@@ -177,8 +220,8 @@ externalViolationForm.GetCoordinates = () => {
     let IsValid = true;
     let pattern = new RegExp(/^\d*\.?\d*$/);
 
-    // We need exactly 3 valid points
     let validPointsCount = 0;
+    let hasAnyValidPoint = false;
 
     Rows.each((index, Row) => {
         let CurrentRow = $(Row);
@@ -254,6 +297,7 @@ externalViolationForm.GetCoordinates = () => {
         // Only count this row as valid if both East and North cells have data
         if (rowValid && PointArr.length === 2) {
             validPointsCount++;
+            hasAnyValidPoint = true;
 
             if (index === Rows.length - 1) {
                 PointsArr += "[" + PointArr + "]";
@@ -271,8 +315,8 @@ externalViolationForm.GetCoordinates = () => {
     NumbersArr += "]";
     DecimalsArr += "]";
 
-    // Require exactly 3 valid points
-    if (IsValid && validPointsCount === 3) {
+    // NEW: Require at least 1 valid point instead of exactly 3
+    if (IsValid && hasAnyValidPoint) {
         return {
             Degree: PointsArr,
             Decimal: DecimalsArr,
@@ -285,21 +329,6 @@ externalViolationForm.GetCoordinates = () => {
 
 externalViolationForm.AddCoordinatePoint = (e) => {
     let coordinatesTable = $("#coordinatesTable");
-    let currentRows = coordinatesTable.find("tr").length - 1; // Subtract header row
-
-    // Check if we already have 3 rows
-    if (currentRows >= 3) {
-        Swal.fire({
-            icon: "warning",
-            customClass: "sweetStyle",
-            title: "لا يمكن إضافة المزيد",
-            text: "يمكن إضافة 3 نقاط فقط للإحداثيات",
-            confirmButtonColor: "#3085d6",
-            confirmButtonText: "موافق",
-            heightAuto: true,
-        });
-        return;
-    }
 
     let cloneRow = $("#coordinatesTable")
         .find("tr.hideRow")
@@ -326,7 +355,9 @@ externalViolationForm.DeleteCoordinatePoint = (e) => {
     var element = $(e.currentTarget);
     let RowsLength = $("#coordinatesTable table").find("tr").length - 1; // Subtract header row
 
-    if (RowsLength > 3) {
+    // UPDATED: Only prevent deletion if this would remove the LAST point
+    // Previously it required keeping at least 3 points
+    if (RowsLength > 1) {
         Swal.fire({
             icon: "warning",
             customClass: "sweetStyle",
@@ -351,7 +382,7 @@ externalViolationForm.DeleteCoordinatePoint = (e) => {
             icon: "warning",
             customClass: "sweetStyle",
             title: "لا يمكن الحذف",
-            text: "يجب أن يكون هناك 3 نقاط على الأقل للإحداثيات",
+            text: "يجب أن يكون هناك نقطة واحدة على الأقل للإحداثيات",
             confirmButtonColor: "#3085d6",
             confirmButtonText: "موافق",
             heightAuto: true,
@@ -450,6 +481,10 @@ externalViolationForm.formActions = () => {
         return functions.isNumberKey(e);
     });
 
+    $(".violatorMobileNumber").on("keypress", (e) => {
+        return functions.isNumberKey(e);
+    });
+
     // Bones count validation
     $(".BonesCount").on("keypress", (e) => {
         return functions.isNumberKey(e);
@@ -502,6 +537,9 @@ externalViolationForm.formActions = () => {
 
     // Attach coordinate validation
     externalViolationForm.attachCoordinateValidation();
+
+    // Ensure violation type is disabled for external violations
+    $("#violationType").prop("disabled", true);
 
     // Add violation type change handler for BonesBox (like quarryViolation)
     $("#violationType").on("change", (e) => {
@@ -660,6 +698,8 @@ externalViolationForm.getViolationTypes = () => {
             if (result && typeof result.then === 'function') {
                 result
                     .then(() => {
+                        // After loading all types, filter to only show "سرقة مواد محجرية"
+                        externalViolationForm.filterViolationType();
                         resolve();
                     })
                     .catch((error) => {
@@ -669,16 +709,57 @@ externalViolationForm.getViolationTypes = () => {
             } else {
                 // If it's not a Promise, assume it completed synchronously
                 console.warn("getViolationType didn't return a Promise, assuming synchronous completion");
+                externalViolationForm.filterViolationType();
                 resolve();
             }
         } else {
             console.warn("getViolationType function not found in sharedApis");
-            // Populate with default options or leave empty
-            resolve(); // Resolve anyway to not block the Promise.all
+            // Add the specific option manually
+            $("#violationType").append(`<option value="سرقة مواد محجرية" data-id="1" selected>سرقة مواد محجرية</option>`);
+            $("#violationType").prop("disabled", true);
+            resolve();
         }
     });
 };
+// Filter violation type to only show "سرقة مواد محجرية" and disable it
+externalViolationForm.filterViolationType = () => {
+    const $violationType = $("#violationType");
+    const $options = $violationType.find("option");
+    let foundTargetOption = false;
+    let targetValue = "";
+    let targetDataId = "";
+    let targetText = "";
 
+    // Find the "سرقة مواد محجرية" option
+    $options.each(function () {
+        const text = $(this).text().trim();
+        if (text === "سرقة مواد محجرية" || text.includes("سرقة مواد محجرية")) {
+            targetValue = $(this).val();
+            targetDataId = $(this).data("id");
+            targetText = text;
+            foundTargetOption = true;
+            return false; // break the loop
+        }
+    });
+
+    // Remove all options except the first placeholder
+    $violationType.find("option:not(:first)").remove();
+
+    if (foundTargetOption) {
+        // Add back only the "سرقة مواد محجرية" option
+        $violationType.append(`
+            <option value="${targetValue}" data-id="${targetDataId}" selected>${targetText}</option>
+        `);
+    } else {
+        // If not found, add it manually
+        $violationType.append(`
+            <option value="سرقة مواد محجرية" data-id="1" selected>سرقة مواد محجرية</option>
+        `);
+    }
+
+    // Disable the dropdown
+    $violationType.prop("disabled", true);
+};
 externalViolationForm.getProsecutions = () => {
     return new Promise((resolve, reject) => {
         if (sharedApis.getProsecutions && typeof sharedApis.getProsecutions === 'function') {
@@ -753,6 +834,7 @@ externalViolationForm.validateForm = (e) => {
             // Violator details
             ViolatorName: violatorDetails.violatorName,
             NationalID: violatorDetails.violatorNationalId || "",
+            MobileNumber: violatorDetails.violatorMobileNumber,
             ViolatorCompany: violatorDetails.companyName || "",
             Governrate: violatorDetails.violationGov,
             ViolationsZone: violatorDetails.violationsZone || "",
@@ -909,15 +991,20 @@ externalViolationForm.init = () => {
         externalViolationForm.formActions();
         $(".PreLoader").addClass("active");
 
-        // Load all dropdowns in correct order - now all return Promises
+        // Add the offender type change handler
+        externalViolationForm.handleOffenderTypeChange();
+
+        // Load all dropdowns in correct order
         Promise.all([
             sharedApis.getGovernrates("#violationGov"),
             sharedApis.getOffenderType("#offenderType"),
-            sharedApis.getViolationType("#violationType"),
+            externalViolationForm.getViolationTypes(), // This will now filter and disable
             externalViolationForm.getProsecutions()
         ])
             .then(() => {
                 $(".PreLoader").removeClass("active");
+                // Ensure violation type stays disabled
+                $("#violationType").prop("disabled", true);
             })
             .catch((error) => {
                 $(".PreLoader").removeClass("active");
@@ -925,7 +1012,6 @@ externalViolationForm.init = () => {
             });
     });
 };
-
 // ==================== DYNAMIC SECTIONS ====================
 externalViolationForm.carSectionExists = false;
 externalViolationForm.equipmentSectionExists = false;
@@ -1157,7 +1243,8 @@ externalViolationForm.validateCarSection = () => {
 
 // Add car section (only one)
 externalViolationForm.addCarSection = () => {
-    if (externalViolationForm.carSectionExists) {
+    // Check for visible car sections only
+    if ($(".car-section").filter(":visible").length > 0) {
         Swal.fire({
             icon: "warning",
             customClass: "sweetStyle",
@@ -1171,7 +1258,8 @@ externalViolationForm.addCarSection = () => {
     }
 
     const container = $("#carSectionsContainer");
-    container.append(externalViolationForm.getCarSectionTemplate());
+    const newSection = externalViolationForm.getCarSectionTemplate();
+    container.append(newSection);
 
     externalViolationForm.carSectionExists = true;
 
@@ -1187,32 +1275,10 @@ externalViolationForm.addCarSection = () => {
     }, 500);
 };
 
-// Delete car section
-externalViolationForm.deleteCarSection = () => {
-    Swal.fire({
-        icon: "warning",
-        customClass: "sweetStyle",
-        title: "هل انت متأكد؟",
-        text: "تأكيد حذف قسم العربة ؟",
-        showCancelButton: true,
-        cancelButtonText: "لا",
-        confirmButtonColor: "#3085d6",
-        confirmButtonText: "نعم",
-        heightAuto: true,
-    }).then((result) => {
-        if (result.value) {
-            $(".car-section").fadeOut(300, function () {
-                $(this).remove();
-                externalViolationForm.carSectionExists = false;
-                $("#addCarSectionBtn").show();
-            });
-        }
-    });
-};
-
 // Add equipment section (only one)
 externalViolationForm.addEquipmentSection = () => {
-    if (externalViolationForm.equipmentSectionExists) {
+    // Check for visible equipment sections only
+    if ($(".equipment-section").filter(":visible").length > 0) {
         Swal.fire({
             icon: "warning",
             customClass: "sweetStyle",
@@ -1226,7 +1292,8 @@ externalViolationForm.addEquipmentSection = () => {
     }
 
     const container = $("#equipmentSectionsContainer");
-    container.append(externalViolationForm.getEquipmentSectionTemplate());
+    const newSection = externalViolationForm.getEquipmentSectionTemplate();
+    container.append(newSection);
 
     externalViolationForm.equipmentSectionExists = true;
 
@@ -1243,6 +1310,29 @@ externalViolationForm.addEquipmentSection = () => {
         scrollTop: $("#equipmentSectionsContainer").offset().top - 100
     }, 500);
 };
+// Delete car section
+externalViolationForm.deleteCarSection = () => {
+    Swal.fire({
+        icon: "warning",
+        customClass: "sweetStyle",
+        title: "هل انت متأكد؟",
+        text: "تأكيد حذف قسم العربة ؟",
+        showCancelButton: true,
+        cancelButtonText: "لا",
+        confirmButtonColor: "#3085d6",
+        confirmButtonText: "نعم",
+        heightAuto: true,
+    }).then((result) => {
+        if (result.value) {
+            // Only remove visible car sections
+            $(".car-section").filter(":visible").fadeOut(300, function () {
+                $(this).remove();
+                externalViolationForm.carSectionExists = false;
+                $("#addCarSectionBtn").show();
+            });
+        }
+    });
+};
 
 // Delete equipment section
 externalViolationForm.deleteEquipmentSection = () => {
@@ -1258,7 +1348,8 @@ externalViolationForm.deleteEquipmentSection = () => {
         heightAuto: true,
     }).then((result) => {
         if (result.value) {
-            $(".equipment-section").fadeOut(300, function () {
+            // Only remove visible equipment sections
+            $(".equipment-section").filter(":visible").fadeOut(300, function () {
                 $(this).remove();
                 externalViolationForm.equipmentSectionExists = false;
                 $("#addEquipmentSectionBtn").show();
@@ -1277,8 +1368,9 @@ externalViolationForm.collectDynamicSectionsData = () => {
         }
     };
 
-    // Collect car section data if exists
-    if ($(".car-section").length > 0) {
+    // Collect car section data if exists and is visible (not the hidden template)
+    // Check for visible car sections only
+    if ($(".car-section").filter(":visible").length > 0) {
         data.carData = externalViolationForm.validateCarSection();
 
         // If validation fails, return false to stop form submission
@@ -1287,8 +1379,8 @@ externalViolationForm.collectDynamicSectionsData = () => {
         }
     }
 
-    // Collect equipment data if exists
-    if ($(".equipment-section").length > 0) {
+    // Collect equipment data if exists and is visible (not the hidden template)
+    if ($(".equipment-section").filter(":visible").length > 0) {
         $("#equipmentToolsBox_dynamic .tool").each(function () {
             const checkbox = $(this).find("input[type='checkbox']");
             const count = $(this).find(".toolCount").val();
@@ -1305,142 +1397,6 @@ externalViolationForm.collectDynamicSectionsData = () => {
 
     return data;
 };
-
-// Updated car section template with removed carViolationRawType and improved layout
-// externalViolationForm.getCarSectionTemplate = () => {
-//     return `
-//         <div class="formBox dynamic-section car-section" style="border: 1px solid #dee2e6; border-radius: 5px; margin-bottom: 20px; background-color: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-//             <div style="position: relative;">
-//                 <div style="position: absolute; left: 15px; top: 15px; z-index: 10;">
-//                     <span class="delete-section car-delete" style="cursor: pointer; color: #dc3545; font-size: 18px; background-color: rgba(255,255,255,0.9); width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 4px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
-//                         <i class="fas fa-trash-alt"></i>
-//                     </span>
-//                 </div>
-//                 <div class="formBoxHeader" style="background-color: #f8f9fa; padding: 15px; border-bottom: 1px solid #dee2e6; border-radius: 5px 5px 0 0;">
-//                     <p class="formBoxTitle" style="margin: 0; color: #17a2b8; font-weight: bold;">
-//                         <span class="formNumber" style="background-color: #17a2b8; display: inline-block; width: 25px; height: 25px; border-radius: 50%; color: white; text-align: center; line-height: 25px; margin-left: 10px;">1</span> 
-//                         بيانات رخصة المركبة
-//                     </p>
-//                 </div>
-//                 <div class="formElements" style="padding: 20px;">
-//                     <div class="row">
-
-//                         <div class="col-md-6">
-//                             <div class="form-group customFormGroup">
-//                                 <label for="violationCarType_dynamic" class="customLabel">نوع العربة <span class="redAstric">*</span></label>
-//                                 <div class="selectBox">
-//                                     <select class="form-control violationCarType" id="violationCarType_dynamic">
-//                                         <option value="" disabled selected hidden>نوع العربة</option>
-//                                         <option value="عربة فردي">عربة فردي</option>
-//                                         <option value="عربة بمقطورة">عربة بمقطورة</option>
-//                                     </select>
-//                                     <i class="fa-solid fa-sort-down"></i>
-//                                 </div>
-//                             </div>
-//                         </div>
-
-//                         <div class="col-md-6 checkboxInput">
-//                             <label class="customelabel checkboxLabel" for="unmarkedCheckbox_dynamic">
-//                                 <input type="checkbox" class="unmarkedCheckbox checkboxInput customeInputs" id="unmarkedCheckbox_dynamic" />
-//                                 <span class="checktext">بدون لوحات</span>
-//                             </label>
-//                         </div>
-
-//                         <div class="col-md-12 tractorBox_dynamic" style="display: none;">
-//                             <div class="row">
-//                                 <div class="col-md-6">
-//                                     <div class="form-group customFormGroup">
-//                                         <label for="tractorLetters_dynamic" class="customLabel">حروف المقطورة</label>
-//                                         <input class="form-control customInput tractorLetters" id="tractorLetters_dynamic" type="text" minlength="4" maxlength="7" placeholder="ادخل حروف المقطورة" />
-//                                     </div>
-//                                 </div>
-//                                 <div class="col-md-6">
-//                                     <div class="form-group customFormGroup">
-//                                         <label for="tractorNumbers_dynamic" class="customLabel">أرقام المقطورة</label>
-//                                         <input class="form-control customInput tractorNumbers" id="tractorNumbers_dynamic" type="text" minlength="3" maxlength="7" placeholder="ادخل أرقام المقطورة" />
-//                                     </div>
-//                                 </div>
-//                             </div>
-//                         </div>
-
-//                         <div class="col-12">
-//                             <p class="formSectionLabel">* رخصة تسيير مركبة</p>
-//                         </div>
-
-//                         <div class="col-md-12">
-//                             <div class="row">
-//                                 <div class="col-md-5">
-//                                     <div class="form-group customFormGroup">
-//                                         <label for="carLicenseLetters_dynamic" class="customLabel">حروف<span class="redAstric">*</span></label>
-//                                         <input class="form-control customInput carLicenseLetters" id="carLicenseLetters_dynamic" type="text" minlength="4" maxlength="7" placeholder="أحرف العربة" />
-//                                     </div>
-//                                 </div>
-//                                 <div class="col-md-5">
-//                                     <div class="form-group customFormGroup">
-//                                         <label for="carLicenseNumbers_dynamic" class="customLabel">أرقام<span class="redAstric">*</span></label>
-//                                         <input class="form-control customInput carLicenseNumbres" id="carLicenseNumbers_dynamic" type="text" minlength="3" maxlength="7" placeholder="أرقام العربة" />
-//                                     </div>
-//                                 </div>
-//                             </div>
-//                         </div>
-
-//                         <div class="col-md-12" style="margin-top: 15px;">
-//                             <div class="row">
-//                                 <div class="col-md-4">
-//                                     <div class="form-group customFormGroup">
-//                                         <label for="carLicenseColor_dynamic" class="customLabel">اللون<span class="redAstric">*</span></label>
-//                                         <input class="form-control customInput carLicenseColor" id="carLicenseColor_dynamic" type="text" placeholder="لون العربة" />
-//                                     </div>
-//                                 </div>
-
-//                                 <div class="col-md-4">
-//                                     <div class="form-group customFormGroup">
-//                                         <label for="carBrand_dynamic" class="customLabel">النوع<span class="redAstric">*</span></label>
-//                                         <input type="text" class="form-control customInput carBrand" id="carBrand_dynamic" placeholder="ادخل النوع" />
-//                                     </div>
-//                                 </div>
-
-//                                 <div class="col-md-4">
-//                                     <div class="form-group customFormGroup">
-//                                         <label for="carLicenseTraffic_dynamic" class="customLabel">ترخيص المرور</label>
-//                                         <input type="text" class="form-control customInput carLicenseTraffic" id="carLicenseTraffic_dynamic" placeholder="ترخيص المرور" />
-//                                     </div>
-//                                 </div>
-//                             </div>
-//                         </div>
-
-//                         <div class="col-12">
-//                             <p class="formSectionLabel">* رخصة القيادة</p>
-//                         </div>
-
-//                         <div class="col-md-6">
-//                             <div class="form-group customFormGroup">
-//                                 <label for="driverLicenseNumber_dynamic" class="customLabel">رقم رخصة القيادة</label>
-//                                 <input class="form-control customInput driverLicenseNumber" id="driverLicenseNumber_dynamic" type="text" maxlength="14" placeholder="رقم رخصة السائق" />
-//                             </div>
-//                         </div>
-
-//                         <div class="col-md-3">
-//                             <div class="form-group customFormGroup">
-//                                 <label for="driverLicenseTraffic_dynamic" class="customLabel">ترخيص المرور</label>
-//                                 <input type="text" class="form-control customInput driverLicenseTraffic" id="driverLicenseTraffic_dynamic" placeholder="ترخيص المرور" />
-//                             </div>
-//                         </div>
-
-//                         <div class="col-12 previous-violations-display" style="display: none;">
-//                             <div class="form-group customFormGroup">
-//                                 <div class="" style="margin-bottom: 0; padding: 10px 15px; background-color: #e9ecef; border-radius: 5px;">
-//                                     <strong>عدد المخالفات السابقة: </strong>
-//                                     <span class="previous-violations-count-value" style="font-size: 18px; font-weight: bold;">0</span>
-//                                 </div>
-//                             </div>
-//                         </div>
-//                     </div>
-//                 </div>
-//             </div>
-//         </div>
-//     `;
-// };
 externalViolationForm.getCarSectionTemplate = () => {
     return $('#carSectionTemplate').children().first().clone(true, true);
 };
@@ -1448,41 +1404,31 @@ externalViolationForm.getEquipmentSectionTemplate = () => {
     return $('#equipmentSectionTemplate').children().first().clone(true, true);
 };
 
-// externalViolationForm.getEquipmentSectionTemplate = () => {
-//     return `
-//         <div class="formBox dynamic-section equipment-section" style="border: 1px solid #dee2e6; border-radius: 5px; margin-bottom: 20px; background-color: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-//             <div style="position: relative;">
-//                 <div style="position: absolute; left: 15px; top: 15px; z-index: 10;">
-//                     <span class="delete-section equipment-delete" style="cursor: pointer; color: #dc3545; font-size: 18px; background-color: rgba(255,255,255,0.9); width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 4px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
-//                         <i class="fas fa-trash-alt"></i>
-//                     </span>
-//                 </div>
-//                 <div class="formBoxHeader" style="background-color: #f8f9fa; padding: 15px; border-bottom: 1px solid #dee2e6; border-radius: 5px 5px 0 0;">
-//                     <p class="formBoxTitle" style="margin: 0; color: #17a2b8; font-weight: bold;">
-//                         <span class="formNumber" style="background-color: #17a2b8; display: inline-block; width: 25px; height: 25px; border-radius: 50%; color: white; text-align: center; line-height: 25px; margin-left: 10px;">1</span> 
-//                         ضبط معدات
-//                     </p>
-//                 </div>
-//                 <div class="formElements" style="padding: 20px;">
-//                     <div class="row">
-//                         <div class="col-12">
-//                             <div class="form-group customFormGroup">
-//                                 <label class="customLabel">المعدات المضبوطة</label>
-//                                 <div class="toolsBox equipmentToolsBox" id="equipmentToolsBox_dynamic">
-//                                     <div class="addNewToolBtn">
-//                                         <div class="addNewToolText">
-//                                             <i class="fa-solid fa-plus"></i>
-//                                             <span>إضافة أخرى</span>
-//                                         </div>
-//                                     </div>
-//                                 </div>
-//                             </div>
-//                         </div>
-//                     </div>
-//                 </div>
-//             </div>
-//         </div>
-//     `;
-// };
+externalViolationForm.handleOffenderTypeChange = () => {
+    $("#offenderType").on("change", function () {
+        const selectedType = $(this).val();
+        const $violationTypeField = $("#violationType");
+        const $bonesBox = $(".BonesBox");
+
+        // For external violations, the violation type is always "سرقة مواد محجرية" and disabled
+        // Only handle bones box visibility based on violation type text
+        const selectedText = $violationTypeField.find("option:selected").text();
+
+        if (selectedText.includes("بون") || selectedText.includes("بونات")) {
+            $bonesBox.show();
+        } else {
+            $bonesBox.hide();
+            $(".BonesCount").val("");
+        }
+
+        // Keep violation type disabled regardless of offender type
+        $violationTypeField.prop("disabled", true);
+    });
+
+    // Set initial state - ensure violation type is disabled on page load
+    setTimeout(() => {
+        $("#violationType").prop("disabled", true);
+    }, 100);
+};
 
 export default externalViolationForm;

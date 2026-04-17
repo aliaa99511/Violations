@@ -69,7 +69,6 @@ vehicleViolationReferral.getVehicleViolationReferrals = (
             console.error(err);
         });
 };
-
 vehicleViolationReferral.setPaginations = (TotalPages, RowsPerPage) => {
     pagination.draw("#paginationID", TotalPages, RowsPerPage);
     pagination.start("#paginationID", vehicleViolationReferral.getVehicleViolationReferrals);
@@ -129,6 +128,75 @@ vehicleViolationReferral.resetFilter = (e) => {
     $(".PreLoader").addClass("active");
     pagination.reset();
     vehicleViolationReferral.getVehicleViolationReferrals();
+};
+vehicleViolationReferral.exportToExcel = () => {
+    const currentFilters = {
+        RowsPerPage: 10000000,
+        PageIndex: 1,
+        ColName: "created",
+        SortOrder: "desc",
+        CarNumber: $("#theCode").val(),
+        ViolationCode: $("#violationCode").val(),
+        ViolationStatus: $("#ViolationStatus").children("option:selected").val(),
+        CourtCaseNumber: $("#CourtCaseNumber").val(),
+        ViolatorName: $("#TrafficName").val(),
+        ViolatorCompany: $("#ViolatorCompany").val(),
+        VehicleRegistrationNumber: $("#vehicleRegistrationNumber").val(),
+        Status: $("#CaseStatus").children("option:selected").val(),
+        OffenderType: "Vehicle",
+        RefferedDateFrom: $("#RefferedDateFrom").val()
+            ? moment($("#RefferedDateFrom").val(), "DD-MM-YYYY").format("YYYY-MM-DD")
+            : null,
+        RefferedDateTo: $("#RefferedDateTo").val()
+            ? moment($("#RefferedDateTo").val(), "DD-MM-YYYY").format("YYYY-MM-DD")
+            : null,
+    };
+
+    const columns = [
+        {
+            title: "رقم المخالفة",
+            render: (record) => record.ViolationCode || "-----",
+        },
+        {
+            title: "",
+            skip: true // control column
+        },
+        {
+            title: "تاريخ القضية",
+            render: (record) => functions.getFormatedDate(record.RefferedDate),
+        },
+        {
+            title: "رقم القيد",
+            data: "VehicleRegistrationNumber",
+        },
+        {
+            title: "الرقم القضائي",
+            data: "CourtCaseNumber",
+        },
+        {
+            title: "حالة المخالفة",
+            render: (record) =>
+                functions.getVehicleViolationStatus(record.ViolationStatus) || "-----",
+        },
+        {
+            title: "موقف الإحالة",
+            render: (record) =>
+                functions.getCaseStatus(record.Status) || "-----",
+        }
+    ];
+
+    functions.exportCasesFromAPI({
+        searchUrl: "/_layouts/15/Uranium.Violations.SharePoint/Cases.aspx/Search",
+        requestData: { Request: currentFilters },
+        columns,
+        fileName: "سجل إحالات مخالفات المركبات.xlsx",
+        sheetName: "سجل إحالات مخالفات المركبات",
+        columnWidths: 25,
+        rtl: true,
+        dataPath: "d.Result.GridData",
+        exportButtonSelector: "#exportBtn",
+        tableSelector: "#VehicleViolationReferralTable"
+    });
 };
 vehicleViolationReferral.VehicleViolationReferralTable = (Referrals, destroyTable) => {
     let data = [];
@@ -334,6 +402,10 @@ vehicleViolationReferral.VehicleViolationReferralTable = (Referrals, destroyTabl
 
     vehicleViolationReferral.destroyTable = true;
 
+    $("#exportBtn").off("click").on("click", () => {
+        vehicleViolationReferral.exportToExcel();
+    });
+
     $(".ellipsisButton").on("click", (e) => {
         $(".hiddenListBox").hide(300);
         $(e.currentTarget).siblings(".hiddenListBox").toggle(300);
@@ -499,6 +571,7 @@ vehicleViolationReferral.VehicleViolationReferralTable = (Referrals, destroyTabl
 
     functions.hideTargetElement(".controls", ".hiddenListBox");
 };
+
 vehicleViolationReferral.addRegistrationNumberPopup = (ReferralID, ViolationID, ViolationCode, TaskID) => {
     $(".overlay").removeClass("active");
     let popupHtml = `
@@ -687,7 +760,6 @@ vehicleViolationReferral.addRegistrationNumberPopup = (ReferralID, ViolationID, 
         }
     });
 };
-
 // Add Court Case Number Popup
 // vehicleViolationReferral.addCourtCaseNumberPopup = (ReferralID, ViolationID, ViolationCode, TaskID) => {
 //     $(".overlay").removeClass("active");

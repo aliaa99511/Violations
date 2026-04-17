@@ -13,8 +13,23 @@ pendingPayment.getPendingPayment = (
     ViolationType = Number($("#TypeofViolation").children("option:selected").data("id")),
     ViolationGeneralSearch = ""
 ) => {
+    // Check if theCode field has a value but violationCategory is empty
+    const theCodeValue = $("#theCode").val();
+    const violationCategoryValue = $("#violationCategory").val();
+
+    if (theCodeValue && theCodeValue.trim() !== "" && (!violationCategoryValue || violationCategoryValue === "")) {
+        functions.warningAlert("من فضلك قم باختيار تصنيف المخالفة قبل إدخال رقم المحجر/عربة/معدة");
+        $(".PreLoader").removeClass("active");
+        return;
+    }
+
+    const theCode = violationCategoryValue == "Quarry"
+        ? { QuarryCode: $("#theCode").val() }
+        : { CarNumber: $("#theCode").val() };
+
     let request = {
         Data: {
+            ...theCode,
             RowsPerPage: 10,
             PageIndex: pagination.currentPage,
             ColName: "created",
@@ -25,6 +40,8 @@ pendingPayment.getPendingPayment = (
             SectorConfigId: ViolationSector,
             GlobalSearch: $("#violationSearch").val(),
             OffenderType: $("#violationCategory").val(),
+            ViolatorName: $("#violatorName").val(),
+            ViolatorCompany: $("#companyName").val(),
             CreatedFrom: $("#createdFrom").val()
                 ? moment($("#createdFrom").val(), "DD-MM-YYYY").format("YYYY-MM-DD")
                 : null,
@@ -60,7 +77,6 @@ pendingPayment.getPendingPayment = (
             pendingPayment.setPaginations(ItemsData.TotalPageCount, ItemsData.RowsPerPage);
             pendingPayment.PendingPaymentTable(pendingPaymentData, destroyTable);
             pendingPayment.pageIndex = ItemsData.CurrentPage;
-            functions.getCurrentUserActions();
         })
         .catch((err) => {
             console.log(err);
@@ -72,11 +88,20 @@ pendingPayment.setPaginations = (TotalPages, RowsPerPage) => {
     pagination.start("#paginationID", pendingPayment.getPendingPayment);
     pagination.activateCurrentPage();
 };
+
 pendingPayment.filterPaymentsLog = () => {
     let pageIndex = pendingPayment.pageIndex;
     let ViolationSectorVal = $("#violationSector").children("option:selected").val();
     let ViolationTypeVal = $("#TypeofViolation").children("option:selected").data("id");
     let ViolationGeneralSearch = $("#violationSearch").val();
+    const theCodeValue = $("#theCode").val();
+    const violationCategoryValue = $("#violationCategory").val();
+
+    // Check if theCode has value but violationCategory is empty
+    if (theCodeValue && theCodeValue.trim() !== "" && (!violationCategoryValue || violationCategoryValue === "")) {
+        functions.warningAlert("من فضلك قم باختيار تصنيف المخالفة قبل إدخال رقم المحجر/عربة/معدة");
+        return;
+    }
 
     let ViolationType;
     let ViolationSector;
@@ -113,6 +138,9 @@ pendingPayment.resetFilter = (e) => {
     $("#violationCategory").val("");
     $("#TypeofViolation").val("0");
     $("#violationSearch").val("");
+    $("#violatorName").val("");
+    $("#companyName").val("");
+    $("#theCode").val("");
     $("#createdFrom").val("");
     $("#createdTo").val("");
 
@@ -120,34 +148,150 @@ pendingPayment.resetFilter = (e) => {
     pagination.reset();
     pendingPayment.getPendingPayment();
 };
+
 pendingPayment.handleViolationCategoryChange = () => {
     $("#violationCategory").on("change", function () {
         const selectedCategory = $(this).val();
+        const $theCodeField = $("#theCode");
         const $typeOfViolationField = $("#TypeofViolation");
 
         // First, enable both fields
+        $theCodeField.prop("disabled", false);
         $typeOfViolationField.prop("disabled", false);
 
         // Handle "Equipment" selection
         if (selectedCategory === "Equipment") {
+            $theCodeField.prop("disabled", true).val(""); // Disable and clear the field
             $typeOfViolationField.prop("disabled", true).val("0"); // Disable and set to default
         }
 
         // Handle "Vehicle" selection
         else if (selectedCategory === "Vehicle") {
             $typeOfViolationField.prop("disabled", true).val("0"); // Disable and set to default
+            // theCode field remains enabled
         }
     });
 };
+
 const originalResetFilter = pendingPayment.resetFilter;
 pendingPayment.resetFilter = function (e) {
     // Call the original resetFilter function
     originalResetFilter.call(this, e);
 
     // Re-enable both fields after reset
+    $("#theCode").prop("disabled", false);
     $("#TypeofViolation").prop("disabled", false);
 };
 
+pendingPayment.exportToExcel = () => {
+    // Get current filter values
+    const theCodeValue = $("#theCode").val();
+    const violationCategoryValue = $("#violationCategory").val();
+
+    const theCode = {};
+    if (theCodeValue && theCodeValue.trim() !== "" && violationCategoryValue) {
+        if (violationCategoryValue === "Quarry") {
+            theCode.QuarryCode = theCodeValue;
+        } else if (violationCategoryValue === "Vehicle") {
+            theCode.CarNumber = theCodeValue;
+        }
+    }
+
+    const currentFilters = {
+        ...theCode,
+        RowsPerPage: 10000000, // Get all records for export
+        PageIndex: 1,
+        ColName: "created",
+        SortOrder: "desc",
+        Status: "UnderPayment",
+        Sector: 0,
+        ViolationType: Number($("#TypeofViolation").children("option:selected").data("id")),
+        SectorConfigId: Number($("#violationSector").children("option:selected").val()),
+        GlobalSearch: $("#violationSearch").val(),
+        OffenderType: $("#violationCategory").val(),
+        ViolatorName: $("#violatorName").val(),
+        ViolatorCompany: $("#companyName").val(),
+        CreatedFrom: $("#createdFrom").val()
+            ? moment($("#createdFrom").val(), "DD-MM-YYYY").format("YYYY-MM-DD")
+            : null,
+        CreatedTo: $("#createdTo").val()
+            ? moment($("#createdTo").val(), "DD-MM-YYYY").format("YYYY-MM-DD")
+            : null,
+    };
+
+    // Define columns with their data mapping
+    const columns = [
+        {
+            title: "رقم المخالفة",
+            data: "Violation.ViolationCode",
+        },
+        {
+            title: "",
+            skip: true
+        },
+        {
+            title: "تصنيف المخالفة",
+            render: (record) => functions.getViolationArabicName(record.Violation?.OffenderType),
+        },
+        {
+            title: "إسم المخالف",
+            data: "Violation.ViolatorName",
+        },
+        {
+            title: "إسم الشركة المخالفة",
+            data: "Violation.ViolatorCompany",
+        },
+        {
+            title: "رقم المحجر/العربة",
+            render: (record) => {
+                const violation = record.Violation;
+                if (!violation) return "---";
+                return violation.OffenderType === "Vehicle"
+                    ? (violation.CarNumber || "---")
+                    : (violation.QuarryCode || "---");
+            },
+        },
+        {
+            title: "نوع المخالفة",
+            render: (record) => functions.getViolationArabicName(
+                record.Violation?.OffenderType,
+                record.Violation?.ViolationTypes?.Title
+            ),
+        },
+        {
+            title: "المنطقة",
+            data: "Violation.ViolationsZone",
+        },
+        {
+            title: "تاريخ أخر قسط",
+            render: (record) => {
+                const installmentDate = record.Violation?.InstallmentDate;
+                return installmentDate ? functions.getFormatedDate(installmentDate) : "-";
+            },
+        },
+        {
+            title: "المبلغ المسدد",
+            render: (record) => functions.splitBigNumbersByComma(record.Violation?.TotalInstallmentsPaidAmount || 0),
+        },
+        {
+            title: "المبلغ المتبقي",
+            render: (record) => functions.splitBigNumbersByComma(record.Violation?.RemainingAmount || 0),
+        },
+    ];
+
+    functions.exportFromAPI({
+        searchUrl: "/_layouts/15/Uranium.Violations.SharePoint/Tasks.aspx/Search",
+        requestData: { Data: currentFilters },
+        columns: columns,
+        fileName: "المخالفات قيد السداد.xlsx",
+        sheetName: "المخالفات قيد السداد",
+        columnWidths: 25,
+        rtl: true,
+        dataPath: "d.Result.GridData",
+        exportButtonSelector: "#exportBtn",
+        tableSelector: "#PendingPaymentLog"
+    });
+};
 pendingPayment.PendingPaymentTable = (PendingPaymentData, destroyTable) => {
     let data = [];
     let taskViolation;
@@ -194,16 +338,16 @@ pendingPayment.PendingPaymentTable = (PendingPaymentData, destroyTable) => {
                         taskViolation.OffenderType
                     ) || "-"}</div>`,
                     `<div class="violatorName">${taskViolation.ViolatorName || '-'}</div>`,
+                    `<div class="companyName">${taskViolation.ViolatorCompany != ""
+                        ? taskViolation.ViolatorCompany
+                        : "-"
+                    }</div>`,
                     `<div class="violationCode" data-offendertype="${taskViolation.OffenderType
                     }">${taskViolation.OffenderType == "Vehicle"
                         ? taskViolation.CarNumber
                         : taskViolation.QuarryCode != ""
                             ? taskViolation.QuarryCode
                             : "---"
-                    }</div>`,
-                    `<div class="companyName">${taskViolation.ViolatorCompany != ""
-                        ? taskViolation.ViolatorCompany
-                        : "-"
                     }</div>`,
                     `<div class="violationType" data-typeid="${taskViolation.OffenderType == "Quarry"
                         ? taskViolation.ViolationTypes.ID
@@ -233,8 +377,8 @@ pendingPayment.PendingPaymentTable = (PendingPaymentData, destroyTable) => {
             { title: "", class: "all" },
             { title: "تصنيف المخالفة" },
             { title: "إسم المخالف" },
-            { title: " رقم المحجر/العربة" },
             { title: "إسم الشركة المخالفة" },
+            { title: " رقم المحجر/العربة" },
             { title: "نوع المخالفة " },
             { title: "المنطقة" },
             { title: "تاريخ أخر قسط" },
@@ -252,9 +396,15 @@ pendingPayment.PendingPaymentTable = (PendingPaymentData, destroyTable) => {
 
     pendingPayment.destroyTable = true;
 
-    $(".ellipsisButton").on("click", (e) => {
+    $("#exportBtn").off("click").on("click", () => {
+        pendingPayment.exportToExcel();
+    });
+
+    // Use event delegation for ellipsis button clicks
+    $(document).on("click", ".ellipsisButton", function (e) {
+        e.stopPropagation();
         $(".hiddenListBox").hide(300);
-        $(e.currentTarget).siblings(".hiddenListBox").toggle(300);
+        $(this).siblings(".hiddenListBox").toggle(300);
     });
 
     let paymentLog = Table.rows().nodes().to$();
@@ -1236,33 +1386,48 @@ pendingPayment.findViolationByID = (event, taskID, print = false) => {
                         violationData,
                         "قيد السداد"
                     );
-                    printBox = `<div class="printBox" id="printJS-form">${Content}</div>`;
-                    functions.declarePopup(["generalPopupStyle", "detailsPopup"], printBox);
                 } else if (violationOffenderType == "Vehicle") {
                     Content = DetailsPopup.vehicleDetailsPopupContent(
                         violationData,
                         "قيد السداد"
                     );
-                    printBox = `<div class="printBox" id="printJS-form">${Content}</div>`;
-                    functions.declarePopup(["generalPopupStyle", "detailsPopup"], printBox);
+                } else if (violationOffenderType == "Equipment") {
+                    Content = DetailsPopup.equipmentDetailsPopupContent(
+                        violationData,
+                        "قيد السداد"
+                    );
+                }
 
-                    // Add the Vehicle Type handling
+                printBox = `<div class="printBox" id="printJS-form">${Content}</div>`;
+
+                // ✅ Render popup
+                functions.declarePopup(
+                    ["generalPopupStyle", "detailsPopup"],
+                    printBox
+                );
+
+                // ✅ FIX: Hide buttons AFTER rendering
+                setTimeout(() => {
+                    const popup = $(".detailsPopupForm");
+
+                    popup.find("#editMaterialMinPrice, #payAllPrice")
+                        .css("display", "none")
+                        .attr("style", "display: none !important");
+                }, 50);
+
+                // Vehicle logic
+                if (violationOffenderType == "Vehicle") {
                     let VehcleType = violationData.VehicleType;
                     if (VehcleType == "عربة بمقطورة") {
                         $(".TrailerNumberBox").show();
                     } else {
                         $(".TrailerNumberBox").hide();
                     }
-                } else if (violationOffenderType == "Equipment") {
-                    Content = DetailsPopup.equipmentDetailsPopupContent(
-                        violationData,
-                        "قيد السداد"
-                    );
-                    printBox = `<div class="printBox" id="printJS-form">${Content}</div>`;
-                    functions.declarePopup(["generalPopupStyle", "detailsPopup"], printBox);
                 }
 
-                // Add the print functionality
+                // Hide edit button (extra safety)
+                $("#editMaterialMinPrice").hide();
+
                 $(".printBtn").on("click", (e) => {
                     functions.PrintDetails(e);
                 });
@@ -1271,10 +1436,7 @@ pendingPayment.findViolationByID = (event, taskID, print = false) => {
                     functions.PrintDetails(event);
                 }
 
-                // Add the class to identify this popup
                 $(".detailsPopupForm").addClass("pendingPayment");
-            } else {
-                violationData = null;
             }
         })
         .catch((err) => {

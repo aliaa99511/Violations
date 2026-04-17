@@ -117,3 +117,39 @@
         transform: rotate(360deg);
     }
 }
+
+
+.exportBtn {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.exportBtn .btn-text {
+    display: inline-block;
+}
+
+.exportBtn .spinner-border {
+    width: 16px;
+    height: 16px;
+    border-width: 2px;
+    margin-left: 5px;
+}
+
+.exportBtn.loading {
+    pointer-events: none;
+    opacity: 0.7;
+}
+
+.exportBtn.loading .fa-download {
+    display: none;
+}
+
+.exportBtn.loading .spinner-border {
+    display: inline-block;
+}
+
+.exportBtn .spinner-border {
+    display: none;
+}

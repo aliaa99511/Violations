@@ -32,7 +32,6 @@ PendingViolations.getPendingViolations = (
       ...theCode,
       RowsPerPage: 10,
       PageIndex: pagination.currentPage,
-      // PageIndex: pageIndex,
       ColName: "created",
       SortOrder: "desc",
       Status: "Pending",
@@ -81,7 +80,6 @@ PendingViolations.getPendingViolations = (
       PendingViolations.setPaginations(ItemsData.TotalPageCount, ItemsData.RowsPerPage);
       PendingViolations.PendingviolationTable(Pendingviolation, destroyTable);
       PendingViolations.pageIndex = ItemsData.CurrentPage;
-      functions.getCurrentUserActions();
     })
     .catch((err) => {
       console.log(err);
@@ -93,6 +91,7 @@ PendingViolations.setPaginations = (TotalPages, RowsPerPage) => {
   pagination.start("#paginationID", PendingViolations.getPendingViolations);
   pagination.activateCurrentPage();
 };
+
 PendingViolations.filterViolationsLog = (e) => {
   let pageIndex = PendingViolations.pageIndex;
 
@@ -144,6 +143,7 @@ PendingViolations.filterViolationsLog = (e) => {
     );
   }
 };
+
 PendingViolations.resetFilter = (e) => {
   e.preventDefault();
   $("#nationalID").val("");
@@ -169,32 +169,114 @@ PendingViolations.handleViolationCategoryChange = () => {
     const $theCodeField = $("#theCode");
     const $typeOfViolationField = $("#TypeofViolation");
 
-    // First, enable both fields
     $theCodeField.prop("disabled", false);
     $typeOfViolationField.prop("disabled", false);
 
-    // Handle "Equipment" selection
     if (selectedCategory === "Equipment") {
-      $theCodeField.prop("disabled", true).val(""); // Disable and clear the field
-      $typeOfViolationField.prop("disabled", true).val("0"); // Disable and set to default
-    }
-
-    // Handle "Vehicle" selection
-    else if (selectedCategory === "Vehicle") {
-      $typeOfViolationField.prop("disabled", true).val("0"); // Disable and set to default
-      // theCode field remains enabled
+      $theCodeField.prop("disabled", true).val("");
+      $typeOfViolationField.prop("disabled", true).val("0");
+    } else if (selectedCategory === "Vehicle") {
+      $typeOfViolationField.prop("disabled", true).val("0");
     }
   });
 };
 
 const originalResetFilter = PendingViolations.resetFilter;
 PendingViolations.resetFilter = function (e) {
-  // Call the original resetFilter function
   originalResetFilter.call(this, e);
-
-  // Re-enable both fields after reset
   $("#theCode").prop("disabled", false);
   $("#TypeofViolation").prop("disabled", false);
+};
+
+PendingViolations.exportToExcel = () => {
+  // Get current filter values
+  const theCodeValue = $("#theCode").val();
+  const violationCategoryValue = $("#violationCategory").val();
+
+  const theCode = {};
+  if (theCodeValue && theCodeValue.trim() !== "" && violationCategoryValue) {
+    if (violationCategoryValue === "Quarry") {
+      theCode.QuarryCode = theCodeValue;
+    } else if (violationCategoryValue === "Vehicle") {
+      theCode.CarNumber = theCodeValue;
+    }
+  }
+
+  const currentFilters = {
+    ...theCode,
+    RowsPerPage: 10000000, // Get all records for export
+    PageIndex: 1,
+    ColName: "created",
+    SortOrder: "desc",
+    Status: "Pending",
+    ViolatorName: $("#violatorName").val(),
+    NationalID: $("#nationalID").val(),
+    ViolationCode: $("#violationCode").val(),
+    ViolationType: Number($("#TypeofViolation").children("option:selected").data("id")),
+    SectorConfigId: Number($("#violationSector").children("option:selected").val()),
+    GlobalSearch: $("#violationSearch").val(),
+    OffenderType: $("#violationCategory").val(),
+    ViolationsZone: $("#violationZone").val(),
+    CreatedFrom: $("#createdFrom").val() ? moment($("#createdFrom").val(), "DD-MM-YYYY").format("YYYY-MM-DD") : null,
+    CreatedTo: $("#createdTo").val() ? moment($("#createdTo").val(), "DD-MM-YYYY").format("YYYY-MM-DD") : null,
+  };
+
+  // Define columns with their data mapping
+  const columns = [
+    {
+      title: "رقم المخالفة",
+      data: "Violation.ViolationCode",
+    },
+    {
+      title: "",
+      skip: true
+    },
+    {
+      title: "تصنيف المخالفة",
+      render: (record) => functions.getViolationArabicName(record.Violation?.OffenderType),
+    },
+    {
+      title: "رقم المحجر/العربة",
+      render: (record) => {
+        const violation = record.Violation;
+        if (!violation) return "---";
+        return violation.OffenderType === "Vehicle" ? (violation.CarNumber || "---") : (violation.QuarryCode || "---");
+      },
+    },
+    {
+      title: "إسم الشركة المخالفة",
+      data: "Violation.ViolatorCompany",
+    },
+    {
+      title: "نوع المخالفة",
+      render: (record) => functions.getViolationArabicName(record.Violation?.OffenderType, record.Violation?.ViolationTypes?.Title),
+    },
+    {
+      title: "المنطقة",
+      data: "Violation.ViolationsZone",
+    },
+    {
+      title: "تاريخ الضبط",
+      render: (record) => functions.getFormatedDate(record.Violation?.ViolationDate),
+    },
+    {
+      title: "تاريخ الإنشاء",
+      render: (record) => functions.getFormatedDate(record.Created),
+    },
+  ];
+
+  functions.exportFromAPI({
+    searchUrl: "/_layouts/15/Uranium.Violations.SharePoint/Tasks.aspx/Search",
+    requestData: { Data: currentFilters },
+    columns: columns,
+    fileName: "المخالفات قيد الانتظار.xlsx",
+    sheetName: "المخالفات قيد الانتظار",
+    columnWidths: 25,
+    rtl: true,
+    dataPath: "d.Result.GridData",
+    exportButtonSelector: "#exportBtn",
+    tableSelector: "#PendingViolation"
+  });
 };
 
 PendingViolations.PendingviolationTable = (Pendingviolation, destroyTable) => {
@@ -205,13 +287,11 @@ PendingViolations.PendingviolationTable = (Pendingviolation, destroyTable) => {
       taskViolation = record.Violation;
       let createdDate = functions.getFormatedDate(record.Created);
       if (taskViolation) {
-        // Check if IsRejectedBefore is true and add red circle indicator
         const rejectedIndicator = taskViolation.IsRejectedBefore ?
           '<span class="rejected-indicator" title="تم رفضها سابقاً"></span> ' :
           '';
 
         data.push([
-          // Modified first column to include red circle when IsRejectedBefore is true
           `<div class="violationId" style="display: flex;align-items: center;" data-taskid="${record.ID}" data-violationid="${taskViolation?.ID}" data-offendertype=${taskViolation.OffenderType} data-violationcode="${taskViolation.ViolationCode}">
             ${rejectedIndicator}${taskViolation.ViolationCode || "----"}
           </div>`,
@@ -279,16 +359,19 @@ PendingViolations.PendingviolationTable = (Pendingviolation, destroyTable) => {
     "المخالفات قيد الانتظار"
   );
 
-  // 🔹 create column selector
   functions.createColumnSelector(Table, "#columnSelector", 'green');
-
   PendingViolations.destroyTable = true;
+
+  // Update export button handler
+  $("#exportBtn").off("click").on("click", () => {
+    PendingViolations.exportToExcel();
+  });
 
   let violationlog = Table.rows().nodes().to$();
   let UserId = _spPageContextInfo.userId;
 
   functions.callSharePointListApi("Configurations").then((Users) => {
-    let UserDetails = null; // Initialize as null
+    let UserDetails = null;
     let UsersData = Users.value;
     UsersData.forEach((User) => {
       if (User.UserIdId.find((id) => id == UserId)) {
@@ -302,14 +385,6 @@ PendingViolations.PendingviolationTable = (Pendingviolation, destroyTable) => {
       let violationId = jQueryRecord.find(".violationId").data("violationid");
       let violationCode = jQueryRecord.find(".violationId").data("violationcode");
       let hiddenListBox = jQueryRecord.find(".controls").children(".hiddenListBox");
-
-      // if (
-      //   violationlog.length > 4 &&
-      //   hiddenListBox.height() > 110 &&
-      //   jQueryRecord.is(":nth-last-child(-n + 4)")
-      // ) {
-      //   hiddenListBox.addClass("toTopDDL");
-      // }
 
       jQueryRecord
         .find(".controls")
@@ -325,12 +400,11 @@ PendingViolations.PendingviolationTable = (Pendingviolation, destroyTable) => {
         .find(".itemDetails")
         .on("click", (e) => {
           $(".overlay").addClass("active");
-          // Pass UserDetails or null/empty string if not found
           PendingViolations.findViolationByID(
             e,
             taskID,
             false,
-            UserDetails ? UserDetails.JobTitle1 : "" // Safe access with null check
+            UserDetails ? UserDetails.JobTitle1 : ""
           );
         });
       jQueryRecord
@@ -379,9 +453,7 @@ PendingViolations.PendingviolationTable = (Pendingviolation, destroyTable) => {
     // Use event delegation to handle clicks on dynamically added elements
     $(document).on("click", ".ellipsisButton", function (e) {
       e.stopPropagation();
-      // Hide all other hiddenListBoxes first
       $(".hiddenListBox").hide(300);
-      // Show the one related to this button
       $(this).siblings(".hiddenListBox").toggle(300);
     });
   });
@@ -508,7 +580,7 @@ PendingViolations.findViolationByID = (
       console.log(err);
     });
 };
-// Approve Violation Confirmation Popup
+
 PendingViolations.approveTaskPopup = (
   violationTaskID,
   violationCode,
@@ -548,7 +620,6 @@ PendingViolations.approveTaskPopup = (
     popupHtml
   );
 
-  // Add close button handlers
   $("#closeApprovePopup, #closeApprovePopupFooter").on("click", function () {
     functions.closePopup();
   });
@@ -559,7 +630,6 @@ PendingViolations.approveTaskPopup = (
     PendingViolations.approveTaskAction(violationTaskID, violationId);
   });
 };
-// Edit MinPrice Violation Confirmation Popup
 
 PendingViolations.editMinPriceTaskPopup = (
   violationTaskID,
@@ -606,7 +676,6 @@ PendingViolations.editMinPriceTaskPopup = (
     popupHtml
   );
 
-  // Add close button handlers
   $("#closeEditMinPricePopup, #closeEditMinPricePopupFooter").on("click", function () {
     functions.closePopup();
   });
@@ -707,6 +776,7 @@ PendingViolations.approveEditMaterialMinPrice = (
       console.log(err);
     });
 };
+
 PendingViolations.approveTaskAction = (violationTaskID, violationId) => {
   let request = {
     Data: {
@@ -783,7 +853,6 @@ PendingViolations.RejectTaskPopup = (violationCode, taskID, violationId) => {
     popupHtml
   );
 
-  // Add close button handlers
   $("#closeRejectPopup, #closeRejectPopupFooter").on("click", function () {
     functions.closePopup();
   });
@@ -798,7 +867,6 @@ PendingViolations.RejectTaskPopup = (violationCode, taskID, violationId) => {
     if (rejectComment != "") {
       $(".overlay").addClass("active");
       PendingViolations.RejectTaskAction(taskID, violationId, rejectComment);
-      // $("#RejectBtn").attr("data-dismiss", "modal");
     } else {
       functions.warningAlert("من فضلك قم بإدخال سبب الرفض أولا");
     }
@@ -834,7 +902,6 @@ PendingViolations.RejectTaskAction = (taskID, violationId, rejectComment) => {
 };
 
 const ViolationHistoryLogs = () => {
-
   let selectedViolationId = null;
   let selectedViolationCode = null;
   let trackHistoryTable = null;
@@ -860,16 +927,13 @@ const ViolationHistoryLogs = () => {
 
     // Clear the modal content
     $(".track-history-violation-code").text("");
-
     if (trackHistoryTable) {
       trackHistoryTable.clear().destroy();
       trackHistoryTable = null;
     }
-
     $("#trackHistoryTable tbody").empty();
   };
 
-  // Close button in header
   $(document).on("click", "#closeViolationHistoryPopup", function (e) {
     e.preventDefault();
     e.stopPropagation();
@@ -892,7 +956,6 @@ const ViolationHistoryLogs = () => {
   // 🔥 لما المودال يفتح
   // ===============================
   $(".track-history-modal").on("shown.bs.modal", function () {
-
     $(".track-history-violation-code").text(selectedViolationCode);
 
     const request = {
@@ -905,67 +968,30 @@ const ViolationHistoryLogs = () => {
 
     // ✅ لو أول مرة نعمل init
     if (!trackHistoryTable) {
-
       trackHistoryTable = tableElement.DataTable({
         processing: true,
         paging: false,
         responsive: true,
         destroy: true,
-        // ordering: false,
-        // searching: false,
-        // info: false,
-
         ajax: {
           url: "/_layouts/15/Uranium.Violations.SharePoint/ViolationHistoryLogs.aspx/Search",
           type: "POST",
           contentType: "application/json",
           data: () => JSON.stringify(request),
-
           dataSrc: (data) => {
             return data?.d?.Result?.GridData || [];
           }
         },
-
         columns: [
-          {
-            data: null,
-            render: (data, type, row, meta) => {
-              return meta.row;
-            }
-          },
-          {
-            data: "Status",
-            render: (data) => {
-              return data || "-";
-            }
-          },
-          {
-            data: "Created",
-            render: (data) =>
-              data ? functions.getFormatedDate(data) : "-"
-          },
-          {
-            data: "CreatedBy",
-            render: (data) => {
-              return data || "-";
-            }
-          },
-          {
-            data: "Comment",
-            render: (data) => {
-              return data || "-";
-            }
-          }
+          { data: null, render: (data, type, row, meta) => meta.row },
+          { data: "Status", render: (data) => data || "-" },
+          { data: "Created", render: (data) => data ? functions.getFormatedDate(data) : "-" },
+          { data: "CreatedBy", render: (data) => data || "-" },
+          { data: "Comment", render: (data) => data || "-" }
         ],
-
-        language: {
-          emptyTable: "لا توجد بيانات",
-        }
+        language: { emptyTable: "لا توجد بيانات" }
       });
-
     } else {
-
-      // ✅ Reload فقط
       trackHistoryTable.ajax.reload();
     }
   });
@@ -974,19 +1000,21 @@ const ViolationHistoryLogs = () => {
   // 🔥 لما المودال يقفل
   // ===============================
   $(".track-history-modal").on("hidden.bs.modal", function () {
-
     $(".track-history-violation-code").text("");
-
     if (trackHistoryTable) {
       trackHistoryTable.clear().destroy();
       trackHistoryTable = null;
     }
-
     $("#trackHistoryTable tbody").empty();
   });
-
 };
+
 ViolationHistoryLogs();
 
-
 export default PendingViolations;
+
+
+
+
+
+

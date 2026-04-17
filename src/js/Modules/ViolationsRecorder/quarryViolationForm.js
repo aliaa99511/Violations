@@ -15,6 +15,7 @@ quarryViolation.violatorDetails = () => {
   let violatorNameCheck = functions.getNameInTriple("#violatorName");
   let violatorName = $("#violatorName").val();
   let violatorNationalId = $("#violatorNationalId").val();
+  let violatorMobileNumber = $("#violatorMobileNumber").val();
 
   // Get the previous violations count from the display span instead of input
   let violationPrevCount = $(".previous-violations-count-value").text();
@@ -32,10 +33,24 @@ quarryViolation.violatorDetails = () => {
     if (violationPrevCount !== "" && !isNaN(violationPrevCount)) {
       if (violationGov != "") {
         if (violationArea != "") {
+
+          // Check National ID if provided
+          if (violatorNationalId !== "") {
+            // Check if exactly 14 digits
+            if (!/^\d{14}$/.test(violatorNationalId)) {
+              functions.warningAlert(
+                "الرقم القومي يجب أن يتكون من 14 رقمًا بالضبط",
+                "#violatorNationalId"
+              );
+              return false;
+            }
+          }
+
           violatorDetails = {
             violatorName: violatorName,
             violatorNationalId: violatorNationalId != "" ? violatorNationalId : "",
-            violationPrevCount: Number(violationPrevCount), // Use the display value
+            violatorMobileNumber: violatorMobileNumber != "" ? violatorMobileNumber : "",
+            violationPrevCount: Number(violationPrevCount),
             companyName: companyName != "" ? companyName : "",
             commercialRegister: commercialRegister != "" ? commercialRegister : "",
             violationAreaName: violationArea,
@@ -458,6 +473,10 @@ quarryViolation.formActions = () => {
       $(".previous-violations-display").fadeOut();
       $(".previous-violations-count-value").text("0");
     }
+  });
+
+  $(".violatorMobileNumber").on("keypress", (e) => {
+    return functions.isNumberKey(e);
   });
 
   // Trigger API call on quarry code change
@@ -915,7 +934,6 @@ quarryViolation.validateForm = (e) => {
                   // Edit violation 
                   ID: urlParams.get("taskId") !== null ? editViolationId : "",
                   IsEdit: urlParams.get("taskId") !== null ? true : false,
-
                   IsRejectedBefore: urlParams.get("taskId") !== null ? true : false,
 
                   // End edit violation
@@ -923,6 +941,7 @@ quarryViolation.validateForm = (e) => {
                   OffenderType: "Quarry",
                   ViolatorName: violatorDetails.violatorName,
                   NationalID: violatorDetails.violatorNationalId,
+                  MobileNumber: violatorDetails.violatorMobileNumber,
                   NumOfPreviousViolations: violatorDetails.violationPrevCount,
                   ViolatorCompany: violatorDetails.companyName,
                   CommercialRegister: violatorDetails.commercialRegister,
@@ -935,8 +954,6 @@ quarryViolation.validateForm = (e) => {
                     : 0,
                   MaterialType: violationDetails.violationMaterail,
                   ViolationDate: violationDate,
-                  // ViolationDate: moment(violationDetails.violationDate).format('DD-MM-YYYY') ,
-
                   ViolationTime: violationTime,
                   QuarryType: violationDetails.quarryType,
                   QuarryCode: violationDetails.quarryCode,
@@ -954,8 +971,6 @@ quarryViolation.validateForm = (e) => {
 
                   Description: otherViolationDetails?.violationDescription,
                   LeaderOpinion: otherViolationDetails?.violationLeaderOpinion,
-                  // CommiteeMember: otherViolationDetails?.committeeMembersId.length > 0 ? otherViolationDetails.committeeMembersId : [],
-                  // CommiteeMember: otherViolationDetails?.member,
                   CommiteeMember:
                     otherViolationDetails.membersNamesText != ""
                       ? otherViolationDetails.membersNamesText
@@ -964,7 +979,6 @@ quarryViolation.validateForm = (e) => {
                   Sector: 0,
                 };
 
-                // Add MaterialUnit property if calculate by ton is checked
                 if (isCalculateByTon) {
                   ViolationData.MaterialUnit = "طن";
                 }
@@ -1072,7 +1086,6 @@ quarryViolation.GetCoordinates = () => {
   let IsValid = true;
   let pattern = new RegExp(/^\d*\.?\d*$/);
 
-  // We need exactly 3 valid points
   let validPointsCount = 0;
 
   Rows.each((index, Row) => {
@@ -1121,20 +1134,22 @@ quarryViolation.GetCoordinates = () => {
           let CurrentField = $(Field);
           let Value = CurrentField.val().trim();
 
-          // Validate all rows
-          if (Value === "" || !pattern.test(Value) ||
-            (fieldIndex === 0 && (firstEastInputVal > 37 || firstEastInputVal < 24)) ||
-            (fieldIndex === 0 && (firstNorthInputVal > 32 || firstNorthInputVal < 22)) ||
-            (fieldIndex === 1 && (secondEastInputVal > 60 || secondNorthInputVal > 60)) ||
-            (fieldIndex === 2 && (thirdEastInputVal > 60 || thirdNorthInputVal > 60))) {
-            rowValid = false;
-            return false;
+          // Validate all rows - skip validation if field is empty (optional fields)
+          if (Value !== "") {
+            if (!pattern.test(Value) ||
+              (fieldIndex === 0 && (firstEastInputVal > 37 || firstEastInputVal < 24)) ||
+              (fieldIndex === 0 && (firstNorthInputVal > 32 || firstNorthInputVal < 22)) ||
+              (fieldIndex === 1 && (secondEastInputVal > 60 || secondNorthInputVal > 60)) ||
+              (fieldIndex === 2 && (thirdEastInputVal > 60 || thirdNorthInputVal > 60))) {
+              rowValid = false;
+              return false;
+            }
           }
           Temp.push(Value);
         });
 
         // Only add to arrays if we have all three values for this cell
-        if (Temp.length === 3) {
+        if (Temp.length === 3 && Temp[0] !== "" && Temp[1] !== "" && Temp[2] !== "") {
           PointArr.push(Temp[0] + "° " + Temp[1] + "' " + Temp[2] + '"');
           NumberArr.push(Temp[0] + " " + Temp[1] + " " + Temp[2] + " ");
           DecimalArr.push(
@@ -1146,7 +1161,7 @@ quarryViolation.GetCoordinates = () => {
       }
     });
 
-    // Only count this row as valid if both East and North cells have data
+    // Only count this row as valid if both East and North cells have complete data
     if (rowValid && PointArr.length === 2) {
       validPointsCount++;
 
@@ -1166,8 +1181,8 @@ quarryViolation.GetCoordinates = () => {
   NumbersArr += "]";
   DecimalsArr += "]";
 
-  // Require exactly 3 valid points
-  if (IsValid && validPointsCount === 3) {
+  // Require at least 1 valid point (changed from exactly 3)
+  if (IsValid && validPointsCount >= 1) {
     return {
       Degree: PointsArr,
       Decimal: DecimalsArr,
@@ -1179,21 +1194,10 @@ quarryViolation.GetCoordinates = () => {
 };
 quarryViolation.AddCoordinatePoint = (e) => {
   let coordinatesTable = $("#coordinatesTable");
-  let currentRows = coordinatesTable.find("tr").length - 1; // Subtract header row
 
-  // Check if we already have 3 rows
-  if (currentRows >= 3) {
-    Swal.fire({
-      icon: "warning",
-      customClass: "sweetStyle",
-      title: "لا يمكن إضافة المزيد",
-      text: "يمكن إضافة 3 نقاط فقط للإحداثيات",
-      confirmButtonColor: "#3085d6",
-      confirmButtonText: "موافق",
-      heightAuto: true,
-    });
-    return;
-  }
+  // Remove the 3-point limit check to allow adding more points
+  // The old code had a check that prevented adding more than 3 points
+  // Now we allow unlimited points
 
   let cloneRow = $("#coordinatesTable")
     .find("tr.hideRow")
@@ -1216,7 +1220,8 @@ quarryViolation.DeleteCoordinatePoint = (e) => {
   var element = $(e.currentTarget);
   let RowsLength = $("#coordinatesTable table").find("tr").length - 1; // Subtract header row
 
-  if (RowsLength > 3) {
+  // Changed from requiring 3 points to requiring at least 1 point
+  if (RowsLength > 1) {
     Swal.fire({
       icon: "warning",
       customClass: "sweetStyle",
@@ -1241,7 +1246,7 @@ quarryViolation.DeleteCoordinatePoint = (e) => {
       icon: "warning",
       customClass: "sweetStyle",
       title: "لا يمكن الحذف",
-      text: "يجب أن يكون هناك 3 نقاط على الأقل للإحداثيات",
+      text: "يجب أن يكون هناك نقطة واحدة على الأقل للإحداثيات", // Updated message
       confirmButtonColor: "#3085d6",
       confirmButtonText: "موافق",
       heightAuto: true,
@@ -1329,9 +1334,10 @@ quarryViolation.editViolation = () => {
         let violationData = data.d.Violation;
         editViolationId = data.d.ViolationId
         functions.commonEditData(violationData, data.d.ViolationId, 4);
-        $("#BonesCount")
-          .val(violationData.BonsNumber)
-          .trigger("change");
+
+        $("#violatorMobileNumber").val(violationData.MobileNumber || "");
+
+        $("#BonesCount").val(violationData.BonsNumber).trigger("change");
         $("#quarryType").val(violationData.QuarryType).trigger("change");
         $("#quarryCode").val(violationData.QuarryCode);
         violationData.Equipments.forEach((equipment, index) => {

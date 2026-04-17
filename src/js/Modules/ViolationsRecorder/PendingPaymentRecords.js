@@ -12,10 +12,25 @@ pendingPaymentRecords.getPendingPayment = (
     ViolationType = Number($("#TypeofViolation").children("option:selected").data("id")),
     ViolationGeneralSearch = ""
 ) => {
+    // Check if theCode field has a value but violationCategory is empty
+    const theCodeValue = $("#theCode").val();
+    const violationCategoryValue = $("#violationCategory").val();
+
+    if (theCodeValue && theCodeValue.trim() !== "" && (!violationCategoryValue || violationCategoryValue === "")) {
+        functions.warningAlert("من فضلك قم باختيار تصنيف المخالفة قبل إدخال رقم المحجر/عربة/معدة");
+        $(".PreLoader").removeClass("active");
+        return;
+    }
+
+    const theCode = violationCategoryValue == "Quarry"
+        ? { QuarryCode: $("#theCode").val() }
+        : { CarNumber: $("#theCode").val() };
+
     let UserId = _spPageContextInfo.userId;
 
     let request = {
         Data: {
+            ...theCode,
             RowsPerPage: 10,
             PageIndex: pagination.currentPage,
             ColName: "created",
@@ -25,6 +40,8 @@ pendingPaymentRecords.getPendingPayment = (
             ViolationType: ViolationType,
             GlobalSearch: $("#violationSearch").val(),
             OffenderType: $("#violationCategory").val(),
+            ViolatorName: $("#violatorName").val(),
+            ViolatorCompany: $("#companyName").val(),
             CreatedFrom: $("#createdFrom").val()
                 ? moment($("#createdFrom").val(), "DD-MM-YYYY").format("YYYY-MM-DD")
                 : null,
@@ -59,7 +76,6 @@ pendingPaymentRecords.getPendingPayment = (
             pendingPaymentRecords.setPaginations(ItemsData.TotalPageCount, ItemsData.RowsPerPage);
             pendingPaymentRecords.PendingPaymentTable(pendingPaymentData, destroyTable);
             pendingPaymentRecords.pageIndex = ItemsData.CurrentPage;
-            functions.getCurrentUserActions();
         })
         .catch((err) => {
             console.log(err);
@@ -76,15 +92,26 @@ pendingPaymentRecords.filterPaymentsLog = () => {
     let pageIndex = pendingPaymentRecords.pageIndex;
     let ViolationTypeVal = $("#TypeofViolation").children("option:selected").data("id");
     let ViolationGeneralSearch = $("#violationSearch").val();
-    let violationCategory = $("#violationCategory").val(); // Get violation category value
+    let violationCategory = $("#violationCategory").val();
+    const theCodeValue = $("#theCode").val();
+    const violationCategoryValue = $("#violationCategory").val();
+
+    // Check if theCode has value but violationCategory is empty
+    if (theCodeValue && theCodeValue.trim() !== "" && (!violationCategoryValue || violationCategoryValue === "")) {
+        functions.warningAlert("من فضلك قم باختيار تصنيف المخالفة قبل إدخال رقم المحجر/عربة/معدة");
+        return;
+    }
 
     // Check if at least one filter has a value
     if (
         ViolationTypeVal == "0" &&
         ViolationGeneralSearch == "" &&
-        (!violationCategory || violationCategory === "") && // Check if violationCategory is empty
+        (!violationCategory || violationCategory === "") &&
         $("#createdFrom").val() == "" &&
-        $("#createdTo").val() == ""
+        $("#createdTo").val() == "" &&
+        $("#violatorName").val() == "" &&
+        $("#companyName").val() == "" &&
+        $("#theCode").val() == ""
     ) {
         functions.warningAlert(
             "من فضلك قم بإدخال قيمة واحدة على الأقل من قيم البحث"
@@ -106,6 +133,9 @@ pendingPaymentRecords.resetFilter = (e) => {
     $("#violationCategory").val("");
     $("#TypeofViolation").val("0");
     $("#violationSearch").val("");
+    $("#violatorName").val("");
+    $("#companyName").val("");
+    $("#theCode").val("");
     $("#createdFrom").val("");
     $("#createdTo").val("");
 
@@ -113,35 +143,42 @@ pendingPaymentRecords.resetFilter = (e) => {
     pagination.reset();
     pendingPaymentRecords.getPendingPayment();
 
-    // Re-enable the TypeofViolation field after reset
+    // Re-enable fields after reset
+    $("#theCode").prop("disabled", false);
     $("#TypeofViolation").prop("disabled", false);
 };
 
 pendingPaymentRecords.handleViolationCategoryChange = () => {
     $("#violationCategory").on("change", function () {
         const selectedCategory = $(this).val();
+        const $theCodeField = $("#theCode");
         const $typeOfViolationField = $("#TypeofViolation");
 
         // First, enable both fields
+        $theCodeField.prop("disabled", false);
         $typeOfViolationField.prop("disabled", false);
 
         // Handle "Equipment" selection
         if (selectedCategory === "Equipment") {
+            $theCodeField.prop("disabled", true).val(""); // Disable and clear the field
             $typeOfViolationField.prop("disabled", true).val("0"); // Disable and set to default
         }
 
         // Handle "Vehicle" selection
         else if (selectedCategory === "Vehicle") {
             $typeOfViolationField.prop("disabled", true).val("0"); // Disable and set to default
+            // theCode field remains enabled
         }
     });
 };
+
 const originalResetFilter = pendingPaymentRecords.resetFilter;
 pendingPaymentRecords.resetFilter = function (e) {
     // Call the original resetFilter function
     originalResetFilter.call(this, e);
 
-    // Re-enable both fields after reset
+    // Re-enable fields after reset
+    $("#theCode").prop("disabled", false);
     $("#TypeofViolation").prop("disabled", false);
 };
 
@@ -287,10 +324,673 @@ pendingPaymentRecords.PendingPaymentTable = (PendingPaymentData, destroyTable) =
                     $(".overlay").addClass("active");
                     pendingPaymentRecords.findViolationByID(e, taskID, false);
                 });
+
+            jQueryRecord
+                .find(".controls")
+                .children(".hiddenListBox")
+                .find(".payInstallment")
+                .on("click", (e) => {
+                    $(".overlay").addClass("active");
+                    pendingPaymentRecords.getViolationDetailsForPayment(taskID);
+                });
         });
     });
 
     functions.hideTargetElement(".controls", ".hiddenListBox");
+};
+
+pendingPaymentRecords.getViolationDetailsForPayment = (taskID) => {
+    let request = {
+        Id: taskID,
+    };
+
+    functions
+        .requester(
+            "/_layouts/15/Uranium.Violations.SharePoint/Tasks.aspx/FindbyId",
+            request
+        )
+        .then((response) => {
+            if (response.ok) {
+                return response.json();
+            }
+        })
+        .then((data) => {
+            $(".overlay").removeClass("active");
+            let TaskData = data.d;
+
+            let violationData = TaskData.Violation;
+            let offenderType = violationData.OffenderType;
+            let Content = '';
+
+            // Get the appropriate details popup content based on offender type
+            if (offenderType == "Quarry") {
+                Content = DetailsPopup.quarryDetailsPopupContent(
+                    violationData,
+                    "قيد السداد"
+                );
+            } else if (offenderType == "Vehicle") {
+                Content = DetailsPopup.vehicleDetailsPopupContent(
+                    violationData,
+                    "قيد السداد"
+                );
+            } else if (offenderType == "Equipment") {
+                Content = DetailsPopup.equipmentDetailsPopupContent(
+                    violationData,
+                    "قيد السداد"
+                );
+            }
+
+            // Find the last section and replace it with payment form
+            let lastSectionStart = Content.lastIndexOf('<div class="popupFormBoxHeader">');
+            if (lastSectionStart !== -1) {
+                let sectionEnd = Content.lastIndexOf('</div>', Content.length - 10);
+                if (sectionEnd !== -1 && sectionEnd > lastSectionStart) {
+                    Content = Content.substring(0, lastSectionStart);
+                }
+            }
+
+            // Add payment form
+            let paymentForm = pendingPaymentRecords.paymentFormHtml(TaskData);
+            Content += paymentForm;
+
+            let printBox = `<div class="printBox" id="printJS-form">${Content}</div>`;
+            functions.declarePopup(
+                ["generalPopupStyle", "detailsPopup"],
+                printBox
+            );
+
+            // Add vehicle type specific handling
+            if (offenderType == "Vehicle") {
+                let VehcleType = violationData.VehicleType;
+                if (VehcleType == "عربة بمقطورة") {
+                    $(".TrailerNumberBox").show();
+                } else {
+                    $(".TrailerNumberBox").hide();
+                }
+            }
+
+            let ExDate = functions.getFormatedDate(TaskData?.ReconciliationExpiredDate);
+            pendingPaymentRecords.popupPermissionShowTypes("PaymentForm", taskID, ExDate);
+            pendingPaymentRecords.paymentFormActions(TaskData);
+
+            $(".printBtn").on("click", (e) => {
+                functions.PrintDetails(e);
+            });
+
+            $(".approveViolation, .rejectViolation, .confirmViolation, .editMaterialMinPrice").hide();
+            $(".detailsPopupForm").addClass("pendingPayment");
+        })
+        .catch((err) => {
+            console.log(err);
+            $(".overlay").removeClass("active");
+        });
+};
+
+pendingPaymentRecords.paymentFormHtml = (TaskData) => {
+    let violationData = TaskData.Violation;
+    let offenderType = violationData.OffenderType;
+    let violationPriceType = violationData.ViolationTypes?.PriceType || "";
+    let TotalViolationPrice = violationData.TotalPriceDue;
+    let RoyaltyPrice = violationData.LawRoyalty;
+    let QuarryMaterialValue = violationData.QuarryMaterialValue;
+    let totalInstallmentsPaidAmount = violationData?.TotalInstallmentsPaidAmount || 0;
+
+    let endDate = functions.getFormatedDate(TaskData?.ReconciliationExpiredDate);
+    endDate = endDate === "01-01-2001" ? "-" : endDate;
+
+    let violationTypeLastPrice;
+    let labelText;
+    let inputVal;
+
+    if (offenderType == "Quarry") {
+        violationTypeLastPrice = DetailsPopup.getQuarryViolationValueByType(
+            violationPriceType,
+            TotalViolationPrice,
+            QuarryMaterialValue,
+        );
+        labelText = violationTypeLastPrice.labelText;
+        inputVal = violationTypeLastPrice.InputVal;
+    } else {
+        violationTypeLastPrice = DetailsPopup.getVechileViolationValueByType(
+            TotalViolationPrice,
+            RoyaltyPrice,
+        );
+        labelText = violationTypeLastPrice.labelText;
+        inputVal = violationTypeLastPrice.InputVal;
+    }
+
+    let quarryPriceInDetails = `
+        <div class="col-md-4 violationPriceBox">
+            <div class="form-group customFormGroup">
+                <label for="quarryPrice" class="customLabel">${labelText}</label>
+                <input class="form-control customInput quarryPrice disabledInput" id="quarryPrice" type="text" value="${functions.splitBigNumbersByComma(inputVal)}" disabled>
+            </div>
+        </div>
+        <div class="col-md-4 royaltyPriceBox">
+            <div class="form-group customFormGroup">
+                <label for="royaltyPrice" class="customLabel">قيمة الإتاوة</label>
+                <input class="form-control customInput royaltyPrice disabledInput" id="royaltyPrice" type="text" value="${functions.splitBigNumbersByComma(violationData?.LawRoyalty)}" disabled>
+            </div>
+        </div>
+        <div class="col-md-4 equipmentsPriceBox">
+            <div class="form-group customFormGroup">
+                <label for="equipmentsPrice" class="customLabel">غرامة المعدات</label>
+                <input class="form-control customInput equipmentsPrice disabledInput" id="equipmentsPrice" type="text" value="${functions.splitBigNumbersByComma(violationData?.TotalEquipmentsPrice)}" disabled>
+            </div>
+        </div>
+    `;
+
+    let vehiclePriceInDetails = `
+        <div class="col-md-6">
+            <div class="form-group customFormGroup">
+                <label for="quarryPrice" class="customLabel">${labelText}</label>
+                <input class="form-control customInput quarryPrice disabledInput" id="quarryPrice" type="text" value="${functions.splitBigNumbersByComma(inputVal)}" disabled>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="form-group customFormGroup">
+                <label for="royaltyPrice" class="customLabel">قيمة الإتاوة</label>
+                <input class="form-control customInput royaltyPrice disabledInput" id="royaltyPrice" type="text" value="${functions.splitBigNumbersByComma(violationData?.LawRoyalty)}" disabled>
+            </div>
+        </div>
+    `;
+
+    let equipmentsPriceInDetails = `
+        <div class="col-md-6 equipmentsPriceBox">
+            <div class="form-group customFormGroup">
+                <label for="equipmentsPrice" class="customLabel">غرامة المعدات</label>
+                <input class="form-control customInput equipmentsPrice disabledInput" id="equipmentsPrice" type="text" value="${functions.splitBigNumbersByComma(violationData?.TotalEquipmentsPrice)}" disabled>
+            </div>
+        </div>
+    `;
+
+    let paymentFormHtml = `
+        <div class="popupFormBoxHeader">
+            <p class="formBoxTitle"><span class="formNumber">2</span> تسديد القسط</p>
+        </div>
+        <div class="paymentFormBody">
+            <div class="popupForm paymentForm" id="paymentForm" 
+                    data-taskid="${TaskData.ID}" 
+                    data-violationid="${TaskData.ViolationId}" 
+                    data-actualprice="${violationData.ActualAmountPaid}" 
+                    data-lawroyalty="${violationData.LawRoyalty}" 
+                    data-totalequipmentsprice="${violationData.TotalEquipmentsPrice}" 
+                    data-totalprice="${violationData.TotalPriceDue}" 
+                    data-offendertype="${violationData.OffenderType}" 
+                    data-violationpricetype="${offenderType == "Quarry" ? violationPriceType : 0}"
+                    data-totalinstallmentspaidamount="${totalInstallmentsPaidAmount}">
+                <div class="formContent">
+                    <div class="formBox">
+                        <div class="formElements">
+                            <div class="row">
+                                ${offenderType == "Quarry" ? quarryPriceInDetails :
+            offenderType == "Vehicle" ? vehiclePriceInDetails :
+                offenderType == "Equipment" ? equipmentsPriceInDetails : ""}
+                                
+                                <div class="col-md-6">
+                                    <div class="form-group customFormGroup">
+                                        <label for="totalPrice" class="customLabel">إجمالي قيمة المخالفة</label>
+                                        <input class="form-control customInput totalPrice disabledInput" id="totalPrice" type="text" 
+                                              value="${functions.splitBigNumbersByComma(violationData?.TotalPriceDue) || ""}" disabled>
+                                    </div>
+                                    
+                                    <div class="form-group customFormGroup">
+                                        <label for="reconciliationPeriod" class="customLabel">تاريخ نهاية مدة التصالح</label>
+                                        <div class="inputIconBox">
+                                            <input class="form-control customInput reconciliationPeriod disabledInput" id="reconciliationPeriod" type="text" 
+                                                    value="${endDate}" disabled>
+                                            <i class="fa-solid fa-calendar-days"></i>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="form-group customFormGroup actualRemainigPriceBox">
+                                        <label class="customLabel">المبلغ المتبقي</label>
+                                        <input class="form-control customInput disabledInput remainingAmount" type="text" 
+                                               value="${functions.splitBigNumbersByComma(violationData?.RemainingAmount) || ""}" disabled>
+                                    </div>
+                                    
+                                    <div class="form-group customFormGroup">
+                                        <div class="feildInfoBox">
+                                            <label for="payedPrice" class="customLabel">المبلغ المراد تسديده *</label>
+                                            <span class="metaDataSpan">بالجنيه المصري</span>
+                                        </div>
+                                        <input class="form-control customInput payedPrice blueCustomInput" id="payedPrice" type="text" placeholder="ادخل المبلغ المراد تسديده">
+                                    </div>
+                                    
+                                    <div class="form-group customFormGroup installmentBox">
+                                      <label class="checkboxLabel">
+                                        <input
+                                          type="checkbox"
+                                          class="installmentCheckbox"
+                                          checked
+                                          disabled
+                                        />
+                                        سداد بالتقسيط
+                                      </label>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    ${offenderType != "Equipment" ? `
+                                    <div class="form-group customFormGroup payQuarryAttachBox">
+                                        <label for="attachQuarryPaymentReceipt" class="customLabel">إرفاق إيصال غرامة القيمة المحجرية</label>
+                                        <div class="fileBox" id="dropContainer">
+                                            <div class="inputFileBox">
+                                                <p class="dragDropFilesLabel">قم بالسحب والإفلات لرفع الملف , أو <a href="#!" class="attachFileLink">استعراض ملفاتي</a></p>
+                                                <img src="/Style Library/MiningViolations/images/fileIcon.svg" alt="File Icon">
+                                                <input type="file" class="customInput attachFilesInput attachQuarryPaymentReceipt form-control" id="attachQuarryPaymentReceipt" accept="image/gif,image/svg,image/jpg,image/jpeg,image/png,.doc,.docx,.pdf,.xls,.xlsx,.pptx">
+                                            </div>
+                                        </div>
+                                        <div class="dropFilesArea" id="dropFilesArea"></div>
+                                    </div>
+                                    <div class="form-group customFormGroup payRoyaltyAttachBox">
+                                        <label for="attachLawRoyaltyPaymentReceipt" class="customLabel">إرفاق إيصال الإتاوة</label>
+                                        <div class="fileBox" id="dropContainer">
+                                            <div class="inputFileBox">
+                                                <p class="dragDropFilesLabel">قم بالسحب والإفلات لرفع الملف , أو <a href="#!" class="attachFileLink">استعراض ملفاتي</a></p>
+                                                <img src="/Style Library/MiningViolations/images/fileIcon.svg" alt="File Icon">
+                                                <input type="file" class="customInput attachFilesInput attachLawRoyaltyPaymentReceipt form-control" id="attachLawRoyaltyPaymentReceipt" accept="image/gif,image/svg,image/jpg,image/jpeg,image/png,.doc,.docx,.pdf,.xls,.xlsx,.pptx">
+                                            </div>
+                                        </div>
+                                        <div class="dropFilesArea" id="dropFilesArea"></div>
+                                    </div>
+                                    ` : ""}
+                                    
+                                    <div class="form-group customFormGroup payEquipmentsAttachBox" 
+                                          style="display:${offenderType == "Quarry" || offenderType == "Equipment" ? "block !important" : "none !important"}">
+                                        <label for="attachEquipmentsPaymentReceipt" class="customLabel">إرفاق إيصال غرامة المعدات</label>
+                                        <div class="fileBox" id="dropContainer">
+                                            <div class="inputFileBox">
+                                                <p class="dragDropFilesLabel">قم بالسحب والإفلات لرفع الملف , أو <a href="#!" class="attachFileLink">استعراض ملفاتي</a></p>
+                                                <img src="/Style Library/MiningViolations/images/fileIcon.svg" alt="File Icon">
+                                                <input type="file" class="customInput attachFilesInput attachEquipmentsPaymentReceipt form-control" id="attachEquipmentsPaymentReceipt" accept="image/gif,image/svg,image/jpg,image/jpeg,image/png,.doc,.docx,.pdf,.xls,.xlsx,.pptx">
+                                            </div>
+                                        </div>
+                                        <div class="dropFilesArea" id="dropFilesArea"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="formButtonsBox">
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="buttonsBox centerButtonsBox ">
+                                <div class="btnStyle confirmBtnBlue popupBtn payInstallmentBtn">
+                                  تسديد قسط
+                                </div>
+                                <div class="btnStyle cancelBtn popupBtn closeDetailsPopup" id="closeDetailsPopup" data-dismiss="modal" aria-label="Close">إلغاء</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    return paymentFormHtml;
+};
+
+pendingPaymentRecords.popupPermissionShowTypes = (popupType, TaskId, ExDate) => {
+    if (popupType == "Details") {
+        $(".totalPriceBox")
+            .show()
+            .find(".violationEndTime")
+            .val(ExDate == "01-01-2001" ? "-" : ExDate);
+        $(".confirmationAttachBox").show();
+        DetailsPopup.getConfirmationAttachments(TaskId);
+    } else if (popupType == "PaymentForm") {
+        $(".hiddenDetailsBox").addClass("showHiddenDetailsBox");
+        $(".totalPriceBox")
+            .show()
+            .find(".violationEndTime")
+            .val(ExDate == "01-01-2001" ? "-" : ExDate);
+        $(".popupFormBoxHeader").show();
+        $(".confirmationAttachBox").hide();
+        $(".detailsPopupForm").find(".formButtonsBox").hide();
+        $(".hiddenDetailsBox").hide();
+        $(".showMoreDetails").css("display", "flex");
+
+        $(".showMoreDetails").off("click").on("click", (e) => {
+            $(".hiddenDetailsBox").slideToggle();
+            $(".showMoreDetails").find("img").toggleClass("rotateDetailsIcon");
+            $(".showMoreDetails")
+                .find("p")
+                .text(
+                    $(".showMoreDetails").find("p").text() == "إظهار المزيد من التفاصيل"
+                        ? "إخفاء التفاصيل"
+                        : "إظهار المزيد من التفاصيل"
+                );
+        });
+    }
+};
+
+pendingPaymentRecords.paymentFormActions = (TaskData) => {
+    let request = {};
+    let violtionPriceType = $(".paymentForm").data("violationpricetype");
+    let offenderType = $(".paymentForm").data("offendertype");
+    let lawRoyalty = $(".paymentForm").data("lawroyalty");
+    let totalEquipmentsPrice = $(".paymentForm").data("totalequipmentsprice");
+    let taskId = $(".paymentForm").data("taskid");
+    let violationId = $(".paymentForm").data("violationid");
+    let TotalPrice = Number($(".paymentForm").data("totalprice"));
+    let ActualPrice = Number($(".paymentForm").data("actualprice"));
+    let remainingAmount = Number($(".remainingAmount").val()?.replace(/,/g, "") || 0);
+    let totalInstallmentsPaidAmount = Number($(".paymentForm").data("totalinstallmentspaidamount") || 0);
+
+    let paymentDurationMonths = 2;
+    let payedPrice = 0;
+    let filesExtension = ["gif", "svg", "jpg", "jpeg", "png", "doc", "docx", "pdf", "xls", "xlsx", "pptx"];
+    $(".dropFilesArea").hide();
+
+    $(".installmentCheckbox").prop("checked", true).prop("disabled", true);
+
+    if (violtionPriceType == "fixed" || violtionPriceType == "store") {
+        $(".payEquipmentsAttachBox").hide();
+        $(".payRoyaltyAttachBox").hide();
+        $(".equipmentsPriceBox").hide();
+        $(".royaltyPriceBox").hide();
+        $(".violationPriceBox").removeClass("col-md-4").addClass("col-md-7");
+    }
+
+    if ($(".equipmentsPriceBox").is(":visible") && $(".royaltyPriceBox").is(":visible")) {
+        $(".violationPriceBox").removeClass("col-md-7").addClass("col-md-4");
+    }
+
+    let paymentQuarryReceipt;
+    $("#attachQuarryPaymentReceipt").on("change", (e) => {
+        paymentQuarryReceipt = $(e.currentTarget)[0].files;
+        if (paymentQuarryReceipt.length > 0) {
+            $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").show().empty();
+        }
+        for (let i = 0; i < paymentQuarryReceipt.length; i++) {
+            $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").append(`
+                <div class="file">
+                    <p class="fileName">${paymentQuarryReceipt[i].name}</p>
+                    <span class="deleteFile" data-index="${i}"><i class="fa-sharp fa-solid fa-x"></i></span>
+                </div>
+            `);
+        }
+        $(".deleteFile").on("click", (event) => {
+            let index = $(event.currentTarget).closest(".file").index();
+            $(event.currentTarget).closest(".file").remove();
+            let fileBuffer = new DataTransfer();
+            for (let i = 0; i < paymentQuarryReceipt.length; i++) {
+                if (index !== i) {
+                    fileBuffer.items.add(paymentQuarryReceipt[i]);
+                }
+            }
+            paymentQuarryReceipt = fileBuffer.files;
+            if (paymentQuarryReceipt.length == 0) {
+                $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").hide();
+            }
+        });
+        for (let i = 0; i < paymentQuarryReceipt.length; i++) {
+            let fileSplited = paymentQuarryReceipt[i].name.split(".");
+            let fileExt = fileSplited[fileSplited.length - 1].toLowerCase();
+            if ($.inArray(fileExt, filesExtension) == -1) {
+                functions.warningAlert("من فضلك أدخل الملفات بالامتدادات المسموح بها فقط");
+                $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").hide();
+                $(e.currentTarget).val("");
+            }
+        }
+    });
+
+    let paymentRoyaltyReceipt;
+    $("#attachLawRoyaltyPaymentReceipt").on("change", (e) => {
+        paymentRoyaltyReceipt = $(e.currentTarget)[0].files;
+        if (paymentRoyaltyReceipt.length > 0) {
+            $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").show().empty();
+        }
+        for (let i = 0; i < paymentRoyaltyReceipt.length; i++) {
+            $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").append(`
+                <div class="file">
+                    <p class="fileName">${paymentRoyaltyReceipt[i].name}</p>
+                    <span class="deleteFile" data-index="${i}"><i class="fa-sharp fa-solid fa-x"></i></span>
+                </div>
+            `);
+        }
+        $(".deleteFile").on("click", (event) => {
+            let index = $(event.currentTarget).closest(".file").index();
+            $(event.currentTarget).closest(".file").remove();
+            let fileBuffer = new DataTransfer();
+            for (let i = 0; i < paymentRoyaltyReceipt.length; i++) {
+                if (index !== i) {
+                    fileBuffer.items.add(paymentRoyaltyReceipt[i]);
+                }
+            }
+            paymentRoyaltyReceipt = fileBuffer.files;
+            if (paymentRoyaltyReceipt.length == 0) {
+                $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").hide();
+            }
+        });
+        for (let i = 0; i < paymentRoyaltyReceipt.length; i++) {
+            let fileSplited = paymentRoyaltyReceipt[i].name.split(".");
+            let fileExt = fileSplited[fileSplited.length - 1].toLowerCase();
+            if ($.inArray(fileExt, filesExtension) == -1) {
+                functions.warningAlert("من فضلك أدخل الملفات بالامتدادات المسموح بها فقط");
+                $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").hide();
+                $(e.currentTarget).val("");
+            }
+        }
+    });
+
+    let paymentEquipmentsReceipt;
+    $("#attachEquipmentsPaymentReceipt").on("change", (e) => {
+        paymentEquipmentsReceipt = $(e.currentTarget)[0].files;
+        if (paymentEquipmentsReceipt.length > 0) {
+            $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").show().empty();
+        }
+        for (let i = 0; i < paymentEquipmentsReceipt.length; i++) {
+            $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").append(`
+                <div class="file">
+                    <p class="fileName">${paymentEquipmentsReceipt[i].name}</p>
+                    <span class="deleteFile" data-index="${i}"><i class="fa-sharp fa-solid fa-x"></i></span>
+                </div>
+            `);
+        }
+        $(".deleteFile").on("click", (event) => {
+            let index = $(event.currentTarget).closest(".file").index();
+            $(event.currentTarget).closest(".file").remove();
+            let fileBuffer = new DataTransfer();
+            for (let i = 0; i < paymentEquipmentsReceipt.length; i++) {
+                if (index !== i) {
+                    fileBuffer.items.add(paymentEquipmentsReceipt[i]);
+                }
+            }
+            paymentEquipmentsReceipt = fileBuffer.files;
+            if (paymentEquipmentsReceipt.length == 0) {
+                $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").hide();
+            }
+        });
+        for (let i = 0; i < paymentEquipmentsReceipt.length; i++) {
+            let fileSplited = paymentEquipmentsReceipt[i].name.split(".");
+            let fileExt = fileSplited[fileSplited.length - 1].toLowerCase();
+            if ($.inArray(fileExt, filesExtension) == -1) {
+                functions.warningAlert("من فضلك أدخل الملفات بالامتدادات المسموح بها فقط");
+                $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").hide();
+                $(e.currentTarget).val("");
+            }
+        }
+    });
+
+    $(".payedPrice").on("keyup", (e) => {
+        $(e.currentTarget).val($(e.currentTarget).val().split(",").join(""));
+        $(e.currentTarget).val($(e.currentTarget).val().replace(/\B(?=(?:\d{3})+(?!\d))/g, ","));
+        payedPrice = $(e.currentTarget).val();
+        payedPrice = payedPrice.replace(/\,/g, "");
+        payedPrice = Number(payedPrice);
+    });
+
+    $(".payedPrice").on("keypress", (e) => {
+        return functions.isDecimalNumberKey(e);
+    });
+
+    $(".payInstallmentBtn").on("click", () => {
+        if (!payedPrice || payedPrice <= 0) {
+            functions.warningAlert("من فضلك أدخل مبلغ صحيح");
+            return;
+        }
+
+        if (payedPrice > remainingAmount) {
+            functions.warningAlert("المبلغ المدخل أكبر من المبلغ المتبقي");
+            return;
+        }
+
+        if (TotalPrice > 0) {
+            if ((paymentQuarryReceipt != null && paymentQuarryReceipt.length > 0) || offenderType == "Equipment") {
+                if (offenderType == "Quarry" || offenderType == "Equipment") {
+                    if ((violtionPriceType != "fixed" && violtionPriceType != "store" && $(".payEquipmentsAttachBox").is(":visible") && $(".payRoyaltyAttachBox").is(":visible")) || offenderType == "Equipment") {
+                        if ((paymentRoyaltyReceipt != null && paymentRoyaltyReceipt.length > 0) || offenderType == "Equipment" || lawRoyalty == 0) {
+                            if (($("#attachEquipmentsPaymentReceipt")[0] != null && $("#attachEquipmentsPaymentReceipt")[0].files.length > 0) || totalEquipmentsPrice == 0) {
+                                // Validation passed
+                            } else {
+                                functions.warningAlert("من فضلك قم بإرفاق إيصال غرامة المعدات");
+                                return;
+                            }
+                        } else {
+                            functions.warningAlert("من فضلك قم بإرفاق إيصال الإتاوة");
+                            return;
+                        }
+                    }
+                } else if (offenderType == "Vehicle") {
+                    if ((paymentRoyaltyReceipt != null && paymentRoyaltyReceipt.length > 0) || lawRoyalty == 0) {
+                        // Validation passed
+                    } else {
+                        functions.warningAlert("من فضلك قم بإرفاق إيصال الإتاوة");
+                        return;
+                    }
+                }
+            } else {
+                functions.warningAlert("من فضلك قم بإرفاق إيصال غرامة المخالفة المحددة أو غرامة القيمة المحجرية");
+                return;
+            }
+        }
+
+        let newRemainingAmount = remainingAmount - payedPrice;
+        let newActualPaid = ActualPrice + payedPrice;
+        let newTotalInstallmentsPaidAmount = totalInstallmentsPaidAmount + payedPrice;
+        let isLastInstallment = newRemainingAmount === 0;
+
+        let request = {
+            Data: {
+                ID: taskId,
+                ViolationId: violationId,
+                ActualAmountPaid: newActualPaid,
+                Status: isLastInstallment ? "Paid" : "UnderPayment",
+                Violation: {
+                    IsInstallment: true,
+                    InstallmentAmount: payedPrice,
+                    RemainingAmount: newRemainingAmount,
+                    PaymentDurationMonths: paymentDurationMonths,
+                    InstallmentDate: new Date().toISOString(),
+                    TotalInstallmentsPaidAmount: newTotalInstallmentsPaidAmount,
+                    ...(isLastInstallment && {
+                        IsLastInstallment: true
+                    })
+                }
+            }
+        };
+
+        $(".overlay").addClass("active");
+        pendingPaymentRecords.payRequest(taskId, request, offenderType);
+    });
+};
+
+pendingPaymentRecords.payRequest = (TaskId, request, offenderType) => {
+    $(".paymentForm").data("lastRequest", request);
+
+    functions
+        .requester("/_layouts/15/Uranium.Violations.SharePoint/Tasks.aspx/Save", {
+            request,
+        })
+        .then((response) => {
+            if (response.ok) {
+                return response.json();
+            }
+        })
+        .then((data) => {
+            pendingPaymentRecords.uploadPaymentReceiptsAttachment(
+                TaskId,
+                "ViolationsCycle",
+                offenderType
+            );
+        })
+        .catch((err) => {
+            console.log(err);
+            $(".overlay").removeClass("active");
+            functions.errorAlert("حدث خطأ أثناء معالجة السداد");
+        });
+};
+
+pendingPaymentRecords.uploadPaymentReceiptsAttachment = (TaskId, ListName, offenderType) => {
+    let Data = new FormData();
+    Data.append("itemId", TaskId);
+    Data.append("listName", ListName);
+    let count = 0;
+    let count2 = 0;
+
+    if (offenderType !== "Equipment") {
+        let i;
+        for (i = 0; i < $("#attachQuarryPaymentReceipt")[0].files.length; i++) {
+            Data.append("file" + i, $("#attachQuarryPaymentReceipt")[0].files[i]);
+        }
+        let j;
+        for (
+            j = i;
+            count < $("#attachLawRoyaltyPaymentReceipt")[0].files.length;
+            j++
+        ) {
+            Data.append(
+                "file" + j,
+                $("#attachLawRoyaltyPaymentReceipt")[0].files[count],
+            );
+            count++;
+        }
+        for (
+            let k = j;
+            count2 < $("#attachEquipmentsPaymentReceipt")[0].files.length;
+            j++
+        ) {
+            Data.append(
+                "file" + j,
+                $("#attachEquipmentsPaymentReceipt")[0].files[count2],
+            );
+            count2++;
+        }
+    } else {
+        Data.append(
+            "file" + 0,
+            $("#attachEquipmentsPaymentReceipt")[0].files[count2],
+        );
+    }
+
+    $.ajax({
+        type: "POST",
+        url: "/_layouts/15/Uranium.Violations.SharePoint/Attachments.aspx/Upload",
+        processData: false,
+        contentType: false,
+        data: Data,
+        success: (data) => {
+            $(".overlay").removeClass("active");
+
+            let requestData = $(".paymentForm").data("lastRequest") || {};
+            let status = requestData?.Data?.Status || "UnderPayment";
+            let isLastInstallment = requestData?.Data?.Violation?.IsLastInstallment || false;
+
+            if (status === "Paid" && isLastInstallment) {
+                functions.sucessAlert("تم سداد آخر قسط وإنهاء المخالفة");
+            } else {
+                functions.sucessAlert("تم تسديد القسط بنجاح");
+            }
+        },
+        error: (err) => {
+            functions.warningAlert("خطأ في إرسال البيانات لقاعدة البيانات");
+            $(".overlay").removeClass("active");
+        },
+    });
 };
 
 pendingPaymentRecords.findViolationByID = (event, taskID, print = false) => {
@@ -333,7 +1033,6 @@ pendingPaymentRecords.findViolationByID = (event, taskID, print = false) => {
                     printBox = `<div class="printBox" id="printJS-form">${Content}</div>`;
                     functions.declarePopup(["generalPopupStyle", "detailsPopup"], printBox);
 
-                    // Add the Vehicle Type handling
                     let VehcleType = violationData.VehicleType;
                     if (VehcleType == "عربة بمقطورة") {
                         $(".TrailerNumberBox").show();
@@ -349,7 +1048,6 @@ pendingPaymentRecords.findViolationByID = (event, taskID, print = false) => {
                     functions.declarePopup(["generalPopupStyle", "detailsPopup"], printBox);
                 }
 
-                // Add the print functionality
                 $(".printBtn").on("click", (e) => {
                     functions.PrintDetails(e);
                 });
@@ -358,7 +1056,6 @@ pendingPaymentRecords.findViolationByID = (event, taskID, print = false) => {
                     functions.PrintDetails(event);
                 }
 
-                // Add the class to identify this popup
                 $(".detailsPopupForm").addClass("pendingPayment");
             } else {
                 violationData = null;

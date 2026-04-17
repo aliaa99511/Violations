@@ -102,7 +102,6 @@ validatedViolationsRecords.getViolations = (
       validatedViolationsRecords.setPaginations(ItemsData.TotalPageCount, ItemsData.RowsPerPage,);
       validatedViolationsRecords.dashBoardTable(ValidatedViolationData, destroyTable);
       validatedViolationsRecords.pageIndex = ItemsData.CurrentPage;
-      functions.getCurrentUserActions();
     })
     .catch((err) => {
       console.log(err);
@@ -213,6 +212,152 @@ validatedViolationsRecords.resetFilter = function (e) {
   $("#TypeofViolation").prop("disabled", false);
 };
 
+validatedViolationsRecords.exportToExcel = () => {
+  let UserId = _spPageContextInfo.userId;
+
+  // Get current filter values
+  const theCodeValue = $("#theCode").val();
+  const violationCategoryValue = $("#violationCategory").val();
+
+  const theCode = {};
+  if (theCodeValue && theCodeValue.trim() !== "" && violationCategoryValue) {
+    if (violationCategoryValue === "Quarry") {
+      theCode.QuarryCode = theCodeValue;
+    } else if (violationCategoryValue === "Vehicle") {
+      theCode.CarNumber = theCodeValue;
+    }
+  }
+
+  // Get selected status
+  const selectedStatus = $("#ViolationStatus").children("option:selected").val();
+
+  // Determine MultipleStatus based on selected status
+  let multipleStatus = [];
+  if (selectedStatus && selectedStatus !== "") {
+    multipleStatus = [selectedStatus];
+  } else {
+    multipleStatus = [
+      "Confirmed",
+      "Paid",
+      "Exceeded",
+      "Paid After Reffered",
+      "Saved",
+      "Cancelled"
+    ];
+  }
+
+  const currentFilters = {
+    ...theCode,
+    RowsPerPage: 10000000, // Get all records for export
+    PageIndex: 1,
+    ColName: "created",
+    SortOrder: "desc",
+    Status: selectedStatus,
+    MultipleStatus: multipleStatus,
+    ViolatorName: $("#violatorName").val(),
+    NationalID: $("#nationalID").val(),
+    ViolationCode: $("#violationCode").val(),
+    ViolationType: Number($("#TypeofViolation").children("option:selected").data("id")),
+    GlobalSearch: $("#violationSearch").val(),
+    Sector: UserId,
+    OffenderType: $("#violationCategory").val(),
+    ViolationsZone: $("#violationZone").val(),
+    CreatedFrom: $("#createdFrom").val() ? moment($("#createdFrom").val(), "DD-MM-YYYY").format("YYYY-MM-DD") : null,
+    CreatedTo: $("#createdTo").val() ? moment($("#createdTo").val(), "DD-MM-YYYY").format("YYYY-MM-DD") : null,
+  };
+
+  // Define columns with their data mapping
+  const columns = [
+    {
+      title: "رقم المخالفة",
+      data: "Violation.ViolationCode",
+    },
+    {
+      title: "",
+      skip: true
+    },
+    {
+      title: "تصنيف المخالفة",
+      render: (record) => functions.getViolationArabicName(record.Violation?.OffenderType),
+    },
+    {
+      title: "رقم المحجر/العربة",
+      render: (record) => {
+        const violation = record.Violation;
+        if (!violation) return "---";
+        return violation.OffenderType === "Vehicle" ? (violation.CarNumber || "---") : (violation.QuarryCode || "---");
+      },
+    },
+    {
+      title: "إسم الشركة المخالفة",
+      data: "Violation.ViolatorCompany",
+    },
+    {
+      title: "نوع المخالفة",
+      render: (record) => functions.getViolationArabicName(record.Violation?.OffenderType, record.Violation?.ViolationTypes?.Title),
+    },
+    {
+      title: "المنطقة",
+      data: "Violation.ViolationsZone",
+    },
+    {
+      title: "حالة المخالفة",
+      render: (record) => {
+        const status = record.Status;
+        const statusMap = {
+          "Pending": "قيد الانتظار",
+          "Confirmed": "قيد الانتظار",
+          "Exceeded": "تجاوز مدة السداد",
+          "Saved": "محفوظة",
+          "Paid After Reffered": "سداد بعد الإحالة",
+          "Paid": "تم السداد",
+          "UnderPayment": "قيد السداد",
+          "Approved": "تم الموافقة",
+          "Rejected": "مرفوضة",
+          "Reffered": "تم الإحالة",
+          "UnderReview": "قيد انتظار السداد",
+          "ExternalReviewed": "خارجية",
+          "Completed": "مكتملة",
+          "Cancelled": "ملغاه"
+        };
+        return statusMap[status] || status || "---";
+      },
+    },
+    {
+      title: "حالة الالتماس",
+      render: (record) => {
+        if (!record.Violation?.IsPetition) return "-";
+        return functions.getPetitionsStatus(record.Violation?.Petition?.GridData?.[0]?.Status) || "-";
+      },
+    },
+    {
+      title: "الحد الأقصى للمصالحة",
+      render: (record) => {
+        const date = functions.getFormatedDate(record.ReconciliationExpiredDate);
+        return date === "01-01-2001" ? "-" : date;
+      },
+    },
+    {
+      title: "تاريخ الإنشاء",
+      render: (record) => functions.getFormatedDate(record.Created),
+    },
+  ];
+
+  // Call the common export function with export button selector
+  functions.exportFromAPI({
+    searchUrl: "/_layouts/15/Uranium.Violations.SharePoint/Tasks.aspx/Search",
+    requestData: { Data: currentFilters },
+    columns: columns,
+    fileName: "سجل المحاضر المصدق عليها.xlsx",
+    sheetName: "سجل المحاضر المصدق عليها",
+    columnWidths: 25,
+    rtl: true,
+    dataPath: "d.Result.GridData",
+    exportButtonSelector: "#exportBtn",
+    tableSelector: "#validatedViolationsRecords"
+  });
+};
+
 validatedViolationsRecords.dashBoardTable = (violationsData, destroyTable) => {
   let data = [];
   let taskViolation;
@@ -305,6 +450,11 @@ validatedViolationsRecords.dashBoardTable = (violationsData, destroyTable) => {
   functions.createColumnSelector(Table, "#columnSelector", 'blue');
 
   validatedViolationsRecords.destroyTable = true;
+
+  // Update export button handler
+  $("#exportBtn").off("click").on("click", () => {
+    validatedViolationsRecords.exportToExcel();
+  });
 
   $(".ellipsisButton").on("click", (e) => {
     $(".hiddenListBox").hide(300);
@@ -451,6 +601,7 @@ validatedViolationsRecords.findViolationByID = (
   let request = {
     Id: taskID,
   };
+
   functions
     .requester(
       "/_layouts/15/Uranium.Violations.SharePoint/Tasks.aspx/FindbyId",
@@ -469,62 +620,81 @@ validatedViolationsRecords.findViolationByID = (
       let TaskData;
       let TaskId;
       let ExDate;
+
       if (data != null) {
         TaskData = data.d;
         violationData = TaskData.Violation;
         TaskId = TaskData.ID;
-        ExDate = functions.getFormatedDate(TaskData.ReconciliationExpiredDate);
+        ExDate = functions.getFormatedDate(
+          TaskData.ReconciliationExpiredDate
+        );
+
         violationOffenderType = violationData.OffenderType;
+
         if (violationOffenderType == "Quarry") {
           Content = DetailsPopup.quarryDetailsPopupContent(
             violationData,
             "المصدق عليها"
-          );
-          printBox = `<div class="printBox" id="printJS-form">${Content}</div>`;
-          functions.declarePopup(
-            ["generalPopupStyle", "detailsPopup", "blueHeaderPopup"],
-            printBox
           );
         } else if (violationOffenderType == "Vehicle") {
           Content = DetailsPopup.vehicleDetailsPopupContent(
             violationData,
             "المصدق عليها"
           );
-          printBox = `<div class="printBox" id="printJS-form">${Content}</div>`;
-          functions.declarePopup(
-            ["generalPopupStyle", "detailsPopup", "blueHeaderPopup"],
-            printBox
+        } else if (violationOffenderType == "Equipment") {
+          Content = DetailsPopup.equipmentDetailsPopupContent(
+            violationData,
+            "المصدق عليها"
           );
+        }
+
+        printBox = `<div class="printBox" id="printJS-form">${Content}</div>`;
+
+        // ✅ Render popup
+        functions.declarePopup(
+          ["generalPopupStyle", "detailsPopup", "blueHeaderPopup"],
+          printBox
+        );
+
+        // ✅ FIX: Hide buttons AFTER rendering
+        setTimeout(() => {
+          const popup = $(".detailsPopupForm");
+
+          popup.find("#editMaterialMinPrice, #payAllPrice")
+            .css("display", "none")
+            .attr("style", "display: none !important");
+        }, 50);
+
+        // Vehicle extra logic
+        if (violationOffenderType == "Vehicle") {
           let vehicleType = violationData.VehicleType;
           if (vehicleType == "عربة بمقطورة") {
             $(".TrailerNumberBox").show();
           } else {
             $(".TrailerNumberBox").hide();
           }
-        } else if (violationOffenderType == "Equipment") {
-          Content = DetailsPopup.equipmentDetailsPopupContent(
-            violationData,
-            "المصدق عليها"
-          );
-          printBox = `<div class="printBox" id="printJS-form">${Content}</div>`;
-          functions.declarePopup(
-            ["generalPopupStyle", "detailsPopup", "blueHeaderPopup"],
-            printBox
-          );
         }
+
         $(".printBtn").on("click", (e) => {
           functions.PrintDetails(e);
         });
+
         if (print) {
           functions.PrintDetails(event);
         }
+
         $(".detailsPopupForm").addClass("validatedViolationsRecordsLog");
-        $(".validatedViolationsRecordsLog").find(".totalPriceBox").show();
-        $(".totalPriceBox").find(".violationEndTime").val(ExDate);
+        $(".validatedViolationsRecordsLog")
+          .find(".totalPriceBox")
+          .show();
+
+        $(".totalPriceBox")
+          .find(".violationEndTime")
+          .val(ExDate);
+
         $(".confirmationAttachBox").show();
+
         DetailsPopup.getConfirmationAttachments(TaskId);
-      } else {
-        violationData = null;
       }
     })
     .catch((err) => {

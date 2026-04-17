@@ -11,6 +11,7 @@ carViolation.violatorDetails = () => {
     let violatorNameCheck = functions.getNameInTriple("#violatorName");
     let violatorName = $("#violatorName").val();
     let violatorNationalId = $("#violatorNationalId").val();
+    let violatorMobileNumber = $("#violatorMobileNumber").val();
 
     // Get the previous violations count from the display span instead of input
     let violationPrevCount = $(".previous-violations-count-value").text();
@@ -28,9 +29,23 @@ carViolation.violatorDetails = () => {
             if (violationGov != "") {
                 if (violationArea != "") {
                     if (carType != "" && carType == "عربة فردي") {
+
+                        //  Check National ID if provided
+                        if (violatorNationalId !== "") {
+                            // Check if exactly 14 digits
+                            if (!/^\d{14}$/.test(violatorNationalId)) {
+                                functions.warningAlert(
+                                    "الرقم القومي يجب أن يتكون من 14 رقمًا بالضبط",
+                                    "#violatorNationalId"
+                                );
+                                return false;
+                            }
+                        }
+
                         violatorDetails = {
                             violatorName: violatorName,
                             violatorNationalId: violatorNationalId != "" ? violatorNationalId : "",
+                            violatorMobileNumber: violatorMobileNumber != "" ? violatorMobileNumber : "",
                             violationPrevCount: Number(violationPrevCount), // Use the display value
                             violationGov: violationGovId,
                             violationAreaName: violationArea,
@@ -45,6 +60,19 @@ carViolation.violatorDetails = () => {
                         if ((TractorLetters.length > 0 && TractorLetters.trim().length > 0) || $("#unmarkedCheckbox:checked").length != 0) {
                             if ((TractorNumbers.length > 0 && TractorNumbers.length > 0) || $("#unmarkedCheckbox:checked").length != 0) {
                                 let TractorFullNumber = TractorLetters + " " + TractorNumbers;
+
+                                //  Check National ID if provided
+                                if (violatorNationalId !== "") {
+                                    // Check if exactly 14 digits
+                                    if (!/^\d{14}$/.test(violatorNationalId)) {
+                                        functions.warningAlert(
+                                            "الرقم القومي يجب أن يتكون من 14 رقمًا بالضبط",
+                                            "#violatorNationalId"
+                                        );
+                                        return false;
+                                    }
+                                }
+
                                 violatorDetails = {
                                     violatorName: violatorName,
                                     violatorNationalId: violatorNationalId != "" ? violatorNationalId : "",
@@ -449,6 +477,10 @@ carViolation.formActions = () => {
         }
     });
 
+    $(".violatorMobileNumber").on("keypress", (e) => {
+        return functions.isNumberKey(e);
+    });
+
     // Trigger API call on car number fields change
     $("#carLicenseLetters, #carLicenseNumbres").on("change keyup", functions.debounce(function () {
         // Don't call if unmarked checkbox is checked
@@ -600,7 +632,7 @@ carViolation.formActions = () => {
     })
 
     $("#cancelCarViolation").on("click", (e) => {
-        window.location.href = "/ViolationsRecorder/Pages/RegisteredViolationsRecords.aspx"
+        window.location.href = "/ViolationsRecorder/Pages/Registered-Violations.aspx"
     })
 
     $(".dropFilesArea").hide()
@@ -810,6 +842,7 @@ carViolation.validateForm = (e) => {
                             OffenderType: "Vehicle",
                             ViolatorName: violatorDetails.violatorName,
                             NationalID: violatorDetails.violatorNationalId,
+                            MobileNumber: violatorDetails.violatorMobileNumber,
                             NumOfPreviousViolations: violatorDetails.violationPrevCount,
                             ViolatorCompany: violatorDetails.companyName,
                             CommercialRegister: violatorDetails.commercialRegister,
@@ -1002,7 +1035,7 @@ carViolation.uploadAttachment = (NewCarViolationID, ListName) => {
         success: (data) => {
             $(".overlay").removeClass("active")
 
-            functions.sucessAlert(urlParams.get("taskId") ? "تم تعديل مخالفة عربة بنجاح" : "تم إضافة مخالفة عربة جديدة بنجاح", false, "/ViolationsRecorder/Pages/RegisteredViolationsRecords.aspx")
+            functions.sucessAlert(urlParams.get("taskId") ? "تم تعديل مخالفة عربة بنجاح" : "تم إضافة مخالفة عربة جديدة بنجاح", false, "/ViolationsRecorder/Pages/Registered-Violations.aspx")
         },
         error: (err) => {
             functions.warningAlert("خطأ في إرسال البيانات لقاعدة البيانات")
@@ -1083,11 +1116,12 @@ carViolation.editViolation = () => {
                 let violationData = data.d.Violation;
                 editViolationId = data.d.ViolationId
                 functions.commonEditData(violationData, data.d.ViolationId, 1, violationDataParentObj);
-                $("#BonesCount")
-                    .val(violationData.BonsNumber)
-                    .trigger("change");
+
+                $("#violatorMobileNumber").val(violationData.MobileNumber || "");
+                $("#BonesCount").val(violationData.BonsNumber).trigger("change");
                 $("#quarryType").val(violationData.QuarryType).trigger("change");
                 $("#quarryCode").val(violationData.QuarryCode);
+
                 violationData.Equipments.forEach((equipment, index) => {
                     let selectedInput = $(`label[for="${equipment.Name}"]`);
                     selectedInput.trigger("click");

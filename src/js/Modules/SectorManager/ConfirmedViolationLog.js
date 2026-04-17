@@ -207,6 +207,7 @@ confirmedViolationLog.handleViolationCategoryChange = () => {
     }
   });
 };
+
 const originalResetFilter = confirmedViolationLog.resetFilter;
 confirmedViolationLog.resetFilter = function (e) {
   // Call the original resetFilter function
@@ -215,6 +216,155 @@ confirmedViolationLog.resetFilter = function (e) {
   // Re-enable both fields after reset
   $("#theCode").prop("disabled", false);
   $("#TypeofViolation").prop("disabled", false);
+};
+
+confirmedViolationLog.exportToExcel = () => {
+  const theCodeValue = $("#theCode").val();
+  const violationCategoryValue = $("#violationCategory").val();
+
+  const theCode = {};
+  if (theCodeValue && theCodeValue.trim() !== "" && violationCategoryValue) {
+    if (violationCategoryValue === "Quarry") {
+      theCode.QuarryCode = theCodeValue;
+    } else if (violationCategoryValue === "Vehicle") {
+      theCode.CarNumber = theCodeValue;
+    }
+  }
+
+  const selectedStatus = $("#ViolationStatus").children("option:selected").val();
+
+  let multipleStatus = [];
+  if (selectedStatus && selectedStatus !== "") {
+    multipleStatus = [selectedStatus];
+  } else {
+    multipleStatus = [
+      "Confirmed",
+      "Paid",
+      "Exceeded",
+      "Paid After Reffered",
+      "Saved",
+      "Cancelled"
+    ];
+  }
+
+  const currentFilters = {
+    ...theCode,
+    RowsPerPage: 10000000,
+    PageIndex: 1,
+    ColName: "created",
+    SortOrder: "desc",
+    Status: selectedStatus,
+    MultipleStatus: multipleStatus,
+    ViolatorName: $("#violatorName").val(),
+    NationalID: $("#nationalID").val(),
+    ViolationCode: $("#violationCode").val(),
+    ViolationType: Number($("#TypeofViolation").children("option:selected").data("id")),
+    SectorConfigId: Number($("#violationSector").children("option:selected").val()),
+    GlobalSearch: $("#violationSearch").val(),
+    Sector: 0,
+    OffenderType: $("#violationCategory").val(),
+    ViolationsZone: $("#violationZone").val(),
+    CreatedFrom: $("#createdFrom").val() ? moment($("#createdFrom").val(), "DD-MM-YYYY").format("YYYY-MM-DD") : null,
+    CreatedTo: $("#createdTo").val() ? moment($("#createdTo").val(), "DD-MM-YYYY").format("YYYY-MM-DD") : null,
+  };
+
+  const columns = [
+    {
+      title: "رقم المخالفة",
+      data: "Violation.ViolationCode"
+    },
+    {
+      title: "",
+      skip: true
+    },
+
+    {
+      title: "تصنيف المخالفة",
+      render: (record) => functions.getViolationArabicName(record.Violation?.OffenderType),
+    },
+    {
+      title: "رقم المحجر/العربة",
+      render: (record) => {
+        const violation = record.Violation;
+        if (!violation) return "---";
+        return violation.OffenderType === "Vehicle"
+          ? (violation.CarNumber || "---")
+          : (violation.QuarryCode || "---");
+      },
+    },
+    {
+      title: "إسم الشركة المخالفة",
+      data: "Violation.ViolatorCompany",
+    },
+    {
+      title: "نوع المخالفة",
+      render: (record) =>
+        functions.getViolationArabicName(
+          record.Violation?.OffenderType,
+          record.Violation?.ViolationTypes?.Title
+        )
+    },
+    {
+      title: "المنطقة",
+      data: "Violation.ViolationsZone",
+    },
+    {
+      title: "حالة المخالفة",
+      render: (record) => {
+        const statusMap = {
+          "Pending": "قيد الانتظار",
+          "Confirmed": "قيد الانتظار",
+          "Exceeded": "تجاوز مدة السداد",
+          "Saved": "محفوظة",
+          "Paid After Reffered": "سداد بعد الإحالة",
+          "Paid": "تم السداد",
+          "UnderPayment": "قيد السداد",
+          "Approved": "تم الموافقة",
+          "Rejected": "مرفوضة",
+          "Reffered": "تم الإحالة",
+          "UnderReview": "قيد انتظار السداد",
+          "ExternalReviewed": "خارجية",
+          "Completed": "مكتملة",
+          "Cancelled": "ملغاه"
+        };
+        return statusMap[record.Status] || record.Status || "---";
+      },
+    },
+    {
+      title: "حالة الالتماس",
+      render: (record) => {
+        const violation = record.Violation;
+        if (!violation?.IsPetition) return "-";
+        return functions.getPetitionsStatus(
+          violation?.Petition?.GridData?.[0]?.Status
+        ) || "-";
+      },
+    },
+    {
+      title: "الحد الأقصى للمصالحة",
+      render: (record) => {
+        const date = functions.getFormatedDate(record.ReconciliationExpiredDate);
+        return date === "01-01-2001" ? "-" : date;
+      },
+    },
+    {
+      title: "تاريخ الإنشاء",
+      render: (record) => functions.getFormatedDate(record.Created),
+    },
+  ];
+
+  functions.exportFromAPI({
+    searchUrl: "/_layouts/15/Uranium.Violations.SharePoint/Tasks.aspx/Search",
+    requestData: { Data: currentFilters },
+    columns: columns,
+    fileName: "سجل المحاضر المصدق عليها.xlsx",
+    sheetName: "سجل المحاضر المصدق عليها",
+    columnWidths: 25,
+    rtl: true,
+    dataPath: "d.Result.GridData",
+    exportButtonSelector: "#exportBtn",
+    tableSelector: "#ConfirmedViolationlog"
+  });
 };
 
 confirmedViolationLog.ConfirmedViolationTable = (
@@ -313,6 +463,11 @@ confirmedViolationLog.ConfirmedViolationTable = (
 
   confirmedViolationLog.destroyTable = true;
 
+  // Update export button handler
+  $("#exportBtn").off("click").on("click", () => {
+    confirmedViolationLog.exportToExcel();
+  });
+
   let violationlog = Table.rows().nodes().to$();
 
   $(".ellipsisButton").on("click", (e) => {
@@ -350,6 +505,7 @@ confirmedViolationLog.ConfirmedViolationTable = (
   });
   functions.hideTargetElement(".controls", ".hiddenListBox");
 };
+
 confirmedViolationLog.getViolationStatus = (ViolationStatus) => {
   let statusHtml = ``;
   switch (ViolationStatus) {
@@ -456,6 +612,7 @@ confirmedViolationLog.getViolationStatus = (ViolationStatus) => {
 
   return statusHtml;
 };
+
 confirmedViolationLog.findViolationByID = (event, taskID, print = false) => {
   let request = {
     Id: taskID,

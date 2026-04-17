@@ -66,13 +66,11 @@ vehicleViolationReferralSector.getVehicleViolationReferralsRecords = (
             console.log(err);
         });
 };
-
 vehicleViolationReferralSector.setPaginations = (TotalPages, RowsPerPage) => {
     pagination.draw("#paginationID", TotalPages, RowsPerPage);
     pagination.start("#paginationID", vehicleViolationReferralSector.getVehicleViolationReferralsRecords);
     pagination.activateCurrentPage();
 };
-
 vehicleViolationReferralSector.filterVehicleViolationReferralsRecords = (e) => {
     let pageIndex = vehicleViolationReferralSector.pageIndex;
 
@@ -82,7 +80,6 @@ vehicleViolationReferralSector.filterVehicleViolationReferralsRecords = (e) => {
         true,
     );
 };
-
 vehicleViolationReferralSector.resetFilter = (e) => {
     e.preventDefault();
 
@@ -101,6 +98,75 @@ vehicleViolationReferralSector.resetFilter = (e) => {
     $(".PreLoader").addClass("active");
     pagination.reset();
     vehicleViolationReferralSector.getVehicleViolationReferralsRecords();
+};
+vehicleViolationReferralSector.exportToExcel = () => {
+    const currentFilters = {
+        RowsPerPage: 10000000,
+        PageIndex: 1,
+        ColName: "created",
+        SortOrder: "desc",
+        CarNumber: $("#theCode").val(),
+        ViolationCode: $("#violationCode").val(),
+        ViolationStatus: $("#ViolationStatus").children("option:selected").val(),
+        CourtCaseNumber: $("#CourtCaseNumber").val(),
+        ViolatorName: $("#TrafficName").val(),
+        ViolatorCompany: $("#ViolatorCompany").val(),
+        VehicleRegistrationNumber: $("#vehicleRegistrationNumber").val(),
+        Status: $("#CaseStatus").children("option:selected").val(),
+        OffenderType: "Vehicle",
+        RefferedDateFrom: $("#RefferedDateFrom").val()
+            ? moment($("#RefferedDateFrom").val(), "DD-MM-YYYY").format("YYYY-MM-DD")
+            : null,
+        RefferedDateTo: $("#RefferedDateTo").val()
+            ? moment($("#RefferedDateTo").val(), "DD-MM-YYYY").format("YYYY-MM-DD")
+            : null,
+    };
+
+    const columns = [
+        {
+            title: "رقم المخالفة",
+            render: (record) => record.ViolationCode || "-----",
+        },
+        {
+            title: "",
+            skip: true // control column
+        },
+        {
+            title: "تاريخ القضية",
+            render: (record) => functions.getFormatedDate(record.RefferedDate),
+        },
+        {
+            title: "رقم القيد",
+            data: "VehicleRegistrationNumber",
+        },
+        {
+            title: "الرقم القضائي",
+            data: "CourtCaseNumber",
+        },
+        {
+            title: "حالة المخالفة",
+            render: (record) =>
+                functions.getVehicleViolationStatus(record.ViolationStatus) || "-----",
+        },
+        {
+            title: "موقف الإحالة",
+            render: (record) =>
+                functions.getCaseStatus(record.Status) || "-----",
+        }
+    ];
+
+    functions.exportCasesFromAPI({
+        searchUrl: "/_layouts/15/Uranium.Violations.SharePoint/Cases.aspx/Search",
+        requestData: { Request: currentFilters },
+        columns,
+        fileName: "سجل إحالات مخالفات المركبات.xlsx",
+        sheetName: "سجل إحالات مخالفات المركبات",
+        columnWidths: 25,
+        rtl: true,
+        dataPath: "d.Result.GridData",
+        exportButtonSelector: "#exportBtn",
+        tableSelector: "#VehicleViolationReferralSectorTable"
+    });
 };
 vehicleViolationReferralSector.VehicleViolationReferralRecordsTable = (Referrals, destroyTable) => {
     let data = [];
@@ -208,6 +274,10 @@ vehicleViolationReferralSector.VehicleViolationReferralRecordsTable = (Referrals
     functions.createColumnSelector(Table, "#columnSelector", 'green');
 
     vehicleViolationReferralSector.destroyTable = true;
+
+    $("#exportBtn").off("click").on("click", () => {
+        vehicleViolationReferralSector.exportToExcel();
+    });
 
     $(".ellipsisButton").on("click", (e) => {
         $(".hiddenListBox").hide(300);

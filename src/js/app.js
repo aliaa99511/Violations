@@ -102,15 +102,16 @@ $(window).on("load", () => {
         $(".PreLoader").removeClass("active");
         functions.setPageMetaData("الاستعلام عن المخالفات السابقة");
         prevViolations.dashBoardTable();
-        $(".filterBox")
-          .find("#violatorNationalId")
-          .on("keypress", (e) => {
-            return functions.isNumberKey(e);
-          });
+        $(".filterBox").find("#violatorNationalId").on("keypress", (e) => {
+          return functions.isNumberKey(e);
+        });
         $(".searchBtn").on("click", (e) => {
           e.preventDefault();
           pagination.reset();
           prevViolations.filterViolationsLog(e);
+        });
+        $(".resetBtn").on("click", (e) => {
+          prevViolations.resetFilter(e);
         });
       }
       if (functions.getPageName() === "RegisteredViolationsRecords") {
@@ -387,15 +388,16 @@ $(window).on("load", () => {
         $(".PreLoader").removeClass("active");
         functions.setPageMetaData("الاستعلام عن المخالفات السابقة");
         prevViolations.dashBoardTable();
-        $(".filterBox")
-          .find("#violatorNationalId")
-          .on("keypress", (e) => {
-            return functions.isNumberKey(e);
-          });
+        $(".filterBox").find("#violatorNationalId").on("keypress", (e) => {
+          return functions.isNumberKey(e);
+        });
         $(".searchBtn").on("click", (e) => {
           e.preventDefault();
           pagination.reset();
           prevViolations.filterViolationsLog(e);
+        });
+        $(".resetBtn").on("click", (e) => {
+          prevViolations.resetFilter(e);
         });
       }
       if (functions.getPageName() === "CasesLog") {

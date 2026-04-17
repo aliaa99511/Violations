@@ -63,13 +63,11 @@ quarryViolationReferralSector.getQuarryViolationReferralsRecords = (
             console.log(err);
         });
 };
-
 quarryViolationReferralSector.setPaginations = (TotalPages, RowsPerPage) => {
     pagination.draw("#paginationID", TotalPages, RowsPerPage);
     pagination.start("#paginationID", quarryViolationReferralSector.getQuarryViolationReferralsRecords);
     pagination.activateCurrentPage();
 };
-
 quarryViolationReferralSector.filterQuarryViolationReferralsRecords = (e) => {
     let pageIndex = quarryViolationReferralSector.pageIndex;
 
@@ -79,7 +77,6 @@ quarryViolationReferralSector.filterQuarryViolationReferralsRecords = (e) => {
         true,
     );
 };
-
 quarryViolationReferralSector.resetFilter = (e) => {
     e.preventDefault();
 
@@ -96,7 +93,72 @@ quarryViolationReferralSector.resetFilter = (e) => {
     pagination.reset();
     quarryViolationReferralSector.getQuarryViolationReferralsRecords();
 };
+quarryViolationReferralSector.exportToExcel = () => {
+    const currentFilters = {
+        RowsPerPage: 10000000,
+        PageIndex: 1,
+        ColName: "created",
+        SortOrder: "desc",
+        QuarryCode: $("#theCode").val(),
+        ViolationCode: $("#violationCode").val(),
+        ViolationStatus: $("#ViolationStatus").children("option:selected").val(),
+        ReferralNumber: $("#CaseNumber").val(),
+        Status: $("#CaseStatus").children("option:selected").val(),
+        OffenderType: "Quarry",
+        RefferedDateFrom: $("#RefferedDateFrom").val()
+            ? moment($("#RefferedDateFrom").val(), "DD-MM-YYYY").format("YYYY-MM-DD")
+            : null,
+        RefferedDateTo: $("#RefferedDateTo").val()
+            ? moment($("#RefferedDateTo").val(), "DD-MM-YYYY").format("YYYY-MM-DD")
+            : null,
+    };
 
+    const columns = [
+        {
+            title: "رقم المخالفة",
+            render: (record) => record.ViolationCode || "-----",
+        },
+        {
+            title: "",
+            skip: true // control column
+        },
+        {
+            title: "تاريخ الإحالة",
+            render: (record) => functions.getFormatedDate(record.RefferedDate),
+        },
+        {
+            title: "رقم الإحالة",
+            data: "ReferralNumber",
+        },
+        {
+            title: "حالة المخالفة",
+            render: (record) =>
+                functions.getQuarryViolationStatus(record.ViolationStatus) || "-----",
+        },
+        {
+            title: "موقف الإحالة",
+            render: (record) =>
+                functions.getCaseStatus(record.Status) || "-----",
+        },
+        {
+            title: "المبلغ المستحق",
+            render: (record) => record.TotalPriceDue || 0,
+        }
+    ];
+
+    functions.exportCasesFromAPI({
+        searchUrl: "/_layouts/15/Uranium.Violations.SharePoint/Cases.aspx/Search",
+        requestData: { Request: currentFilters },
+        columns,
+        fileName: "سجل إحالات المخالفات المحجرية.xlsx",
+        sheetName: "سجل إحالات المخالفات المحجرية",
+        columnWidths: 25,
+        rtl: true,
+        dataPath: "d.Result.GridData",
+        exportButtonSelector: "#exportBtn",
+        tableSelector: "#QuarryViolationReferralSectorTable"
+    });
+};
 quarryViolationReferralSector.QuarryViolationReferralSectorTable = (Referrals, destroyTable) => {
     let data = [];
 
@@ -203,6 +265,10 @@ quarryViolationReferralSector.QuarryViolationReferralSectorTable = (Referrals, d
 
     quarryViolationReferralSector.destroyTable = true;
 
+    $("#exportBtn").off("click").on("click", () => {
+        quarryViolationReferralSector.exportToExcel();
+    });
+
     $(".ellipsisButton").on("click", (e) => {
         $(".hiddenListBox").hide(300);
         $(e.currentTarget).siblings(".hiddenListBox").toggle(300);
@@ -245,6 +311,7 @@ quarryViolationReferralSector.QuarryViolationReferralSectorTable = (Referrals, d
 
     functions.hideTargetElement(".controls", ".hiddenListBox");
 };
+
 quarryViolationReferralSector.getReferralAttachmentsByReferralId = (ReferralId, referralNumber) => {
     let request = {
         Request: {

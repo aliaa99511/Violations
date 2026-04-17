@@ -54,9 +54,79 @@ runningSectorTask.getRunningTasks = (pageIndex = 1, ViolationSector = 0, Violati
 runningSectorTask.setPaginations = (TotalPages, RowsPerPage) => {
   pagination.draw("#paginationID", TotalPages, RowsPerPage);
   pagination.start("#paginationID", runningSectorTask.getRunningTasks);
-  // pagination.reset()
-  // pagination.scrollToElement(el, length)
   pagination.activateCurrentPage();
+};
+
+runningSectorTask.exportToExcel = () => {
+  // Get current filter values
+  const currentFilters = {
+    RowsPerPage: 10000000, // Get all records for export
+    PageIndex: 1,
+    ColName: "created",
+    SortOrder: "desc",
+    Status: "Approved",
+    PaymentStatus: "",
+    ViolationType: Number($("#TypeofViolation").children("option:selected").data("id")),
+    SectorConfigId: Number($("#violationSector").children("option:selected").val()),
+    GlobalSearch: $("#violationSearch").val()
+  };
+
+  // Define columns with their data mapping
+  const columns = [
+    {
+      title: "رقم المخالفة",
+      data: "Violation.ViolationCode",
+    },
+    {
+      title: "",
+      skip: true
+    },
+    {
+      title: "تصنيف المخالفة",
+      render: (record) => functions.getViolationArabicName(record.Violation?.OffenderType),
+    },
+    {
+      title: "رقم المحجر/العربة",
+      render: (record) => {
+        const violation = record.Violation;
+        if (!violation) return "---";
+        return violation.OffenderType === "Vehicle" ? (violation.CarNumber || "---") : (violation.QuarryCode || "---");
+      },
+    },
+    {
+      title: "إسم الشركة المخالفة",
+      data: "Violation.ViolatorCompany",
+    },
+    {
+      title: "نوع المخالفة",
+      render: (record) => functions.getViolationArabicName(record.Violation?.OffenderType, record.Violation?.ViolationTypes?.Title),
+    },
+    {
+      title: "المنطقة",
+      data: "Violation.ViolationsZone",
+    },
+    {
+      title: "تاريخ الضبط",
+      render: (record) => functions.getFormatedDate(record.Violation?.ViolationDate),
+    },
+    {
+      title: "تاريخ الإنشاء",
+      render: (record) => functions.getFormatedDate(record.Created),
+    },
+  ];
+
+  functions.exportFromAPI({
+    searchUrl: "/_layouts/15/Uranium.Violations.SharePoint/Tasks.aspx/Search",
+    requestData: { Data: currentFilters },
+    columns: columns,
+    fileName: "المخالفات القائمة.xlsx",
+    sheetName: "المخالفات القائمة",
+    columnWidths: 25,
+    rtl: true,
+    dataPath: "d.Result.GridData",
+    exportButtonSelector: "#exportBtn",
+    tableSelector: "#SectorManager"
+  });
 };
 
 runningSectorTask.runningSectorTaskTable = (runningTasks) => {
@@ -69,8 +139,16 @@ runningSectorTask.runningSectorTaskTable = (runningTasks) => {
     runningTasks.forEach((record) => {
       taskViolation = record.Violation;
       let createdDate = functions.getFormatedDate(record.Created);
+
+      // Check if violation was rejected before
+      const rejectedIndicator = taskViolation?.IsRejectedBefore ?
+        '<span class="rejected-indicator" title="تم رفضها سابقاً"></span> ' :
+        '';
+
       data.push([
-        `<div class="violationId" data-violationid="${taskViolation.ID}" data-taskid="${record.ID}" data-violationcode="${taskViolation.ViolationCode}" data-offendertype="${taskViolation.OffenderType}">${taskViolation.ViolationCode}</div>`,
+        `<div class="violationId" style="display: flex;align-items: center;" data-violationid="${taskViolation.ID}" data-taskid="${record.ID}" data-violationcode="${taskViolation.ViolationCode}" data-offendertype="${taskViolation.OffenderType}">
+          ${rejectedIndicator}${taskViolation.ViolationCode}
+        </div>`,
         `<div class='controls'>
               <div class='ellipsisButton'>
                   <i class='fa-solid fa-ellipsis-vertical'></i>
@@ -92,7 +170,7 @@ runningSectorTask.runningSectorTaskTable = (runningTasks) => {
         }</div>`,
         `<div class="companyName">${taskViolation.ViolatorCompany != "" ? taskViolation.ViolatorCompany : "-"}</div>`,
         `<div class="violationType" data-typeid="${taskViolation.OffenderType == "Quarry" ? taskViolation.ViolationTypes.ID : 0}">${functions.getViolationArabicName(taskViolation.OffenderType, taskViolation?.ViolationTypes?.Title)}</div>`,
-        `<div class="violationZone">${taskViolation.ViolationsZone}</div>`,
+        `<div class="violationZone">${taskViolation.ViolationsZone || "----"}</div>`,
         `${functions.getFormatedDate(taskViolation.ViolationDate)}`,
         `${createdDate}`,
 
@@ -122,6 +200,11 @@ runningSectorTask.runningSectorTaskTable = (runningTasks) => {
 
   // 🔹 create column selector
   functions.createColumnSelector(Table, "#columnSelector", 'green');
+
+  // Update export button handler
+  $("#exportBtn").off("click").on("click", () => {
+    runningSectorTask.exportToExcel();
+  });
 
   $(".popupForm").addClass("Pendingform");
   $(".Pendingform").find(".totalPriceBox").show();
@@ -165,15 +248,14 @@ runningSectorTask.runningSectorTaskTable = (runningTasks) => {
       });
       jQueryRecord.find(".controls").children(".hiddenListBox").find(".printConfirmationForm").on("click", (e) => {
         $(".overlay").addClass("active");
-        // DetailsPopup.printPaymentForm(taskID,violationId,violationCode)
         runningSectorTask.findViolationByID(e, taskID, false, "", "ConfirmationFormPrint");
       });
     });
-    functions.getCurrentUserActions();
   })
 
   functions.hideTargetElement(".controls", ".hiddenListBox");
 };
+
 
 runningSectorTask.findViolationByID = (event, taskID, print = false, UserJopTitle = "", popupType = "") => {
   let request = {
@@ -520,20 +602,18 @@ runningSectorTask.filterTasksLog = (e) => {
     runningSectorTask.getRunningTasks(pageIndex, ViolationSector, ViolationType, ViolationGeneralSearch);
   }
 };
+
 runningSectorTask.resetFilter = (e) => {
   e.preventDefault();
-  $("#violationSector").val("0"); // Reset to "الكل" option
-  $("#TypeofViolation").val("0"); // Reset to "الكل" option
-  $("#violationSearch").val(""); // Clear search input
+  $("#violationSector").val("0");
+  $("#TypeofViolation").val("0");
+  $("#violationSearch").val("");
 
-  // Reset pagination to first page
   pagination.reset();
   runningSectorTask.pageIndex = 1;
 
-  // Show loader while fetching data
   $(".PreLoader").addClass("active");
 
-  // Fetch tasks with default filter values (all sectors, all types, empty search)
   runningSectorTask.getRunningTasks(1, 0, 0, "");
 };
 export default runningSectorTask;

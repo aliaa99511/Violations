@@ -12,11 +12,10 @@ equipmentViolation.violatorDetails = () => {
   let violatorNameCheck = functions.getNameInTriple("#violatorName");
   let violatorName = $("#violatorName").val();
   let violatorNationalId = $("#violatorNationalId").val();
+  let violatorMobileNumber = $("#violatorMobileNumber").val();
   let violationPrevCount = $("#prevViolationsCount").val();
   let violationGov = $("#violationGov").children("option:selected").val();
-  let violationGovId = $("#violationGov")
-    .children("option:selected")
-    .data("id");
+  let violationGovId = $("#violationGov").children("option:selected").data("id");
   let violationArea = $("#violationArea").val();
   // let violationAreaName = $("#violationArea").children("option:selected").data("areaname");
   let companyName = $("#companyName").val();
@@ -29,15 +28,27 @@ equipmentViolation.violatorDetails = () => {
       // if(companyName != ""){
       if (violationGov != "") {
         if (violationArea != "") {
+
+          //  Check National ID if provided
+          if (violatorNationalId !== "") {
+            // Check if exactly 14 digits
+            if (!/^\d{14}$/.test(violatorNationalId)) {
+              functions.warningAlert(
+                "الرقم القومي يجب أن يتكون من 14 رقمًا بالضبط",
+                "#violatorNationalId"
+              );
+              return false;
+            }
+          }
+
           violatorDetails = {
             violatorName: violatorName,
-            violatorNationalId:
-              violatorNationalId != "" ? violatorNationalId : "",
+            violatorNationalId: violatorNationalId != "" ? violatorNationalId : "",
             // violatorNationalId: violatorNationalId != "" && NationalIdRegExp.test(violatorNationalId) ? violatorNationalId : "-",
+            violatorMobileNumber: violatorMobileNumber != "" ? violatorMobileNumber : "",
             violationPrevCount: Number(violationPrevCount),
             companyName: companyName != "" ? companyName : "",
-            commercialRegister:
-              commercialRegister != "" ? commercialRegister : "",
+            commercialRegister: commercialRegister != "" ? commercialRegister : "",
             violationAreaName: violationArea,
             violationGov: violationGovId,
             // violationAreaCode:violationArea,
@@ -367,6 +378,9 @@ equipmentViolation.formActions = () => {
   });
   // }
   $(".violatorNationalId").on("keypress", (e) => {
+    return functions.isNumberKey(e);
+  });
+  $(".violatorMobileNumber").on("keypress", (e) => {
     return functions.isNumberKey(e);
   });
   $(".prevViolationsCount").on("keypress", (e) => {
@@ -782,6 +796,7 @@ equipmentViolation.validateForm = (e) => {
                   OffenderType: "Equipment",
                   ViolatorName: violatorDetails.violatorName,
                   NationalID: violatorDetails.violatorNationalId,
+                  MobileNumber: violatorDetails.violatorMobileNumber,
                   NumOfPreviousViolations: violatorDetails.violationPrevCount,
                   ViolatorCompany: violatorDetails.companyName,
                   CommercialRegister: violatorDetails.commercialRegister,
@@ -1037,29 +1052,27 @@ equipmentViolation.AddCoordinatePoint = (e) => {
 equipmentViolation.DeleteCoordinatePoint = (e) => {
   var element = $(e.currentTarget);
   let RowsLength = $("#coordinatesTable table").find("tr").length;
-  if (RowsLength - 1 > 4) {
-    Swal.fire({
-      icon: "warning",
-      customClass: "sweetStyle",
-      title: "هل انت متأكد؟",
-      text: "تأكيد حذف الإحداثيات ؟",
-      showCancelButton: true,
-      cancelButtonText: "لا",
-      confirmButtonColor: "#3085d6",
-      confirmButtonText: "نعم",
-      heightAuto: true,
-    }).then((result) => {
-      if (result.value) {
-        let CurrentRow = $(element).parents("tr");
-        CurrentRow.children().fadeOut(300, () => {
-          CurrentRow.detach();
-          equipmentViolation.OrderTableRow();
-        });
-      }
-    });
-  } else {
-    Swal.fire("لا يمكنك حذف هذه النقطة لا بد من وجود أربع نقاط على الاقل.");
-  }
+
+  // Remove the validation that requires minimum 4 rows
+  Swal.fire({
+    icon: "warning",
+    customClass: "sweetStyle",
+    title: "هل انت متأكد؟",
+    text: "تأكيد حذف الإحداثيات ؟",
+    showCancelButton: true,
+    cancelButtonText: "لا",
+    confirmButtonColor: "#3085d6",
+    confirmButtonText: "نعم",
+    heightAuto: true,
+  }).then((result) => {
+    if (result.value) {
+      let CurrentRow = $(element).parents("tr");
+      CurrentRow.children().fadeOut(300, () => {
+        CurrentRow.remove(); // Changed from detach() to remove()
+        equipmentViolation.OrderTableRow();
+      });
+    }
+  });
 };
 equipmentViolation.OrderTableRow = () => {
   var Rows = $("#coordinatesTable tr:not(:first-child)");
@@ -1108,12 +1121,12 @@ equipmentViolation.editViolation = () => {
         $("#BonesCount").val(violationData.BonsNumber).trigger("change");
         $("#quarryType").val(violationData.QuarryType).trigger("change");
         $("#quarryCode").val(violationData.QuarryCode);
+        $("#violatorMobileNumber").val(violationData.MobileNumber || "");
+
         violationData.Equipments.forEach((equipment, index) => {
           let selectedInput = $(`label[for="${equipment.Name}"]`);
           selectedInput.trigger("click");
-          selectedInput
-            .siblings("#toolCount")
-            .val(violationData.Equipments_Count[index].count);
+          selectedInput.siblings("#toolCount").val(violationData.Equipments_Count[index].count);
         });
         $("#violationDepth").val(violationData.Depth);
         $("#AreaSpace").val(violationData.Area);

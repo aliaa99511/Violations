@@ -55,7 +55,6 @@ ExternalViolationLog.getExternalViolations = (
             ExternalViolationLog.setPaginations(ItemsData.TotalPageCount, ItemsData.RowsPerPage);
             ExternalViolationLog.ExternalViolationTable(ExternalViolationDate, destroyTable);
             ExternalViolationLog.pageIndex = ItemsData.CurrentPage;
-            functions.getCurrentUserActions();
         })
         .catch((err) => {
             console.log(err);
