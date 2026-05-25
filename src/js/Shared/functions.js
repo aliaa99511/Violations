@@ -2,6 +2,7 @@ import bootpopup from "../Libraries/bootpopup";
 import Swal from "sweetalert2";
 import printJS from "print-js";
 import XLSX from "xlsx";
+import moment from "moment";
 
 const functions = {};
 
@@ -77,12 +78,20 @@ functions.tableDeclare = (
 ) => {
   let tableOptions = {
     dom: "t<'Tablepaginate'p>",
-    responsive: true,
+    responsive: false,
+    scrollX: true,
+
+    // // Add fixed height with scroll
+    // scrollY: "500px",
+    // scrollCollapse: false,
+
     fixedColumns: true,
+    autoWidth: false,
     pageLength: 10,
     data: tableData,
     paging: showPaging,
     ordering: false,
+
     language: {
       info: "_START_ - _END_ / _TOTAL_",
       infoFiltered: "",
@@ -94,8 +103,21 @@ functions.tableDeclare = (
         previous: `<i class="fa-solid fa-chevron-left"></i>`,
       },
     },
+
     columns: tableColumns,
+
     columnDefs: [
+      {
+        targets: "_all",
+        createdCell: function (td) {
+          $(td).css({
+            "min-width": "75px",
+            "max-width": "225px",
+            "width": "225px",
+            "white-space": "nowrap",
+          });
+        }
+      },
       {
         ordering: false,
         orderable: true,
@@ -104,8 +126,28 @@ functions.tableDeclare = (
       {
         orderable: false,
         targets: "no-sort",
-      },
+      }
     ],
+
+    // initComplete: function () {
+    //   let wrapper = $(tableID)
+    //     .closest(".dataTables_wrapper")
+    //     .find(".dataTables_scrollBody");
+
+    //   // Apply height only when data exists
+    //   if (tableData && tableData.length > 0) {
+    //     wrapper.css({
+    //       "min-height": "300px",
+    //       "max-height": "800px",
+    //     });
+    //   } else {
+    //     // Remove height in no results case
+    //     wrapper.css({
+    //       "min-height": "",
+    //       "max-height": "",
+    //     });
+    //   }
+    // }
   };
 
   if (destroyTable) {
@@ -114,7 +156,6 @@ functions.tableDeclare = (
 
   let Table = $(tableID).DataTable(tableOptions);
 
-  // Store export configuration on the table element for later use
   $(tableID).data("export-config", {
     fileName: exportFileName,
     sheetName: exportSheetName,
@@ -123,6 +164,7 @@ functions.tableDeclare = (
 
   return Table;
 };
+
 functions.exportCasesFromAPI = async (options) => {
   const {
     searchUrl,
@@ -156,11 +198,11 @@ functions.exportCasesFromAPI = async (options) => {
       ? $(tableSelector).DataTable()
       : null;
 
-    // ✅ NEW CLEAN LOGIC (skip instead of index hack)
+    // NEW CLEAN LOGIC (skip instead of index hack)
     const visibleColumns = [];
 
     columns.forEach((col, index) => {
-      if (col.skip) return; // ✅ ignore control column
+      if (col.skip) return; // ignore control column
 
       const isVisible = table
         ? table.column(index).visible()
@@ -299,7 +341,7 @@ functions.exportFromAPI = async (options) => {
 
     const visibleColumns = [];
 
-    // ✅ FIX: indexes now match DataTable EXACTLY
+    // FIX: indexes now match DataTable EXACTLY
     columns.forEach((col, index) => {
       if (col.skip) return; // skip control column
 
@@ -692,7 +734,7 @@ functions.getFormatedDate = (unFormattedDate, format = "DD-MM-YYYY") => {
 
   let timestamp = null;
 
-  // ✅ لو الشكل /Date(1696230713000)/
+  // if the Date is in the format /Date(1696230713000)/
   if (typeof unFormattedDate === "string" && unFormattedDate.includes("(")) {
     timestamp = Number(
       unFormattedDate.substring(
@@ -702,7 +744,7 @@ functions.getFormatedDate = (unFormattedDate, format = "DD-MM-YYYY") => {
     );
   }
 
-  // ✅ لو Date عادي
+  // if regular Date
   else {
     timestamp = new Date(unFormattedDate).getTime();
   }
@@ -878,9 +920,21 @@ functions.getNDaysAfterCurrentDate = (numberOfDays) => {
 functions.getNDaysAfterCurrentDate(30);
 functions.isNumberKey = (e) => {
   let charCode = e.which ? e.which : e.keyCode;
-  if (charCode > 31 && (charCode < 48 || charCode > 57)) {
+  let char = String.fromCharCode(charCode);
+
+  // Allow control keys
+  if (charCode <= 31) {
+    return true;
+  }
+
+  // Prevent English and Arabic letters only
+  if (
+    /[a-zA-Z]/.test(char) ||
+    /[\u0600-\u06FF]/.test(char)
+  ) {
     return false;
   }
+
   return true;
 };
 functions.isDecimalNumberKey = (e) => {
@@ -903,6 +957,37 @@ functions.isArabicLetter = (e) => {
     return true;
   }
   return false;
+};
+functions.handleArabicLetterSpacing = (selector) => {
+  $(selector).on("keypress", (e) => {
+    let charCode = e.which || e.keyCode;
+    let char = String.fromCharCode(charCode);
+
+    // Allow numbers (0-9)
+    if (charCode >= 48 && charCode <= 57) {
+      return true;
+    }
+
+    // Allow space
+    if (charCode === 32) {
+      return true;
+    }
+
+    // Handle Arabic letters - add space after each Arabic character
+    if (charCode >= 1569 && charCode <= 1610) {
+      if (e.currentTarget.value.length > 0) {
+        let lastChar = e.currentTarget.value.charAt(e.currentTarget.value.length - 1);
+        // Add space if last character is also Arabic (not a space or number)
+        if (lastChar.charCodeAt(0) >= 1569 && lastChar.charCodeAt(0) <= 1610) {
+          e.currentTarget.value += " ";
+        }
+      }
+      return true;
+    }
+
+    // Block all other characters
+    return false;
+  });
 };
 functions.getNameInTriple = (Input) => {
   let nameCount = 3;
@@ -1492,7 +1577,7 @@ functions.getCaseStatus = (CaseStatus) => {
     },
     "تم الإحالة إلى المدعي العام العسكري": {
       text: "تم الإحالة إلى المدعي العام العسكري",
-      icon: 'fa-regular fa-clock',
+      icon: 'fa-regular fa-circle-check',
       class: 'closedStatus'
     },
     "قيد انتظار الرقم القضائي": {
@@ -1625,8 +1710,8 @@ functions.getQuarryViolationStatus = (ViolationStatus) => {
     }
     case "ExternalReviewed": {
       statusHtml = `<div class="statusBox pendingStatus">
-                <i class="statusIcon fa-regular fa-external-link"></i>
-                <span class="statusText">خارجية</span>
+                 <i class="statusIcon fa-regular fa-eye"></i>
+                <span class="statusText">منظورة</span>
             </div>`;
       break;
     }
@@ -1731,8 +1816,8 @@ functions.getVehicleViolationStatus = (ViolationStatus) => {
     }
     case "ExternalReviewed": {
       statusHtml = `<div class="statusBox pendingStatus">
-                <i class="statusIcon fa-regular fa-external-link"></i>
-                <span class="statusText">خارجية</span>
+                 <i class="statusIcon fa-regular fa-eye"></i>
+                <span class="statusText">منظورة</span>
             </div>`;
       break;
     }
@@ -1774,7 +1859,7 @@ functions.getViolationStatusText = (status) => {
     "Rejected": "مرفوضة",
     "Reffered": "تم الإحالة",
     "UnderReview": "منظورة",
-    "ExternalReviewed": "خارجية",
+    "ExternalReviewed": "منظورة",
     "Completed": "مكتملة",
     "Cancelled": "ملغاه"
   };

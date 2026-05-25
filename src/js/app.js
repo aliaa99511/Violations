@@ -60,6 +60,8 @@ $(window).on("load", () => {
   if (document.readyState == "complete") {
     sideMenuFunctions.init();
 
+    functions.handleArabicLetterSpacing("#theCode");
+
     if (functions.getSiteName() === "Home") {
       $(".PreLoader").find("span").addClass("greenLoader");
       // $(".PreLoader").addClass("active");
@@ -101,6 +103,11 @@ $(window).on("load", () => {
       if (functions.getPageName() === "prevViolationsQueryLog") {
         $(".PreLoader").removeClass("active");
         functions.setPageMetaData("الاستعلام عن المخالفات السابقة");
+
+        // Initialize datepickers
+        functions.inputDateFormat("#createdFrom", "", "", "dd-mm-yyyy");
+        functions.inputDateFormat("#createdTo", "", "", "dd-mm-yyyy");
+
         prevViolations.dashBoardTable();
         $(".filterBox").find("#violatorNationalId").on("keypress", (e) => {
           return functions.isNumberKey(e);
@@ -386,16 +393,25 @@ $(window).on("load", () => {
       }
       if (functions.getPageName() === "prevViolationsQueryLog") {
         $(".PreLoader").removeClass("active");
+
         functions.setPageMetaData("الاستعلام عن المخالفات السابقة");
+
+        // Initialize datepickers
+        functions.inputDateFormat("#createdFrom", "", "", "dd-mm-yyyy");
+        functions.inputDateFormat("#createdTo", "", "", "dd-mm-yyyy");
+
         prevViolations.dashBoardTable();
+
         $(".filterBox").find("#violatorNationalId").on("keypress", (e) => {
           return functions.isNumberKey(e);
         });
+
         $(".searchBtn").on("click", (e) => {
           e.preventDefault();
           pagination.reset();
           prevViolations.filterViolationsLog(e);
         });
+
         $(".resetBtn").on("click", (e) => {
           prevViolations.resetFilter(e);
         });

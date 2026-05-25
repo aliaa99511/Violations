@@ -310,26 +310,20 @@ PendingViolations.PendingviolationTable = (Pendingviolation, destroyTable) => {
           `<div class="violationArName">${functions.getViolationArabicName(
             taskViolation.OffenderType
           )}</div>`,
+          `<div class="violationType" data-typeid="${taskViolation.OffenderType == "Quarry" ? taskViolation.ViolationTypes?.ID : 0}">
+              ${functions.getViolationArabicName(taskViolation.OffenderType, taskViolation?.ViolationTypes?.Title)}
+          </div>`,
+          `${createdDate}`,
+          `${functions.getFormatedDate(taskViolation.ViolationDate)}`,
+          `<div class="companyName">${taskViolation.ViolatorCompany != "" ? taskViolation.ViolatorCompany : "-"}</div>`,
           `<div class="violationCode" data-offendertype="${taskViolation.OffenderType}">${taskViolation.OffenderType == "Vehicle"
             ? taskViolation.CarNumber
             : taskViolation.QuarryCode != ""
               ? taskViolation.QuarryCode
               : "---"
           }</div>`,
-          `<div class="companyName">${taskViolation.ViolatorCompany != ""
-            ? taskViolation.ViolatorCompany
-            : "-"
-          }</div>`,
-          `<div class="violationType" data-typeid="${taskViolation.OffenderType == "Quarry"
-            ? taskViolation.ViolationTypes.ID
-            : 0
-          }">${functions.getViolationArabicName(
-            taskViolation.OffenderType,
-            taskViolation?.ViolationTypes?.Title
-          )}</div>`,
           `<div class="violationZone">${taskViolation.ViolationsZone || "----"}</div>`,
-          `${functions.getFormatedDate(taskViolation.ViolationDate)}`,
-          `${createdDate}`,
+          `<div class="violationAttachments" data-violationid="${taskViolation?.ID}" data-violationcode="${taskViolation?.ViolationCode}"><a href="#!" style="color: black;">المرفقات</a></div>`,
         ]);
       }
     });
@@ -346,12 +340,13 @@ PendingViolations.PendingviolationTable = (Pendingviolation, destroyTable) => {
       { title: "رقم المخالفة" },
       { title: "", class: "all" },
       { title: "تصنيف المخالفة" },
-      { title: " رقم المحجر/العربة" },
-      { title: "إسم الشركة المخالفة" },
       { title: "نوع المخالفة " },
-      { title: "المنطقة" },
-      { title: "تاريخ الضبط" },
       { title: "تاريخ الإنشاء" },
+      { title: "تاريخ الضبط" },
+      { title: "إسم الشركة المخالفة" },
+      { title: " رقم المحجر/العربة" },
+      { title: "المنطقة" },
+      { title: "المرفقات" },
     ],
     false,
     false,
@@ -385,6 +380,12 @@ PendingViolations.PendingviolationTable = (Pendingviolation, destroyTable) => {
       let violationId = jQueryRecord.find(".violationId").data("violationid");
       let violationCode = jQueryRecord.find(".violationId").data("violationcode");
       let hiddenListBox = jQueryRecord.find(".controls").children(".hiddenListBox");
+
+      jQueryRecord.find(".violationAttachments").find("a").off('click').on('click', function (e) {
+        e.preventDefault();
+        $(".overlay").addClass("active");
+        PendingViolations.getViolationAttachmentsById(violationId, violationCode);
+      });
 
       jQueryRecord
         .find(".controls")
@@ -901,13 +902,201 @@ PendingViolations.RejectTaskAction = (taskID, violationId, rejectComment) => {
     });
 };
 
+// ========== attachment popup =========
+PendingViolations.getViolationAttachmentsById = (violationId, violationCode) => {
+  let request = {
+    id: violationId,
+    listName: "Violations",
+  };
+
+  $.ajax({
+    type: "POST",
+    url: "/_layouts/15/Uranium.Violations.SharePoint/Attachments.aspx/Get",
+    contentType: "application/json; charset=utf-8",
+    dataType: "json",
+    data: JSON.stringify(request),
+    success: (data) => {
+      $(".overlay").removeClass("active");
+
+      if (data && data.d && Array.isArray(data.d) && data.d.length > 0) {
+        let attachmentsData = data.d;
+
+        // Create structure similar to what the popup expects
+        let attachmentRecords = [{
+          Attachments: attachmentsData.map(att => ({
+            Url: att.Url,
+            Name: att.Name
+          })),
+          UploadPhase: "مرفقات المخالفة",
+          Created: new Date().toISOString(),
+          Comments: ""
+        }];
+
+        PendingViolations.violationAttachmentsDetailsPopup(
+          violationId,
+          violationCode,
+          attachmentRecords
+        );
+      } else {
+        // No attachments found
+        PendingViolations.violationAttachmentsDetailsPopup(
+          violationId,
+          violationCode,
+          []
+        );
+      }
+    },
+    error: (xhr) => {
+      console.error("Error fetching violation attachments:", xhr);
+      $(".overlay").removeClass("active");
+      functions.warningAlert("حدث خطأ في تحميل المرفقات");
+    },
+  });
+};
+
+PendingViolations.violationAttachmentsDetailsPopup = (
+  violationId,
+  violationCode,
+  violationAttachmentsRecords
+) => {
+  let popupHtml = `
+    <div class="popupHeader attachPopup" style="display: flex; justify-content: space-between;">
+        <div class="violationsCode"> 
+            <p>مرفقات المخالفة رقم (${violationCode || "-----"})</p>
+        </div>
+        <div class="btnStyle cancelBtn popupBtn closeViolationAttachPopup" id="closeViolationAttachPopup" style="color: #fff;cursor: pointer;" data-dismiss="modal" aria-label="Close">
+            <i class="fa-solid fa-x"></i>
+        </div>
+    </div> 
+    <div class="popupBody">
+        <div class="popupTableBox">
+            <table id="violationAttachmentsTable" class="table tableWithIcons popupTable"></table>
+        </div>
+        <div class="formButtonsBox">
+            <div class="row">
+                <div class="col-12">
+                    <div class="buttonsBox centerButtonsBox">
+                        <div class="btnStyle cancelBtn popupBtn closeViolationAttachPopupFooter" id="closeViolationAttachPopupFooter" data-dismiss="modal" aria-label="Close">إغلاق</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>`;
+
+  functions.declarePopup(
+    ["generalPopupStyle", "greenPopup", "editPopup", "attachPopup"],
+    popupHtml
+  );
+
+  PendingViolations.drawViolationAttachmentsPopupTable(
+    "#violationAttachmentsTable",
+    violationAttachmentsRecords
+  );
+
+  // Add close button handlers
+  $("#closeViolationAttachPopup, #closeViolationAttachPopupFooter").on("click", function () {
+    functions.closePopup();
+  });
+};
+
+PendingViolations.drawViolationAttachmentsPopupTable = (
+  TableId,
+  violationAttachmentsRecords
+) => {
+  $(".overlay").removeClass("active");
+  let data = [];
+  let counter = 1;
+
+  if (violationAttachmentsRecords.length > 0) {
+    violationAttachmentsRecords.forEach((attchRecord) => {
+      let attachedFilesData = attchRecord.Attachments || [];
+      data.push([
+        `<div class="attachCount">${counter}</div>`,
+        `<div class="attachFiles" data-fileslength="${attachedFilesData.length}">
+            ${PendingViolations.drawAttachmentsInTable(attachedFilesData)}
+        </div>`,
+        `<div class="attachUploadPhase">${attchRecord.UploadPhase || "----"}</div>`,
+        `<div class="attachUploadDate">${functions.getFormatedDate(
+          attchRecord.Created,
+          "DD-MM-YYYY hh:mm A"
+        )}</div>`,
+        `<div class="attachComments">${attchRecord.Comments != ""
+          ? attchRecord.Comments
+          : "----"
+        }</div>`,
+      ]);
+      counter++;
+    });
+  } else {
+    data.push([
+      `<div class="no-data">لا توجد مرفقات</div>`,
+      "",
+      "",
+      "",
+      ""
+    ]);
+  }
+
+  let Table = functions.tableDeclare(
+    TableId,
+    data,
+    [
+      { title: "م", class: "tableCounter" },
+      { title: "المرفقات", class: "attachBoxHeader" },
+      { title: "سبب الإرفاق" },
+      { title: "تاريخ الإرفاق" },
+      { title: "ملاحظات" },
+    ],
+    false,
+    false
+  );
+
+  let attachmentsLog = Table.rows().nodes().to$();
+  $.each(attachmentsLog, (index, record) => {
+    let jQueryRecord = $(record);
+    let attachFiles = jQueryRecord.find(".attachFiles");
+    let attachFilesLength = jQueryRecord.find(".attachFiles").data("fileslength");
+
+    if (attachFilesLength == 1) {
+      attachFiles.find(".attchedFile").addClass("singleFile");
+    }
+    if (attachFilesLength == 2) {
+      attachFiles.find(".attchedFile").addClass("multibleFiles");
+    }
+    if (attachFilesLength >= 3) {
+      attachFiles.find(".attchedFile").addClass("manyFiles");
+    }
+  });
+};
+
+PendingViolations.drawAttachmentsInTable = (Attachments) => {
+  let attachmentsBox = ``;
+
+  if (Attachments && Attachments.length > 0) {
+    Attachments.forEach((attachment) => {
+      attachmentsBox += `
+        <a class="attchedFile" target="_blank" href="${attachment.Url}" download="${attachment.Name}" title="${attachment.Name}">
+            <div class="attachDetailsBox">
+                <p class="attchedFileName">${attachment.Name}</p>
+            </div>
+            <span><i class="fa-solid fa-download"></i></span>
+        </a>
+      `;
+    });
+  } else {
+    attachmentsBox = `<p class="noAttachedFiles">لا يوجد مرفقات</p>`;
+  }
+  return attachmentsBox;
+};
+////////////////////////////////////////////
+
 const ViolationHistoryLogs = () => {
   let selectedViolationId = null;
   let selectedViolationCode = null;
   let trackHistoryTable = null;
 
   // ===============================
-  // 🔥 فتح المودال
+  //  فتح المودال
   // ===============================
   $(".contentContainer").on("click", ".violationHistory", function (e) {
     e.preventDefault();
@@ -920,7 +1109,7 @@ const ViolationHistoryLogs = () => {
   });
 
   // ===============================
-  // 🔥 إغلاق المودال - Close button handlers
+  //  إغلاق المودال - Close button handlers
   // ===============================
   const closeModal = () => {
     $("#trackHistoryModal").modal("hide");
@@ -953,7 +1142,7 @@ const ViolationHistoryLogs = () => {
   });
 
   // ===============================
-  // 🔥 لما المودال يفتح
+  //  لما المودال يفتح
   // ===============================
   $(".track-history-modal").on("shown.bs.modal", function () {
     $(".track-history-violation-code").text(selectedViolationCode);
@@ -966,7 +1155,6 @@ const ViolationHistoryLogs = () => {
 
     const tableElement = $("#trackHistoryTable");
 
-    // ✅ لو أول مرة نعمل init
     if (!trackHistoryTable) {
       trackHistoryTable = tableElement.DataTable({
         processing: true,
@@ -997,7 +1185,7 @@ const ViolationHistoryLogs = () => {
   });
 
   // ===============================
-  // 🔥 لما المودال يقفل
+  //  لما المودال يقفل
   // ===============================
   $(".track-history-modal").on("hidden.bs.modal", function () {
     $(".track-history-violation-code").text("");

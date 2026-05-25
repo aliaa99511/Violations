@@ -104,7 +104,17 @@ approvedViolationsRecords.dashBoardTable = (violationsData) => {
                 <div class="hiddenListBox">
                     <div class='arrow'></div>
                     <ul class='list-unstyled controlsList'>
-                        <li><a href="#" class="itemDetails"> المزيد من التفاصيل</a></li>                       
+                        <li><a href="#" class="itemDetails"> المزيد من التفاصيل</a></li>   
+                        <li>
+                          <a href="#"
+                            data-violationid="${taskViolation?.ID}"
+                            data-violationcode="${taskViolation?.ViolationCode}"
+                            class="violationHistory"
+                            data-toggle="modal"
+                            data-target="#trackHistoryModal">
+                            تتبع مرحلة المخالفة
+                          </a>
+                        </li>                    
                     </ul>
                 </div>
             </div>`,
@@ -253,4 +263,116 @@ approvedViolationsRecords.resetFilter = (e) => {
   $(".PreLoader").addClass("active");
   approvedViolationsRecords.getApprovedViolations();
 };
+
+
+// ========== Tracking History Functions =========
+const ViolationHistoryLogs = () => {
+  let selectedViolationId = null;
+  let selectedViolationCode = null;
+  let trackHistoryTable = null;
+
+  // ===============================
+  //  فتح المودال
+  // ===============================
+  $(".contentContainer").on("click", ".violationHistory", function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+
+    selectedViolationId = $(this).data("violationid");
+    selectedViolationCode = $(this).data("violationcode");
+
+    $("#trackHistoryModal").modal("show");
+  });
+
+  // ===============================
+  //  إغلاق المودال - Close button handlers
+  // ===============================
+  const closeModal = () => {
+    $("#trackHistoryModal").modal("hide");
+
+    // Clear the modal content
+    $(".track-history-violation-code").text("");
+    if (trackHistoryTable) {
+      trackHistoryTable.clear().destroy();
+      trackHistoryTable = null;
+    }
+    $("#trackHistoryTable tbody").empty();
+  };
+
+  $(document).on("click", "#closeViolationHistoryPopup", function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+    closeModal();
+  });
+
+  // // Close button in footer
+  // $(document).on("click", "#closeViolationHistoryPopupFooter", function (e) {
+  //   e.preventDefault();
+  //   e.stopPropagation();
+  //   closeModal();
+  // });
+
+  // Bootstrap modal hide event
+  $("#trackHistoryModal").on("hidden.bs.modal", function () {
+    closeModal();
+  });
+
+  // ===============================
+  //  لما المودال يفتح
+  // ===============================
+  $(".track-history-modal").on("shown.bs.modal", function () {
+    $(".track-history-violation-code").text(selectedViolationCode);
+
+    const request = {
+      Request: {
+        ViolationId: selectedViolationId,
+      },
+    };
+
+    const tableElement = $("#trackHistoryTable");
+
+    if (!trackHistoryTable) {
+      trackHistoryTable = tableElement.DataTable({
+        processing: true,
+        paging: false,
+        responsive: true,
+        destroy: true,
+        ajax: {
+          url: "/_layouts/15/Uranium.Violations.SharePoint/ViolationHistoryLogs.aspx/Search",
+          type: "POST",
+          contentType: "application/json",
+          data: () => JSON.stringify(request),
+          dataSrc: (data) => {
+            return data?.d?.Result?.GridData || [];
+          }
+        },
+        columns: [
+          { data: null, render: (data, type, row, meta) => meta.row },
+          { data: "Status", render: (data) => data || "-" },
+          { data: "Created", render: (data) => data ? functions.getFormatedDate(data) : "-" },
+          { data: "CreatedBy", render: (data) => data || "-" },
+          { data: "Comment", render: (data) => data || "-" }
+        ],
+        language: { emptyTable: "لا توجد بيانات" }
+      });
+    } else {
+      trackHistoryTable.ajax.reload();
+    }
+  });
+
+  // ===============================
+  //  لما المودال يقفل
+  // ===============================
+  $(".track-history-modal").on("hidden.bs.modal", function () {
+    $(".track-history-violation-code").text("");
+    if (trackHistoryTable) {
+      trackHistoryTable.clear().destroy();
+      trackHistoryTable = null;
+    }
+    $("#trackHistoryTable tbody").empty();
+  });
+};
+
+ViolationHistoryLogs();
+
 export default approvedViolationsRecords;

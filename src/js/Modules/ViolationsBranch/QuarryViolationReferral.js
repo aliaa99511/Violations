@@ -215,6 +215,8 @@ quarryViolationReferral.QuarryViolationReferralTable = (Referrals, destroyTable)
             let hasPayCaseAfterEditAction = false;
             let hasSaveCaseAction = false;
             let canShowDetailsOnly = false;
+            let hasEditViolationAmountAction = false;
+            let hasEditReferralAmountAction = false;
 
             // Business Rule 1: Add Referral Number
             if (!referralNumber &&
@@ -224,9 +226,13 @@ quarryViolationReferral.QuarryViolationReferralTable = (Referrals, destroyTable)
             }
 
             // Business Rule 3: Pay Case Before Edit (سداد على نموذج التقييم)
-            if (referralNumber &&
-                caseStatus == "قيد انتظار تأشيرات النيابة" &&
-                violationStatus == "UnderReview") {
+            if (
+                (caseStatus == "قيد انتظار تأشيرات النيابة" ||
+                    caseStatus == "قيد الانتظار القطاع" ||
+                    caseStatus == "قيد انتظار رقم الإحالة"
+                ) &&
+                violationStatus == "UnderReview"
+            ) {
                 hasPayCaseBeforeEditAction = true;
             }
 
@@ -237,10 +243,11 @@ quarryViolationReferral.QuarryViolationReferralTable = (Referrals, destroyTable)
                 hasPayCaseAfterEditAction = true;
             }
 
-            // NEW Business Rule 5: Save Case
+            // Business Rule 5: Save Case
             if (violationStatus !== "Paid" &&
                 (caseStatus === "قيد انتظار رقم الإحالة" ||
                     caseStatus === "قيد انتظار تأشيرات النيابة" ||
+                    caseStatus === "قيد الانتظار القطاع" ||
                     caseStatus === "تم التسليم للتحريات")) {
                 hasSaveCaseAction = true;
             }
@@ -250,21 +257,32 @@ quarryViolationReferral.QuarryViolationReferralTable = (Referrals, destroyTable)
                 canShowDetailsOnly = true;
             }
 
+            // Business Rule 7: Edit Amount Actions (تعديل مبلغ المخالفة / تعديل مبلغ الإحالة)
+            if (caseStatus !== "محفوظة" && violationStatus !== "Cancelled") {
+                if (caseStatus === "تم التسليم للتحريات") {
+                    hasEditReferralAmountAction = true;
+                } else {
+                    hasEditViolationAmountAction = true;
+                }
+            }
+
             // Build actions menu HTML without data attributes
             let actionsMenuHTML = '';
             if (canShowDetailsOnly) {
                 actionsMenuHTML = `
-                <ul class='list-unstyled controlsList'>
-                    <li><a href="#" class="itemDetails">المزيد من التفاصيل</a></li>
+                    <ul class='list-unstyled controlsList'>
+                        <li><a href="#" class="itemDetails">المزيد من التفاصيل</a></li>
+                        <li><a href="#" data-violationid="${referral?.ViolationId}" data-violationcode="${referral?.ViolationCode}" class="violationHistory" data-toggle="modal" data-target="#trackHistoryModal">تتبع مرحلة المخالفة</a></li>
                 </ul>`;
             } else {
                 actionsMenuHTML = `
                 <ul class='list-unstyled controlsList'>
-                    <li><a href="#" class="itemDetails">المزيد من التفاصيل</a></li>`;
+                    <li><a href="#" class="itemDetails">المزيد من التفاصيل</a></li>
+                    <li><a href="#" data-violationid="${referral?.ViolationId}" data-violationcode="${referral?.ViolationCode}" class="violationHistory" data-toggle="modal" data-target="#trackHistoryModal">تتبع مرحلة المخالفة</a></li>`;
 
                 if (hasAddReferralNumberAction) {
                     actionsMenuHTML += `
-                    <li><a href="#" class="addReferralNumberAction">إضافة رقم الإحالة</a></li>`;
+                        <li><a href="#" class="addReferralNumberAction">إضافة رقم الإحالة</a></li>`;
                 }
 
                 if (hasPayCaseBeforeEditAction) {
@@ -277,9 +295,20 @@ quarryViolationReferral.QuarryViolationReferralTable = (Referrals, destroyTable)
                     <li><a href="#" class="payCaseAfterEditAction">سداد على الإحالة</a></li>`;
                 }
 
+                // Edit Amount actions
+                if (hasEditViolationAmountAction) {
+                    actionsMenuHTML += `
+                    <li><a href="#" class="editViolationAmountAction">تعديل مبلغ المخالفة</a></li>`;
+                }
+
+                if (hasEditReferralAmountAction) {
+                    actionsMenuHTML += `
+                    <li><a href="#" class="editReferralAmountAction">تعديل مبلغ الإحالة</a></li>`;
+                }
+
                 if (hasSaveCaseAction) {
                     actionsMenuHTML += `
-                    <li><a href="#" class="saveCaseAction">حفظ</a></li>`;
+                    <li><a href="#" class="saveCaseAction">حفظ وإلغاء قرار النيابة</a></li>`;
                 }
 
                 actionsMenuHTML += `</ul>`;
@@ -307,7 +336,7 @@ quarryViolationReferral.QuarryViolationReferralTable = (Referrals, destroyTable)
                 'hassavecase': hasSaveCaseAction,
                 'canshowdetailsonly': canShowDetailsOnly,
                 'totalprice': referral?.TotalPriceDue || 0,
-                'totaloldprice': referral?.TotalOldPrice || 0
+                'totaloldprice': referral?.TotalOldPrice || 0,
             };
 
             // Convert data object to data-attributes string
@@ -330,13 +359,12 @@ quarryViolationReferral.QuarryViolationReferralTable = (Referrals, destroyTable)
                 </div>`,
                 `<div class="refferedDate noWrapContent">${refferedDate || "-----"}</div>`,
                 `<div class="referralNumber">${referralNumber || "-----"}</div>`,
+                `<div class="totalPriceDue">${functions.splitBigNumbersByComma(referral.TotalPriceDue || 0) || "-----"}</div>`,
                 `<div class="violationStatus">${displayViolationStatus || "-----"}</div>`,
                 `<div class="referralStatus">${functions.getCaseStatus(caseStatus)}</div>`,
-                `<div class="totalPriceDue">${functions.splitBigNumbersByComma(referral.TotalPriceDue || 0) || "-----"}</div>`,
                 `<div class="referralAttachments caseAttachments"><a href="#!" style="color: black;">المرفقات</a></div>`,
             ]);
             // `<div class="referralStatus">${quarryViolationReferral.getCaseStatus(caseStatus)}</div>`,
-
         });
     } else {
         data.push([
@@ -359,9 +387,9 @@ quarryViolationReferral.QuarryViolationReferralTable = (Referrals, destroyTable)
             { title: "", class: "all" },
             { title: "تاريخ الإحالة" },
             { title: "رقم الإحالة" },
+            { title: "المبلغ المستحق" },
             { title: "حالة المخالفة" },
             { title: "موقف الإحالة" },
-            { title: "المبلغ المستحق" },
             { title: "المرفقات" },
         ],
         false,
@@ -409,13 +437,14 @@ quarryViolationReferral.QuarryViolationReferralTable = (Referrals, destroyTable)
             $(".hiddenListBox").hide(300);
         });
 
-        if (
-            referralsLog.length > 4 &&
-            hiddenListBox.height() > 110 &&
-            jQueryRecord.is(":nth-last-child(-n + 4)")
-        ) {
-            hiddenListBox.addClass("toTopDDL");
-        }
+        // if (
+        //     referralsLog.length > 4 &&
+        //     hiddenListBox.height() > 110 &&
+        //     jQueryRecord.is(":nth-last-child(-n + 4)")
+        // ) {
+        //     hiddenListBox.addClass("toTopDDL");
+        // }
+
     });
 
     // Add Referral Number Action
@@ -508,8 +537,68 @@ quarryViolationReferral.QuarryViolationReferralTable = (Referrals, destroyTable)
         let violationCode = $violationCode.data('violationcode');
         let caseStatus = $violationCode.data('referralstatus');
 
-        // Implement save case functionality here
-        console.log('Save case:', { referralId, violationId, taskId, referralNumber, violationCode, caseStatus });
+        quarryViolationReferral.saveCaseAndCancelViolationPopup(
+            referralId,
+            violationId,
+            taskId,
+            referralNumber,
+            violationCode,
+            caseStatus
+        );
+
+        $(".hiddenListBox").hide(300);
+    });
+
+    // Edit Violation Amount Action
+    $(document).off('click', '.editViolationAmountAction').on('click', '.editViolationAmountAction', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        let $row = $(this).closest('tr');
+        let $violationCode = $row.find('.violationCode');
+
+        let referralId = $violationCode.data('referralid');
+        let violationId = $violationCode.data('violationid');
+        let taskId = $violationCode.data('taskid');
+        let violationCode = $violationCode.data('violationcode');
+        let currentAmount = $violationCode.data('totalprice');
+        let referralNumber = $violationCode.data('referralnumber');
+
+        quarryViolationReferral.editViolationAmountPopup(
+            referralId,
+            violationId,
+            taskId,
+            violationCode,
+            referralNumber,
+            currentAmount
+        );
+
+        $(".hiddenListBox").hide(300);
+    });
+
+    // Edit Referral Amount Action
+    $(document).off('click', '.editReferralAmountAction').on('click', '.editReferralAmountAction', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        let $row = $(this).closest('tr');
+        let $violationCode = $row.find('.violationCode');
+
+        let referralId = $violationCode.data('referralid');
+        let violationId = $violationCode.data('violationid');
+        let taskId = $violationCode.data('taskid');
+        let violationCode = $violationCode.data('violationcode');
+        let currentReferredAmount = $violationCode.data('referredamount');
+        let referralNumber = $violationCode.data('referralnumber');
+
+        quarryViolationReferral.editReferralAmountPopup(
+            referralId,
+            violationId,
+            taskId,
+            violationCode,
+            referralNumber,
+            currentReferredAmount
+        );
 
         $(".hiddenListBox").hide(300);
     });
@@ -521,7 +610,7 @@ quarryViolationReferral.addReferralNumberPopup = (ReferralID, ViolationID, Viola
     $(".overlay").removeClass("active");
     let popupHtml = `
         <div class="popupHeader" style="display: flex; justify-content: space-between;">
-            <div class="violationsCode"> 
+            <div class="violationsCode">
                 <p>إضافة رقم الإحالة للمخالفة رقم (${ViolationCode})</p>
             </div>
             <div class="btnStyle cancelBtn popupBtn closeReferralNumberPopup" id="closeReferralNumberPopup" style="color: #fff; cursor: pointer;" data-dismiss="modal" aria-label="Close">
@@ -595,9 +684,9 @@ quarryViolationReferral.addReferralNumberPopup = (ReferralID, ViolationID, Viola
         functions.closePopup();
     });
 
-    let ReferralNumberInput = $("#referralNumber").val();
-    let ReferralAmountInput = $("#referredAmount").val();
-    let ReferralCommentsInput = $("#referralComments").val();
+    let ReferralNumberInput = "";
+    let ReferralAmountInput = "";
+    let ReferralCommentsInput = "";
     let filesExtension = [
         "gif", "svg", "jpg", "jpeg", "png",
         "doc", "docx", "pdf", "xls", "xlsx", "pptx"
@@ -606,27 +695,59 @@ quarryViolationReferral.addReferralNumberPopup = (ReferralID, ViolationID, Viola
     let countOfFiles;
     let request = {};
 
-    // ADDED: Allow only numbers and decimal point in referredAmount
+    // Allow only numbers in referralNumber
+    $("#referralNumber").on("keypress", (e) => {
+        return functions.isNumberKey(e);
+    });
+
+    // Handle referralNumber input - clean non-numeric characters and update variable
+    // $("#referralNumber").on("input", (e) => {
+    //     let value = $(e.currentTarget).val();
+    //     // Remove any non-numeric characters
+    //     value = value.replace(/[^0-9]/g, '');
+    //     $(e.currentTarget).val(value);
+    //     ReferralNumberInput = value;
+    // });
+
+    // Remove English & Arabic letters only
+    $("#referralNumber").on("input", (e) => {
+        let value = $(e.currentTarget).val();
+
+        value = value.replace(/[a-zA-Z\u0600-\u06FF]/g, "");
+
+        $(e.currentTarget).val(value);
+
+        ReferralNumberInput = value.trim();
+    });
+
+    // Allow only numbers and decimal point in referredAmount
     $("#referredAmount").on("keypress", (e) => {
         return functions.isDecimalNumberKey(e);
     });
 
-    // ADDED: Format the referred amount with commas as the user types
-    $("#referredAmount").on("keyup", (e) => {
+    // Format the referred amount with commas as the user types
+    $("#referredAmount").on("input", (e) => {
         let rawValue = $(e.currentTarget).val().replace(/\,/g, "");
+
+        // Remove any non-numeric characters except decimal point
+        rawValue = rawValue.replace(/[^0-9.]/g, '');
 
         // Store the raw value for later use
         ReferralAmountInput = rawValue;
 
         // Format with commas for display
         if (rawValue) {
-            $(e.currentTarget).val(
-                rawValue.replace(/\B(?=(?:\d{3})+(?!\d))/g, ",")
-            );
+            let formatted = rawValue.replace(/\B(?=(?:\d{3})+(?!\d))/g, ",");
+            $(e.currentTarget).val(formatted);
         }
     });
 
-    // File attachment handling - SAME AS violationsCases
+    // Handle referralComments input
+    $("#referralComments").on("input", (e) => {
+        ReferralCommentsInput = $(e.currentTarget).val().trim();
+    });
+
+    // File attachment handling
     $("#referralNumberAttach").on("change", (e) => {
         allAttachments = $(e.currentTarget)[0].files;
         if (allAttachments.length > 0) {
@@ -668,18 +789,9 @@ quarryViolationReferral.addReferralNumberPopup = (ReferralID, ViolationID, Viola
         }
     });
 
-    $("#referralNumber").on("keyup", (e) => {
-        ReferralNumberInput = $(e.currentTarget).val().trim();
-    });
-
-    $("#referralComments").on("keyup", (e) => {
-        ReferralCommentsInput = $(e.currentTarget).val().trim();
-    });
-
     $(".AddReferralNumberBtn").on("click", (e) => {
-        if (ReferralNumberInput != "") {
+        if (ReferralNumberInput != "" && ReferralNumberInput != null) {
             if (allAttachments != null && allAttachments.length > 0) {
-                // MODIFIED: Use the raw ReferralAmountInput (without commas) for the request
                 request = {
                     Request: {
                         Title: "تم إضافة رقم الإحالة",
@@ -687,7 +799,7 @@ quarryViolationReferral.addReferralNumberPopup = (ReferralID, ViolationID, Viola
                         Status: "قيد الانتظار القطاع",
                         ViolationId: ViolationID,
                         ReferralNumber: ReferralNumberInput,
-                        ReferredAmount: ReferralAmountInput, // This is now the raw number without commas
+                        ReferredAmount: ReferralAmountInput,
                         TaskId: TaskID,
                         ID: ReferralID
                     },
@@ -698,7 +810,10 @@ quarryViolationReferral.addReferralNumberPopup = (ReferralID, ViolationID, Viola
                     ReferralID,
                     "إضافة رقم الإحالة",
                     "#referralNumberAttach",
-                    "تم إضافة رقم الإحالة"
+                    "تم إضافة رقم الإحالة",
+                    TaskID,
+                    ViolationID,
+                    false,
                 );
             } else {
                 functions.warningAlert("من فضلك قم بإرفاق المستند المرفق به رقم الإحالة");
@@ -719,14 +834,14 @@ quarryViolationReferral.addReferralNumberPopup = (ReferralID, ViolationID, Viola
 //     $(".overlay").removeClass("active");
 //     let popupHtml = `
 //         <div class="popupHeader">
-//             <div class="violationsCode"> 
+//             <div class="violationsCode">
 //                 <p>تعديل مبلغ الإحالة رقم (${referralNumber})</p>
 //             </div>
-//         </div> 
+//         </div>
 //         <div class="popupBody">
 //             <div class="popupForm detailsPopupForm" id="detailsPopupForm">
 
-//                 <div class="formContent"> 
+//                 <div class="formContent">
 //                     <div class="formBox">
 //                         <div class="formElements">
 //                             <div class="row">
@@ -734,7 +849,7 @@ quarryViolationReferral.addReferralNumberPopup = (ReferralID, ViolationID, Viola
 //                                     <div class="form-group customFormGroup">
 //                                         <label for="oldViolationPrice" class="customLabel">المبلغ القديم</label>
 //                                         <input class="form-control disabled customInput oldViolationPrice" id="oldViolationPrice" type="text" value="${functions.splitBigNumbersByComma(oldPrice)}" disabled>
-//                                     </div> 
+//                                     </div>
 //                                 </div>
 //                                 <div class="col-md-4">
 //                                     <div class="form-group customFormGroup">
@@ -805,7 +920,7 @@ quarryViolationReferral.addReferralNumberPopup = (ReferralID, ViolationID, Viola
 //     let PositiveDecimalNumbers = /^[+]?([0-9]+(?:[\.][0-9]*)?|\.[0-9]+)$/;
 //     let request = {};
 
-//     // File attachment handling - SAME AS violationsCases
+//     // File attachment handling
 //     $("#editReferralAmountAttach").on("change", (e) => {
 //         allAttachments = $(e.currentTarget)[0].files;
 //         if (allAttachments.length > 0) {
@@ -911,12 +1026,17 @@ quarryViolationReferral.addReferralNumberPopup = (ReferralID, ViolationID, Viola
 //         }
 //     });
 // };
+
 quarryViolationReferral.editReferralAPIResponse = (
     request,
     ReferralId,
     uploadPhase,
     attachInput,
-    Message = ""
+    Message = "",
+    TaskID = null,
+    ViolationID = null,
+    caseStatus = null,
+    isEditViolationAmount = false  // Default parameter
 ) => {
     functions
         .requester(
@@ -930,12 +1050,27 @@ quarryViolationReferral.editReferralAPIResponse = (
         })
         .then((data) => {
             if (data.d.Status) {
-                quarryViolationReferral.addNewReferralAttachmentRecord(
-                    ReferralId,
-                    uploadPhase,
-                    attachInput,
-                    Message
-                );
+                // Use the passed caseStatus if available, otherwise check request
+                let currentCaseStatus = isEditViolationAmount ? caseStatus : request.Request.Status;
+
+                if (TaskID && ViolationID && currentCaseStatus) {
+                    quarryViolationReferral.updateViolationTaskStatus(TaskID, ViolationID, currentCaseStatus)
+                        .then(() => {
+                            quarryViolationReferral.addNewReferralAttachmentRecord(
+                                ReferralId,
+                                uploadPhase,
+                                attachInput,
+                                Message
+                            );
+                        });
+                } else {
+                    quarryViolationReferral.addNewReferralAttachmentRecord(
+                        ReferralId,
+                        uploadPhase,
+                        attachInput,
+                        Message
+                    );
+                }
             } else {
                 functions.warningAlert("هناك خطأ في إرسال بيانات الطلب");
             }
@@ -1014,11 +1149,6 @@ quarryViolationReferral.uploadReferralAttachments = (
             $(".overlay").removeClass("active");
             functions.sucessAlert(Message);
             functions.closePopup();
-            // Refresh the table
-            quarryViolationReferral.getQuarryViolationReferrals(
-                quarryViolationReferral.pageIndex,
-                true
-            );
         },
         error: (err) => {
             functions.warningAlert("خطأ في إرسال البيانات لقاعدة البيانات");
@@ -1072,13 +1202,13 @@ quarryViolationReferral.referralAttachmentsDetailsPopup = (
 ) => {
     let popupHtml = `
         <div class="popupHeader attachPopup" style="display: flex; justify-content: space-between;">
-            <div class="violationsCode"> 
+            <div class="violationsCode">
                 <p>مرفقات الإحالة رقم (${referralNumber || "-----"})</p>
             </div>
             <div class="btnStyle cancelBtn popupBtn closeReferralAttachPopup" id="closeReferralAttachPopup" style="color: #fff;cursor: pointer;" data-dismiss="modal" aria-label="Close">
                 <i class="fa-solid fa-x"></i>
             </div>
-        </div> 
+        </div>
         <div class="popupBody">
             <div class="popupTableBox">
                 <table id="referralAttachmentsTable" class="table tableWithIcons popupTable"></table>
@@ -1267,13 +1397,13 @@ quarryViolationReferral.getReferralDetails = (referralData) => {
     <div class="popupHeader">
         <div class="popupTitleBox">
             <div class="CaseNumberBox">
-                <p class="caseNumber">${popupTitle}</p>  
+                <p class="caseNumber">${popupTitle}</p>
                 <div class="printBtn"><img src="/Style Library/MiningViolations/images/WhitePrintBtn.png" alt="Print Button"></div>
             </div>
             <div class="btnStyle cancelBtn popupBtn closeReferralDetailsPopup" id="closeReferralDetailsPopup" style="color: #fff; cursor: pointer;" data-dismiss="modal" aria-label="Close">
                 <i class="fa-solid fa-x"></i>
             </div>
-        </div> 
+        </div>
     </div>
     <div class="popupBody" style="overflow-y: auto; max-height: 80vh;"> <!-- Added inline styles -->
         <div class="popupForm detailsPopupForm" id="detailsPopupForm">
@@ -1609,7 +1739,470 @@ quarryViolationReferral.referralEquipmentDetails = (violationData) => {
     return detailsHtml;
 };
 ////////////////////////////////////////////////
+quarryViolationReferral.editViolationAmountPopup = (
+    ReferralID,
+    ViolationID,
+    TaskID,
+    violationCode,
+    referralNumber,
+    currentAmount
+) => {
+    $(".overlay").removeClass("active");
 
+    let popupTitle = referralNumber
+        ? `تعديل مبلغ المخالفة - الإحالة رقم (${referralNumber})`
+        : `تعديل مبلغ المخالفة رقم (${violationCode})`;
+
+    let popupHtml = `
+        <div class="popupHeader" style="display: flex; justify-content: space-between;">
+            <div class="violationsCode">
+                <p>${popupTitle}</p>
+            </div>
+            <div class="btnStyle cancelBtn popupBtn closeEditViolationAmountPopup" id="closeEditViolationAmountPopup" style="color: #fff; cursor: pointer;" data-dismiss="modal" aria-label="Close">
+                <i class="fa-solid fa-x"></i>
+            </div>
+        </div>
+        <div class="popupBody">
+            <div class="popupForm detailsPopupForm" id="detailsPopupForm">
+
+                <div class="formContent">
+                    <div class="formBox">
+                        <div class="formElements">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group customFormGroup">
+                                        <label for="currentViolationAmount" class="customLabel">المبلغ الحالي</label>
+                                        <input class="form-control disabled customInput currentViolationAmount" id="currentViolationAmount" type="text" value="${functions.splitBigNumbersByComma(currentAmount)}" disabled>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group customFormGroup">
+                                        <label for="newViolationAmount" class="customLabel">المبلغ الجديد</label>
+                                        <input class="form-control customInput newViolationAmount" id="newViolationAmount" type="text" placeholder="أدخل المبلغ الجديد">
+                                    </div>
+                                </div>
+                                <div class="col-md-12">
+                                    <div class="form-group customFormGroup">
+                                        <label for="violationAmountComments" class="customLabel">ملاحظات</label>
+                                        <textarea class="form-control customTextArea violationAmountComments" id="violationAmountComments" rows="3" placeholder="أدخل الملاحظات"></textarea>
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <div class="form-group customFormGroup">
+                                        <label for="editViolationAmountAttach" class="customLabel">إرفاق مستند تعديل المبلغ</label>
+                                        <div class="fileBox" id="dropContainer">
+                                            <div class="inputFileBox">
+                                                <img src="/Style Library/MiningViolations/images/fileIcon.svg" alt="File Icon">
+                                                <p class="dragDropFilesLabel">قم بالسحب والإفلات لرفع الملف , أو <a href="#!" class="attachFileLink">استعراض ملفاتي</a></p>
+                                                <input type="file" class="customInput attachFilesInput editViolationAmountAttach form-control" id="editViolationAmountAttach" accept="image/gif,image/svg,image/jpg,image/jpeg,image/png,.doc,.docx,.pdf,.xls,.xlsx,.pptx" multiple>
+                                            </div>
+                                        </div>
+                                        <div class="dropFilesArea" id="dropFilesArea"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="formButtonsBox">
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="buttonsBox centerButtonsBox">
+                                <div class="btnStyle confirmBtnGreen popupBtn confirmEditViolationAmountBtn" id="confirmEditViolationAmountBtn">تأكيد</div>
+                                <div class="btnStyle cancelBtn popupBtn" id="closeEditViolationAmountPopupFooter" data-dismiss="modal" aria-label="Close">إلغاء</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>`;
+
+    functions.declarePopup(
+        ["generalPopupStyle", "greenPopup", "editPopup"],
+        popupHtml
+    );
+
+    // Add close button handlers
+    $("#closeEditViolationAmountPopup, #closeEditViolationAmountPopupFooter").on("click", function () {
+        functions.closePopup();
+    });
+
+    let filesExtension = [
+        "gif", "svg", "jpg", "jpeg", "png",
+        "doc", "docx", "pdf", "xls", "xlsx", "pptx"
+    ];
+    let allAttachments;
+    let countOfFiles;
+    let NewViolationAmountInput = "";
+
+    // Store the current amount as old price
+    let OldViolationAmount = currentAmount;
+
+    // File attachment handling
+    $("#editViolationAmountAttach").on("change", (e) => {
+        allAttachments = $(e.currentTarget)[0].files;
+        if (allAttachments.length > 0) {
+            $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").show().empty();
+        }
+        for (let i = 0; i < allAttachments.length; i++) {
+            $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").append(`
+                <div class="file">
+                    <p class="fileName">${allAttachments[i].name}</p>
+                    <span class="deleteFile" data-index="${i}"><i class="fa-sharp fa-solid fa-x"></i></span>
+                </div>
+            `);
+        }
+
+        $(".deleteFile").on("click", (event) => {
+            let index = $(event.currentTarget).closest(".file").index();
+            $(event.currentTarget).closest(".file").remove();
+            let fileBuffer = new DataTransfer();
+            for (let i = 0; i < allAttachments.length; i++) {
+                if (index !== i) {
+                    fileBuffer.items.add(allAttachments[i]);
+                }
+            }
+            allAttachments = fileBuffer.files;
+            countOfFiles = allAttachments.length;
+            if (countOfFiles == 0) {
+                $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").hide();
+            }
+        });
+
+        for (let i = 0; i < allAttachments.length; i++) {
+            let fileSplited = allAttachments[i].name.split(".");
+            let fileExt = fileSplited[fileSplited.length - 1].toLowerCase();
+            if ($.inArray(fileExt, filesExtension) == -1) {
+                functions.warningAlert("من فضلك أدخل الملفات بالامتدادات المسموح بها فقط");
+                $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").hide();
+                $(e.currentTarget).val("");
+            }
+        }
+    });
+
+    // Format amount input
+    $("#newViolationAmount").on("keypress", (e) => {
+        return functions.isDecimalNumberKey(e);
+    });
+
+    $("#newViolationAmount").on("input", (e) => {
+        let rawValue = $(e.currentTarget).val().replace(/\,/g, "");
+        rawValue = rawValue.replace(/[^0-9.]/g, '');
+        NewViolationAmountInput = rawValue;
+
+        if (rawValue) {
+            let formatted = rawValue.replace(/\B(?=(?:\d{3})+(?!\d))/g, ",");
+            $(e.currentTarget).val(formatted);
+        }
+    });
+
+    $(".confirmEditViolationAmountBtn").on("click", (e) => {
+        let cleanAmount = NewViolationAmountInput.replace(/\,/g, "");
+
+        if (cleanAmount != "" && !isNaN(parseFloat(cleanAmount)) && parseFloat(cleanAmount) > 0) {
+            if (allAttachments != null && allAttachments.length > 0) {
+                let comments = $("#violationAmountComments").val().trim();
+
+                let request = {
+                    Request: {
+                        Title: "تم تعديل مبلغ المخالفة",
+                        Comments: comments,
+                        ViolationId: ViolationID,
+                        ID: ReferralID,
+                        TaskId: TaskID,
+                        TotalPriceDue: parseFloat(cleanAmount),
+                        TotalOldPrice: parseFloat(OldViolationAmount)
+                    },
+                };
+
+                // Fix: Get the case status from the data attribute
+                let caseStatus = $(`[data-referralid="${ReferralID}"]`).data('referralstatus');
+
+                $(".overlay").addClass("active");
+                quarryViolationReferral.editReferralAPIResponse(
+                    request,
+                    ReferralID,
+                    "تعديل مبلغ المخالفة",
+                    "#editViolationAmountAttach",
+                    "تم تعديل مبلغ المخالفة بنجاح",
+                    TaskID,
+                    ViolationID,
+                    caseStatus,  // Now this variable is properly defined
+                    true  // isEditViolationAmount
+                );
+            } else {
+                functions.warningAlert("من فضلك قم بإرفاق مستند تعديل المبلغ");
+            }
+        } else {
+            functions.warningAlert("من فضلك قم بإدخال المبلغ الجديد بشكل صحيح");
+        }
+    });
+};
+quarryViolationReferral.editReferralAmountPopup = (
+    ReferralID,
+    ViolationID,
+    TaskID,
+    violationCode,
+    referralNumber,
+    currentReferredAmount
+) => {
+    $(".overlay").removeClass("active");
+
+    let popupHtml = `
+        <div class="popupHeader" style="display: flex; justify-content: space-between;">
+            <div class="violationsCode">
+                <p>تعديل مبلغ الإحالة - الإحالة رقم (${referralNumber})</p>
+            </div>
+            <div class="btnStyle cancelBtn popupBtn closeEditReferralAmountPopup" id="closeEditReferralAmountPopup" style="color: #fff; cursor: pointer;" data-dismiss="modal" aria-label="Close">
+                <i class="fa-solid fa-x"></i>
+            </div>
+        </div>
+        <div class="popupBody">
+            <div class="popupForm detailsPopupForm" id="detailsPopupForm">
+
+                <div class="formContent">
+                    <div class="formBox">
+                        <div class="formElements">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group customFormGroup">
+                                        <label for="currentReferralAmount" class="customLabel">مبلغ الإحالة الحالي</label>
+                                        <input class="form-control disabled customInput currentReferralAmount" id="currentReferralAmount" type="text" value="${functions.splitBigNumbersByComma(currentReferredAmount)}" disabled>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group customFormGroup">
+                                        <label for="newReferralAmount" class="customLabel">مبلغ الإحالة الجديد</label>
+                                        <input class="form-control customInput newReferralAmount" id="newReferralAmount" type="text" placeholder="أدخل مبلغ الإحالة الجديد">
+                                    </div>
+                                </div>
+                                <div class="col-md-12">
+                                    <div class="form-group customFormGroup">
+                                        <label for="referralAmountComments" class="customLabel">ملاحظات</label>
+                                        <textarea class="form-control customTextArea referralAmountComments" id="referralAmountComments" rows="3" placeholder="أدخل الملاحظات"></textarea>
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <div class="form-group customFormGroup">
+                                        <label for="editReferralAmountAttach" class="customLabel">إرفاق مستند تعديل مبلغ الإحالة</label>
+                                        <div class="fileBox" id="dropContainer">
+                                            <div class="inputFileBox">
+                                                <img src="/Style Library/MiningViolations/images/fileIcon.svg" alt="File Icon">
+                                                <p class="dragDropFilesLabel">قم بالسحب والإفلات لرفع الملف , أو <a href="#!" class="attachFileLink">استعراض ملفاتي</a></p>
+                                                <input type="file" class="customInput attachFilesInput editReferralAmountAttachNew form-control" id="editReferralAmountAttachNew" accept="image/gif,image/svg,image/jpg,image/jpeg,image/png,.doc,.docx,.pdf,.xls,.xlsx,.pptx" multiple>
+                                            </div>
+                                        </div>
+                                        <div class="dropFilesArea" id="dropFilesArea"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="formButtonsBox">
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="buttonsBox centerButtonsBox">
+                                <div class="btnStyle confirmBtnGreen popupBtn confirmEditReferralAmountBtn" id="confirmEditReferralAmountBtn">تأكيد</div>
+                                <div class="btnStyle cancelBtn popupBtn" id="closeEditReferralAmountPopupFooter" data-dismiss="modal" aria-label="Close">إلغاء</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>`;
+
+    functions.declarePopup(
+        ["generalPopupStyle", "greenPopup", "editPopup"],
+        popupHtml
+    );
+
+    // Add close button handlers
+    $("#closeEditReferralAmountPopup, #closeEditReferralAmountPopupFooter").on("click", function () {
+        functions.closePopup();
+    });
+
+    let filesExtension = [
+        "gif", "svg", "jpg", "jpeg", "png",
+        "doc", "docx", "pdf", "xls", "xlsx", "pptx"
+    ];
+    let allAttachments;
+    let countOfFiles;
+    let NewReferralAmountInput = "";
+
+    // File attachment handling
+    $("#editReferralAmountAttachNew").on("change", (e) => {
+        allAttachments = $(e.currentTarget)[0].files;
+        if (allAttachments.length > 0) {
+            $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").show().empty();
+        }
+        for (let i = 0; i < allAttachments.length; i++) {
+            $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").append(`
+                <div class="file">
+                    <p class="fileName">${allAttachments[i].name}</p>
+                    <span class="deleteFile" data-index="${i}"><i class="fa-sharp fa-solid fa-x"></i></span>
+                </div>
+            `);
+        }
+
+        $(".deleteFile").on("click", (event) => {
+            let index = $(event.currentTarget).closest(".file").index();
+            $(event.currentTarget).closest(".file").remove();
+            let fileBuffer = new DataTransfer();
+            for (let i = 0; i < allAttachments.length; i++) {
+                if (index !== i) {
+                    fileBuffer.items.add(allAttachments[i]);
+                }
+            }
+            allAttachments = fileBuffer.files;
+            countOfFiles = allAttachments.length;
+            if (countOfFiles == 0) {
+                $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").hide();
+            }
+        });
+
+        for (let i = 0; i < allAttachments.length; i++) {
+            let fileSplited = allAttachments[i].name.split(".");
+            let fileExt = fileSplited[fileSplited.length - 1].toLowerCase();
+            if ($.inArray(fileExt, filesExtension) == -1) {
+                functions.warningAlert("من فضلك أدخل الملفات بالامتدادات المسموح بها فقط");
+                $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").hide();
+                $(e.currentTarget).val("");
+            }
+        }
+    });
+
+    // Format amount input
+    $("#newReferralAmount").on("keypress", (e) => {
+        return functions.isDecimalNumberKey(e);
+    });
+
+    $("#newReferralAmount").on("input", (e) => {
+        let rawValue = $(e.currentTarget).val().replace(/\,/g, "");
+        rawValue = rawValue.replace(/[^0-9.]/g, '');
+        NewReferralAmountInput = rawValue;
+
+        if (rawValue) {
+            let formatted = rawValue.replace(/\B(?=(?:\d{3})+(?!\d))/g, ",");
+            $(e.currentTarget).val(formatted);
+        }
+    });
+
+    $(".confirmEditReferralAmountBtn").on("click", (e) => {
+        let cleanAmount = NewReferralAmountInput.replace(/\,/g, "");
+
+        if (cleanAmount != "" && !isNaN(parseFloat(cleanAmount)) && parseFloat(cleanAmount) > 0) {
+            if (allAttachments != null && allAttachments.length > 0) {
+                let comments = $("#referralAmountComments").val().trim();
+
+                let request = {
+                    Request: {
+                        Title: "تم تعديل مبلغ الإحالة",
+                        Comments: comments,
+                        ViolationId: ViolationID,
+                        ID: ReferralID,
+                        TaskId: TaskID,
+                        ReferredAmount: parseFloat(cleanAmount)
+                    },
+                };
+
+                let isEditViolationAmount = true;
+
+                let caseStatus = $(`[data-referralid="${ReferralID}"]`).data('referralstatus');
+
+                $(".overlay").addClass("active");
+                quarryViolationReferral.editReferralAPIResponse(
+                    request,
+                    ReferralID,
+                    "تعديل مبلغ الإحالة",
+                    "#editReferralAmountAttachNew",
+                    "تم تعديل مبلغ الإحالة بنجاح",
+                    TaskID,
+                    ViolationID,
+                    caseStatus,
+                    isEditViolationAmount  // Pass the variable
+                );
+            } else {
+                functions.warningAlert("من فضلك قم بإرفاق مستند تعديل مبلغ الإحالة");
+            }
+        } else {
+            functions.warningAlert("من فضلك قم بإدخال مبلغ الإحالة الجديد بشكل صحيح");
+        }
+    });
+};
+quarryViolationReferral.editViolationAmountAPIResponse = (
+    request,
+    ReferralId,
+    uploadPhase,
+    attachInput,
+    Message = ""
+) => {
+    functions
+        .requester(
+            "/_layouts/15/Uranium.Violations.SharePoint/Cases.aspx/Save",
+            request
+        )
+        .then((response) => {
+            if (response.ok) {
+                return response.json();
+            }
+        })
+        .then((data) => {
+            if (data.d.Status) {
+                quarryViolationReferral.addNewReferralAttachmentRecord(
+                    ReferralId,
+                    uploadPhase,
+                    attachInput,
+                    Message
+                );
+            } else {
+                functions.warningAlert("هناك خطأ في إرسال بيانات الطلب");
+            }
+        })
+        .catch((err) => {
+            console.error(err);
+            functions.warningAlert("حدث خطأ في الاتصال بالخادم");
+        });
+};
+
+quarryViolationReferral.editReferralAmountAPIResponse = (
+    request,
+    ReferralId,
+    uploadPhase,
+    attachInput,
+    Message = ""
+) => {
+    functions
+        .requester(
+            "/_layouts/15/Uranium.Violations.SharePoint/Cases.aspx/Save",
+            request
+        )
+        .then((response) => {
+            if (response.ok) {
+                return response.json();
+            }
+        })
+        .then((data) => {
+            if (data.d.Status) {
+                quarryViolationReferral.addNewReferralAttachmentRecord(
+                    ReferralId,
+                    uploadPhase,
+                    attachInput,
+                    Message
+                );
+            } else {
+                functions.warningAlert("هناك خطأ في إرسال بيانات الطلب");
+            }
+        })
+        .catch((err) => {
+            console.error(err);
+            functions.warningAlert("حدث خطأ في الاتصال بالخادم");
+        });
+};
 ////////////////////////////////////////////////////
 quarryViolationReferral.payCaseBeforeEditPopup = (
     ReferralID,
@@ -1622,7 +2215,7 @@ quarryViolationReferral.payCaseBeforeEditPopup = (
     $(".overlay").removeClass("active");
     let popupHtml = `
         <div class="popupHeader" style="display: flex; justify-content: space-between;">
-            <div class="violationsCode"> 
+            <div class="violationsCode">
                 <p>سداد على نموذج التقييم - الإحالة رقم (${referralNumber})</p>
             </div>
             <div class="btnStyle cancelBtn popupBtn closePayCaseBeforeEditPopup" id="closePayCaseBeforeEditPopup" style="color: #fff; cursor: pointer;" data-dismiss="modal" aria-label="Close">
@@ -1740,13 +2333,18 @@ quarryViolationReferral.payCaseBeforeEditPopup = (
             // Calculate actual amount paid (remove commas for calculation)
             let actualAmountPaid = totalPrice.toString().replace(/\,/g, "");
 
+            // FIX: Get caseStatus from the table row directly instead of jQuery selector
+            // Look for the violation code element that matches this referral
+            let caseStatus = $("#QuarryViolationReferralTable").find(`[data-referralid="${ReferralID}"]`).data('referralstatus');
+
             // First change task status, then upload attachment in the success callback
             quarryViolationReferral.changeTaskStatusAfterPayCase(
                 TaskID,
                 ViolationID,
                 "#payCaseAttachment",
-                parseFloat(actualAmountPaid),  // Add the actual amount paid
-                ReferralID  // Add ReferralID for the request
+                parseFloat(actualAmountPaid),
+                ReferralID,
+                caseStatus,
             );
 
         } else {
@@ -1767,7 +2365,7 @@ quarryViolationReferral.payCaseAfterEditPopup = (
     $(".overlay").removeClass("active");
     let popupHtml = `
         <div class="popupHeader" style="display: flex; justify-content: space-between;">
-            <div class="violationsCode"> 
+            <div class="violationsCode">
                 <p>سداد على الإحالة - الإحالة رقم (${violationCode})</p>
             </div>
             <div class="btnStyle cancelBtn popupBtn closePayCaseAfterEditPopup" id="closePayCaseAfterEditPopup" style="color: #fff; cursor: pointer;" data-dismiss="modal" aria-label="Close">
@@ -1783,24 +2381,10 @@ quarryViolationReferral.payCaseAfterEditPopup = (
                             <div class="row">
                                 <div class="col-md-4">
                                     <div class="form-group customFormGroup">
-                                        <label for="violationOldPrice" class="customLabel">مبلغ المخالفة</label>
-                                        <input class="form-control disabled customInput violationOldPrice" id="violationOldPrice" type="text" value="${functions.splitBigNumbersByComma(oldPrice)}" disabled>
-                                    </div>
-                                </div>
-                                <div class="col-md-4">
-                                    <div class="form-group customFormGroup">
                                         <label for="referredAmountValue" class="customLabel">مبلغ الإحالة</label>
                                         <input class="form-control disabled customInput referredAmountValue" id="referredAmountValue" type="text" value="${functions.splitBigNumbersByComma(totalPrice)}" disabled>
                                     </div>
                                 </div>
-                                <!--
-                                <div class="col-md-4">
-                                    <div class="form-group customFormGroup">
-                                        <label for="violationCasePrice" class="customLabel">المبلغ الكلي المطلوب سداده</label>
-                                        <input class="form-control disabled customInput violationCasePrice" id="violationCasePrice" type="text" value="${functions.splitBigNumbersByComma(totalPrice)}" disabled>
-                                    </div>
-                                </div>
-                                -->
                                 <div class="col-12">
                                     <div class="form-group customFormGroup">
                                         <label for="payCaseAfterEditAttachment" class="customLabel">إرفاق إيصال السداد</label>
@@ -1893,34 +2477,49 @@ quarryViolationReferral.payCaseAfterEditPopup = (
     });
 
     $(".payCaseAfterEditBtn").on("click", (e) => {
-        // if (allAttachments != null && allAttachments.length > 0) {
-        $(".overlay").addClass("active");
+        if (allAttachments != null && allAttachments.length > 0) {
+            $(".overlay").addClass("active");
 
-        // Calculate actual amount paid (remove commas for calculation)
-        let actualAmountPaid = totalPrice.toString().replace(/\,/g, "");
+            let actualAmountPaid = totalPrice.toString().replace(/\,/g, "");
 
-        // First change task status, then upload attachment in the success callback
-        quarryViolationReferral.changeTaskStatusAfterPayCase(
-            TaskID,
-            ViolationID,
-            "#payCaseAfterEditAttachment",
-            parseFloat(actualAmountPaid),  // Add the actual amount paid
-            ReferralID  // Add ReferralID for the request
-        );
+            // FIX: Get caseStatus from the table row directly
+            let caseStatus = $("#QuarryViolationReferralTable").find(`[data-referralid="${ReferralID}"]`).data('referralstatus');
 
-        // } else {
-        //     functions.warningAlert("من فضلك قم بإرفاق إيصال السداد");
-        // }
+            quarryViolationReferral.changeTaskStatusAfterPayCase(
+                TaskID,
+                ViolationID,
+                "#payCaseAfterEditAttachment",
+                parseFloat(actualAmountPaid),
+                ReferralID,
+                caseStatus,
+            );
+        } else {
+            functions.warningAlert("من فضلك قم بإرفاق إيصال السداد");
+        }
     });
 };
-quarryViolationReferral.changeTaskStatusAfterPayCase = (TaskID, ViolationID, attachInput, ActualAmountPaid, ReferralID) => {
+quarryViolationReferral.changeTaskStatusAfterPayCase = (
+    TaskID,
+    ViolationID,
+    attachInput,
+    ActualAmountPaid,
+    ReferralID,
+    caseStatus,
+) => {
+    // Ensure caseStatus is not undefined or null
+    if (!caseStatus) {
+        console.warn("Case status is undefined, using default");
+        caseStatus = "Paid";
+    }
+
     let request = {
         request: {
             Data: {
                 ID: TaskID,
                 ViolationId: ViolationID,
                 ActualAmountPaid: ActualAmountPaid,
-                Status: "Paid"
+                Status: "Paid",  // Always set task status to Paid
+                ReferralStatus: caseStatus  // Use the actual case status from the table
             }
         }
     };
@@ -1968,12 +2567,6 @@ quarryViolationReferral.uploadTaskAttachment = (TaskId, attachInput, ListName = 
             $(".overlay").removeClass("active");
             functions.sucessAlert("تم السداد بنجاح");
             functions.closePopup();
-
-            // Refresh the table
-            quarryViolationReferral.getQuarryViolationReferrals(
-                quarryViolationReferral.pageIndex,
-                true
-            );
         },
         error: (err) => {
             functions.warningAlert("خطأ في إرسال البيانات لقاعدة البيانات");
@@ -1982,12 +2575,455 @@ quarryViolationReferral.uploadTaskAttachment = (TaskId, attachInput, ListName = 
         },
     });
 };
+
+///////////////////////////////////////
+
+
+// ========== Save Case and Cancel Violation Functions ==========
+quarryViolationReferral.saveCaseAndCancelViolationPopup = (
+    ReferralID,
+    ViolationID,
+    TaskID,
+    referralNumber,
+    violationCode,
+    caseStatus
+) => {
+    $(".overlay").removeClass("active");
+
+    let title = violationCode
+        ? `حفظ القضية وإلغاء المخالفة - المخالفة رقم (${violationCode})`
+        : `حفظ القضية وإلغاء المخالفة`;
+
+    let popupHtml = `
+        <div class="popupHeader" style="display: flex; justify-content: space-between;">
+            <div class="violationsCode">
+                <p>${title}</p>
+            </div>
+            <div class="btnStyle cancelBtn popupBtn closeSaveCasePopup" id="closeSaveCasePopup" style="color: #fff; cursor: pointer;" data-dismiss="modal" aria-label="Close">
+                <i class="fa-solid fa-x"></i>
+            </div>
+        </div>
+        <div class="popupBody">
+            <div class="popupForm detailsPopupForm" id="detailsPopupForm">
+                <div class="formContent">
+                    <div class="formBox">
+                        <div class="formElements">
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <div class="form-group customFormGroup">
+                                        <label for="saveCaseComments" class="customLabel">ملاحظات</label>
+                                        <textarea class="form-control customTextArea saveCaseComments" id="saveCaseComments" rows="3" placeholder="أدخل الملاحظات"></textarea>
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <div class="form-group customFormGroup">
+                                        <label for="saveCaseAttachment" class="customLabel">إرفاق المستندات <span style="color: red;">*</span></label>
+                                        <div class="fileBox" id="dropContainer">
+                                            <div class="inputFileBox">
+                                                <img src="/Style Library/MiningViolations/images/fileIcon.svg" alt="File Icon">
+                                                <p class="dragDropFilesLabel">قم بالسحب والإفلات لرفع الملف , أو <a href="#!" class="attachFileLink">استعراض ملفاتي</a></p>
+                                                <input type="file" class="customInput attachFilesInput saveCaseAttachment form-control" id="saveCaseAttachment" accept="image/gif,image/svg,image/jpg,image/jpeg,image/png,.doc,.docx,.pdf,.xls,.xlsx,.pptx" multiple>
+                                            </div>
+                                        </div>
+                                        <div class="dropFilesArea" id="dropFilesArea"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="formButtonsBox">
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="buttonsBox centerButtonsBox">
+                                <div class="btnStyle confirmBtnGreen popupBtn confirmSaveCaseBtn" id="confirmSaveCaseBtn">تأكيد</div>
+                                <div class="btnStyle cancelBtn popupBtn closeSaveCasePopupFooter" id="closeSaveCasePopupFooter" data-dismiss="modal" aria-label="Close">إلغاء</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>`;
+
+    functions.declarePopup(
+        ["generalPopupStyle", "greenPopup", "editPopup"],
+        popupHtml
+    );
+
+    // Add close button handlers
+    $("#closeSaveCasePopup, #closeSaveCasePopupFooter").on("click", function () {
+        functions.closePopup();
+    });
+
+    let filesExtension = [
+        "gif", "svg", "jpg", "jpeg", "png",
+        "doc", "docx", "pdf", "xls", "xlsx", "pptx"
+    ];
+    let allAttachments;
+    let countOfFiles;
+    let SaveCaseCommentsInput = "";
+
+    // Handle comments input
+    $("#saveCaseComments").on("input", (e) => {
+        SaveCaseCommentsInput = $(e.currentTarget).val().trim();
+    });
+
+    // File attachment handling
+    $("#saveCaseAttachment").on("change", (e) => {
+        allAttachments = $(e.currentTarget)[0].files;
+        if (allAttachments.length > 0) {
+            $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").show().empty();
+        }
+        for (let i = 0; i < allAttachments.length; i++) {
+            $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").append(`
+                <div class="file">
+                    <p class="fileName">${allAttachments[i].name}</p>
+                    <span class="deleteFile" data-index="${i}"><i class="fa-sharp fa-solid fa-x"></i></span>
+                </div>
+            `);
+        }
+
+        $(".deleteFile").on("click", (event) => {
+            let index = $(event.currentTarget).closest(".file").index();
+            $(event.currentTarget).closest(".file").remove();
+            let fileBuffer = new DataTransfer();
+            for (let i = 0; i < allAttachments.length; i++) {
+                if (index !== i) {
+                    fileBuffer.items.add(allAttachments[i]);
+                }
+            }
+            allAttachments = fileBuffer.files;
+            countOfFiles = allAttachments.length;
+            if (countOfFiles == 0) {
+                $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").hide();
+            }
+        });
+
+        for (let i = 0; i < allAttachments.length; i++) {
+            let fileSplited = allAttachments[i].name.split(".");
+            let fileExt = fileSplited[fileSplited.length - 1].toLowerCase();
+            if ($.inArray(fileExt, filesExtension) == -1) {
+                functions.warningAlert("من فضلك أدخل الملفات بالامتدادات المسموح بها فقط");
+                $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").hide();
+                $(e.currentTarget).val("");
+            }
+        }
+    });
+
+    // Confirm Save Case button handler
+    $("#confirmSaveCaseBtn").on("click", (e) => {
+        if (allAttachments != null && allAttachments.length > 0) {
+            $(".overlay").addClass("active");
+            quarryViolationReferral.saveCase(ReferralID, ViolationID, TaskID, SaveCaseCommentsInput, "#saveCaseAttachment");
+        } else {
+            functions.warningAlert("من فضلك قم بإرفاق المستندات المطلوبة");
+        }
+    });
+};
+
+quarryViolationReferral.saveCase = (ReferralID, ViolationID, TaskID, Comments, attachInput) => {
+    // Step 1: Save the case with status "محفوظة"
+    let saveCaseRequest = {
+        Request: {
+            ID: ReferralID,
+            Status: "محفوظة",
+            Title: "تم حفظ القضية",
+            Comments: Comments
+        }
+    };
+
+    functions
+        .requester(
+            "/_layouts/15/Uranium.Violations.SharePoint/Cases.aspx/Save",
+            saveCaseRequest
+        )
+        .then((response) => {
+            if (response.ok) {
+                return response.json();
+            }
+        })
+        .then((data) => {
+            if (data.d && data.d.Status) {
+                // Step 2: Upload the attachment for save case
+                quarryViolationReferral.saveCaseAttachmentAndCancelViolation(
+                    ReferralID,
+                    ViolationID,
+                    TaskID,
+                    Comments,
+                    attachInput
+                );
+
+                // // Update violation task status first
+                // quarryViolationReferral.updateViolationTaskStatus(TaskID, ViolationID, "محفوظة")
+                //     .then(() => {
+                //         // Then upload the attachment for save case
+                //         quarryViolationReferral.saveCaseAttachmentAndCancelViolation(
+                //             ReferralID,
+                //             ViolationID,
+                //             TaskID,
+                //             Comments,
+                //             attachInput
+                //         );
+                //     });
+            } else {
+                $(".overlay").removeClass("active");
+                functions.warningAlert("حدث خطأ أثناء حفظ القضية");
+            }
+        })
+        .catch((err) => {
+            console.error("Error saving case:", err);
+            $(".overlay").removeClass("active");
+            functions.warningAlert("حدث خطأ أثناء حفظ القضية");
+        });
+};
+
+quarryViolationReferral.saveCaseAttachmentAndCancelViolation = (
+    ReferralID,
+    ViolationID,
+    TaskID,
+    Comments,
+    attachInput
+) => {
+    // Create attachment record first
+    let request = {
+        Request: {
+            Title: "مستند حفظ القضية",
+            CaseId: ReferralID,
+            UploadPhase: "حفظ القضية",
+            Comments: Comments,
+        },
+    };
+
+    functions
+        .requester(
+            "/_layouts/15/Uranium.Violations.SharePoint/CaseAttachments.aspx/Save",
+            request
+        )
+        .then((response) => {
+            if (response.ok) {
+                return response.json();
+            }
+        })
+        .then((data) => {
+            if (data.d.Status) {
+                quarryViolationReferral.cancelViolation(ReferralID, ViolationID, TaskID);
+
+                // let RecordId = data.d.Result.Id;
+                // // Upload the attachment
+                // quarryViolationReferral.uploadSaveCaseAttachments(
+                //     RecordId,
+                //     attachInput,
+                //     "CasesAttachments",
+                //     ReferralID,
+                //     ViolationID,
+                //     TaskID
+                // );
+            } else {
+                $(".overlay").removeClass("active");
+                functions.warningAlert("هناك خطأ في حفظ المرفقات");
+            }
+        })
+        .catch((err) => {
+            console.error(err);
+            $(".overlay").removeClass("active");
+            functions.warningAlert("حدث خطأ في الاتصال بالخادم");
+        });
+};
+
+quarryViolationReferral.cancelViolation = (ReferralID, ViolationID, TaskID) => {
+    // Cancel the violation task
+    let cancelViolationRequest = {
+        request: {
+            Data: {
+                ID: TaskID,
+                ViolationId: ViolationID,
+                Status: "Cancelled",
+                ReferralStatus: "محفوظة"
+            }
+        }
+    };
+
+    functions
+        .requester(
+            "/_layouts/15/Uranium.Violations.SharePoint/Tasks.aspx/Save",
+            cancelViolationRequest
+        )
+        .then((response) => {
+            if (response.ok) {
+                return response.json();
+            }
+        })
+        .then((data) => {
+            $(".overlay").removeClass("active");
+
+            if (data.d && data.d.Status) {
+                functions.sucessAlert("تم حفظ القضية وإلغاء المخالفة بنجاح");
+                functions.closePopup();
+            } else {
+                functions.warningAlert("تم حفظ القضية ولكن حدث خطأ أثناء إلغاء المخالفة");
+            }
+        })
+        .catch((err) => {
+            console.error("Error canceling violation:", err);
+            $(".overlay").removeClass("active");
+            functions.warningAlert("تم حفظ القضية ولكن حدث خطأ أثناء إلغاء المخالفة");
+        });
+};
+////////////////// update Violation TaskStatus function //////////////////////////
+quarryViolationReferral.updateViolationTaskStatus = (TaskID, ViolationID, CaseStatus) => {
+    let request = {
+        request: {
+            Data: {
+                ID: TaskID,
+                ViolationId: ViolationID,
+                ReferralStatus: CaseStatus,
+                Status: "تعديل حالات القضية",
+            }
+        }
+    };
+
+    return functions.requester(
+        "/_layouts/15/Uranium.Violations.SharePoint/Tasks.aspx/Save",
+        request
+    )
+        .then((response) => {
+            if (response.ok) {
+                return response.json();
+            }
+        })
+        .then((data) => {
+            if (data.d && data.d.Status) {
+                return true;
+            } else {
+                console.error("Failed to update violation task status");
+                return false;
+            }
+        })
+        .catch((err) => {
+            console.error("Error updating violation task status:", err);
+            return false;
+        });
+};
+/////////////////////////////////////
+
+const ViolationHistoryLogs = () => {
+    let selectedViolationId = null;
+    let selectedViolationCode = null;
+    let trackHistoryTable = null;
+
+    // ===============================
+    //  فتح المودال
+    // ===============================
+    $(".contentContainer").on("click", ".violationHistory", function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        selectedViolationId = $(this).data("violationid");
+        selectedViolationCode = $(this).data("violationcode");
+
+        $("#trackHistoryModal").modal("show");
+    });
+
+    // ===============================
+    //  إغلاق المودال - Close button handlers
+    // ===============================
+    const closeModal = () => {
+        $("#trackHistoryModal").modal("hide");
+
+        // Clear the modal content
+        $(".track-history-violation-code").text("");
+        if (trackHistoryTable) {
+            trackHistoryTable.clear().destroy();
+            trackHistoryTable = null;
+        }
+        $("#trackHistoryTable tbody").empty();
+    };
+
+    $(document).on("click", "#closeViolationHistoryPopup", function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        closeModal();
+    });
+
+    // // Close button in footer
+    // $(document).on("click", "#closeViolationHistoryPopupFooter", function (e) {
+    //   e.preventDefault();
+    //   e.stopPropagation();
+    //   closeModal();
+    // });
+
+    // Bootstrap modal hide event
+    $("#trackHistoryModal").on("hidden.bs.modal", function () {
+        closeModal();
+    });
+
+    // ===============================
+    //  لما المودال يفتح
+    // ===============================
+    $(".track-history-modal").on("shown.bs.modal", function () {
+        $(".track-history-violation-code").text(selectedViolationCode);
+
+        const request = {
+            Request: {
+                ViolationId: selectedViolationId,
+            },
+        };
+
+        const tableElement = $("#trackHistoryTable");
+
+        if (!trackHistoryTable) {
+            trackHistoryTable = tableElement.DataTable({
+                processing: true,
+                paging: false,
+                responsive: true,
+                destroy: true,
+                ajax: {
+                    url: "/_layouts/15/Uranium.Violations.SharePoint/ViolationHistoryLogs.aspx/Search",
+                    type: "POST",
+                    contentType: "application/json",
+                    data: () => JSON.stringify(request),
+                    dataSrc: (data) => {
+                        return data?.d?.Result?.GridData || [];
+                    }
+                },
+                columns: [
+                    { data: null, render: (data, type, row, meta) => meta.row },
+                    { data: "Status", render: (data) => data || "-" },
+                    { data: "Created", render: (data) => data ? functions.getFormatedDate(data) : "-" },
+                    { data: "CreatedBy", render: (data) => data || "-" },
+                    { data: "Comment", render: (data) => data || "-" }
+                ],
+                language: { emptyTable: "لا توجد بيانات" }
+            });
+        } else {
+            trackHistoryTable.ajax.reload();
+        }
+    });
+
+    // ===============================
+    //  لما المودال يقفل
+    // ===============================
+    $(".track-history-modal").on("hidden.bs.modal", function () {
+        $(".track-history-violation-code").text("");
+        if (trackHistoryTable) {
+            trackHistoryTable.clear().destroy();
+            trackHistoryTable = null;
+        }
+        $("#trackHistoryTable tbody").empty();
+    });
+};
+
+ViolationHistoryLogs();
+
+
+
 ///////////////////////////////////////////////////
 // quarryViolationReferral.init = () => {
 //     // // Setup event listeners
 //     // $(".searchBtn").off("click").on("click", quarryViolationReferral.filterQuarryViolationReferrals);
 
-//     // // ADDED: Reset button handler
+//     // // Reset button handler
 //     // $(".resetBtn").off("click").on("click", quarryViolationReferral.resetFilter);
 
 //     // $(".filterBox input").off("keypress").on("keypress", function (e) {

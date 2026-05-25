@@ -148,6 +148,49 @@
                 </div>
 
                 <div id="paginationID" class="paginationBox" current="" total="" style="display: flex"></div>
+
+                <!-- Tracking Modal -->
+                <div class="modal track-history-modal fade" id="trackHistoryModal" tabindex="-1"
+                    aria-labelledby="trackHistory" aria-hidden="true">
+                    <div class="modal-dialog modal-lg">
+                        <div class="modal-content">
+
+                            <div class="modal-header"
+                                style="display: flex !important; justify-content: space-between !important;">
+                                <h5 class="modal-title-style">
+                                    تتبع المخالفة رقم <span class="ms-3 track-history-violation-code"></span>
+                                </h5>
+                                <div class="btnStyle cancelBtn closeViolationHistoryPopup"
+                                    id="closeViolationHistoryPopup" style="color: #fff; cursor: pointer;"
+                                    data-dismiss="modal" aria-label="Close">
+                                    <i class="fa-solid fa-x"></i>
+                                </div>
+                            </div>
+
+                            <div class="modal-body">
+                                <div class="track-history-table-node">
+                                    <table id="trackHistoryTable" class="track-history-table display"
+                                        style="width: 100%">
+                                        <thead>
+                                            <tr class="data-header">
+                                                <th>م</th>
+                                                <th>الإجراء</th>
+                                                <th>تاريخ الإجراء</th>
+                                                <th>القائم بالإجراء</th>
+                                                <th>ملاحظات</th>
+                                            </tr>
+                                        </thead>
+                                    </table>
+                                </div>
+                            </div>
+                            <!-- <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary closeViolationHistoryPopupFooter"
+                                id="closeViolationHistoryPopupFooter" data-bs-dismiss="modal">إغلاق</button>
+                            </div> -->
+                        </div>
+                    </div>
+                </div>
+
             </div>
         </div>
     </div>

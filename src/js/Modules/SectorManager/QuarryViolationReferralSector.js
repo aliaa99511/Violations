@@ -178,7 +178,8 @@ quarryViolationReferralSector.QuarryViolationReferralSectorTable = (Referrals, d
             // Build actions menu HTML without data attributes
             let actionsMenuHTML = `
                 <ul class='list-unstyled controlsList'>
-                    <li><a href="#" class="itemDetails">المزيد من التفاصيل</a></li>`;
+                    <li><a href="#" class="itemDetails">المزيد من التفاصيل</a></li>
+                    <li><a href="#" data-violationid="${referral?.ViolationId}" data-violationcode="${referral?.ViolationCode}" class="violationHistory" data-toggle="modal" data-target="#trackHistoryModal">تتبع مرحلة المخالفة</a></li>`;
 
             actionsMenuHTML += `</ul>`;
 
@@ -223,8 +224,8 @@ quarryViolationReferralSector.QuarryViolationReferralSectorTable = (Referrals, d
                 `<div class="refferedDate noWrapContent">${refferedDate || "-----"}</div>`,
                 `<div class="referralNumber">${referralNumber || "-----"}</div>`,
                 `<div class="violationStatus">${displayViolationStatus || "-----"}</div>`,
-                `<div class="referralStatus">${functions.getCaseStatus(caseStatus)}</div>`,
                 `<div class="totalPriceDue">${functions.splitBigNumbersByComma(referral.TotalPriceDue || 0) || "-----"}</div>`,
+                `<div class="referralStatus">${functions.getCaseStatus(caseStatus)}</div>`,
                 `<div class="referralAttachments caseAttachments"><a href="#!" style="color: black;">المرفقات</a></div>`,
             ]);
         });
@@ -250,8 +251,8 @@ quarryViolationReferralSector.QuarryViolationReferralSectorTable = (Referrals, d
             { title: "تاريخ الإحالة" },
             { title: "رقم الإحالة" },
             { title: "حالة المخالفة" },
-            { title: "موقف الإحالة" },
             { title: "المبلغ المستحق" },
+            { title: "موقف الإحالة" },
             { title: "المرفقات" },
         ],
         false,
@@ -300,13 +301,14 @@ quarryViolationReferralSector.QuarryViolationReferralSectorTable = (Referrals, d
             $(".hiddenListBox").hide(300);
         });
 
-        if (
-            referralsLog.length > 4 &&
-            hiddenListBox.height() > 110 &&
-            jQueryRecord.is(":nth-last-child(-n + 4)")
-        ) {
-            hiddenListBox.addClass("toTopDDL");
-        }
+        // if (
+        //     referralsLog.length > 4 &&
+        //     hiddenListBox.height() > 110 &&
+        //     jQueryRecord.is(":nth-last-child(-n + 4)")
+        // ) {
+        //     hiddenListBox.addClass("toTopDDL");
+        // }
+
     });
 
     functions.hideTargetElement(".controls", ".hiddenListBox");
@@ -886,5 +888,117 @@ quarryViolationReferralSector.referralEquipmentDetails = (violationData) => {
     `;
     return detailsHtml;
 };
+
+
+// ========== Tracking History Functions =========
+const ViolationHistoryLogs = () => {
+    let selectedViolationId = null;
+    let selectedViolationCode = null;
+    let trackHistoryTable = null;
+
+    // ===============================
+    //  فتح المودال
+    // ===============================
+    $(".contentContainer").on("click", ".violationHistory", function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        selectedViolationId = $(this).data("violationid");
+        selectedViolationCode = $(this).data("violationcode");
+
+        $("#trackHistoryModal").modal("show");
+    });
+
+    // ===============================
+    //  إغلاق المودال - Close button handlers
+    // ===============================
+    const closeModal = () => {
+        $("#trackHistoryModal").modal("hide");
+
+        // Clear the modal content
+        $(".track-history-violation-code").text("");
+        if (trackHistoryTable) {
+            trackHistoryTable.clear().destroy();
+            trackHistoryTable = null;
+        }
+        $("#trackHistoryTable tbody").empty();
+    };
+
+    $(document).on("click", "#closeViolationHistoryPopup", function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        closeModal();
+    });
+
+    // // Close button in footer
+    // $(document).on("click", "#closeViolationHistoryPopupFooter", function (e) {
+    //   e.preventDefault();
+    //   e.stopPropagation();
+    //   closeModal();
+    // });
+
+    // Bootstrap modal hide event
+    $("#trackHistoryModal").on("hidden.bs.modal", function () {
+        closeModal();
+    });
+
+    // ===============================
+    //  لما المودال يفتح
+    // ===============================
+    $(".track-history-modal").on("shown.bs.modal", function () {
+        $(".track-history-violation-code").text(selectedViolationCode);
+
+        const request = {
+            Request: {
+                ViolationId: selectedViolationId,
+            },
+        };
+
+        const tableElement = $("#trackHistoryTable");
+
+        if (!trackHistoryTable) {
+            trackHistoryTable = tableElement.DataTable({
+                processing: true,
+                paging: false,
+                responsive: true,
+                destroy: true,
+                ajax: {
+                    url: "/_layouts/15/Uranium.Violations.SharePoint/ViolationHistoryLogs.aspx/Search",
+                    type: "POST",
+                    contentType: "application/json",
+                    data: () => JSON.stringify(request),
+                    dataSrc: (data) => {
+                        return data?.d?.Result?.GridData || [];
+                    }
+                },
+                columns: [
+                    { data: null, render: (data, type, row, meta) => meta.row },
+                    { data: "Status", render: (data) => data || "-" },
+                    { data: "Created", render: (data) => data ? functions.getFormatedDate(data) : "-" },
+                    { data: "CreatedBy", render: (data) => data || "-" },
+                    { data: "Comment", render: (data) => data || "-" }
+                ],
+                language: { emptyTable: "لا توجد بيانات" }
+            });
+        } else {
+            trackHistoryTable.ajax.reload();
+        }
+    });
+
+    // ===============================
+    //  لما المودال يقفل
+    // ===============================
+    $(".track-history-modal").on("hidden.bs.modal", function () {
+        $(".track-history-violation-code").text("");
+        if (trackHistoryTable) {
+            trackHistoryTable.clear().destroy();
+            trackHistoryTable = null;
+        }
+        $("#trackHistoryTable tbody").empty();
+    });
+};
+
+ViolationHistoryLogs();
+
 
 export default quarryViolationReferralSector;

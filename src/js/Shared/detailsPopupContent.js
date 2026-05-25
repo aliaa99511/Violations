@@ -1650,9 +1650,7 @@ DetailsPopup.getCommitteeRecorder = (SectorConfigId) => {
             console.error("Error fetching committee recorder:", err);
         });
 };
-
 DetailsPopup.printPaymentForm = (TaskData) => {
-    console.log('TaskData', TaskData)
     let violationData = TaskData.Violation != null ? TaskData.Violation : "---";
     let PrintedCount = TaskData.PrintedCount;
     let offenderType = violationData.OffenderType;
@@ -1664,7 +1662,6 @@ DetailsPopup.printPaymentForm = (TaskData) => {
     let TotalViolationPrice = violationData.TotalPriceDue;
     let RoyaltyPrice = violationData.LawRoyalty;
     let QuarryMaterialValue = violationData.QuarryMaterialValue;
-    // let FinesValue = violationData.TotalPriceDue;
     let violationTypeLastPrice;
     let labelText;
     let inputVal;
@@ -1680,7 +1677,6 @@ DetailsPopup.printPaymentForm = (TaskData) => {
         inputVal = violationTypeLastPrice.InputVal;
         if (PrintedCount == 0) {
             ExpirationDate = functions.getCurrentDateTime("DateTime");
-            // ExpirationDate = functions.getNDaysAfterCurrentDate(30)
         } else {
             ExpirationDate = ExDate;
         }
@@ -1693,11 +1689,11 @@ DetailsPopup.printPaymentForm = (TaskData) => {
         inputVal = violationTypeLastPrice.InputVal;
         if (PrintedCount == 0) {
             ExpirationDate = functions.getCurrentDateTime("DateTime");
-            // ExpirationDate = functions.getNDaysAfterCurrentDate(15)
         } else {
             ExpirationDate = ExDate;
         }
     }
+
     let printPaymentFormHtml = `
     <div class="paymentFormPrintBox" id="printJS-form">
         <div class="popupBigWrapper">
@@ -1706,14 +1702,10 @@ DetailsPopup.printPaymentForm = (TaskData) => {
                 <div class="WaterMark">
                     <img src="/Style Library/MiningViolations/images/WaterMarkL.png" alt="Water Mark">
                 </div>
-                <div class="formTitle">مطالبة مالية (${functions.getViolationArabicName(
-        offenderType,
-    )})</div>
+                <div class="formTitle">مطالبة مالية (${functions.getViolationArabicName(offenderType)})</div>
                 <div class="popupHeader">
                     <div class="violationsMetaBox">
-                        <p class="violationCode">${functions.getViolationPaymentArabicName(
-        offenderType,
-    )} (${violationData.ViolationCode})</p>
+                        <p class="violationCode">${functions.getViolationPaymentArabicName(offenderType)} (${violationData.ViolationCode})</p>
                         <p class="violationPrintTime">${PrintedCount == 0
             ? "تاريخ وتوقيت الطباعة :" + ExpirationDate
             : "تاريخ انتهاء فترة التصالح :" + ExpirationDate
@@ -1751,15 +1743,15 @@ DetailsPopup.printPaymentForm = (TaskData) => {
                                                     <div class="col-md-4">
                                                         <div class="form-group customFormGroup">
                                                             <label for="violationType" class="customLabel">نوع المخالفة</label>
-                                                            <input class="form-control customInput violationType" id="violationType" type="text" value="${violationData.ViolationTypes != null ? functions.getViolationArabicName(violationData.OffenderType,) : "-"}" disabled>
+                                                            <input class="form-control customInput violationType" id="violationType" type="text" value="${functions.getViolationArabicName(violationData.OffenderType)}" disabled>                                                        
                                                         </div>
                                                     </div>
                                                 </div>
                                                 <div class="row" style="margin-top: 10px;">
                                                     <div class="col-md-4">
                                                         <div class="form-group customFormGroup">
-                                                            <label for="violatorName" class="customLabel">الكمية (${violationData?.MaterialUnit ? violationData?.MaterialUnit : "للمتر المكعب / الطن"})</label>
-                                                            <input class="form-control customInput violatorName" id="violatorName" type="text" value="${violationData?.TotalQuantity != "" ? violationData?.TotalQuantity : "-"}" disabled>
+                                                            <label for="totalQuantity" class="customLabel">الكمية (${violationData?.MaterialUnit ? violationData?.MaterialUnit : "للمتر المكعب / الطن"})</label>
+                                                            <input class="form-control customInput totalQuantity" id="totalQuantity" type="text" value="${violationData?.TotalQuantity != "" ? violationData?.TotalQuantity : "-"}" disabled>
                                                         </div>
                                                     </div>
                                                     <div class="col-md-4">
@@ -1770,14 +1762,12 @@ DetailsPopup.printPaymentForm = (TaskData) => {
                                                     </div>
                                                     <div class="col-md-4">
                                                         <div class="form-group customFormGroup">
-                                                            <label for="QuarryMaterialValue" class="customLabel">إجمالي قيمة المادة المحجرية (${violationData?.MaterialUnit ? violationData?.MaterialUnit : "للمتر المكعب / الطن"})</label>
-                                                            <input class="form-control customInput QuarryMaterialValue" id="QuarryMaterialValue" type="text" value="${violationData?.QuarryMaterialValue != "" ? violationData?.QuarryMaterialValue : "-"}" disabled>
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-md-4">
-                                                        <div class="form-group customFormGroup">
-                                                            <label for="TotalEquipmentsPrice" class="customLabel">قيمة المعدات</label>
-                                                            <input class="form-control customInput TotalEquipmentsPrice" id="TotalEquipmentsPrice" type="text" value="${violationData?.TotalEquipmentsPrice != "" ? violationData?.TotalEquipmentsPrice : "-"}" disabled>
+                                                            <label class="customLabel" for="EetawaaUnitAmount">قيمة الإتاوة للوحدة الواحدة للمادة المحجرية (${violationData?.MaterialUnit ? violationData?.MaterialUnit : "للمتر المكعب / الطن"})</label>
+                                                            <div class="inputIconBox">
+                                                                <input class="form-control customInput EetawaaUnitAmount" id="EetawaaUnitAmount" type="text" value="${violationData?.EetawaaUnitAmount ? violationData?.EetawaaUnitAmount : "-"}" disabled>
+                                                                <span class="currency">جنيها</span>
+                                                            </div>
+                                                            <span class="hint">يسدد بإيصال منفصل</span>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -1798,25 +1788,17 @@ DetailsPopup.printPaymentForm = (TaskData) => {
                                         <div class="formBox">
                                             <div class="formElements">
                                                 <div class="row">
-                                                    <!--
                                                     <div class="col-md-4">
                                                         <div class="form-group customFormGroup">
-                                                            <label class="customLabel" for="quarryPrice">${labelText}</label>
-                                                            <div class="inputIconBox">
-                                                                <input class="form-control customInput quarryPrice" id="quarryPrice" type="text" value="${inputVal > 0 ? functions.splitBigNumbersByComma(inputVal,) : "-"}" disabled>
-                                                                <span class="currency">جنيها</span>
-                                                            </div>
+                                                            <label for="TotalEquipmentsPrice" class="customLabel">قيمة المعدات</label>
+                                                            <input class="form-control customInput TotalEquipmentsPrice" id="TotalEquipmentsPrice" type="text" value="${violationData?.TotalEquipmentsPrice != "" ? violationData?.TotalEquipmentsPrice : "-"}" disabled>
                                                             <span class="hint">يسدد بإيصال منفصل</span>
                                                         </div>
                                                     </div>
-                                                    -->
                                                     <div class="col-md-4">
                                                         <div class="form-group customFormGroup">
-                                                            <label class="customLabel" for="royaltyPrice">قيمة الإتاوة للوحدة الواحدة للمادة المحجرية (${violationData?.MaterialUnit ? violationData?.MaterialUnit : "للمتر المكعب / الطن"})</label>
-                                                            <div class="inputIconBox">
-                                                                <input class="form-control customInput EetawaaUnitAmount" id="EetawaaUnitAmount" type="text" value="${violationData?.EetawaaUnitAmount ? violationData?.EetawaaUnitAmount : "-"}" disabled>
-                                                                <span class="currency">جنيها</span>
-                                                            </div>
+                                                            <label for="QuarryMaterialValue" class="customLabel">إجمالي قيمة المادة المحجرية (${violationData?.MaterialUnit ? violationData?.MaterialUnit : "للمتر المكعب / الطن"})</label>
+                                                            <input class="form-control customInput QuarryMaterialValue" id="QuarryMaterialValue" type="text" value="${violationData?.QuarryMaterialValue != "" ? violationData?.QuarryMaterialValue : "-"}" disabled>
                                                             <span class="hint">يسدد بإيصال منفصل</span>
                                                         </div>
                                                     </div>
@@ -1824,7 +1806,7 @@ DetailsPopup.printPaymentForm = (TaskData) => {
                                                         <div class="form-group customFormGroup">
                                                             <label class="customLabel" for="royaltyPrice">إجمالي قيمة الإتاوة (${violationData?.MaterialUnit ? violationData?.MaterialUnit : "للمتر المكعب / الطن"})</label>
                                                             <div class="inputIconBox">
-                                                                <input class="form-control customInput royaltyPrice" id="royaltyPrice" type="text" value="${violationData?.LawRoyalty > 0 ? functions.splitBigNumbersByComma(violationData?.LawRoyalty,) : "-"}" disabled>
+                                                                <input class="form-control customInput royaltyPrice" id="royaltyPrice" type="text" value="${violationData?.LawRoyalty > 0 ? functions.splitBigNumbersByComma(violationData?.LawRoyalty) : "-"}" disabled>
                                                                 <span class="currency">جنيها</span>
                                                             </div>
                                                             <span class="hint">يسدد بإيصال منفصل</span>
@@ -1834,7 +1816,7 @@ DetailsPopup.printPaymentForm = (TaskData) => {
                                                         <div class="form-group customFormGroup">
                                                             <label class="customLabel" for="quarryPrice">إجمالي المبلغ</label>
                                                             <div class="inputIconBox">
-                                                                <input class="form-control customInput quarryPrice" id="quarryPrice" type="text" value="${violationData?.TotalPriceDue > 0 ? functions.splitBigNumbersByComma(violationData?.TotalPriceDue,) : "-"}" disabled>
+                                                                <input class="form-control customInput quarryPrice" id="quarryPrice" type="text" value="${violationData?.TotalPriceDue > 0 ? functions.splitBigNumbersByComma(violationData?.TotalPriceDue) : "-"}" disabled>
                                                                 <span class="currency">جنيها</span>
                                                             </div>
                                                         </div>
@@ -1868,7 +1850,6 @@ DetailsPopup.printPaymentForm = (TaskData) => {
                                                     <div class="col-md-8">
                                                         <div class="instructionsBox">
                                                             <p class="paymentInstructions">لا يعتد به كمستند رسمي ودون أدنى مسؤولية على الشركة</p>
-                                                            <!-- <p class="paymentInstructions">أقصى مدة لسداد القيمة المالية <span class="payPeriod">(${offenderType == "Quarry" ? "30 يوم" : "15 يوم"})</span> من استلام المطالبة المالية</p> -->
                                                         </div>
                                                     </div>
                                                 </div>
@@ -1918,14 +1899,9 @@ DetailsPopup.printPaymentForm = (TaskData) => {
                 <div class="popupBody violationPrintFormBody violationDetailsBody">
                     <div class="popupForm printPaymentDetailsPopup" id="printPaymentDetailsPopup">
                         <div class="formContent">
-                            ${offenderType == "Quarry" ||
-            offenderType == "Equipment"
-            ? DetailsPopup.quarryPaymentDetails(
-                violationData,
-            )
-            : DetailsPopup.vehiclePaymentDetails(
-                violationData,
-            )
+                            ${offenderType == "Quarry" || offenderType == "Equipment"
+            ? DetailsPopup.quarryPaymentDetails(violationData)
+            : DetailsPopup.vehiclePaymentDetails(violationData)
         }
                         </div>
                     </div>
@@ -1939,7 +1915,6 @@ DetailsPopup.printPaymentForm = (TaskData) => {
                 <div class="formButtonsBox">
                     <div class="col-12">
                         <div class="buttonsBox centerButtonsBox ">
-                            <div class="btnStyle confirmBtnGreen popupBtn printPaymentFormBtn" id="printPaymentFormBtn" data-dismiss="modal" aria-label="Close">طباعة نموذج السداد</div>
                             <div class="btnStyle confirmBtnGreen popupBtn printConfirmationForm" id="printConfirmationForm">طباعة نموذج التصديق</div>
                             <div class="btnStyle cancelBtn popupBtn closePrintPaymentDetailsPopup" id="closePrintPaymentDetailsPopup" data-dismiss="modal" aria-label="Close">إلغاء</div>
                         </div>
@@ -1947,11 +1922,236 @@ DetailsPopup.printPaymentForm = (TaskData) => {
                 </div>
             </div>
         </div>
-        </div>`;
-    // <!--<div class="btnStyle confirmBtnGreen popupBtn printPaymentForm" id="printPaymentForm">طباعة نموذج السداد</div>-->
+    </div>`;
+
     return printPaymentFormHtml;
 };
 
+DetailsPopup.printConfirmationFormOnly = (TaskData) => {
+    let violationData = TaskData.Violation != null ? TaskData.Violation : "---";
+    let PrintedCount = TaskData.PrintedCount;
+    let offenderType = violationData.OffenderType;
+    let ExDate = functions.getFormatedDate(TaskData?.ReconciliationExpiredDate);
+    let violationPriceType = violationData.ViolationTypes != null ? violationData.ViolationTypes.PriceType : "";
+    let TotalViolationPrice = violationData.TotalPriceDue;
+    let RoyaltyPrice = violationData.LawRoyalty;
+    let QuarryMaterialValue = violationData.QuarryMaterialValue;
+    let violationTypeLastPrice;
+    let labelText;
+    let inputVal;
+    let ExpirationDate;
+
+    if (offenderType == "Quarry" || offenderType == "Equipment") {
+        violationTypeLastPrice = DetailsPopup.getQuarryViolationValueByType(
+            violationPriceType,
+            TotalViolationPrice,
+            QuarryMaterialValue,
+        );
+        labelText = violationTypeLastPrice.labelText;
+        inputVal = violationTypeLastPrice.InputVal;
+        if (PrintedCount == 0) {
+            ExpirationDate = functions.getCurrentDateTime("DateTime");
+        } else {
+            ExpirationDate = ExDate;
+        }
+    } else {
+        violationTypeLastPrice = DetailsPopup.getVechileViolationValueByType(
+            TotalViolationPrice,
+            RoyaltyPrice,
+        );
+        labelText = violationTypeLastPrice.labelText;
+        inputVal = violationTypeLastPrice.InputVal;
+        if (PrintedCount == 0) {
+            ExpirationDate = functions.getCurrentDateTime("DateTime");
+        } else {
+            ExpirationDate = ExDate;
+        }
+    }
+
+    return `
+    <div class="paymentFormPrintBox" id="printJS-form">
+        <div class="popupBigWrapper">
+            <div class="popupSectionWrapper">
+                <div class="WaterMark">
+                    <img src="/Style Library/MiningViolations/images/WaterMarkL.png" alt="Water Mark">
+                </div>
+                <div class="formTitle">مطالبة مالية (${functions.getViolationArabicName(offenderType)})</div>
+                <div class="popupHeader">
+                    <div class="violationsMetaBox">
+                        <p class="violationCode">${functions.getViolationPaymentArabicName(offenderType)} (${violationData.ViolationCode})</p>
+                        <p class="violationPrintTime">${PrintedCount == 0
+            ? "تاريخ وتوقيت الطباعة :" + ExpirationDate
+            : "تاريخ انتهاء فترة التصالح :" + ExpirationDate
+        }</p>
+                    </div>
+                </div>
+
+                <div class="popupBody violationPrintFormBody violationPricesBody">
+                    <div class="popupForm printPaymentPricesDetailsPopup" id="printPaymentPricesDetailsPopup">
+                        <div class="formContent">
+
+                            <div class="payRowData">
+                                <div class="row">
+                                    <div class="col-md-3">
+                                        <div class="headOfSection">
+                                            <p class="SectionTitle">بيانات المخالفة الأساسية :</p>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-9">
+                                        <div class="formBox">
+                                            <div class="formElements">
+                                                <div class="row">
+                                                    <div class="col-md-4">
+                                                        <div class="form-group customFormGroup">
+                                                            <label for="violatorName" class="customLabel">اسم المخالف</label>
+                                                            <input class="form-control customInput violatorName" id="violatorName" type="text" value="${violationData.ViolatorName}" disabled>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <div class="form-group customFormGroup">
+                                                            <label for="companyName" class="customLabel">اسم الشركة المخالفة</label>
+                                                            <input class="form-control customInput companyName" id="companyName" type="text" value="${violationData.ViolatorCompany != "" ? violationData.ViolatorCompany : "-"}" disabled>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <div class="form-group customFormGroup">
+                                                            <label for="violationType" class="customLabel">نوع المخالفة</label>
+                                                            <input class="form-control customInput violationType" id="violationType" type="text" value="${functions.getViolationArabicName(violationData.OffenderType)}" disabled>                                                        
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="row" style="margin-top: 10px;">
+                                                    <div class="col-md-4">
+                                                        <div class="form-group customFormGroup">
+                                                            <label for="totalQuantity2" class="customLabel">الكمية (${violationData?.MaterialUnit ? violationData?.MaterialUnit : "للمتر المكعب / الطن"})</label>
+                                                            <input class="form-control customInput totalQuantity2" id="totalQuantity2" type="text" value="${violationData?.TotalQuantity != "" ? violationData?.TotalQuantity : "-"}" disabled>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <div class="form-group customFormGroup">
+                                                            <label for="MaterialUnitAmount2" class="customLabel">قيمة الوحدة الواحدة للمادة المحجرية (${violationData?.MaterialUnit ? violationData?.MaterialUnit : "للمتر المكعب / الطن"})</label>
+                                                            <input class="form-control customInput MaterialUnitAmount2" id="MaterialUnitAmount2" type="text" value="${violationData?.MaterialUnitAmount != "" ? violationData?.MaterialUnitAmount : "-"}" disabled>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <div class="form-group customFormGroup">
+                                                            <label class="customLabel" for="EetawaaUnitAmount2">قيمة الإتاوة للوحدة الواحدة للمادة المحجرية (${violationData?.MaterialUnit ? violationData?.MaterialUnit : "للمتر المكعب / الطن"})</label>
+                                                            <div class="inputIconBox">
+                                                                <input class="form-control customInput EetawaaUnitAmount2" id="EetawaaUnitAmount2" type="text" value="${violationData?.EetawaaUnitAmount ? violationData?.EetawaaUnitAmount : "-"}" disabled>
+                                                                <span class="currency">جنيها</span>
+                                                            </div>
+                                                            <span class="hint">يسدد بإيصال منفصل</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="payRowData">
+                                <div class="row">
+                                    <div class="col-md-3">
+                                        <div class="headOfSection">
+                                            <p class="SectionTitle">القيمة المالية المستحقة :</p>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-9">
+                                        <div class="formBox">
+                                            <div class="formElements">
+                                                <div class="row">
+                                                    <div class="col-md-4">
+                                                        <div class="form-group customFormGroup">
+                                                            <label for="TotalEquipmentsPrice2" class="customLabel">قيمة المعدات</label>
+                                                            <input class="form-control customInput TotalEquipmentsPrice2" id="TotalEquipmentsPrice2" type="text" value="${violationData?.TotalEquipmentsPrice != "" ? violationData?.TotalEquipmentsPrice : "-"}" disabled>
+                                                            <span class="hint">يسدد بإيصال منفصل</span>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <div class="form-group customFormGroup">
+                                                            <label for="QuarryMaterialValue2" class="customLabel">إجمالي قيمة المادة المحجرية (${violationData?.MaterialUnit ? violationData?.MaterialUnit : "للمتر المكعب / الطن"})</label>
+                                                            <input class="form-control customInput QuarryMaterialValue2" id="QuarryMaterialValue2" type="text" value="${violationData?.QuarryMaterialValue != "" ? violationData?.QuarryMaterialValue : "-"}" disabled>
+                                                            <span class="hint">يسدد بإيصال منفصل</span>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <div class="form-group customFormGroup">
+                                                            <label class="customLabel" for="royaltyPrice2">إجمالي قيمة الإتاوة (${violationData?.MaterialUnit ? violationData?.MaterialUnit : "للمتر المكعب / الطن"})</label>
+                                                            <div class="inputIconBox">
+                                                                <input class="form-control customInput royaltyPrice2" id="royaltyPrice2" type="text" value="${violationData?.LawRoyalty > 0 ? functions.splitBigNumbersByComma(violationData?.LawRoyalty) : "-"}" disabled>
+                                                                <span class="currency">جنيها</span>
+                                                            </div>
+                                                            <span class="hint">يسدد بإيصال منفصل</span>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <div class="form-group customFormGroup">
+                                                            <label class="customLabel" for="quarryPrice2">إجمالي المبلغ</label>
+                                                            <div class="inputIconBox">
+                                                                <input class="form-control customInput quarryPrice2" id="quarryPrice2" type="text" value="${violationData?.TotalPriceDue > 0 ? functions.splitBigNumbersByComma(violationData?.TotalPriceDue) : "-"}" disabled>
+                                                                <span class="currency">جنيها</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="payRowData">
+                                <div class="row">
+                                    <div class="col-md-3">
+                                        <div class="headOfSection">
+                                            <p class="SectionTitle">تعليمات السداد :</p>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-9">
+                                        <div class="formBox">
+                                            <div class="formElements">
+                                                <div class="row">
+                                                    <div class="col-md-4">
+                                                        <div class="form-group customFormGroup">
+                                                            <label class="customLabel" for="bankAccountNumber2">رقم الحساب البنكي</label>
+                                                            <div class="inputIconBox">
+                                                                <input class="form-control customInput bankAccountNumber2" id="bankAccountNumber2" type="text" value="0074-20316180906-45" disabled>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-8">
+                                                        <div class="instructionsBox">
+                                                            <p class="paymentInstructions">لا يعتد به كمستند رسمي ودون أدنى مسؤولية على الشركة</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="formButtonsBox">
+                        <div class="col-12">
+                            <div class="buttonsBox centerButtonsBox ">
+                                <div class="btnStyle confirmBtnGreen popupBtn printPaymentFormBtn" id="printPaymentFormBtn">طباعة نموذج السداد</div>
+                                <div class="btnStyle cancelBtn popupBtn closePrintPaymentDetailsPopup" id="closePrintPaymentDetailsPopup" data-dismiss="modal" aria-label="Close">إلغاء</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>`;
+};
 DetailsPopup.quarryPaymentDetails = (violationData) => {
     DetailsPopup.getCommitteeRecorder(violationData.SectorConfigId);
     let violationDate = functions.getFormatedDate(
@@ -1991,6 +2191,15 @@ DetailsPopup.quarryPaymentDetails = (violationData) => {
                             <label for="violatorNationalId" class="customLabel">الرقم القومي</label>
                             <input class="form-control customInput violatorNationalId" id="violatorNationalId" type="text" value="${violationData.NationalID != ""
             ? violationData.NationalID
+            : "-"
+        }" disabled>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="form-group customFormGroup">
+                            <label for="violatorMobile" class="customLabel">رقم الهاتف</label>
+                            <input class="form-control customInput violatorMobile" id="violatorMobile" type="text" value="${violationData.MobileNumber != "" && violationData.MobileNumber != null
+            ? violationData.MobileNumber
             : "-"
         }" disabled>
                         </div>
@@ -2216,6 +2425,15 @@ DetailsPopup.vehiclePaymentDetails = (violationData) => {
                         <div class="form-group customFormGroup">
                             <label for="prevViolationsCount" class="customLabel">المخالفات السابقة</label>
                             <input class="form-control customInput prevViolationsCount" id="prevViolationsCount" type="text" value="${violationData.NumOfPreviousViolations
+        }" disabled>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="form-group customFormGroup">
+                            <label for="violatorMobile" class="customLabel">رقم الهاتف</label>
+                            <input class="form-control customInput violatorMobile" id="violatorMobile" type="text" value="${violationData.MobileNumber != "" && violationData.MobileNumber != null
+            ? violationData.MobileNumber
+            : "-"
         }" disabled>
                         </div>
                     </div>

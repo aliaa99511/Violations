@@ -152,7 +152,7 @@ quarryViolationReferralRecords.exportToExcel = () => {
         },
         {
             title: "",
-            skip: true // ✅ control column
+            skip: true // control column
         },
         {
             title: "تاريخ الإحالة",
@@ -221,7 +221,8 @@ quarryViolationReferralRecords.QuarryViolationReferralRecordsTable = (Referrals,
             // Build actions menu HTML
             let actionsMenuHTML = `
                 <ul class='list-unstyled controlsList'>
-                    <li><a href="#" class="itemDetails">المزيد من التفاصيل</a></li>`;
+                    <li><a href="#" class="itemDetails">المزيد من التفاصيل</a></li>
+                    <li><a href="#" data-violationid="${referral?.ViolationId}" data-violationcode="${referral?.ViolationCode}" class="violationHistory" data-toggle="modal" data-target="#trackHistoryModal">تتبع مرحلة المخالفة</a></li>`;
 
             if (hasAttachEndorsementAction) {
                 actionsMenuHTML += `
@@ -273,8 +274,8 @@ quarryViolationReferralRecords.QuarryViolationReferralRecordsTable = (Referrals,
                 `<div class="refferedDate noWrapContent">${refferedDate || "-----"}</div>`,
                 `<div class="referralNumber">${referralNumber || "-----"}</div>`,
                 `<div class="violationStatus">${displayViolationStatus || "-----"}</div>`,
-                `<div class="referralStatus">${functions.getCaseStatus(caseStatus)}</div>`,
                 `<div class="totalPriceDue">${functions.splitBigNumbersByComma(referral.TotalPriceDue || 0) || "-----"}</div>`,
+                `<div class="referralStatus">${functions.getCaseStatus(caseStatus)}</div>`,
                 `<div class="referralAttachments caseAttachments"><a href="#!" style="color: black;">المرفقات</a></div>`,
             ]);
         });
@@ -300,8 +301,8 @@ quarryViolationReferralRecords.QuarryViolationReferralRecordsTable = (Referrals,
             { title: "تاريخ الإحالة" },
             { title: "رقم الإحالة" },
             { title: "حالة المخالفة" },
-            { title: "موقف الإحالة" },
             { title: "المبلغ المستحق" },
+            { title: "موقف الإحالة" },
             { title: "المرفقات" },
         ],
         false,
@@ -350,13 +351,13 @@ quarryViolationReferralRecords.QuarryViolationReferralRecordsTable = (Referrals,
             $(".hiddenListBox").hide(300);
         });
 
-        if (
-            referralsLog.length > 4 &&
-            hiddenListBox.height() > 110 &&
-            jQueryRecord.is(":nth-last-child(-n + 4)")
-        ) {
-            hiddenListBox.addClass("toTopDDL");
-        }
+        // if (
+        //     referralsLog.length > 4 &&
+        //     hiddenListBox.height() > 110 &&
+        //     jQueryRecord.is(":nth-last-child(-n + 4)")
+        // ) {
+        //     hiddenListBox.addClass("toTopDDL");
+        // }
     });
 
     // Attach Endorsement Action
@@ -407,10 +408,15 @@ quarryViolationReferralRecords.attachEndorsementPopup = (
     TotalPriceDue,
     ReferredAmount
 ) => {
+    // Store current violation context for later use
+    quarryViolationReferralRecords.currentViolationId = ViolationID;
+    quarryViolationReferralRecords.currentTaskId = TaskID;
+
     $(".overlay").removeClass("active");
 
     // Calculate next endorsement number
     let nextEndorsementNumber = TotalEndorsementsCount + 1;
+
 
     let popupHtml = `
         <div class="popupHeader" style="display: flex; justify-content: space-between;">
@@ -610,7 +616,9 @@ quarryViolationReferralRecords.attachEndorsementPopup = (
                     ReferralID,
                     "إرفاق تأشيرة النيابة",
                     "#endorsementAttach",
-                    "تم إرفاق تأشيرة النيابة بنجاح"
+                    "تم إرفاق تأشيرة النيابة بنجاح",
+                    ViolationID,  // Pass ViolationID
+                    TaskID        // Pass TaskID
                 );
             } else {
                 functions.warningAlert("من فضلك قم بإرفاق مستند التأشيرة");
@@ -645,7 +653,9 @@ quarryViolationReferralRecords.attachEndorsementPopup = (
                     ReferralID,
                     "التسليم للتحريات",
                     "#endorsementAttach",
-                    "تم تسليم الإحالة للتحريات بنجاح"
+                    "تم تسليم الإحالة للتحريات بنجاح",
+                    ViolationID,  // Pass ViolationID
+                    TaskID        // Pass TaskID
                 );
             } else {
                 functions.warningAlert("من فضلك قم بإرفاق مستند التأشيرة الأخيرة");
@@ -661,7 +671,9 @@ quarryViolationReferralRecords.saveEndorsementAPI = (
     ReferralId,
     uploadPhase,
     attachInput,
-    Message = ""
+    Message = "",
+    ViolationID = null,
+    TaskID = null
 ) => {
     functions
         .requester(
@@ -675,11 +687,20 @@ quarryViolationReferralRecords.saveEndorsementAPI = (
         })
         .then((data) => {
             if (data.d.Status) {
+                // Update violation ReferralStatus with the new case status
+                if (request.Request.Status) {
+                    quarryViolationReferralRecords.updateViolationReferralStatus(
+                        request.Request.Status,
+                        ViolationID,
+                        TaskID
+                    );
+                }
+
                 quarryViolationReferralRecords.addNewReferralAttachmentRecord(
                     ReferralId,
                     uploadPhase,
                     attachInput,
-                    Message
+                    Message,
                 );
             } else {
                 functions.warningAlert("هناك خطأ في إرسال بيانات الطلب");
@@ -1358,6 +1379,160 @@ quarryViolationReferralRecords.referralEquipmentDetails = (violationData) => {
     return detailsHtml;
 };
 
+///////////////////////////////////
+
+quarryViolationReferralRecords.updateViolationReferralStatus = (
+    ReferralStatus,
+    ViolationID = null,
+    TaskID = null
+) => {
+    let request = {
+        request: {
+            Data: {
+                ID: TaskID,
+                ViolationId: ViolationID,
+                Title: "Update Referral Status",
+                ReferralStatus: ReferralStatus,
+                Status: "تعديل حالات القضية",
+            }
+        }
+    };
+
+    functions
+        .requester(
+            "/_layouts/15/Uranium.Violations.SharePoint/Tasks.aspx/Save",
+            request
+        )
+        .then((response) => {
+            if (response.ok) {
+                return response.json();
+            }
+        })
+        .then((data) => {
+            if (data?.d?.Status) {
+                console.log('Violation ReferralStatus updated successfully to:', ReferralStatus);
+            } else {
+                console.warn('Failed to update violation ReferralStatus');
+            }
+        })
+        .catch((err) => {
+            console.error('Error updating violation ReferralStatus:', err);
+        });
+};
+
+
+// ========== Tracking History Functions =========
+const ViolationHistoryLogs = () => {
+    let selectedViolationId = null;
+    let selectedViolationCode = null;
+    let trackHistoryTable = null;
+
+    // ===============================
+    //  فتح المودال
+    // ===============================
+    $(".contentContainer").on("click", ".violationHistory", function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        selectedViolationId = $(this).data("violationid");
+        selectedViolationCode = $(this).data("violationcode");
+
+        $("#trackHistoryModal").modal("show");
+    });
+
+    // ===============================
+    //  إغلاق المودال - Close button handlers
+    // ===============================
+    const closeModal = () => {
+        $("#trackHistoryModal").modal("hide");
+
+        // Clear the modal content
+        $(".track-history-violation-code").text("");
+        if (trackHistoryTable) {
+            trackHistoryTable.clear().destroy();
+            trackHistoryTable = null;
+        }
+        $("#trackHistoryTable tbody").empty();
+    };
+
+    $(document).on("click", "#closeViolationHistoryPopup", function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        closeModal();
+    });
+
+    // // Close button in footer
+    // $(document).on("click", "#closeViolationHistoryPopupFooter", function (e) {
+    //   e.preventDefault();
+    //   e.stopPropagation();
+    //   closeModal();
+    // });
+
+    // Bootstrap modal hide event
+    $("#trackHistoryModal").on("hidden.bs.modal", function () {
+        closeModal();
+    });
+
+    // ===============================
+    //  لما المودال يفتح
+    // ===============================
+    $(".track-history-modal").on("shown.bs.modal", function () {
+        $(".track-history-violation-code").text(selectedViolationCode);
+
+        const request = {
+            Request: {
+                ViolationId: selectedViolationId,
+            },
+        };
+
+        const tableElement = $("#trackHistoryTable");
+
+        if (!trackHistoryTable) {
+            trackHistoryTable = tableElement.DataTable({
+                processing: true,
+                paging: false,
+                responsive: true,
+                destroy: true,
+                ajax: {
+                    url: "/_layouts/15/Uranium.Violations.SharePoint/ViolationHistoryLogs.aspx/Search",
+                    type: "POST",
+                    contentType: "application/json",
+                    data: () => JSON.stringify(request),
+                    dataSrc: (data) => {
+                        return data?.d?.Result?.GridData || [];
+                    }
+                },
+                columns: [
+                    { data: null, render: (data, type, row, meta) => meta.row },
+                    { data: "Status", render: (data) => data || "-" },
+                    { data: "Created", render: (data) => data ? functions.getFormatedDate(data) : "-" },
+                    { data: "CreatedBy", render: (data) => data || "-" },
+                    { data: "Comment", render: (data) => data || "-" }
+                ],
+                language: { emptyTable: "لا توجد بيانات" }
+            });
+        } else {
+            trackHistoryTable.ajax.reload();
+        }
+    });
+
+    // ===============================
+    //  لما المودال يقفل
+    // ===============================
+    $(".track-history-modal").on("hidden.bs.modal", function () {
+        $(".track-history-violation-code").text("");
+        if (trackHistoryTable) {
+            trackHistoryTable.clear().destroy();
+            trackHistoryTable = null;
+        }
+        $("#trackHistoryTable tbody").empty();
+    });
+};
+
+ViolationHistoryLogs();
+
+
+///////////////////////////
 // // Initialization
 // quarryViolationReferralRecords.init = () => {
 //     quarryViolationReferralRecords.pageIndex = 1;

@@ -157,23 +157,20 @@ runningSectorTask.runningSectorTaskTable = (runningTasks) => {
                   <div class='arrow'></div>
                   <ul class='list-unstyled controlsList'>
                       <li><a href="#" class="itemDetails"> المزيد من التفاصيل</a></li>
-                     
                   </ul>
               </div>
           </div>`,
-        `<div class="violationArName">${functions.getViolationArabicName(
-          taskViolation.OffenderType
-        )}</div>`,
+        `<div class="violationArName">${functions.getViolationArabicName(taskViolation.OffenderType)}</div>`,
+        `<div class="violatorName">${taskViolation.ViolatorName || "-"}</div>`,
+        `<div class="violationType" data-typeid="${taskViolation.OffenderType == "Quarry" ? taskViolation.ViolationTypes.ID : 0}">${functions.getViolationArabicName(taskViolation.OffenderType, taskViolation?.ViolationTypes?.Title)}</div>`,
+        `${createdDate}`,
+        `${functions.getFormatedDate(taskViolation.ViolationDate)}`,
+        `<div class="companyName">${taskViolation.ViolatorCompany != "" ? taskViolation.ViolatorCompany : "-"}</div>`,
         `<div class="violationCode" >${taskViolation.OffenderType == "Quarry"
           ? taskViolation.QuarryCode
           : taskViolation.CarNumber
         }</div>`,
-        `<div class="companyName">${taskViolation.ViolatorCompany != "" ? taskViolation.ViolatorCompany : "-"}</div>`,
-        `<div class="violationType" data-typeid="${taskViolation.OffenderType == "Quarry" ? taskViolation.ViolationTypes.ID : 0}">${functions.getViolationArabicName(taskViolation.OffenderType, taskViolation?.ViolationTypes?.Title)}</div>`,
         `<div class="violationZone">${taskViolation.ViolationsZone || "----"}</div>`,
-        `${functions.getFormatedDate(taskViolation.ViolationDate)}`,
-        `${createdDate}`,
-
       ]);
     });
   }
@@ -185,12 +182,13 @@ runningSectorTask.runningSectorTaskTable = (runningTasks) => {
       { title: "رقم المخالفة" },
       { title: "", class: "all" },
       { title: "تصنيف المخالفة" },
-      { title: " رقم المحجر/العربة" },
-      { title: "إسم الشركة المخالفة" },
+      { title: "اسم المخالف" },
       { title: "نوع المخالفة " },
-      { title: "المنطقة" },
-      { title: "تاريخ الضبط" },
       { title: "تاريخ الإنشاء" },
+      { title: "تاريخ الضبط" },
+      { title: "إسم الشركة المخالفة" },
+      { title: " رقم المحجر/العربة" },
+      { title: "المنطقة" },
     ],
     false,
     false,
@@ -198,10 +196,9 @@ runningSectorTask.runningSectorTaskTable = (runningTasks) => {
     "المخالفات القائمة"
   );
 
-  // 🔹 create column selector
+  // Create column selector
   functions.createColumnSelector(Table, "#columnSelector", 'green');
 
-  // Update export button handler
   $("#exportBtn").off("click").on("click", () => {
     runningSectorTask.exportToExcel();
   });
@@ -209,8 +206,10 @@ runningSectorTask.runningSectorTaskTable = (runningTasks) => {
   $(".popupForm").addClass("Pendingform");
   $(".Pendingform").find(".totalPriceBox").show();
   $(".Pendingform").find(".dateLimitBox").hide();
+
   let violationlog = Table.rows().nodes().to$();
   let UserId = _spPageContextInfo.userId;
+
   functions.callSharePointListApi("Configurations").then(Users => {
     let UserDetails;
     let UsersData = Users.value;
@@ -226,36 +225,55 @@ runningSectorTask.runningSectorTaskTable = (runningTasks) => {
       let violationId = jQueryRecord.find(".violationId").data("violationid");
       let violationCode = jQueryRecord.find(".violationId").data("violationcode");
       let OffenderType = jQueryRecord.find(".violationId").data("offendertype");
+
+      // Add menu items
       jQueryRecord.find(".controls").children(".hiddenListBox").find(".controlsList").append(`
             <li><a href="#" class="confirmViolationPopup">التصديق على المخالفة</a></li>  
             <li><a href="#" class="printConfirmationForm">طباعة نموذج التصديق</a></li>  
+            <li><a href="#" class="printPaymentFormOnly">طباعة نموذج السداد</a></li>
         `);
-      jQueryRecord.find(".controls").children(".ellipsisButton").on("click", (e) => {
-        $(".hiddenListBox").hide(300);
+
+      // Toggle menu
+      jQueryRecord.find(".controls").children(".ellipsisButton").off("click").on("click", (e) => {
+        // Hide all other menus first
+        $(".hiddenListBox").not($(e.currentTarget).siblings(".hiddenListBox")).hide(300);
         $(e.currentTarget).siblings(".hiddenListBox").toggle(300);
       });
-      jQueryRecord.find(".controls").children(".hiddenListBox").find(".itemDetails").on("click", (e) => {
+
+      // Item details
+      jQueryRecord.find(".controls").children(".hiddenListBox").find(".itemDetails").off("click").on("click", (e) => {
         $(".overlay").addClass("active");
         runningSectorTask.findViolationByID(e, taskID, false, UserDetails.JobTitle1);
       });
-      jQueryRecord.find(".controls").children(".hiddenListBox").find(".printViolationDetails").on("click", (e) => {
+
+      // Print violation details
+      jQueryRecord.find(".controls").children(".hiddenListBox").find(".printViolationDetails").off("click").on("click", (e) => {
         $(".overlay").addClass("active");
         runningSectorTask.findViolationByID(e, taskID, true)
       });
-      jQueryRecord.find(".controls").children(".hiddenListBox").find(".confirmViolationPopup").on("click", (e) => {
+
+      // Confirm violation popup
+      jQueryRecord.find(".controls").children(".hiddenListBox").find(".confirmViolationPopup").off("click").on("click", (e) => {
         $(".overlay").addClass("active");
         runningSectorTask.violationConfirmPopup(taskID, violationId, violationCode)
       });
-      jQueryRecord.find(".controls").children(".hiddenListBox").find(".printConfirmationForm").on("click", (e) => {
+
+      // Print confirmation form
+      jQueryRecord.find(".controls").children(".hiddenListBox").find(".printConfirmationForm").off("click").on("click", (e) => {
         $(".overlay").addClass("active");
         runningSectorTask.findViolationByID(e, taskID, false, "", "ConfirmationFormPrint");
+      });
+
+      // Print payment form only
+      jQueryRecord.find(".controls").children(".hiddenListBox").find(".printPaymentFormOnly").off("click").on("click", (e) => {
+        $(".overlay").addClass("active");
+        runningSectorTask.printPaymentFormOnly(e, taskID);
       });
     });
   })
 
   functions.hideTargetElement(".controls", ".hiddenListBox");
 };
-
 
 runningSectorTask.findViolationByID = (event, taskID, print = false, UserJopTitle = "", popupType = "") => {
   let request = {
@@ -287,6 +305,7 @@ runningSectorTask.findViolationByID = (event, taskID, print = false, UserJopTitl
         violationID = TaskData.ViolationId;
         violationOffenderType = violationData.OffenderType;
         ExDate = functions.getFormatedDate(TaskData.ReconciliationExpiredDate)
+
         if (violationOffenderType == "Quarry") {
           if (popupType == "ConfirmationFormPrint") {
             $(".overlay").removeClass("active");
@@ -324,26 +343,32 @@ runningSectorTask.findViolationByID = (event, taskID, print = false, UserJopTitl
             functions.declarePopup(["generalPopupStyle", "detailsPopup"], printBox);
           }
         }
+
         if (print) {
-          //  $(".Pendingform").find(".addConfirmationAttchBox").hide()
           functions.PrintDetails(event);
         }
-        $(".printBtn").on("click", (e) => {
-          //  $(".addConfirmationAttchBox").hide()
+
+        // Remove previous handlers before adding new ones
+        $(".printBtn").off("click").on("click", (e) => {
           functions.PrintDetails(e);
         });
+
+        // FIX: Hide buttons AFTER rendering
+        setTimeout(() => {
+          const popup = $(".detailsPopupForm");
+          popup.find("#editMaterialMinPrice, #payAllPrice")
+            .css("display", "none")
+            .attr("style", "display: none !important");
+        }, 50);
+
         $(".printPaymentForm").hide()
         $(".printConfirmationForm").css("display", "flex !important")
-        $(".printConfirmationForm").on("click", (e) => {
+
+        // Remove previous handler before adding new one
+        $(".printConfirmationForm").off("click").on("click", (e) => {
           functions.PrintDetails(e);
         })
         $(".detailsPopupForm").addClass("runningTasks")
-
-        // if(UserJopTitle == "مسؤول التصديقات"){
-        //   $(".confirmViolation").css("display","flex")
-        //   $(".addConfirmationAttchBox").show()
-        // }
-        // $(".confirmationAttachmentBox").show(); 
 
         $(".popupForm").addClass("Pendingform");
         $(".Pendingform").find(".totalPriceBox").show();
@@ -352,24 +377,52 @@ runningSectorTask.findViolationByID = (event, taskID, print = false, UserJopTitl
         $(".Pendingform").find(".rejectReasonBox").hide();
         $(".totalPriceBox").show().find(".dateLimitBox").hide()
 
-        let editFiles;
+        let editFiles = null;
         let countOfFiles;
         let filesExtension = ["gif", "svg", "jpg", "jpeg", "png", "doc", "docx", "pdf", "xls", "xlsx", "pptx"]
         $(".dropFilesArea").hide()
-        $(".attachConfirmationFile").on("change", (e) => {
+
+        // Remove previous handler before adding new one
+        $(".attachConfirmationFile").off("change").on("change", (e) => {
           editFiles = $(e.currentTarget)[0].files
+          $(".attachmentError").hide();
+
           if (editFiles.length > 0) {
             $(".dropFilesArea").show().empty()
+          } else {
+            $(".dropFilesArea").hide()
+            editFiles = null;
+            return;
           }
+
+          // Validate all files
+          let hasInvalidFile = false;
           for (let i = 0; i < editFiles.length; i++) {
-            $(".dropFilesArea").append(`
-                    <div class="file">
-                        <p class="fileName">${editFiles[i].name}</p>
-                        <span class="deleteFile" data-index="${i}"><i class="fa-sharp fa-solid fa-x"></i></span>
-                    </div>
-                `);
+            let fileSplited = editFiles[i].name.split(".")
+            let fileExt = fileSplited[fileSplited.length - 1].toLowerCase()
+            if ($.inArray(fileExt, filesExtension) == -1) {
+              functions.warningAlert("من فضلك أدخل الملفات بالامتدادات المسموح بها فقط")
+              $(".dropFilesArea").hide()
+              $(e.currentTarget).val("")
+              editFiles = null;
+              hasInvalidFile = true;
+              break;
+            }
           }
-          $(".deleteFile").on("click", (e) => {
+
+          if (!hasInvalidFile) {
+            for (let i = 0; i < editFiles.length; i++) {
+              $(".dropFilesArea").append(`
+          <div class="file">
+            <p class="fileName">${editFiles[i].name}</p>
+            <span class="deleteFile" data-index="${i}"><i class="fa-sharp fa-solid fa-x"></i></span>
+          </div>
+        `);
+            }
+          }
+
+          // Use event delegation for dynamically added elements
+          $(document).off("click", ".deleteFile").on("click", ".deleteFile", (e) => {
             let index = $(e.currentTarget).closest(".file").index()
             $(e.currentTarget).closest(".file").remove()
             let fileBuffer = new DataTransfer()
@@ -382,37 +435,86 @@ runningSectorTask.findViolationByID = (event, taskID, print = false, UserJopTitl
             countOfFiles = editFiles.length
             if (countOfFiles == 0) {
               $(".dropFilesArea").hide()
+              editFiles = null;
+              $("#attachConfirmationFile").val("");
             }
           })
-          for (let i = 0; i < editFiles.length; i++) {
-            let fileSplited = editFiles[i].name.split(".")
-            let fileExt = fileSplited[fileSplited.length - 1].toLowerCase()
-            if ($.inArray(fileExt, filesExtension) == -1) {
-              functions.warningAlert("من فضلك أدخل الملفات بالامتدادات المسموح بها فقط")
-              $(".dropFilesArea").hide()
-              $(e.currentTarget).val("")
-            }
-          }
         })
 
-        $(".confirmViolation").on("click", (e) => {
-          if (editFiles != null && editFiles.length > 0) {
-            let request = {
-              Data: {
-                ID: taskID,
-                ViolationId: violationID,
-                Status: "Confirmed",
-                PaymentStatus: "قيد الإنتظار",
-              },
-            };
-            $(".overlay").addClass("active");
-            runningSectorTask.violationConfirmRequest(taskID, request);
-          } else {
+        // Remove previous handler before adding new one
+        $(".confirmViolation").off("click").on("click", (e) => {
+          if (!editFiles || editFiles.length === 0) {
             functions.warningAlert("من فضلك قم بإرفاق مستندات التصديق");
+            return;
           }
+
+          let request = {
+            Data: {
+              ID: taskID,
+              ViolationId: violationID,
+              Status: "Confirmed",
+              PaymentStatus: "قيد الإنتظار",
+            },
+          };
+          $(".overlay").addClass("active");
+          runningSectorTask.violationConfirmRequest(taskID, request);
         });
       } else {
         violationData = null;
+      }
+    })
+    .catch((err) => {
+      console.log(err);
+    });
+};
+
+runningSectorTask.printPaymentFormOnly = (event, taskID) => {
+  let request = {
+    Id: taskID,
+  };
+
+  functions
+    .requester(
+      "/_layouts/15/Uranium.Violations.SharePoint/Tasks.aspx/FindbyId",
+      request
+    )
+    .then((response) => {
+      if (response.ok) {
+        return response.json();
+      }
+    })
+    .then((data) => {
+      let TaskData;
+      let violationData;
+      let Content;
+
+      if (data != null) {
+        TaskData = data.d;
+        violationData = TaskData.Violation;
+
+        $(".overlay").removeClass("active");
+        Content = DetailsPopup.printConfirmationFormOnly(TaskData);
+        functions.declarePopup(["generalPopupStyle", "paymentFormDetailsPopup"], Content);
+
+        // Add print and close button handlers
+        setTimeout(() => {
+          $(".printPaymentFormBtn").off("click").on("click", (e) => {
+            const lowerSection = $(".violationDetailsBody").closest(".popupSectionWrapper");
+            if (lowerSection.length) {
+              lowerSection.hide();
+            }
+            functions.PrintDetails(e);
+            setTimeout(() => {
+              if (lowerSection.length) {
+                lowerSection.show();
+              }
+            }, 1000);
+          });
+
+          $(".closePrintPaymentDetailsPopup").off("click").on("click", () => {
+            functions.closePopup();
+          });
+        }, 100);
       }
     })
     .catch((err) => {
@@ -439,12 +541,12 @@ runningSectorTask.violationConfirmPopup = (TaskId, violationID, violationCode) =
                       <div class="row">
                         <div class="col-12">
                             <div class="form-group customFormGroup">
-                                <label for="attachEditFile" class="customLabel">إرفاق مستند</label>
+                                <label for="attachEditFile" class="customLabel">إرفاق مستند <span class="required-star">*</span></label>
                                 <div class="fileBox" id="dropContainer">
                                     <div class="inputFileBox">
                                         <img src="/Style Library/MiningViolations/images/fileIcon.svg" alt="File Icon">
                                         <p class="dragDropFilesLabel">قم بالسحب والإفلات لرفع الملف , أو <a href="#!" class="attachFileLink">استعراض ملفاتي</a></p>
-                                        <input type="file" class="customInput attachFilesInput attachConfirmationFile form-control" id="attachConfirmationFile" accept="image/gif,image/svg,image/jpg,image/jpeg,image/png,.doc,.docx,.pdf,.xls,.xlsx,.pptx" multiple>
+                                        <input type="file" class="customInput attachFilesInput attachConfirmationFile form-control" id="attachConfirmationFile" accept="image/gif,image/svg,image/jpg,image/jpeg,image/png,.doc,.docx,.pdf,.xls,.xlsx,.pptx" multiple required>
                                     </div>
                                 </div>
                                 <div class="dropFilesArea" id="dropFilesArea"></div>
@@ -477,38 +579,25 @@ runningSectorTask.violationConfirmPopup = (TaskId, violationID, violationCode) =
   });
 
   let request = {}
-  let editFiles;
+  let editFiles = null;
   let countOfFiles;
   let filesExtension = ["gif", "svg", "jpg", "jpeg", "png", "doc", "docx", "pdf", "xls", "xlsx", "pptx"]
   $(".dropFilesArea").hide()
+
   $(".attachConfirmationFile").on("change", (e) => {
     editFiles = $(e.currentTarget)[0].files
+    $("#attachmentError").hide();
+
     if (editFiles.length > 0) {
       $(".dropFilesArea").show().empty()
+    } else {
+      $(".dropFilesArea").hide()
+      editFiles = null;
+      return;
     }
-    for (let i = 0; i < editFiles.length; i++) {
-      $(".dropFilesArea").append(`
-              <div class="file">
-                  <p class="fileName">${editFiles[i].name}</p>
-                  <span class="deleteFile" data-index="${i}"><i class="fa-sharp fa-solid fa-x"></i></span>
-              </div>
-          `);
-    }
-    $(".deleteFile").on("click", (e) => {
-      let index = $(e.currentTarget).closest(".file").index()
-      $(e.currentTarget).closest(".file").remove()
-      let fileBuffer = new DataTransfer()
-      for (let i = 0; i < editFiles.length; i++) {
-        if (index !== i) {
-          fileBuffer.items.add(editFiles[i]);
-        }
-      }
-      editFiles = fileBuffer.files
-      countOfFiles = editFiles.length
-      if (countOfFiles == 0) {
-        $(".dropFilesArea").hide()
-      }
-    })
+
+    // Validate all files before adding to the list
+    let hasInvalidFile = false;
     for (let i = 0; i < editFiles.length; i++) {
       let fileSplited = editFiles[i].name.split(".")
       let fileExt = fileSplited[fileSplited.length - 1].toLowerCase()
@@ -516,25 +605,77 @@ runningSectorTask.violationConfirmPopup = (TaskId, violationID, violationCode) =
         functions.warningAlert("من فضلك أدخل الملفات بالامتدادات المسموح بها فقط")
         $(".dropFilesArea").hide()
         $(e.currentTarget).val("")
+        editFiles = null;
+        hasInvalidFile = true;
+        break;
       }
+    }
+
+    if (!hasInvalidFile) {
+      for (let i = 0; i < editFiles.length; i++) {
+        $(".dropFilesArea").append(`
+          <div class="file">
+            <p class="fileName">${editFiles[i].name}</p>
+            <span class="deleteFile" data-index="${i}"><i class="fa-sharp fa-solid fa-x"></i></span>
+          </div>
+        `);
+      }
+
+      $(".deleteFile").on("click", (e) => {
+        let index = $(e.currentTarget).closest(".file").index()
+        $(e.currentTarget).closest(".file").remove()
+        let fileBuffer = new DataTransfer()
+        for (let i = 0; i < editFiles.length; i++) {
+          if (index !== i) {
+            fileBuffer.items.add(editFiles[i]);
+          }
+        }
+        editFiles = fileBuffer.files
+        countOfFiles = editFiles.length
+        if (countOfFiles == 0) {
+          $(".dropFilesArea").hide()
+          editFiles = null;
+          $("#attachConfirmationFile").val("");
+        }
+      })
     }
   })
 
+  // Enhanced validation for confirm button
   $("#confirmViolation").on("click", (e) => {
-    if (editFiles != null && editFiles.length > 0) {
-      request = {
-        Data: {
-          ID: TaskId,
-          ViolationId: violationID,
-          Status: "Confirmed",
-          PaymentStatus: "قيد الإنتظار"
-        }
-      }
-      $(".overlay").addClass("active");
-      runningSectorTask.violationConfirmRequest(TaskId, request)
-    } else {
-      functions.warningAlert("من فضلك قم بإرفاق مستندات التصديق")
+    // Check if files are attached
+    if (!editFiles || editFiles.length === 0) {
+      $("#attachmentError").show();
+      functions.warningAlert("من فضلك قم بإرفاق مستندات التصديق");
+      return;
     }
+
+    // Additional validation to ensure all files are valid
+    let allFilesValid = true;
+    for (let i = 0; i < editFiles.length; i++) {
+      let fileSplited = editFiles[i].name.split(".");
+      let fileExt = fileSplited[fileSplited.length - 1].toLowerCase();
+      if ($.inArray(fileExt, filesExtension) === -1) {
+        allFilesValid = false;
+        break;
+      }
+    }
+
+    if (!allFilesValid) {
+      functions.warningAlert("يوجد ملفات غير صالحة، يرجى التحقق من امتدادات الملفات");
+      return;
+    }
+
+    request = {
+      Data: {
+        ID: TaskId,
+        ViolationId: violationID,
+        Status: "Confirmed",
+        PaymentStatus: "قيد الإنتظار"
+      }
+    }
+    $(".overlay").addClass("active");
+    runningSectorTask.violationConfirmRequest(TaskId, request)
   });
 };
 

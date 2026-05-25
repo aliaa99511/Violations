@@ -164,12 +164,13 @@ rejectedViolationsRecords.dashBoardTable = (violationsData, destroyTable) => {
                 </div>
             </div>`,
         `<div class="violationArName">${functions.getViolationArabicName(taskViolation.OffenderType)}</div>`,
-        `<div class="violationCode">${taskViolation.OffenderType == "Vehicle" ? taskViolation.CarNumber : taskViolation.QuarryCode != "" ? taskViolation.QuarryCode : "---"}</div>`,
-        `<div class="companyName">${taskViolation.ViolatorCompany != "" ? taskViolation.ViolatorCompany : "-"}</div>`,
+        `<div class="violatorName">${taskViolation.ViolatorName || "-"}</div>`,
         `<div class="violationType" data-typeid="${taskViolation.OffenderType == "Quarry" ? taskViolation.ViolationTypes.ID : 0}">${functions.getViolationArabicName(taskViolation.OffenderType, taskViolation?.ViolationTypes?.Title)}</div>`,
-        `<div class="violationZone">${taskViolation.ViolationsZone}</div>`,
-        `${functions.getFormatedDate(taskViolation.ViolationDate)}`,
         `${createdDate}`,
+        `${functions.getFormatedDate(taskViolation.ViolationDate)}`,
+        `<div class="companyName">${taskViolation.ViolatorCompany != "" ? taskViolation.ViolatorCompany : "-"}</div>`,
+        `<div class="violationCode">${taskViolation.OffenderType == "Vehicle" ? taskViolation.CarNumber : taskViolation.QuarryCode != "" ? taskViolation.QuarryCode : "---"}</div>`,
+        `<div class="violationZone">${taskViolation.ViolationsZone}</div>`,
       ]);
     });
   }
@@ -184,12 +185,13 @@ rejectedViolationsRecords.dashBoardTable = (violationsData, destroyTable) => {
       { title: "رقم المخالفة", class: "no-sort" },
       { title: "", class: "all no-sort" },
       { title: "تصنيف المخالفة", class: "no-sort" },
-      { title: " رقم المحجر/العربة", class: "no-sort" },
-      { title: "إسم الشركة المخالفة", class: "no-sort" },
+      { title: "اسم المخالف", class: "no-sort" },
       { title: "نوع المخالفة ", class: "no-sort" },
-      { title: "المنطقة", class: "no-sort" },
-      { title: "تاريخ الضبط", class: "sort" },
       { title: "تاريخ الإنشاء", class: "sort" },
+      { title: "تاريخ الضبط", class: "sort" },
+      { title: "إسم الشركة المخالفة", class: "no-sort" },
+      { title: " رقم المحجر/العربة", class: "no-sort" },
+      { title: "المنطقة", class: "no-sort" },
     ],
     false,
     false,
@@ -277,6 +279,15 @@ rejectedViolationsRecords.findViolationByID = (event, taskID, print = false) => 
         if (print) {
           functions.PrintDetails(event)
         }
+
+        // FIX: Hide buttons AFTER rendering
+        setTimeout(() => {
+          const popup = $(".detailsPopupForm");
+          popup.find("#editMaterialMinPrice, #payAllPrice")
+            .css("display", "none")
+            .attr("style", "display: none !important");
+        }, 50);
+
         $(".detailsPopupForm").addClass("rejectedViolationsRecordsLog")
         $(".detailsPopupForm").find(".CommiteeMembersBox").show().find(".formElements").css("border-bottom", "none")
         $(".rejectReasonBox").show().find(".rejectReason").val(rejectReason)

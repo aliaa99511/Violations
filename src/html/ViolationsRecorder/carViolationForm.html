@@ -40,9 +40,17 @@
                 </div>
                 <div class="col-md-6">
                   <div class="form-group customFormGroup">
-                    <label for="violatorMobileNumber" class="customLabel">رقم الهاتف المحمول</label>
+                    <label for="violatorMobileNumber" class="customLabel">رقم الهاتف المحمول<span
+                        class="redAstric">*</span></label>
                     <input class="form-control customInput violatorMobileNumber" id="violatorMobileNumber" type="text"
                       maxlength="11" placeholder="ادخل رقم الهاتف المحمول" />
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="form-group customFormGroup">
+                    <label for="vehicleIdentificationNumber" class="customLabel">رقم الشاسيه</label>
+                    <input type="text" class="form-control customInput vehicleIdentificationNumber"
+                      id="vehicleIdentificationNumber" placeholder="ادخل رقم الشاسيه" />
                   </div>
                 </div>
                 <!-- <div class="col-md-3">
@@ -121,26 +129,6 @@
                   </div>
                 </div>
 
-                <div class="col-md-6 tractorBox">
-                  <div class="row">
-                    <div class="col-md-6">
-                      <div class="form-group customFormGroup">
-                        <label for="tractorLetters" class="customLabel">حروف المقطورة<span
-                            class="redAstric">*</span></label>
-                        <input class="form-control customInput tractorLetters" id="tractorLetters" type="text"
-                          minlength="4" maxlength="7" placeholder="ادخل حروف المقطورة" />
-                      </div>
-                    </div>
-                    <div class="col-md-6">
-                      <div class="form-group customFormGroup">
-                        <label for="tractorNumbers" class="customLabel">أرقام المقطورة<span
-                            class="redAstric">*</span></label>
-                        <input class="form-control customInput tractorNumbers" id="tractorNumbers" type="text"
-                          minlength="3" maxlength="7" placeholder="ادخل أرقام المقطورة" />
-                      </div>
-                    </div>
-                  </div>
-                </div>
                 <div class="col-12">
                   <p class="formSectionLabel">* رخصة تسيير مركبة</p>
                 </div>
@@ -194,7 +182,6 @@
                     <div class="col-md-4">
                       <div class="form-group customFormGroup">
                         <label for="carBrand" class="customLabel">النوع<span class="redAstric">*</span></label>
-
                         <input type="text" class="form-control customInput carBrand" id="carBrand"
                           placeholder="ادخل النوع" />
                       </div>
@@ -227,6 +214,27 @@
                   </div>
                 </div>
 
+                <div class="col-md-6 tractorBox">
+                  <div class="row">
+                    <div class="col-md-6">
+                      <div class="form-group customFormGroup">
+                        <label for="tractorLetters" class="customLabel">حروف المقطورة<span
+                            class="redAstric">*</span></label>
+                        <input class="form-control customInput tractorLetters" id="tractorLetters" type="text"
+                          minlength="4" maxlength="7" placeholder="ادخل حروف المقطورة" />
+                      </div>
+                    </div>
+                    <div class="col-md-6">
+                      <div class="form-group customFormGroup">
+                        <label for="tractorNumbers" class="customLabel">أرقام المقطورة<span
+                            class="redAstric">*</span></label>
+                        <input class="form-control customInput tractorNumbers" id="tractorNumbers" type="text"
+                          minlength="3" maxlength="7" placeholder="ادخل أرقام المقطورة" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
               </div>
             </div>
           </div>
@@ -240,16 +248,16 @@
             <div class="formElements">
               <div class="row">
                 <!-- <div class="col-md-6">
-                                    <div class="form-group customFormGroup">
-                                        <label for="violationType" class="customLabel">نوع المخالفة</label>
-                                        <div class="selectBox">
-                                            <select class="form-control violationType" id="violationType">
-                                                <option value="" disabled selected hidden>نوع المخالفة</option>
-                                            </select>
-                                            <i class="fa-solid fa-sort-down"></i>
-                                        </div>
-                                    </div>
-                                </div> -->
+                        <div class="form-group customFormGroup">
+                            <label for="violationType" class="customLabel">نوع المخالفة</label>
+                            <div class="selectBox">
+                                <select class="form-control violationType" id="violationType">
+                                    <option value="" disabled selected hidden>نوع المخالفة</option>
+                                </select>
+                                <i class="fa-solid fa-sort-down"></i>
+                            </div>
+                        </div>
+                    </div> -->
                 <div class="col-md-6">
                   <div class="form-group customFormGroup">
                     <label for="carViolationRawType" class="customLabel">نوع الخام<span

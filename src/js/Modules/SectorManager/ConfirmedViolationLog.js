@@ -50,8 +50,9 @@ confirmedViolationLog.getConfirmedLog = (
       "Exceeded",
       "Paid After Reffered",
       "Saved",
-      "Cancelled"
-      // "UnderPayment",
+      "Cancelled",
+      "UnderReview",
+      "UnderPayment"
     ];
   }
 
@@ -268,33 +269,19 @@ confirmedViolationLog.exportToExcel = () => {
     CreatedTo: $("#createdTo").val() ? moment($("#createdTo").val(), "DD-MM-YYYY").format("YYYY-MM-DD") : null,
   };
 
-  const columns = [
+  const allColumns = [
     {
       title: "رقم المخالفة",
-      data: "Violation.ViolationCode"
+      render: (record) => record.Violation?.ViolationCode || "----",
     },
     {
       title: "",
       skip: true
     },
-
     {
       title: "تصنيف المخالفة",
-      render: (record) => functions.getViolationArabicName(record.Violation?.OffenderType),
-    },
-    {
-      title: "رقم المحجر/العربة",
-      render: (record) => {
-        const violation = record.Violation;
-        if (!violation) return "---";
-        return violation.OffenderType === "Vehicle"
-          ? (violation.CarNumber || "---")
-          : (violation.QuarryCode || "---");
-      },
-    },
-    {
-      title: "إسم الشركة المخالفة",
-      data: "Violation.ViolatorCompany",
+      render: (record) =>
+        functions.getViolationArabicName(record.Violation?.OffenderType),
     },
     {
       title: "نوع المخالفة",
@@ -302,56 +289,123 @@ confirmedViolationLog.exportToExcel = () => {
         functions.getViolationArabicName(
           record.Violation?.OffenderType,
           record.Violation?.ViolationTypes?.Title
-        )
+        ),
+    },
+    {
+      title: "تاريخ الإنشاء",
+      render: (record) =>
+        record.Created
+          ? moment(record.Created).format("DD-MM-YYYY hh:mm A")
+          : "-",
+
+    },
+    {
+      title: "تاريخ المحضر",
+      render: (record) => {
+        if (!record.Violation?.ViolationDate) return "-";
+
+        return moment(record.Violation.ViolationDate).format(
+          "DD-MM-YYYY hh:mm A"
+        );
+      },
+    },
+    {
+      title: "اسم المخالف",
+      render: (record) =>
+        record.Violation?.ViolatorName ||
+        "-",
+    },
+    {
+      title: "إسم الشركة",
+      render: (record) => record.Violation?.ViolatorCompany || "-",
+    },
+    {
+      title: "رقم المحجر / العربة",
+      render: (record) => {
+        const violation = record.Violation;
+        if (!violation) return "---";
+        return violation.OffenderType === "Vehicle" ? (violation.CarNumber || "---") : (violation.QuarryCode || "---");
+      },
+    },
+    {
+      title: "رقم المقطورة",
+      render: (record) =>
+        record.Violation?.TrailerNum || "-",
     },
     {
       title: "المنطقة",
-      data: "Violation.ViolationsZone",
+      render: (record) =>
+        record.Violation?.ViolationsZone || "----",
+    },
+    {
+      title: "قيمة المخالفة",
+      render: (record) => {
+        const value = record.Violation?.TotalPriceDue;
+
+        return value && value > 0 ? value : "-";
+      },
+    },
+    {
+      title: "قيمة الإتاوة",
+      render: (record) => {
+        const value = record.Violation?.LawRoyalty;
+
+        return value && value > 0 ? value : "-";
+      },
+    },
+    {
+      title: "قيمة المعدة",
+      render: (record) => {
+        const value = record.Violation?.TotalEquipmentsPrice;
+
+        return value && value > 0 ? value : "-";
+      },
     },
     {
       title: "حالة المخالفة",
       render: (record) => {
+        const status = record.Status;
+
         const statusMap = {
-          "Pending": "قيد الانتظار",
-          "Confirmed": "قيد الانتظار",
-          "Exceeded": "تجاوز مدة السداد",
-          "Saved": "محفوظة",
+          Pending: "قيد الانتظار",
+          Confirmed: "قيد الانتظار",
+          Exceeded: "تجاوز مدة السداد",
+          Saved: "محفوظة",
           "Paid After Reffered": "سداد بعد الإحالة",
-          "Paid": "تم السداد",
-          "UnderPayment": "قيد السداد",
-          "Approved": "تم الموافقة",
-          "Rejected": "مرفوضة",
-          "Reffered": "تم الإحالة",
-          "UnderReview": "قيد انتظار السداد",
-          "ExternalReviewed": "خارجية",
-          "Completed": "مكتملة",
-          "Cancelled": "ملغاه"
+          Paid: "تم السداد",
+          UnderPayment: "قيد السداد",
+          Approved: "تم الموافقة",
+          Rejected: "مرفوضة",
+          Reffered: "تم الإحالة",
+          UnderReview: "منظورة",
+          ExternalReviewed: "منظورة",
+          Completed: "مكتملة",
+          Cancelled: "ملغاه",
         };
-        return statusMap[record.Status] || record.Status || "---";
+
+        return statusMap[status] || status || "-";
       },
     },
     {
       title: "حالة الالتماس",
       render: (record) => {
         const violation = record.Violation;
+
         if (!violation?.IsPetition) return "-";
-        return functions.getPetitionsStatus(
-          violation?.Petition?.GridData?.[0]?.Status
-        ) || "-";
+
+        return (
+          functions.getPetitionsStatus(
+            violation?.Petition?.GridData?.[0]?.Status
+          ) || "-"
+        );
       },
     },
     {
-      title: "الحد الأقصى للمصالحة",
-      render: (record) => {
-        const date = functions.getFormatedDate(record.ReconciliationExpiredDate);
-        return date === "01-01-2001" ? "-" : date;
-      },
+      title: "موقف الإحالة",
+      render: (record) =>
+        record?.ReferralStatus || "----",
     },
-    {
-      title: "تاريخ الإنشاء",
-      render: (record) => functions.getFormatedDate(record.Created),
-    },
-  ];
+  ]
 
   functions.exportFromAPI({
     searchUrl: "/_layouts/15/Uranium.Violations.SharePoint/Tasks.aspx/Search",
@@ -381,57 +435,117 @@ confirmedViolationLog.ConfirmedViolationTable = (
     ConfirmedViolation.forEach((record) => {
       taskViolation = record.Violation;
       let createdDate = functions.getFormatedDate(record.Created);
+      let caseStatus = record?.ReferralStatus || "";
 
       data.push([
-        `<div class="violationId" data-taskid="${record.ID}">
-          ${taskViolation.ViolationCode}
-          </div>`,
+        `<div class="violationId"
+                data-taskid="${record.ID}"
+                data-violationid="${record.ViolationId}"
+                data-taskstatus="${record.Status}"
+                data-paymentstatus="${record.PaymentStatus}"
+                data-violationcode="${taskViolation?.ViolationCode}"
+                data-totalprice="${taskViolation?.TotalPriceDue}"
+                data-enddate="${record.ReconciliationExpiredDate}"
+                data-offendertype="${taskViolation?.OffenderType}">
+                ${taskViolation?.ViolationCode || "-"}
+            </div>`,
+
         `<div class='controls'>
-            <div class='ellipsisButton'>
-                <i class='fa-solid fa-ellipsis-vertical'></i>
-            </div>
-            <div class="hiddenListBox">
-                <div class='arrow'></div>
-                <ul class='list-unstyled controlsList'>
-                    <li><a href="#" class="itemDetails">المزيد من التفاصيل</a></li>    
-                    <li><a href="#" data-violationid="${taskViolation?.ID}" data-violationcode="${taskViolation?.ViolationCode}" class="violationHistory" data-toggle="modal" data-target="#trackHistoryModal">تتبع مرحلة المخالفة</a></li>
-                </ul>
-            </div>
-        </div>`,
-        `<div class="violationArName">${functions.getViolationArabicName(
-          taskViolation.OffenderType
-        )}</div>`,
-        `<div class="violationCode">${taskViolation.OffenderType == "Vehicle"
-          ? taskViolation.CarNumber
-          : taskViolation.QuarryCode != ""
-            ? taskViolation.QuarryCode
-            : "---"
-        }</div>`,
-        `<div class="companyName">${taskViolation.ViolatorCompany != ""
-          ? taskViolation.ViolatorCompany
-          : "-"
-        }</div>`,
-        `<div class="violationType" data-typeid="${taskViolation.OffenderType == "Quarry"
-          ? taskViolation.ViolationTypes.ID
-          : 0
-        }">${functions.getViolationArabicName(
-          taskViolation.OffenderType,
-          taskViolation?.ViolationTypes?.Title
-        )}</div>`,
-        `<div class="violationZone">${taskViolation.ViolationsZone}</div>`,
+              <div class='ellipsisButton'>
+                  <i class='fa-solid fa-ellipsis-vertical'></i>
+              </div>
+              <div class="hiddenListBox">
+                  <div class='arrow'></div>
+                  <ul class='list-unstyled controlsList'>
+                      <li><a href="#" class="itemDetails">المزيد من التفاصيل</a></li>
+                      <li>
+                        <a href="#"
+                          data-violationid="${taskViolation?.ID}"
+                          data-violationcode="${taskViolation?.ViolationCode}"
+                          class="violationHistory"
+                          data-toggle="modal"
+                          data-target="#trackHistoryModal">
+                          تتبع مرحلة المخالفة
+                        </a>
+                      </li>
+                  </ul>
+              </div>
+            </div>`,
+
+        `<div class="violationArName">
+              ${functions.getViolationArabicName(taskViolation?.OffenderType)}
+            </div>`,
+
+        `<div class="violationType"
+                data-typeid="${taskViolation?.OffenderType == "Quarry"
+          ? taskViolation?.ViolationTypes.ID
+          : 0}">
+                ${functions.getViolationArabicName(
+            taskViolation?.OffenderType,
+            taskViolation?.ViolationTypes?.Title
+          )}
+            </div>`,
+
+        record.Created
+          ? moment(record.Created).format("DD-MM-YYYY hh:mm A")
+          : "-",
+
+        taskViolation?.ViolationDate
+          ? moment(taskViolation?.ViolationDate).format("DD-MM-YYYY hh:mm A")
+          : "-",
+
+        `<div class="ViolatorName">
+            ${taskViolation?.ViolatorName || "-"}
+            </div>`,
+
+        `<div class="ViolatorCompany">
+            ${taskViolation?.ViolatorCompany || "-"}
+            </div>`,
+
+        `<div class="violationCode">
+              ${taskViolation?.OffenderType == "Vehicle"
+          ? taskViolation?.CarNumber
+          : taskViolation?.QuarryCode != undefined
+            ? taskViolation?.QuarryCode
+            : "-"}
+            </div>`,
+
+        `<div class="trailerNum">
+              ${taskViolation?.TrailerNum || "-"}
+            </div>`,
+
+        `<div class="violationZone">
+              ${taskViolation?.ViolationsZone || "-"}
+            </div>`,
+
+        `${taskViolation?.TotalPriceDue > 0
+          ? taskViolation?.TotalPriceDue
+          : "-"}`,
+
+        `${taskViolation?.LawRoyalty > 0
+          ? taskViolation?.LawRoyalty
+          : "-"}`,
+
+        `${taskViolation?.TotalEquipmentsPrice > 0
+          ? taskViolation?.TotalEquipmentsPrice
+          : "-"}`,
+
+        `${taskViolation?.TotalQuantity > 0
+          ? taskViolation?.TotalQuantity
+          : "-"}`,
+
         `${confirmedViolationLog.getViolationStatus(record.Status)}`,
+
         `${taskViolation?.IsPetition
           ? functions.getPetitionsStatus(
             taskViolation?.Petition?.GridData?.[0]?.Status
           ) || "-"
           : "-"
         }`,
-        `${functions.getFormatedDate(record.ReconciliationExpiredDate) ==
-          "01-01-2001"
-          ? "-"
-          : functions.getFormatedDate(record.ReconciliationExpiredDate)
-        }`,
-        `${createdDate}`,
+
+        `<div class="referralStatus">
+                ${functions.getCaseStatus(caseStatus)}
+            </div>`,
       ]);
     });
   }
@@ -443,14 +557,21 @@ confirmedViolationLog.ConfirmedViolationTable = (
       { title: "رقم المخالفة" },
       { title: "", class: "all" },
       { title: "تصنيف المخالفة" },
-      { title: "رقم المحجر/العربة" },
-      { title: "إسم الشركة المخالفة" },
-      { title: "نوع المخالفة " },
-      { title: "المنطقة", visible: true },
+      { title: "نوع المخالفة" },
+      { title: "تاريخ الإنشاء" },
+      { title: "تاريخ المحضر" },
+      { title: "اسم المخالف" },
+      { title: "اسم الشركة" },
+      { title: "رقم المحجر / العربة" },
+      { title: "رقم المقطورة" },
+      { title: "المنطقة" },
+      { title: "مبلغ المادة المحجرية" },
+      { title: "قيمة الإتاوة" },
+      { title: "قيمة المعدة" },
+      { title: "الكمية" },
       { title: "حالة المخالفة" },
       { title: "حالة الالتماس" },
-      { title: "الحد الأقصى للمصالحة" },
-      { title: "تاريخ الإنشاء" },
+      { title: "موقف الإحالة" },
     ],
     false,
     false,
@@ -576,14 +697,14 @@ confirmedViolationLog.getViolationStatus = (ViolationStatus) => {
     case "UnderReview": {
       statusHtml = `<div class="statusBox pendingStatus">
                 <i class="statusIcon fa-regular fa-eye"></i>
-                <span class="statusText">قيد انتظار السداد</span>
+                <span class="statusText">منظورة</span>
             </div>`;
       break;
     }
     case "ExternalReviewed": {
       statusHtml = `<div class="statusBox pendingStatus">
-                <i class="statusIcon fa-regular fa-external-link"></i>
-                <span class="statusText">خارجية</span>
+                <i class="statusIcon fa-regular fa-eye"></i>
+                <span class="statusText">منظورة</span>
             </div>`;
       break;
     }
@@ -598,13 +719,6 @@ confirmedViolationLog.getViolationStatus = (ViolationStatus) => {
       statusHtml = `<div class="statusBox killedStatus">
                 <i class="statusIcon fa-solid fa-ban"></i> 
                 <span class="statusText">ملغاه</span>
-            </div>`;
-      break;
-    }
-    default: {
-      statusHtml = `<div class="statusBox pendingStatus">
-                <i class="statusIcon fa-regular fa-question-circle"></i>
-                <span class="statusText">${ViolationStatus || "---"}</span>
             </div>`;
       break;
     }
@@ -675,6 +789,15 @@ confirmedViolationLog.findViolationByID = (event, taskID, print = false) => {
             printBox
           );
         }
+
+        // FIX: Hide buttons AFTER rendering - Add this block
+        setTimeout(() => {
+          const popup = $(".detailsPopupForm");
+          popup.find("#editMaterialMinPrice, #payAllPrice")
+            .css("display", "none")
+            .attr("style", "display: none !important");
+        }, 50);
+
         $(".popupForm").addClass("Confirmedform");
         $(".totalPriceBox").show().find(".dateLimitBox").hide();
         $(".confirmationAttachBox").show();
@@ -707,7 +830,7 @@ const ViolationHistoryLogs = () => {
   let trackHistoryTable = null;
 
   // ===============================
-  // 🔥 فتح المودال
+  //  فتح المودال
   // ===============================
   $(".contentContainer").on("click", ".violationHistory", function (e) {
     e.preventDefault();
@@ -720,7 +843,7 @@ const ViolationHistoryLogs = () => {
   });
 
   // ===============================
-  // 🔥 إغلاق المودال - Close button handlers
+  //  إغلاق المودال - Close button handlers
   // ===============================
   const closeModal = () => {
     $("#trackHistoryModal").modal("hide");
@@ -756,7 +879,7 @@ const ViolationHistoryLogs = () => {
   });
 
   // ===============================
-  // 🔥 لما المودال يفتح
+  //  لما المودال يفتح
   // ===============================
   $(".track-history-modal").on("shown.bs.modal", function () {
 
@@ -770,7 +893,7 @@ const ViolationHistoryLogs = () => {
 
     const tableElement = $("#trackHistoryTable");
 
-    // ✅ لو أول مرة نعمل init
+    // init
     if (!trackHistoryTable) {
 
       trackHistoryTable = tableElement.DataTable({
@@ -832,13 +955,13 @@ const ViolationHistoryLogs = () => {
 
     } else {
 
-      // ✅ Reload فقط
+      // just فقط
       trackHistoryTable.ajax.reload();
     }
   });
 
   // ===============================
-  // 🔥 لما المودال يقفل
+  //  لما المودال يقفل
   // ===============================
   $(".track-history-modal").on("hidden.bs.modal", function () {
 

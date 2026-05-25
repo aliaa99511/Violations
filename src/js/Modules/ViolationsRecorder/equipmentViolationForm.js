@@ -6,6 +6,7 @@ let equipmentViolation = {};
 var urlParams = new URLSearchParams(window.location.search);
 
 var editViolationId;
+
 equipmentViolation.violatorDetails = () => {
   let vaildViolator = false;
   let violatorDetails = {};
@@ -17,19 +18,17 @@ equipmentViolation.violatorDetails = () => {
   let violationGov = $("#violationGov").children("option:selected").val();
   let violationGovId = $("#violationGov").children("option:selected").data("id");
   let violationArea = $("#violationArea").val();
-  // let violationAreaName = $("#violationArea").children("option:selected").data("areaname");
   let companyName = $("#companyName").val();
   let commercialRegister = $("#commercialRegister").val();
-  let NationalIdRegExp =
-    /^(2|3)[0-9][0-9][0-1][0-9][0-3][0-9](01|02|03|04|11|12|13|14|15|16|17|18|19|21|22|23|24|25|26|27|28|29|31|32|33|34|35|88)\d\d\d\d\d$/;
-  if (violatorNameCheck) {
-    // if (violatorNationalId != "" & NationalIdRegExp.test(violatorNationalId)) {
-    if (violationPrevCount != "") {
-      // if(companyName != ""){
-      if (violationGov != "") {
-        if (violationArea != "") {
+  let vehicleIdentificationNumber = $("#vehicleIdentificationNumber").val();
+  let NationalIdRegExp = /^(2|3)[0-9][0-9][0-1][0-9][0-3][0-9](01|02|03|04|11|12|13|14|15|16|17|18|19|21|22|23|24|25|26|27|28|29|31|32|33|34|35|88)\d\d\d\d\d$/;
 
-          //  Check National ID if provided
+  if (violatorNameCheck) {
+    if (violationGov != "") {
+      if (violationArea != "") {
+        if (violatorMobileNumber && violatorMobileNumber.trim() !== "") {
+
+          // Check National ID if provided
           if (violatorNationalId !== "") {
             // Check if exactly 14 digits
             if (!/^\d{14}$/.test(violatorNationalId)) {
@@ -44,45 +43,26 @@ equipmentViolation.violatorDetails = () => {
           violatorDetails = {
             violatorName: violatorName,
             violatorNationalId: violatorNationalId != "" ? violatorNationalId : "",
-            // violatorNationalId: violatorNationalId != "" && NationalIdRegExp.test(violatorNationalId) ? violatorNationalId : "-",
-            violatorMobileNumber: violatorMobileNumber != "" ? violatorMobileNumber : "",
+            violatorMobileNumber: violatorMobileNumber.trim(),
             violationPrevCount: Number(violationPrevCount),
             companyName: companyName != "" ? companyName : "",
             commercialRegister: commercialRegister != "" ? commercialRegister : "",
+            vehicleIdentificationNumber: vehicleIdentificationNumber != "" ? vehicleIdentificationNumber : "",
             violationAreaName: violationArea,
             violationGov: violationGovId,
-            // violationAreaCode:violationArea,
           };
           vaildViolator = true;
         } else {
-          functions.warningAlert(
-            "من فضلك قم بادخال منطقة ضبط المخالفة",
-            "#violationArea"
-          );
+          functions.warningAlert("من فضلك قم بادخال رقم الهاتف المحمول", "#violatorMobileNumber");
         }
       } else {
-        functions.warningAlert(
-          "من فضلك قم باختيار المحافظة الواقع بها المخالفة",
-          "#violationGov"
-        );
+        functions.warningAlert("من فضلك قم بادخال منطقة ضبط المخالفة", "#violationArea");
       }
-      // }else{
-      //     functions.warningAlert("من فضلك قم بادخال اسم الشركة التابع لها المخالف")
-      // }
     } else {
-      functions.warningAlert(
-        "من فضلك قم بادخال عدد المخالفات السابقة",
-        "#prevViolationsCount"
-      );
+      functions.warningAlert("من فضلك قم باختيار المحافظة الواقع بها المخالفة", "#violationGov");
     }
-    // } else {
-    //     functions.warningAlert("من فضلك قم بادخال الرقم القومي بشكل صحيح مكون من 14 رقم")
-    // }
   } else {
-    functions.warningAlert(
-      "من فضلك قم بادخال اسم المخالف ثلاثي بشكل صحيح",
-      "#violatorName"
-    );
+    functions.warningAlert("من فضلك قم بادخال اسم المخالف ثلاثي بشكل صحيح", "#violatorName");
   }
   if (vaildViolator) {
     return violatorDetails;
@@ -644,72 +624,72 @@ equipmentViolation.formActions = () => {
     }
   });
 
-  let tableRows = $("#coordinatesTable tr:not(:first-child)");
-  tableRows.each((index, row) => {
-    let currentRow = $(row);
-    $(currentRow)
-      .find("td:nth-child(2)")
-      .find("input:nth-child(1)")
-      .on("keyup", (e) => {
-        if (Number($(e.currentTarget).val()) == 37) {
-          $(e.currentTarget).closest("td").find("input:nth-child(2)").val(0);
-          $(e.currentTarget)
-            .closest("td")
-            .find("input:nth-child(2)")
-            .attr("disabled", "disabled");
-          $(e.currentTarget).closest("td").find("input:nth-child(3)").val(0);
-          $(e.currentTarget)
-            .closest("td")
-            .find("input:nth-child(3)")
-            .attr("disabled", "disabled");
-        } else if (
-          $(e.currentTarget).val() == "" ||
-          Number($(e.currentTarget).val()) != 37
-        ) {
-          $(e.currentTarget).closest("td").find("input:nth-child(2)").val("");
-          $(e.currentTarget)
-            .closest("td")
-            .find("input:nth-child(2)")
-            .removeAttr("disabled");
-          $(e.currentTarget).closest("td").find("input:nth-child(3)").val("");
-          $(e.currentTarget)
-            .closest("td")
-            .find("input:nth-child(3)")
-            .removeAttr("disabled");
-        }
-      });
-    $(currentRow)
-      .find("td:nth-child(3)")
-      .find("input:nth-child(1)")
-      .on("keyup", (e) => {
-        if (Number($(e.currentTarget).val()) == 32) {
-          $(e.currentTarget).closest("td").find("input:nth-child(2)").val(0);
-          $(e.currentTarget)
-            .closest("td")
-            .find("input:nth-child(2)")
-            .attr("disabled", "disabled");
-          $(e.currentTarget).closest("td").find("input:nth-child(3)").val(0);
-          $(e.currentTarget)
-            .closest("td")
-            .find("input:nth-child(3)")
-            .attr("disabled", "disabled");
-        } else if (
-          $(e.currentTarget).val() == "" ||
-          Number($(e.currentTarget).val()) != 32
-        ) {
-          $(e.currentTarget).closest("td").find("input:nth-child(2)").val("");
-          $(e.currentTarget)
-            .closest("td")
-            .find("input:nth-child(2)")
-            .removeAttr("disabled");
-          $(e.currentTarget).closest("td").find("input:nth-child(3)").val("");
-          $(e.currentTarget)
-            .closest("td")
-            .find("input:nth-child(3)")
-            .removeAttr("disabled");
-        }
-      });
-  });
+  // let tableRows = $("#coordinatesTable tr:not(:first-child)");
+  // tableRows.each((index, row) => {
+  //   let currentRow = $(row);
+  //   $(currentRow)
+  //     .find("td:nth-child(2)")
+  //     .find("input:nth-child(1)")
+  //     .on("keyup", (e) => {
+  //       if (Number($(e.currentTarget).val()) == 37) {
+  //         $(e.currentTarget).closest("td").find("input:nth-child(2)").val(0);
+  //         $(e.currentTarget)
+  //           .closest("td")
+  //           .find("input:nth-child(2)")
+  //           .attr("disabled", "disabled");
+  //         $(e.currentTarget).closest("td").find("input:nth-child(3)").val(0);
+  //         $(e.currentTarget)
+  //           .closest("td")
+  //           .find("input:nth-child(3)")
+  //           .attr("disabled", "disabled");
+  //       } else if (
+  //         $(e.currentTarget).val() == "" ||
+  //         Number($(e.currentTarget).val()) != 37
+  //       ) {
+  //         $(e.currentTarget).closest("td").find("input:nth-child(2)").val("");
+  //         $(e.currentTarget)
+  //           .closest("td")
+  //           .find("input:nth-child(2)")
+  //           .removeAttr("disabled");
+  //         $(e.currentTarget).closest("td").find("input:nth-child(3)").val("");
+  //         $(e.currentTarget)
+  //           .closest("td")
+  //           .find("input:nth-child(3)")
+  //           .removeAttr("disabled");
+  //       }
+  //     });
+  //   $(currentRow)
+  //     .find("td:nth-child(3)")
+  //     .find("input:nth-child(1)")
+  //     .on("keyup", (e) => {
+  //       if (Number($(e.currentTarget).val()) == 32) {
+  //         $(e.currentTarget).closest("td").find("input:nth-child(2)").val(0);
+  //         $(e.currentTarget)
+  //           .closest("td")
+  //           .find("input:nth-child(2)")
+  //           .attr("disabled", "disabled");
+  //         $(e.currentTarget).closest("td").find("input:nth-child(3)").val(0);
+  //         $(e.currentTarget)
+  //           .closest("td")
+  //           .find("input:nth-child(3)")
+  //           .attr("disabled", "disabled");
+  //       } else if (
+  //         $(e.currentTarget).val() == "" ||
+  //         Number($(e.currentTarget).val()) != 32
+  //       ) {
+  //         $(e.currentTarget).closest("td").find("input:nth-child(2)").val("");
+  //         $(e.currentTarget)
+  //           .closest("td")
+  //           .find("input:nth-child(2)")
+  //           .removeAttr("disabled");
+  //         $(e.currentTarget).closest("td").find("input:nth-child(3)").val("");
+  //         $(e.currentTarget)
+  //           .closest("td")
+  //           .find("input:nth-child(3)")
+  //           .removeAttr("disabled");
+  //       }
+  //     });
+  // });
 
   sharedApis.getGovernrates("#violationGov");
   // sharedApis.getViolationZones("#violationArea")
@@ -762,8 +742,7 @@ equipmentViolation.validateForm = (e) => {
   let attachecdFiles = $("#attachViolationFiles")[0].files;
   let attachecdReportFiles = $("#attachViolationReportFile")[0].files;
   let otherViolationDetails = equipmentViolation.otherViolationDetails();
-  let violationsDimensions =
-    equipmentViolation.violationDimensionsCoordsDetails();
+  let violationsDimensions = equipmentViolation.violationDimensionsCoordsDetails();
   let violationDetails = equipmentViolation.violationDetails();
   let violatorDetails = equipmentViolation.violatorDetails();
   let SectorMembers = $(".membersText").val();
@@ -780,10 +759,7 @@ equipmentViolation.validateForm = (e) => {
       if (violationDetails != false) {
         if (violationsDimensions != false) {
           if (attachecdFiles != null && attachecdFiles.length > 0) {
-            if (
-              attachecdReportFiles != null &&
-              attachecdReportFiles.length > 0
-            ) {
+            if (attachecdReportFiles != null && attachecdReportFiles.length > 0) {
               if (otherViolationDetails != false) {
                 ViolationData = {
                   // Edit violation
@@ -800,6 +776,7 @@ equipmentViolation.validateForm = (e) => {
                   NumOfPreviousViolations: violatorDetails.violationPrevCount,
                   ViolatorCompany: violatorDetails.companyName,
                   CommercialRegister: violatorDetails.commercialRegister,
+                  VehicleIdentificationNumber: violatorDetails.vehicleIdentificationNumber || "",
                   Governrate: violatorDetails.violationGov,
                   ViolationsZone: violatorDetails.violationAreaName,
 
@@ -809,8 +786,6 @@ equipmentViolation.validateForm = (e) => {
                     : 0,
                   MaterialType: violationDetails.violationMaterail,
                   ViolationDate: violationDate,
-                  // ViolationDate: moment(violationDetails.violationDate).format('DD-MM-YYYY') ,
-
                   ViolationTime: violationTime,
                   QuarryType: violationDetails.quarryType,
                   QuarryCode: violationDetails.quarryCode,
@@ -820,20 +795,14 @@ equipmentViolation.validateForm = (e) => {
                   Depth: violationsDimensions.violationDepth,
                   Area: violationsDimensions.violationAreaSpace,
                   TotalQuantity: violationsDimensions.violationQuantity,
-                  DistanceToNearestQuarry:
-                    violationsDimensions.distanceToNearQuarry,
+                  DistanceToNearestQuarry: violationsDimensions.distanceToNearQuarry,
                   NearestQuarryCode: violationsDimensions.NearestQuarryCode,
                   Coordinates: violationsDimensions.coordinates,
                   CoordinatesDegrees: violationsDimensions.coordinatesDegrees,
 
                   Description: otherViolationDetails?.violationDescription,
                   LeaderOpinion: otherViolationDetails?.violationLeaderOpinion,
-                  // CommiteeMember: otherViolationDetails?.committeeMembersId.length > 0 ? otherViolationDetails.committeeMembersId : [],
-                  // CommiteeMember: otherViolationDetails?.member,
-                  CommiteeMember:
-                    otherViolationDetails.membersNamesText != ""
-                      ? otherViolationDetails.membersNamesText
-                      : "-",
+                  CommiteeMember: otherViolationDetails.membersNamesText != "" ? otherViolationDetails.membersNamesText : "-",
                   SectorMembers: SectorMembers,
                   Sector: 0,
                 };
@@ -846,16 +815,10 @@ equipmentViolation.validateForm = (e) => {
                 equipmentViolation.submitNewViolation(e, ViolationData);
               }
             } else {
-              functions.warningAlert(
-                "من فضلك قم بإرفاق التقرير المصور",
-                "#attachViolationReportFile"
-              );
+              functions.warningAlert("من فضلك قم بإرفاق التقرير المصور", "#attachViolationReportFile");
             }
           } else {
-            functions.warningAlert(
-              "من فضلك قم بإرفاق أصل محضر الضبط",
-              "#attachViolationFiles"
-            );
+            functions.warningAlert("من فضلك قم بإرفاق أصل محضر الضبط", "#attachViolationFiles");
           }
         }
       }

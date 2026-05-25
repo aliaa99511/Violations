@@ -810,7 +810,7 @@ sharedApis.getQuarryViolationStatus = (Selector) => {
             break;
           }
           case "ExternalReviewed": {
-            arabicStatusName = "خارجية";
+            arabicStatusName = "منظورة";
             break;
           }
           case "Completed": {
@@ -902,7 +902,7 @@ sharedApis.getVehicleViolationStatus = (Selector) => {
             break;
           }
           case "ExternalReviewed": {
-            arabicStatusName = "خارجية";
+            arabicStatusName = "منظورة";
             break;
           }
           case "Completed": {

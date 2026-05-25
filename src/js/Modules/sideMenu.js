@@ -4,7 +4,6 @@
 // Counter Mapping
 // ==========================
 const counterMapping = {
-
   // ==========================
   // Violations Branch
   // ==========================
@@ -14,7 +13,8 @@ const counterMapping = {
 
   "/ViolationsBranch/Pages/ValidatedViolations.aspx": {
     type: "Violations",
-    keys: ["Confirmed", "Paid", "Exceeded", "Paid After Reffered", "Saved", "Cancelled"]
+    keys: ["Confirmed", "Paid", "Exceeded", "Paid After Reffered", "Saved", "Cancelled", "UnderReview", "UnderPayment"]
+
   },
 
   "/ViolationsBranch/Pages/pendingPaymentLog.aspx": { type: "Violations", key: "UnderPayment" },
@@ -26,15 +26,18 @@ const counterMapping = {
     keys: ["Quarry", "Vehicle", "Equipment"]
   },
   "/ViolationsBranch/Pages/quarryViolationReferral.aspx": { type: "Cases", key: "Quarry" },
-  "/ViolationsBranch/Pages/CarViolationReferral.aspx": { type: "Cases", key: "Vehicle" },
+  "/ViolationsBranch/Pages/CarViolationReferral.aspx": {
+    type: "Cases",
+    keys: ["Vehicle", "Equipment"]  // Changed from key to keys with both
+  },
+  "/ViolationsBranch/Pages/ExternalViolationLog.aspx": { type: "Violations", key: "ExternalReviewed" },
 
   // Petitions
   "/ViolationsBranch/Pages/PendingPetitionsLog.aspx": { type: "Petitions", key: "التماس قيد الإنتظار" },
   "/ViolationsBranch/Pages/PetitionsLog.aspx": {
     type: "Petitions",
-    keys: ["التماس مرفوض", "قبول مع التعديل", "قبول وإلغاء المخالفة"]
+    keys: ["التماس مرفوض", "قبول مع التعديل", "قبول وإلغاء المخالفة", "التماس مقبول"]
   },
-
   // ==========================
   // Certification Officer
   // ==========================
@@ -42,7 +45,7 @@ const counterMapping = {
 
   "/CertificationOfficer/Pages/ConfirmedLog.aspx": {
     type: "Violations",
-    keys: ["Confirmed", "Paid", "Exceeded", "Paid After Reffered", "Saved", "Cancelled"]
+    keys: ["Confirmed", "Paid", "Exceeded", "Paid After Reffered", "Saved", "Cancelled", "UnderReview", "UnderPayment"]
   },
 
   "/CertificationOfficer/Pages/CasesLog.aspx": {
@@ -50,12 +53,15 @@ const counterMapping = {
     keys: ["Quarry", "Vehicle", "Equipment"]
   },
   "/CertificationOfficer/Pages/QuarryViolationReferralSector.aspx": { type: "Cases", key: "Quarry" },
-  "/CertificationOfficer/Pages/Block-Car-Equipment.aspx": { type: "Cases", key: "Vehicle" },
+  "/CertificationOfficer/Pages/Block-Car-Equipment.aspx": {
+    type: "Cases",
+    keys: ["Vehicle", "Equipment"]  // Changed from key to keys with both
+  },
 
   "/CertificationOfficer/Pages/Pending-Petitions.aspx": { type: "Petitions", key: "التماس قيد الإنتظار" },
   "/CertificationOfficer/Pages/PetitionsLog.aspx": {
     type: "Petitions",
-    keys: ["التماس مرفوض", "قبول مع التعديل", "قبول وإلغاء المخالفة"]
+    keys: ["التماس مرفوض", "قبول مع التعديل", "قبول وإلغاء المخالفة", "التماس مقبول"]
   },
 
   // ==========================
@@ -63,19 +69,21 @@ const counterMapping = {
   // ==========================
   "/ViolationsRecorder/Pages/Registered-Violations.aspx": { type: "Violations", key: "Pending" },
   "/ViolationsRecorder/Pages/ApprovedViolationsRecords.aspx": { type: "Violations", key: "Approved" },
-
+  "/ViolationsRecorder/Pages/RejectedViolationsRecords.aspx": { type: "Violations", key: "Rejected" },
+  "/ViolationsRecorder/Pages/Pending-Payment.aspx": { type: "Violations", key: "UnderPayment" },
   "/ViolationsRecorder/Pages/ValidatedViolationsRecords.aspx": {
     type: "Violations",
-    keys: ["Confirmed", "Paid", "Exceeded", "Paid After Reffered", "Saved", "Cancelled"]
+    keys: ["Confirmed", "Paid", "Exceeded", "Paid After Reffered", "Saved", "Cancelled", "UnderReview", "UnderPayment"]
   },
 
   "/ViolationsRecorder/Pages/QuarryViolationReferralRecords.aspx": { type: "Cases", key: "Quarry" },
-  "/ViolationsRecorder/Pages/CarViolationReferralRecords.aspx": { type: "Cases", key: "Vehicle" },
+  "/ViolationsRecorder/Pages/CarViolationReferralRecords.aspx": {
+    type: "Cases",
+    keys: ["Vehicle", "Equipment"]  // Changed from key to keys with both
+  },
 
-  "/ViolationsRecorder/Pages/RejectedViolationsRecords.aspx": { type: "Violations", key: "Rejected" },
-  "/ViolationsRecorder/Pages/Pending-Payment.aspx": { type: "Violations", key: "UnderPayment" }
+
 };
-
 
 // ==========================
 // URL Normalizer
@@ -136,10 +144,12 @@ sideMenuFunctions.fetchCounters = async function () {
     // For Violations Recorder, we need to pass the UserId as Sector to get the correct counters
     const sectorPages = [
       "registered-violations.aspx",
-      "pending-payment.aspx",
       "approvedviolationsrecords.aspx",
       "rejectedviolationsrecords.aspx",
-      "validatedviolationsrecords.aspx"
+      "pending-payment.aspx",
+      "validatedviolationsrecords.aspx",
+      "quarryviolationreferralrecords.aspx",
+      "carviolationreferralrecords.aspx",
     ];
 
     if (sectorPages.some(page => currentPage.includes(page))) {
@@ -193,9 +203,15 @@ sideMenuFunctions.calculateCounter = function (normalizedUrl) {
     }
   }
 
+  // If the key is "Completed", calculate the sum of all violation counters
+  if (mapping.key === "Completed" && mapping.type === "Violations") {
+    total = Object.values(counterType).reduce((sum, val) => {
+      return sum + (typeof val === 'number' ? val : 0);
+    }, 0);
+  }
+
   return total !== undefined ? total : null;
 };
-
 
 // ==========================
 // Update Counters in Already Rendered Menu

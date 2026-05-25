@@ -188,13 +188,15 @@ certificationCases.ViolationsCasesTable = (Cases) => {
       //         }
       //     }
       // }
-      if (
-        casesLog.length > 3 &&
-        hiddenListBox.height() > 110 &&
-        jQueryRecord.is(":nth-last-child(-n + 4)")
-      ) {
-        hiddenListBox.addClass("toTopDDL");
-      }
+
+      // if (
+      //   casesLog.length > 3 &&
+      //   hiddenListBox.height() > 110 &&
+      //   jQueryRecord.is(":nth-last-child(-n + 4)")
+      // ) {
+      //   hiddenListBox.addClass("toTopDDL");
+      // }
+
       jQueryRecord.find(".caseAttachments").on("click", (e) => {
         // $(".overlay").addClass("active");
         // certificationCases.FindCaseById(e,caseID,"Details");

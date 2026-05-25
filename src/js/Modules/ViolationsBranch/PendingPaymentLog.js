@@ -337,6 +337,13 @@ pendingPayment.PendingPaymentTable = (PendingPaymentData, destroyTable) => {
                     `<div class="violationArName">${functions.getViolationArabicName(
                         taskViolation.OffenderType
                     ) || "-"}</div>`,
+                    `<div class="violationType" data-typeid="${taskViolation.OffenderType == "Quarry"
+                        ? taskViolation.ViolationTypes.ID
+                        : 0
+                    }">${functions.getViolationArabicName(
+                        taskViolation.OffenderType,
+                        taskViolation?.ViolationTypes?.Title
+                    )}</div>`,
                     `<div class="violatorName">${taskViolation.ViolatorName || '-'}</div>`,
                     `<div class="companyName">${taskViolation.ViolatorCompany != ""
                         ? taskViolation.ViolatorCompany
@@ -349,13 +356,6 @@ pendingPayment.PendingPaymentTable = (PendingPaymentData, destroyTable) => {
                             ? taskViolation.QuarryCode
                             : "---"
                     }</div>`,
-                    `<div class="violationType" data-typeid="${taskViolation.OffenderType == "Quarry"
-                        ? taskViolation.ViolationTypes.ID
-                        : 0
-                    }">${functions.getViolationArabicName(
-                        taskViolation.OffenderType,
-                        taskViolation?.ViolationTypes?.Title
-                    )}</div>`,
                     `<div class="violationZone">${taskViolation.ViolationsZone}</div>`,
                     `${installmentDate || "-"}`,
                     `${functions.splitBigNumbersByComma(taskViolation?.TotalInstallmentsPaidAmount || 0) || "-"}`,
@@ -376,10 +376,10 @@ pendingPayment.PendingPaymentTable = (PendingPaymentData, destroyTable) => {
             { title: "رقم المخالفة" },
             { title: "", class: "all" },
             { title: "تصنيف المخالفة" },
+            { title: "نوع المخالفة " },
             { title: "إسم المخالف" },
             { title: "إسم الشركة المخالفة" },
             { title: " رقم المحجر/العربة" },
-            { title: "نوع المخالفة " },
             { title: "المنطقة" },
             { title: "تاريخ أخر قسط" },
             { title: "المبلغ المسدد" },
@@ -425,13 +425,13 @@ pendingPayment.PendingPaymentTable = (PendingPaymentData, destroyTable) => {
 
             let hiddenListBox = jQueryRecord.find(".controls").children(".hiddenListBox");
 
-            if (
-                paymentLog.length > 4 &&
-                hiddenListBox.height() > 110 &&
-                jQueryRecord.is(":nth-last-child(-n + 4)")
-            ) {
-                hiddenListBox.addClass("toTopDDL");
-            }
+            // if (
+            //     paymentLog.length > 4 &&
+            //     hiddenListBox.height() > 110 &&
+            //     jQueryRecord.is(":nth-last-child(-n + 4)")
+            // ) {
+            //     hiddenListBox.addClass("toTopDDL");
+            // }
 
             jQueryRecord
                 .find(".controls")
@@ -975,251 +975,419 @@ pendingPayment.showInstallmentPaymentPopup = (TaskData) => {
     pendingPayment.paymentFormActions(TaskData);
 };
 
-pendingPayment.paymentFormActions = (TaskData) => {
+pendingPayment.paymentFormActions = () => {
+
     let request = {};
+
     let violtionPriceType = $(".paymentForm").data("violationpricetype");
     let offenderType = $(".paymentForm").data("offendertype");
-    let lawRoyalty = $(".paymentForm").data("lawroyalty");
-    let totalEquipmentsPrice = $(".paymentForm").data("totalequipmentsprice");
+
+    let lawRoyalty = Number($(".paymentForm").data("lawroyalty") || 0);
+    let totalEquipmentsPrice = Number($(".paymentForm").data("totalequipmentsprice") || 0);
+
     let taskId = $(".paymentForm").data("taskid");
     let violationId = $(".paymentForm").data("violationid");
+
     let TotalPrice = Number($(".paymentForm").data("totalprice"));
-    let ActualPrice = Number($(".paymentForm").data("actualprice"));
-    let remainingAmount = Number($(".remainingAmount").val()?.replace(/,/g, "") || 0);
 
-    // Add this line to get total installments paid amount
-    let totalInstallmentsPaidAmount = Number($(".paymentForm").data("totalinstallmentspaidamount") || 0);
+    let remainingAmount = Number(
+        $(".remainingAmount").val()?.replace(/,/g, "") || 0
+    );
 
-    // Payment duration months - temporary
+    let totalInstallmentsPaidAmount = Number(
+        $(".paymentForm").data("totalinstallmentspaidamount") || 0
+    );
+
     let paymentDurationMonths = 2;
+
     let payedPrice = 0;
-    let PositiveDecimalNumbers = /^[+]?([0-9]+(?:[\.][0-9]*)?|\.[0-9]+)$/;
-    let filesExtension = ["gif", "svg", "jpg", "jpeg", "png", "doc", "docx", "pdf", "xls", "xlsx", "pptx"];
+
+    let PositiveDecimalNumbers =
+        /^[+]?([0-9]+(?:[\.][0-9]*)?|\.[0-9]+)$/;
+
+    let filesExtension = [
+        "gif",
+        "svg",
+        "jpg",
+        "jpeg",
+        "png",
+        "doc",
+        "docx",
+        "pdf",
+        "xls",
+        "xlsx",
+        "pptx",
+    ];
+
     $(".dropFilesArea").hide();
 
-    // For pending payment, installment is always checked
-    $(".installmentCheckbox").prop("checked", true).prop("disabled", true);
+    // =========================================
+    // FILE STORAGE
+    // =========================================
 
-    // UI Rules based on violation type
-    if (violtionPriceType == "fixed" || violtionPriceType == "store") {
+    let paymentQuarryReceipt = null;
+    let paymentRoyaltyReceipt = null;
+    let paymentEquipmentsReceipt = null;
+
+    // =========================================
+    // HELPERS
+    // =========================================
+
+    function hasRoyaltyReceipt() {
+        return (
+            paymentRoyaltyReceipt &&
+            paymentRoyaltyReceipt.length > 0
+        );
+    }
+
+    function hasQuarryReceipt() {
+        return (
+            paymentQuarryReceipt &&
+            paymentQuarryReceipt.length > 0
+        );
+    }
+
+    function hasEquipmentsReceipt() {
+        return (
+            paymentEquipmentsReceipt &&
+            paymentEquipmentsReceipt.length > 0
+        );
+    }
+
+    // =========================================
+    // VALIDATIONS
+    // =========================================
+
+    function validateRoyaltyReceiptRequired() {
+
+        let isVisible = $(".payRoyaltyAttachBox").is(":visible");
+
+        if (
+            isVisible &&
+            // lawRoyalty > 0 &&
+            !hasRoyaltyReceipt()
+        ) {
+            functions.warningAlert(
+                "من فضلك قم بإرفاق إيصال الإتاوة"
+            );
+
+            return false;
+        }
+
+        return true;
+    }
+
+
+    function validateEquipmentReceiptRequired() {
+
+        let isEquipmentViolation =
+            offenderType == "Equipment" ||
+            totalEquipmentsPrice > 0;
+
+        if (
+            isEquipmentViolation &&
+            !hasEquipmentsReceipt()
+        ) {
+            functions.warningAlert(
+                "من فضلك قم بإرفاق إيصال غرامة المعدات"
+            );
+            return false;
+        }
+
+        return true;
+    }
+
+    function validateQuarryReceiptRequired() {
+
+        if (!hasQuarryReceipt()) {
+
+            functions.warningAlert(
+                "من فضلك قم بإرفاق إيصال غرامة المخالفة المحددة أو غرامة القيمة المحجرية"
+            );
+
+            return false;
+        }
+
+        return true;
+    }
+
+    function validateAllAttachments() {
+
+        if (!validateQuarryReceiptRequired()) {
+            return false;
+        }
+
+        if (!validateRoyaltyReceiptRequired()) {
+            return false;
+        }
+
+        if (!validateEquipmentReceiptRequired()) {
+            return false;
+        }
+
+        return true;
+    }
+
+    // =========================================
+    // UI TOGGLE
+    // =========================================
+
+    if ($(".installmentCheckbox").is(":checked")) {
+
+        $(".payInstallmentBtn").show();
+
+    } else {
+
+        $(".payInstallmentBtn").hide();
+    }
+
+    $(".installmentCheckbox").on("change", function () {
+
+        if ($(this).is(":checked")) {
+
+            $(".payInstallmentBtn").show();
+
+        } else {
+
+            $(".payInstallmentBtn").hide();
+        }
+    });
+
+    // For pending payment, installment checkbox is always checked and disabled
+    $(".installmentCheckbox").prop("checked", true).prop("disabled", true);
+    $(".payInstallmentBtn").show();
+
+    // =========================================
+    // UI RULES
+    // =========================================
+
+    if (
+        violtionPriceType == "fixed" ||
+        violtionPriceType == "store"
+    ) {
+
         $(".payEquipmentsAttachBox").hide();
         $(".payRoyaltyAttachBox").hide();
+
         $(".equipmentsPriceBox").hide();
         $(".royaltyPriceBox").hide();
-        $(".violationPriceBox").removeClass("col-md-4").addClass("col-md-7");
+
+        $(".violationPriceBox")
+            .removeClass("col-md-4")
+            .addClass("col-md-7");
     }
 
-    if ($(".equipmentsPriceBox").is(":visible") && $(".royaltyPriceBox").is(":visible")) {
-        $(".violationPriceBox").removeClass("col-md-7").addClass("col-md-4");
+    // =========================================
+    // FILE UPLOAD HANDLER
+    // =========================================
+
+    function handleFileUpload(selector, setFiles) {
+
+        $(selector).on("change", (e) => {
+
+            let files = e.currentTarget.files;
+
+            const dropArea = $(e.currentTarget)
+                .parents(".fileBox")
+                .siblings(".dropFilesArea");
+
+            dropArea.empty();
+
+            // ============================
+            // EXTENSION VALIDATION
+            // ============================
+
+            for (let i = 0; i < files.length; i++) {
+
+                let ext = files[i].name
+                    .split(".")
+                    .pop()
+                    .toLowerCase();
+
+                if ($.inArray(ext, filesExtension) === -1) {
+
+                    functions.warningAlert(
+                        "من فضلك أدخل الملفات بالامتدادات المسموح بها فقط"
+                    );
+
+                    $(e.currentTarget).val("");
+
+                    dropArea.hide();
+
+                    setFiles(null);
+
+                    return;
+                }
+            }
+
+            // ============================
+            // SAVE FILES
+            // ============================
+
+            setFiles(files);
+
+            // ============================
+            // SHOW FILES
+            // ============================
+
+            if (files.length > 0) {
+                dropArea.show();
+            }
+
+            for (let i = 0; i < files.length; i++) {
+
+                dropArea.append(`
+          <div class="file">
+            <p class="fileName">${files[i].name}</p>
+
+            <span class="deleteFile" data-index="${i}">
+              <i class="fa-sharp fa-solid fa-x"></i>
+            </span>
+          </div>
+        `);
+            }
+
+            // ============================
+            // DELETE FILE
+            // ============================
+
+            dropArea.find(".deleteFile").on("click", (event) => {
+
+                let index = $(event.currentTarget)
+                    .closest(".file")
+                    .index();
+
+                $(event.currentTarget)
+                    .closest(".file")
+                    .remove();
+
+                let fileBuffer = new DataTransfer();
+
+                for (let i = 0; i < files.length; i++) {
+
+                    if (index !== i) {
+                        fileBuffer.items.add(files[i]);
+                    }
+                }
+
+                files = fileBuffer.files;
+
+                setFiles(files);
+
+                if (files.length === 0) {
+                    dropArea.hide();
+                }
+            });
+        });
     }
 
-    // File attachment handlers (same as in validatedViolations)
-    let paymentQuarryReceipt;
-    let countOfQuarryFiles;
-    $("#attachQuarryPaymentReceipt").on("change", (e) => {
-        paymentQuarryReceipt = $(e.currentTarget)[0].files;
-        if (paymentQuarryReceipt.length > 0) {
-            $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").show().empty();
-        }
-        for (let i = 0; i < paymentQuarryReceipt.length; i++) {
-            $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").append(`
-                <div class="file">
-                    <p class="fileName">${paymentQuarryReceipt[i].name}</p>
-                    <span class="deleteFile" data-index="${i}"><i class="fa-sharp fa-solid fa-x"></i></span>
-                </div>
-            `);
-        }
-        $(".deleteFile").on("click", (event) => {
-            let index = $(event.currentTarget).closest(".file").index();
-            $(event.currentTarget).closest(".file").remove();
-            let fileBuffer = new DataTransfer();
-            for (let i = 0; i < paymentQuarryReceipt.length; i++) {
-                if (index !== i) {
-                    fileBuffer.items.add(paymentQuarryReceipt[i]);
-                }
-            }
-            paymentQuarryReceipt = fileBuffer.files;
-            countOfQuarryFiles = paymentQuarryReceipt.length;
-            if (countOfQuarryFiles == 0) {
-                $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").hide();
-            }
-        });
-        for (let i = 0; i < paymentQuarryReceipt.length; i++) {
-            let fileSplited = paymentQuarryReceipt[i].name.split(".");
-            let fileExt = fileSplited[fileSplited.length - 1].toLowerCase();
-            if ($.inArray(fileExt, filesExtension) == -1) {
-                functions.warningAlert("من فضلك أدخل الملفات بالامتدادات المسموح بها فقط");
-                $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").hide();
-                $(e.currentTarget).val("");
-            }
-        }
-    });
+    // =========================================
+    // REGISTER FILE HANDLERS
+    // =========================================
 
-    let paymentRoyaltyReceipt;
-    let countOfRoyaltyFiles;
-    $("#attachLawRoyaltyPaymentReceipt").on("change", (e) => {
-        paymentRoyaltyReceipt = $(e.currentTarget)[0].files;
-        if (paymentRoyaltyReceipt.length > 0) {
-            $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").show().empty();
+    handleFileUpload(
+        "#attachQuarryPaymentReceipt",
+        (files) => {
+            paymentQuarryReceipt = files;
         }
-        for (let i = 0; i < paymentRoyaltyReceipt.length; i++) {
-            $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").append(`
-                <div class="file">
-                    <p class="fileName">${paymentRoyaltyReceipt[i].name}</p>
-                    <span class="deleteFile" data-index="${i}"><i class="fa-sharp fa-solid fa-x"></i></span>
-                </div>
-            `);
-        }
-        $(".deleteFile").on("click", (event) => {
-            let index = $(event.currentTarget).closest(".file").index();
-            $(event.currentTarget).closest(".file").remove();
-            let fileBuffer = new DataTransfer();
-            for (let i = 0; i < paymentRoyaltyReceipt.length; i++) {
-                if (index !== i) {
-                    fileBuffer.items.add(paymentRoyaltyReceipt[i]);
-                }
-            }
-            paymentRoyaltyReceipt = fileBuffer.files;
-            countOfRoyaltyFiles = paymentRoyaltyReceipt.length;
-            if (countOfRoyaltyFiles == 0) {
-                $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").hide();
-            }
-        });
-        for (let i = 0; i < paymentRoyaltyReceipt.length; i++) {
-            let fileSplited = paymentRoyaltyReceipt[i].name.split(".");
-            let fileExt = fileSplited[fileSplited.length - 1].toLowerCase();
-            if ($.inArray(fileExt, filesExtension) == -1) {
-                functions.warningAlert("من فضلك أدخل الملفات بالامتدادات المسموح بها فقط");
-                $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").hide();
-                $(e.currentTarget).val("");
-            }
-        }
-    });
+    );
 
-    let paymentEquipmentsReceipt;
-    let countOfEquipmentsFiles;
-    $("#attachEquipmentsPaymentReceipt").on("change", (e) => {
-        paymentEquipmentsReceipt = $(e.currentTarget)[0].files;
-        if (paymentEquipmentsReceipt.length > 0) {
-            $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").show().empty();
+    handleFileUpload(
+        "#attachLawRoyaltyPaymentReceipt",
+        (files) => {
+            paymentRoyaltyReceipt = files;
         }
-        for (let i = 0; i < paymentEquipmentsReceipt.length; i++) {
-            $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").append(`
-                <div class="file">
-                    <p class="fileName">${paymentEquipmentsReceipt[i].name}</p>
-                    <span class="deleteFile" data-index="${i}"><i class="fa-sharp fa-solid fa-x"></i></span>
-                </div>
-            `);
-        }
-        $(".deleteFile").on("click", (event) => {
-            let index = $(event.currentTarget).closest(".file").index();
-            $(event.currentTarget).closest(".file").remove();
-            let fileBuffer = new DataTransfer();
-            for (let i = 0; i < paymentEquipmentsReceipt.length; i++) {
-                if (index !== i) {
-                    fileBuffer.items.add(paymentEquipmentsReceipt[i]);
-                }
-            }
-            paymentEquipmentsReceipt = fileBuffer.files;
-            countOfEquipmentsFiles = paymentEquipmentsReceipt.length;
-            if (countOfEquipmentsFiles == 0) {
-                $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").hide();
-            }
-        });
-        for (let i = 0; i < paymentEquipmentsReceipt.length; i++) {
-            let fileSplited = paymentEquipmentsReceipt[i].name.split(".");
-            let fileExt = fileSplited[fileSplited.length - 1].toLowerCase();
-            if ($.inArray(fileExt, filesExtension) == -1) {
-                functions.warningAlert("من فضلك أدخل الملفات بالامتدادات المسموح بها فقط");
-                $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").hide();
-                $(e.currentTarget).val("");
-            }
-        }
-    });
+    );
 
-    // Input formatting
+    handleFileUpload(
+        "#attachEquipmentsPaymentReceipt",
+        (files) => {
+            paymentEquipmentsReceipt = files;
+        }
+    );
+
+    // =========================================
+    // INPUT FORMAT
+    // =========================================
+
     $(".payedPrice").on("keyup", (e) => {
-        $(e.currentTarget).val($(e.currentTarget).val().split(",").join(""));
-        $(e.currentTarget).val($(e.currentTarget).val().replace(/\B(?=(?:\d{3})+(?!\d))/g, ","));
-        payedPrice = $(e.currentTarget).val();
-        payedPrice = payedPrice.replace(/\,/g, "");
-        payedPrice = Number(payedPrice);
+
+        let val = $(e.currentTarget)
+            .val()
+            .replace(/,/g, "");
+
+        $(e.currentTarget).val(
+            val.replace(/\B(?=(?:\d{3})+(?!\d))/g, ",")
+        );
+
+        payedPrice = Number(val);
     });
 
     $(".payedPrice").on("keypress", (e) => {
         return functions.isDecimalNumberKey(e);
     });
 
-    // Installment Payment Logic
+    // =========================================
+    // INSTALLMENT PAYMENT
+    // =========================================
+
     $(".payInstallmentBtn").on("click", () => {
+
         if (!payedPrice || payedPrice <= 0) {
-            functions.warningAlert("من فضلك أدخل مبلغ صحيح");
+
+            functions.warningAlert(
+                "من فضلك أدخل مبلغ صحيح"
+            );
+
             return;
         }
 
         if (payedPrice > remainingAmount) {
-            functions.warningAlert("المبلغ المدخل أكبر من المبلغ المتبقي");
+
+            functions.warningAlert(
+                "المبلغ المدخل أكبر من المبلغ المتبقي"
+            );
+
             return;
         }
 
-        // File attachment validation for installment
-        if (TotalPrice > 0) {
-            if ((paymentQuarryReceipt != null && paymentQuarryReceipt.length > 0) || offenderType == "Equipment") {
-                if (offenderType == "Quarry" || offenderType == "Equipment") {
-                    if ((violtionPriceType != "fixed" && violtionPriceType != "store" && $(".payEquipmentsAttachBox").is(":visible") && $(".payRoyaltyAttachBox").is(":visible")) || offenderType == "Equipment") {
-                        if ((paymentRoyaltyReceipt != null && paymentRoyaltyReceipt.length > 0) || offenderType == "Equipment" || lawRoyalty == 0) {
-                            if (($("#attachEquipmentsPaymentReceipt")[0] != null && $("#attachEquipmentsPaymentReceipt")[0].files.length > 0) || totalEquipmentsPrice == 0) {
-                                // Validation passed, proceed with installment payment
-                            } else {
-                                functions.warningAlert("من فضلك قم بإرفاق إيصال غرامة المعدات");
-                                return;
-                            }
-                        } else {
-                            functions.warningAlert("من فضلك قم بإرفاق إيصال الإتاوة");
-                            return;
-                        }
-                    }
-                } else if (offenderType == "Vehicle") {
-                    if ((paymentRoyaltyReceipt != null && paymentRoyaltyReceipt.length > 0) || lawRoyalty == 0 || offenderType == "Equipment") {
-                        // Validation passed, proceed with installment payment
-                    } else {
-                        functions.warningAlert("من فضلك قم بإرفاق إيصال الإتاوة");
-                        return;
-                    }
-                }
-            } else {
-                functions.warningAlert("من فضلك قم بإرفاق إيصال غرامة المخالفة المحددة أو غرامة القيمة المحجرية");
-                return;
-            }
+        if (!validateAllAttachments()) {
+            return;
         }
 
         let newRemainingAmount = remainingAmount - payedPrice;
-        let newActualPaid = ActualPrice + payedPrice;
-        let newTotalInstallmentsPaidAmount = totalInstallmentsPaidAmount + payedPrice;
+
         let isLastInstallment = newRemainingAmount === 0;
 
-        let request = {
+        request = {
             Data: {
                 ID: taskId,
                 ViolationId: violationId,
-                ActualAmountPaid: newActualPaid,
+                ActualAmountPaid: payedPrice,
                 Status: isLastInstallment ? "Paid" : "UnderPayment",
+
                 Violation: {
                     IsInstallment: true,
                     InstallmentAmount: payedPrice,
                     RemainingAmount: newRemainingAmount,
                     PaymentDurationMonths: paymentDurationMonths,
-                    InstallmentDate: new Date().toISOString(),
-                    TotalInstallmentsPaidAmount: newTotalInstallmentsPaidAmount,
+                    TotalInstallmentsPaidAmount: totalInstallmentsPaidAmount + payedPrice,
+
                     ...(isLastInstallment && {
-                        IsLastInstallment: true
-                    })
-                }
-            }
+                        IsLastInstallment: true,
+                    }),
+                },
+            },
         };
 
         $(".overlay").addClass("active");
-        pendingPayment.payRequest(taskId, request, offenderType);
+
+        pendingPayment.payRequest(
+            taskId,
+            request,
+            "InstallmentPay",
+            offenderType
+        );
     });
 };
 pendingPayment.popupPermissionShowTypes = (popupType, TaskId, ExDate) => {
@@ -1400,13 +1568,13 @@ pendingPayment.findViolationByID = (event, taskID, print = false) => {
 
                 printBox = `<div class="printBox" id="printJS-form">${Content}</div>`;
 
-                // ✅ Render popup
+                // Render popup
                 functions.declarePopup(
                     ["generalPopupStyle", "detailsPopup"],
                     printBox
                 );
 
-                // ✅ FIX: Hide buttons AFTER rendering
+                // FIX: Hide buttons AFTER rendering
                 setTimeout(() => {
                     const popup = $(".detailsPopupForm");
 

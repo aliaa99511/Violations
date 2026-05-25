@@ -250,29 +250,23 @@ runningViolations.RunningViolationTable = (RunningViolation, destroyTable) => {
                   </ul>
               </div>
           </div>`,
-          `<div class="violationArName">${functions.getViolationArabicName(
-            taskViolation.OffenderType
-          )}</div>`,
+          `<div class="violationArName">${functions.getViolationArabicName(taskViolation.OffenderType)}</div>`,
+          `<div class="violatorName">${taskViolation.ViolatorName || "-"}</div>`,
+          `<div class="violationType" 
+                data-typeid="${taskViolation.OffenderType == "Quarry"
+            ? taskViolation.ViolationTypes.ID
+            : 0
+          }">${functions.getViolationArabicName(taskViolation.OffenderType, taskViolation?.ViolationTypes?.Title)}</div>`,
+          `${createdDate}`,
+          `${functions.getFormatedDate(taskViolation.ViolationDate)}`,
+          `<div class="companyName">${taskViolation.ViolatorCompany != "" ? taskViolation.ViolatorCompany : "-"}</div>`,
           `<div class="violationCode">${taskViolation.OffenderType == "Vehicle"
             ? taskViolation.CarNumber
             : taskViolation.QuarryCode != ""
               ? taskViolation.QuarryCode
               : "---"
           }</div>`,
-          `<div class="companyName">${taskViolation.ViolatorCompany != ""
-            ? taskViolation.ViolatorCompany
-            : "-"
-          }</div>`,
-          `<div class="violationType" data-typeid="${taskViolation.OffenderType == "Quarry"
-            ? taskViolation.ViolationTypes.ID
-            : 0
-          }">${functions.getViolationArabicName(
-            taskViolation.OffenderType,
-            taskViolation?.ViolationTypes?.Title
-          )}</div>`,
           `<div class="violationZone">${taskViolation.ViolationsZone}</div>`,
-          `${functions.getFormatedDate(taskViolation.ViolationDate)}`,
-          `${createdDate}`,
         ]);
       }
     });
@@ -287,12 +281,13 @@ runningViolations.RunningViolationTable = (RunningViolation, destroyTable) => {
       { title: "رقم المخالفة" },
       { title: "", class: "all" },
       { title: "تصنيف المخالفة" },
-      { title: "رقم المحجر/العربة" },
-      { title: "إسم الشركة المخالفة" },
+      { title: "اسم المخالف" },
       { title: "نوع المخالفة " },
-      { title: "المنطقة" },
-      { title: "تاريخ الضبط" },
       { title: "تاريخ الإنشاء" },
+      { title: "تاريخ الضبط" },
+      { title: "إسم الشركة المخالفة" },
+      { title: "رقم المحجر/العربة" },
+      { title: "المنطقة" },
     ],
     false,
     false,
@@ -324,13 +319,15 @@ runningViolations.RunningViolationTable = (RunningViolation, destroyTable) => {
     let hiddenListBox = jQueryRecord
       .find(".controls")
       .children(".hiddenListBox");
-    if (
-      violationlog.length > 4 &&
-      hiddenListBox.height() > 110 &&
-      jQueryRecord.is(":nth-last-child(-n + 4)")
-    ) {
-      hiddenListBox.addClass("toTopDDL");
-    }
+
+    // if (
+    //   violationlog.length > 4 &&
+    //   hiddenListBox.height() > 110 &&
+    //   jQueryRecord.is(":nth-last-child(-n + 4)")
+    // ) {
+    //   hiddenListBox.addClass("toTopDDL");
+    // }
+
     jQueryRecord
       .find(".controls")
       .children(".ellipsisButton")
@@ -460,6 +457,15 @@ runningViolations.findViolationByID = (
             handleDetailsPopup(Content);
           }
         }
+
+        // FIX: Hide buttons AFTER rendering - Add this block
+        setTimeout(() => {
+          const popup = $(".detailsPopupForm");
+          popup.find("#editMaterialMinPrice, #payAllPrice")
+            .css("display", "none")
+            .attr("style", "display: none !important");
+        }, 50);
+
       } else {
         violationData = null;
       }

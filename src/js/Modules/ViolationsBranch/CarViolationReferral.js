@@ -274,11 +274,13 @@ vehicleViolationReferral.VehicleViolationReferralTable = (Referrals, destroyTabl
                 actionsMenuHTML = `
                 <ul class='list-unstyled controlsList'>
                     <li><a href="#" class="itemDetails">المزيد من التفاصيل</a></li>
+                      <li><a href="#" data-violationid="${referral?.ViolationId}" data-violationcode="${referral?.ViolationCode}" class="violationHistory" data-toggle="modal" data-target="#trackHistoryModal">تتبع مرحلة المخالفة</a></li>
                 </ul>`;
             } else {
                 actionsMenuHTML = `
                 <ul class='list-unstyled controlsList'>
-                    <li><a href="#" class="itemDetails">المزيد من التفاصيل</a></li>`;
+                    <li><a href="#" class="itemDetails">المزيد من التفاصيل</a></li>
+                    <li><a href="#" data-violationid="${referral?.ViolationId}" data-violationcode="${referral?.ViolationCode}" class="violationHistory" data-toggle="modal" data-target="#trackHistoryModal">تتبع مرحلة المخالفة</a></li>`;
 
                 if (hasAddRegistrationNumberAction) {
                     actionsMenuHTML += `
@@ -302,7 +304,7 @@ vehicleViolationReferral.VehicleViolationReferralTable = (Referrals, destroyTabl
 
                 if (hasSaveAction) {
                     actionsMenuHTML += `
-                    <li><a href="#" class="saveCaseAction">حفظ</a></li>`;
+                    <li><a href="#" class="saveCaseAction">حفظ وإلغاء قرار النيابة</a></li>`;
                 }
 
                 actionsMenuHTML += `</ul>`;
@@ -436,13 +438,14 @@ vehicleViolationReferral.VehicleViolationReferralTable = (Referrals, destroyTabl
             $(".hiddenListBox").hide(300);
         });
 
-        if (
-            referralsLog.length > 4 &&
-            hiddenListBox.height() > 110 &&
-            jQueryRecord.is(":nth-last-child(-n + 4)")
-        ) {
-            hiddenListBox.addClass("toTopDDL");
-        }
+        // if (
+        //     referralsLog.length > 4 &&
+        //     hiddenListBox.height() > 110 &&
+        //     jQueryRecord.is(":nth-last-child(-n + 4)")
+        // ) {
+        //     hiddenListBox.addClass("toTopDDL");
+        // }
+
     });
 
     // Add Registration Number Action
@@ -554,17 +557,14 @@ vehicleViolationReferral.VehicleViolationReferralTable = (Referrals, destroyTabl
         let courtCaseNumber = $violationCode.data('courtcasenumber');
         let caseStatus = $violationCode.data('referralstatus');
 
-        // Implement save case functionality here
-        console.log('Save case:', {
+        vehicleViolationReferral.saveCaseAndCancelViolationPopup(
             referralId,
             violationId,
             taskId,
-            violationCode,
             referralNumber,
-            vehicleRegistrationNumber,
-            courtCaseNumber,
+            violationCode,
             caseStatus
-        });
+        );
 
         $(".hiddenListBox").hide(300);
     });
@@ -609,7 +609,7 @@ vehicleViolationReferral.addRegistrationNumberPopup = (ReferralID, ViolationID, 
                                 </div>
                                 <div class="col-12">
                                     <div class="form-group customFormGroup">
-                                        <label for="registrationNumberAttach" class="customLabel">إرفاق مستند رقم القيد</label>
+                                        <label for="registrationNumberAttach" class="customLabel">إرفاق مستند رقم القيد <span class="required-star">*</span></label>
                                         <div class="fileBox" id="dropContainer">
                                             <div class="inputFileBox">
                                                 <img src="/Style Library/MiningViolations/images/fileIcon.svg" alt="File Icon">
@@ -750,7 +750,9 @@ vehicleViolationReferral.addRegistrationNumberPopup = (ReferralID, ViolationID, 
                     ReferralID,
                     "إضافة رقم القيد",
                     "#registrationNumberAttach",
-                    "تم إضافة رقم القيد"
+                    "تم إضافة رقم القيد",
+                    TaskID,      // Pass TaskID
+                    ViolationID  // Pass ViolationID
                 );
             } else {
                 functions.warningAlert("من فضلك قم بإرفاق المستند المرفق برقم القيد");
@@ -1101,7 +1103,7 @@ vehicleViolationReferral.payCasePopup = (
                                 </div>
                                 <div class="col-12">
                                     <div class="form-group customFormGroup">
-                                        <label for="payCaseAttachment" class="customLabel">إرفاق إيصال السداد</label>
+                                        <label for="payCaseAttachment" class="customLabel">إرفاق إيصال السداد <span class="required-star">*</span></label>
                                         <div class="fileBox" id="dropContainer">
                                             <div class="inputFileBox">
                                                 <img src="/Style Library/MiningViolations/images/fileIcon.svg" alt="File Icon">
@@ -1207,7 +1209,8 @@ vehicleViolationReferral.payCasePopup = (
                 TaskID,
                 ViolationID,
                 "#payCaseAttachment",
-                parseFloat(actualAmountPaid)  // Only pass TaskID, ViolationID, attachInput, and ActualAmountPaid
+                parseFloat(actualAmountPaid),
+                ReferralID  // Add ReferralID
             );
 
         } else {
@@ -1282,7 +1285,7 @@ vehicleViolationReferral.payCaseAfterEditPopup = (
                                     </div>
                                     <div class="col-md-6">
                                         <div class="form-group customFormGroup">
-                                            <label for="payCaseAfterEditAttachment" class="customLabel">إرفاق مستند الرقم القضائي</label>
+                                            <label for="payCaseAfterEditAttachment" class="customLabel">إرفاق مستند الرقم القضائي <span class="required-star">*</span></label>
                                             <div class="fileBox" id="dropContainer">
                                                 <div class="inputFileBox">
                                                     <img src="/Style Library/MiningViolations/images/fileIcon.svg" alt="File Icon">
@@ -1412,10 +1415,10 @@ vehicleViolationReferral.payCaseAfterEditPopup = (
             return;
         }
 
-        // if (!popupState.attachments || popupState.attachments.length === 0) {
-        //     functions.warningAlert("من فضلك قم بإرفاق المستند المرفق بالرقم القضائي");
-        //     return;
-        // }
+        if (!popupState.attachments || popupState.attachments.length === 0) {
+            functions.warningAlert("من فضلك قم بإرفاق المستند المرفق بالرقم القضائي");
+            return;
+        }
 
         $(".overlay").addClass("active");
 
@@ -1596,7 +1599,8 @@ vehicleViolationReferral.changeTaskStatusAfterPayCase = (TaskID, ViolationID, at
                 ID: TaskID,
                 ViolationId: ViolationID,
                 ActualAmountPaid: ActualAmountPaid,
-                Status: "Paid"
+                Status: "Paid",
+                ReferralStatus: "مسددة"
             }
         }
     };
@@ -1665,7 +1669,9 @@ vehicleViolationReferral.editReferralAPIResponse = (
     ReferralId,
     uploadPhase,
     attachInput,
-    Message = ""
+    Message = "",
+    TaskID = null,
+    ViolationID = null
 ) => {
     functions
         .requester(
@@ -1679,12 +1685,30 @@ vehicleViolationReferral.editReferralAPIResponse = (
         })
         .then((data) => {
             if (data.d.Status) {
-                vehicleViolationReferral.addNewReferralAttachmentRecord(
-                    ReferralId,
-                    uploadPhase,
-                    attachInput,
-                    Message
-                );
+                // Get the status from the request if available
+                let caseStatus = request.Request.Status;
+
+                // Update violation task status if TaskID and ViolationID are provided
+                if (TaskID && ViolationID && caseStatus) {
+                    vehicleViolationReferral.updateViolationTaskStatus(TaskID, ViolationID, caseStatus)
+                        .then(() => {
+                            // Continue with attachment upload
+                            vehicleViolationReferral.addNewReferralAttachmentRecord(
+                                ReferralId,
+                                uploadPhase,
+                                attachInput,
+                                Message
+                            );
+                        });
+                } else {
+                    // Just proceed with attachment upload
+                    vehicleViolationReferral.addNewReferralAttachmentRecord(
+                        ReferralId,
+                        uploadPhase,
+                        attachInput,
+                        Message
+                    );
+                }
             } else {
                 functions.warningAlert("هناك خطأ في إرسال بيانات الطلب");
             }
@@ -1694,7 +1718,6 @@ vehicleViolationReferral.editReferralAPIResponse = (
             functions.warningAlert("حدث خطأ في الاتصال بالخادم");
         });
 };
-
 vehicleViolationReferral.addNewReferralAttachmentRecord = (
     ReferralId,
     uploadPhase,
@@ -2371,6 +2394,427 @@ vehicleViolationReferral.referralEquipmentDetails = (violationData) => {
     `;
     return detailsHtml;
 };
+////////////////update task status ///////////
+vehicleViolationReferral.updateViolationTaskStatus = (TaskID, ViolationID, CaseStatus) => {
+    let request = {
+        request: {
+            Data: {
+                ID: TaskID,
+                ViolationId: ViolationID,
+                ReferralStatus: CaseStatus,
+                Status: "تعديل حالات القضية",
+            }
+        }
+    };
+
+    return functions.requester(
+        "/_layouts/15/Uranium.Violations.SharePoint/Tasks.aspx/Save",
+        request
+    )
+        .then((response) => {
+            if (response.ok) {
+                return response.json();
+            }
+        })
+        .then((data) => {
+            if (data.d && data.d.Status) {
+                console.log("Violation task status updated successfully:", CaseStatus);
+                return true;
+            } else {
+                console.error("Failed to update violation task status");
+                return false;
+            }
+        })
+        .catch((err) => {
+            console.error("Error updating violation task status:", err);
+            return false;
+        });
+};
+// ========== Save Case and Cancel Violation Functions ==========
+vehicleViolationReferral.saveCaseAndCancelViolationPopup = (
+    ReferralID,
+    ViolationID,
+    TaskID,
+    referralNumber,
+    violationCode,
+    caseStatus
+) => {
+    $(".overlay").removeClass("active");
+
+    let title = violationCode
+        ? `حفظ القضية وإلغاء المخالفة - المخالفة رقم (${violationCode})`
+        : `حفظ القضية وإلغاء المخالفة`;
+
+    let popupHtml = `
+        <div class="popupHeader" style="display: flex; justify-content: space-between;">
+            <div class="violationsCode">
+                <p>${title}</p>
+            </div>
+            <div class="btnStyle cancelBtn popupBtn closeSaveCasePopup" id="closeSaveCasePopup" style="color: #fff; cursor: pointer;" data-dismiss="modal" aria-label="Close">
+                <i class="fa-solid fa-x"></i>
+            </div>
+        </div>
+        <div class="popupBody">
+            <div class="popupForm detailsPopupForm" id="detailsPopupForm">
+                <div class="formContent">
+                    <div class="formBox">
+                        <div class="formElements">
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <div class="form-group customFormGroup">
+                                        <label for="saveCaseComments" class="customLabel">ملاحظات</label>
+                                        <textarea class="form-control customTextArea saveCaseComments" id="saveCaseComments" rows="3" placeholder="أدخل الملاحظات"></textarea>
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <div class="form-group customFormGroup">
+                                        <label for="saveCaseAttachment" class="customLabel">إرفاق المستندات <span style="color: red;">*</span></label>
+                                        <div class="fileBox" id="dropContainer">
+                                            <div class="inputFileBox">
+                                                <img src="/Style Library/MiningViolations/images/fileIcon.svg" alt="File Icon">
+                                                <p class="dragDropFilesLabel">قم بالسحب والإفلات لرفع الملف , أو <a href="#!" class="attachFileLink">استعراض ملفاتي</a></p>
+                                                <input type="file" class="customInput attachFilesInput saveCaseAttachment form-control" id="saveCaseAttachment" accept="image/gif,image/svg,image/jpg,image/jpeg,image/png,.doc,.docx,.pdf,.xls,.xlsx,.pptx" multiple>
+                                            </div>
+                                        </div>
+                                        <div class="dropFilesArea" id="dropFilesArea"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="formButtonsBox">
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="buttonsBox centerButtonsBox">
+                                <div class="btnStyle confirmBtnGreen popupBtn confirmSaveCaseBtn" id="confirmSaveCaseBtn">تأكيد</div>
+                                <div class="btnStyle cancelBtn popupBtn closeSaveCasePopupFooter" id="closeSaveCasePopupFooter" data-dismiss="modal" aria-label="Close">إلغاء</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>`;
+
+    functions.declarePopup(
+        ["generalPopupStyle", "greenPopup", "editPopup"],
+        popupHtml
+    );
+
+    // Add close button handlers
+    $("#closeSaveCasePopup, #closeSaveCasePopupFooter").on("click", function () {
+        functions.closePopup();
+    });
+
+    let filesExtension = [
+        "gif", "svg", "jpg", "jpeg", "png",
+        "doc", "docx", "pdf", "xls", "xlsx", "pptx"
+    ];
+    let allAttachments;
+    let countOfFiles;
+    let SaveCaseCommentsInput = "";
+
+    // Handle comments input
+    $("#saveCaseComments").on("input", (e) => {
+        SaveCaseCommentsInput = $(e.currentTarget).val().trim();
+    });
+
+    // File attachment handling
+    $("#saveCaseAttachment").on("change", (e) => {
+        allAttachments = $(e.currentTarget)[0].files;
+        if (allAttachments.length > 0) {
+            $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").show().empty();
+        }
+        for (let i = 0; i < allAttachments.length; i++) {
+            $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").append(`
+                <div class="file">
+                    <p class="fileName">${allAttachments[i].name}</p>
+                    <span class="deleteFile" data-index="${i}"><i class="fa-sharp fa-solid fa-x"></i></span>
+                </div>
+            `);
+        }
+
+        $(".deleteFile").on("click", (event) => {
+            let index = $(event.currentTarget).closest(".file").index();
+            $(event.currentTarget).closest(".file").remove();
+            let fileBuffer = new DataTransfer();
+            for (let i = 0; i < allAttachments.length; i++) {
+                if (index !== i) {
+                    fileBuffer.items.add(allAttachments[i]);
+                }
+            }
+            allAttachments = fileBuffer.files;
+            countOfFiles = allAttachments.length;
+            if (countOfFiles == 0) {
+                $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").hide();
+            }
+        });
+
+        for (let i = 0; i < allAttachments.length; i++) {
+            let fileSplited = allAttachments[i].name.split(".");
+            let fileExt = fileSplited[fileSplited.length - 1].toLowerCase();
+            if ($.inArray(fileExt, filesExtension) == -1) {
+                functions.warningAlert("من فضلك أدخل الملفات بالامتدادات المسموح بها فقط");
+                $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").hide();
+                $(e.currentTarget).val("");
+            }
+        }
+    });
+
+    // Confirm Save Case button handler
+    $("#confirmSaveCaseBtn").on("click", (e) => {
+        if (allAttachments != null && allAttachments.length > 0) {
+            $(".overlay").addClass("active");
+            vehicleViolationReferral.saveCase(ReferralID, ViolationID, TaskID, SaveCaseCommentsInput, "#saveCaseAttachment");
+        } else {
+            functions.warningAlert("من فضلك قم بإرفاق المستندات المطلوبة");
+        }
+    });
+};
+
+vehicleViolationReferral.saveCase = (ReferralID, ViolationID, TaskID, Comments, attachInput) => {
+    // Step 1: Save the case with status "محفوظة"
+    let saveCaseRequest = {
+        Request: {
+            ID: ReferralID,
+            Status: "محفوظة",
+            Title: "تم حفظ القضية",
+            Comments: Comments
+        }
+    };
+
+    functions
+        .requester(
+            "/_layouts/15/Uranium.Violations.SharePoint/Cases.aspx/Save",
+            saveCaseRequest
+        )
+        .then((response) => {
+            if (response.ok) {
+                return response.json();
+            }
+        })
+        .then((data) => {
+            if (data.d && data.d.Status) {
+                // Upload the attachment for save case then cancel violation
+                vehicleViolationReferral.saveCaseAttachmentAndCancelViolation(
+                    ReferralID,
+                    ViolationID,
+                    TaskID,
+                    Comments,
+                    attachInput
+                );
+            } else {
+                $(".overlay").removeClass("active");
+                functions.warningAlert("حدث خطأ أثناء حفظ القضية");
+            }
+        })
+        .catch((err) => {
+            console.error("Error saving case:", err);
+            $(".overlay").removeClass("active");
+            functions.warningAlert("حدث خطأ أثناء حفظ القضية");
+        });
+};
+
+vehicleViolationReferral.saveCaseAttachmentAndCancelViolation = (
+    ReferralID,
+    ViolationID,
+    TaskID,
+    Comments,
+    attachInput
+) => {
+    // Create attachment record first
+    let request = {
+        Request: {
+            Title: "مستند حفظ القضية",
+            CaseId: ReferralID,
+            UploadPhase: "حفظ القضية",
+            Comments: Comments,
+        },
+    };
+
+    functions
+        .requester(
+            "/_layouts/15/Uranium.Violations.SharePoint/CaseAttachments.aspx/Save",
+            request
+        )
+        .then((response) => {
+            if (response.ok) {
+                return response.json();
+            }
+        })
+        .then((data) => {
+            if (data.d.Status) {
+                vehicleViolationReferral.cancelViolation(ReferralID, ViolationID, TaskID);
+            } else {
+                $(".overlay").removeClass("active");
+                functions.warningAlert("هناك خطأ في حفظ المرفقات");
+            }
+        })
+        .catch((err) => {
+            console.error(err);
+            $(".overlay").removeClass("active");
+            functions.warningAlert("حدث خطأ في الاتصال بالخادم");
+        });
+};
+
+vehicleViolationReferral.cancelViolation = (ReferralID, ViolationID, TaskID) => {
+    // Cancel the violation task
+    let cancelViolationRequest = {
+        request: {
+            Data: {
+                ID: TaskID,
+                ViolationId: ViolationID,
+                Status: "Cancelled",
+                ReferralStatus: "محفوظة"
+            }
+        }
+    };
+
+    functions
+        .requester(
+            "/_layouts/15/Uranium.Violations.SharePoint/Tasks.aspx/Save",
+            cancelViolationRequest
+        )
+        .then((response) => {
+            if (response.ok) {
+                return response.json();
+            }
+        })
+        .then((data) => {
+            $(".overlay").removeClass("active");
+
+            if (data.d && data.d.Status) {
+                functions.sucessAlert("تم حفظ القضية وإلغاء المخالفة بنجاح");
+                functions.closePopup();
+                // Refresh the table
+                vehicleViolationReferral.getVehicleViolationReferrals(
+                    vehicleViolationReferral.pageIndex,
+                    true
+                );
+            } else {
+                functions.warningAlert("تم حفظ القضية ولكن حدث خطأ أثناء إلغاء المخالفة");
+            }
+        })
+        .catch((err) => {
+            console.error("Error canceling violation:", err);
+            $(".overlay").removeClass("active");
+            functions.warningAlert("تم حفظ القضية ولكن حدث خطأ أثناء إلغاء المخالفة");
+        });
+};
+///////////////////////////////////////////////////
+
+// ========== Tracking History Functions =========
+const ViolationHistoryLogs = () => {
+    let selectedViolationId = null;
+    let selectedViolationCode = null;
+    let trackHistoryTable = null;
+
+    // ===============================
+    //  فتح المودال
+    // ===============================
+    $(".contentContainer").on("click", ".violationHistory", function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        selectedViolationId = $(this).data("violationid");
+        selectedViolationCode = $(this).data("violationcode");
+
+        $("#trackHistoryModal").modal("show");
+    });
+
+    // ===============================
+    //  إغلاق المودال - Close button handlers
+    // ===============================
+    const closeModal = () => {
+        $("#trackHistoryModal").modal("hide");
+
+        // Clear the modal content
+        $(".track-history-violation-code").text("");
+        if (trackHistoryTable) {
+            trackHistoryTable.clear().destroy();
+            trackHistoryTable = null;
+        }
+        $("#trackHistoryTable tbody").empty();
+    };
+
+    $(document).on("click", "#closeViolationHistoryPopup", function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        closeModal();
+    });
+
+    // // Close button in footer
+    // $(document).on("click", "#closeViolationHistoryPopupFooter", function (e) {
+    //   e.preventDefault();
+    //   e.stopPropagation();
+    //   closeModal();
+    // });
+
+    // Bootstrap modal hide event
+    $("#trackHistoryModal").on("hidden.bs.modal", function () {
+        closeModal();
+    });
+
+    // ===============================
+    //  لما المودال يفتح
+    // ===============================
+    $(".track-history-modal").on("shown.bs.modal", function () {
+        $(".track-history-violation-code").text(selectedViolationCode);
+
+        const request = {
+            Request: {
+                ViolationId: selectedViolationId,
+            },
+        };
+
+        const tableElement = $("#trackHistoryTable");
+
+        if (!trackHistoryTable) {
+            trackHistoryTable = tableElement.DataTable({
+                processing: true,
+                paging: false,
+                responsive: true,
+                destroy: true,
+                ajax: {
+                    url: "/_layouts/15/Uranium.Violations.SharePoint/ViolationHistoryLogs.aspx/Search",
+                    type: "POST",
+                    contentType: "application/json",
+                    data: () => JSON.stringify(request),
+                    dataSrc: (data) => {
+                        return data?.d?.Result?.GridData || [];
+                    }
+                },
+                columns: [
+                    { data: null, render: (data, type, row, meta) => meta.row },
+                    { data: "Status", render: (data) => data || "-" },
+                    { data: "Created", render: (data) => data ? functions.getFormatedDate(data) : "-" },
+                    { data: "CreatedBy", render: (data) => data || "-" },
+                    { data: "Comment", render: (data) => data || "-" }
+                ],
+                language: { emptyTable: "لا توجد بيانات" }
+            });
+        } else {
+            trackHistoryTable.ajax.reload();
+        }
+    });
+
+    // ===============================
+    //  لما المودال يقفل
+    // ===============================
+    $(".track-history-modal").on("hidden.bs.modal", function () {
+        $(".track-history-violation-code").text("");
+        if (trackHistoryTable) {
+            trackHistoryTable.clear().destroy();
+            trackHistoryTable = null;
+        }
+        $("#trackHistoryTable tbody").empty();
+    });
+};
+
+ViolationHistoryLogs();
+
+
 ////////////////////////////////////////////////
 
 // // Initialization

@@ -2,7 +2,7 @@ import functions from "../Shared/functions";
 
 export const ajaxDatatableHistoryInit = (table, url, request, columns) => {
 
-  // 🔥 لو الجدول معمول له init قبل كده ندمّره
+  //  لو الجدول معمول له init قبل كده ندمّره
   if ($.fn.DataTable.isDataTable(table)) {
     table.DataTable().clear().destroy();
     table.find("tbody").empty();

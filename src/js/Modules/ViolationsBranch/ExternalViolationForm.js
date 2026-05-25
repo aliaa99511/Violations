@@ -15,38 +15,44 @@ externalViolationForm.violatorDetails = () => {
     let violationGov = $("#violationGov").children("option:selected").val();
     let violationGovId = $("#violationGov").children("option:selected").data("id");
     let violationsZone = $("#violationsZone").val();
-    let assignedProsecution = $("#assignedProsecution").children("option:selected").val();
+    let assignedProsecution = $("#assignedProsecution").val(); // Changed from dropdown to text input
 
     if (violatorName && violatorName.trim() !== "") {
         if (violationGov && violationGov !== "") {
-            if (assignedProsecution && assignedProsecution !== "") {
+            if (violatorMobileNumber && violatorMobileNumber.trim() !== "") {
+                // Validate assigned prosecution as text field
+                if (assignedProsecution && assignedProsecution.trim() !== "") {
 
-                //  Check National ID if provided
-                if (violatorNationalId !== "") {
-                    // Check if exactly 14 digits
-                    if (!/^\d{14}$/.test(violatorNationalId)) {
-                        functions.warningAlert(
-                            "الرقم القومي يجب أن يتكون من 14 رقمًا بالضبط",
-                            "#violatorNationalId"
-                        );
-                        return false;
+                    // Check National ID if provided
+                    if (violatorNationalId !== "") {
+                        // Check if exactly 14 digits
+                        if (!/^\d{14}$/.test(violatorNationalId)) {
+                            functions.warningAlert(
+                                "الرقم القومي يجب أن يتكون من 14 رقمًا بالضبط",
+                                "#violatorNationalId"
+                            );
+                            return false;
+                        }
                     }
-                }
 
-                violatorDetails = {
-                    violatorName: violatorName.trim(),
-                    violatorNationalId: violatorNationalId && violatorNationalId.trim() !== "" ? violatorNationalId.trim() : "",
-                    violatorMobileNumber: violatorMobileNumber != "" ? violatorMobileNumber : "",
-                    companyName: companyName && companyName.trim() !== "" ? companyName.trim() : "",
-                    violationGov: violationGovId,
-                    violationGovText: violationGov,
-                    violationsZone: violationsZone && violationsZone.trim() !== "" ? violationsZone.trim() : "",
-                    assignedProsecution: assignedProsecution,
-                };
-                vaildViolator = true;
+                    violatorDetails = {
+                        violatorName: violatorName.trim(),
+                        violatorNationalId: violatorNationalId && violatorNationalId.trim() !== "" ? violatorNationalId.trim() : "",
+                        violatorMobileNumber: violatorMobileNumber.trim(),
+                        companyName: companyName && companyName.trim() !== "" ? companyName.trim() : "",
+                        violationGov: violationGovId,
+                        violationGovText: violationGov,
+                        violationsZone: violationsZone && violationsZone.trim() !== "" ? violationsZone.trim() : "",
+                        assignedProsecution: assignedProsecution.trim(),
+                    };
+                    vaildViolator = true;
+                } else {
+                    functions.warningAlert("من فضلك قم بادخال اسم النيابة المختصة", "#assignedProsecution");
+                }
             } else {
-                functions.warningAlert("من فضلك قم باختيار النيابة المختصة", "#assignedProsecution");
+                functions.warningAlert("من فضلك قم بادخال رقم الهاتف المحمول", "#violatorMobileNumber");
             }
+
         } else {
             functions.warningAlert("من فضلك قم باختيار المحافظة", "#violationGov");
         }
@@ -348,7 +354,7 @@ externalViolationForm.AddCoordinatePoint = (e) => {
     externalViolationForm.OrderTableRow();
 
     // Re-attach coordinate validation for new row
-    externalViolationForm.attachCoordinateValidation();
+    // externalViolationForm.attachCoordinateValidation();
 };
 
 externalViolationForm.DeleteCoordinatePoint = (e) => {
@@ -400,45 +406,45 @@ externalViolationForm.OrderTableRow = () => {
 };
 
 // Function to attach coordinate validation
-externalViolationForm.attachCoordinateValidation = () => {
-    // East coordinates validation (first column)
-    $(document).off("keyup", ".coordinatesTable td:nth-child(2) input:nth-child(1)");
-    $(document).on("keyup", ".coordinatesTable td:nth-child(2) input:nth-child(1)", function (e) {
-        if (Number($(e.currentTarget).val()) == 37) {
-            $(e.currentTarget).closest("td").find("input:nth-child(2)").val(0);
-            $(e.currentTarget).closest("td").find("input:nth-child(2)").attr("disabled", "disabled");
-            $(e.currentTarget).closest("td").find("input:nth-child(3)").val(0);
-            $(e.currentTarget).closest("td").find("input:nth-child(3)").attr("disabled", "disabled");
-        } else if (
-            $(e.currentTarget).val() == "" ||
-            Number($(e.currentTarget).val()) != 37
-        ) {
-            $(e.currentTarget).closest("td").find("input:nth-child(2)").val("");
-            $(e.currentTarget).closest("td").find("input:nth-child(2)").removeAttr("disabled");
-            $(e.currentTarget).closest("td").find("input:nth-child(3)").val("");
-            $(e.currentTarget).closest("td").find("input:nth-child(3)").removeAttr("disabled");
-        }
-    });
+// externalViolationForm.attachCoordinateValidation = () => {
+//     // East coordinates validation (first column)
+//     $(document).off("keyup", ".coordinatesTable td:nth-child(2) input:nth-child(1)");
+//     $(document).on("keyup", ".coordinatesTable td:nth-child(2) input:nth-child(1)", function (e) {
+//         if (Number($(e.currentTarget).val()) == 37) {
+//             $(e.currentTarget).closest("td").find("input:nth-child(2)").val(0);
+//             $(e.currentTarget).closest("td").find("input:nth-child(2)").attr("disabled", "disabled");
+//             $(e.currentTarget).closest("td").find("input:nth-child(3)").val(0);
+//             $(e.currentTarget).closest("td").find("input:nth-child(3)").attr("disabled", "disabled");
+//         } else if (
+//             $(e.currentTarget).val() == "" ||
+//             Number($(e.currentTarget).val()) != 37
+//         ) {
+//             $(e.currentTarget).closest("td").find("input:nth-child(2)").val("");
+//             $(e.currentTarget).closest("td").find("input:nth-child(2)").removeAttr("disabled");
+//             $(e.currentTarget).closest("td").find("input:nth-child(3)").val("");
+//             $(e.currentTarget).closest("td").find("input:nth-child(3)").removeAttr("disabled");
+//         }
+//     });
 
-    // North coordinates validation (second column)
-    $(document).off("keyup", ".coordinatesTable td:nth-child(3) input:nth-child(1)");
-    $(document).on("keyup", ".coordinatesTable td:nth-child(3) input:nth-child(1)", function (e) {
-        if (Number($(e.currentTarget).val()) == 32) {
-            $(e.currentTarget).closest("td").find("input:nth-child(2)").val(0);
-            $(e.currentTarget).closest("td").find("input:nth-child(2)").attr("disabled", "disabled");
-            $(e.currentTarget).closest("td").find("input:nth-child(3)").val(0);
-            $(e.currentTarget).closest("td").find("input:nth-child(3)").attr("disabled", "disabled");
-        } else if (
-            $(e.currentTarget).val() == "" ||
-            Number($(e.currentTarget).val()) != 32
-        ) {
-            $(e.currentTarget).closest("td").find("input:nth-child(2)").val("");
-            $(e.currentTarget).closest("td").find("input:nth-child(2)").removeAttr("disabled");
-            $(e.currentTarget).closest("td").find("input:nth-child(3)").val("");
-            $(e.currentTarget).closest("td").find("input:nth-child(3)").removeAttr("disabled");
-        }
-    });
-};
+//     // North coordinates validation (second column)
+//     $(document).off("keyup", ".coordinatesTable td:nth-child(3) input:nth-child(1)");
+//     $(document).on("keyup", ".coordinatesTable td:nth-child(3) input:nth-child(1)", function (e) {
+//         if (Number($(e.currentTarget).val()) == 32) {
+//             $(e.currentTarget).closest("td").find("input:nth-child(2)").val(0);
+//             $(e.currentTarget).closest("td").find("input:nth-child(2)").attr("disabled", "disabled");
+//             $(e.currentTarget).closest("td").find("input:nth-child(3)").val(0);
+//             $(e.currentTarget).closest("td").find("input:nth-child(3)").attr("disabled", "disabled");
+//         } else if (
+//             $(e.currentTarget).val() == "" ||
+//             Number($(e.currentTarget).val()) != 32
+//         ) {
+//             $(e.currentTarget).closest("td").find("input:nth-child(2)").val("");
+//             $(e.currentTarget).closest("td").find("input:nth-child(2)").removeAttr("disabled");
+//             $(e.currentTarget).closest("td").find("input:nth-child(3)").val("");
+//             $(e.currentTarget).closest("td").find("input:nth-child(3)").removeAttr("disabled");
+//         }
+//     });
+// };
 
 // ==================== FORM ACTIONS ====================
 externalViolationForm.formActions = () => {
@@ -536,7 +542,7 @@ externalViolationForm.formActions = () => {
         });
 
     // Attach coordinate validation
-    externalViolationForm.attachCoordinateValidation();
+    // externalViolationForm.attachCoordinateValidation();
 
     // Ensure violation type is disabled for external violations
     $("#violationType").prop("disabled", true);
@@ -808,6 +814,17 @@ externalViolationForm.validateForm = (e) => {
         return;
     }
 
+    // ==================== REQUIRED ATTACHMENTS VALIDATION ====================
+    const attachedFiles = $("#attachViolationFiles")[0].files;
+
+    if (!attachedFiles || attachedFiles.length === 0) {
+        functions.warningAlert(
+            "من فضلك قم بإرفاق المستندات المطلوبة",
+            "#attachViolationFiles"
+        );
+        return;
+    }
+
     // Format the date to match quarryViolation (MM-DD-YYYY)
     const violationDateInput = $("#violationDate").val();
     // Split by either '/' or '-'
@@ -818,7 +835,7 @@ externalViolationForm.validateForm = (e) => {
         const day = dateParts[0].padStart(2, '0');
         const month = dateParts[1].padStart(2, '0');
         const year = dateParts[2];
-        // Format as MM-DD-YYYY for API (same as quarryViolation)
+        // Format as MM-DD-YYYY for API 
         const apiDate = `${month}-${day}-${year}`;
 
         let offenderType = $("#offenderType").children("option:selected").val();
@@ -994,12 +1011,11 @@ externalViolationForm.init = () => {
         // Add the offender type change handler
         externalViolationForm.handleOffenderTypeChange();
 
-        // Load all dropdowns in correct order
         Promise.all([
             sharedApis.getGovernrates("#violationGov"),
             sharedApis.getOffenderType("#offenderType"),
-            externalViolationForm.getViolationTypes(), // This will now filter and disable
-            externalViolationForm.getProsecutions()
+            externalViolationForm.getViolationTypes(),
+            // externalViolationForm.getProsecutions()
         ])
             .then(() => {
                 $(".PreLoader").removeClass("active");

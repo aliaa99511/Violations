@@ -207,7 +207,7 @@ petitionsLog.filterPetitionsLog = (e, defaultStatus = "All") => {
     (!violatorNameValue || violatorNameValue === "") &&
     (!createdFromValue || createdFromValue === "") &&
     (!createdToValue || createdToValue === "") &&
-    (!violationCategoryValue || violationCategoryValue === "") // ADD THIS LINE
+    (!violationCategoryValue || violationCategoryValue === "")
   ) {
     functions.warningAlert("من فضلك قم بإدخال قيمة واحدة على الأقل من قيم البحث");
     return;
@@ -248,7 +248,7 @@ petitionsLog.resetFilter = (e, defaultStatus = "All") => {
   $("#ViolatorName").val("");
 
   // Also reset stored filter values
-  petitionsLog.ViolationCode = ""; // Add this line
+  petitionsLog.ViolationCode = "";
   petitionsLog.PetitionStatus = defaultStatus; // Reset this too
 
   // Also reset any hidden filter fields if they exist
@@ -426,10 +426,10 @@ petitionsLog.ValidatedPetitionsTable = (Petitions, destroyTable) => {
                 </ul>
             </div>
         </div>`,
-        `${functions.getFormatedDate(Petition?.Created)}`,
         `<div class="violationArName">${functions.getViolationArabicName(
           petitionViolation.OffenderType,
         )}</div>`,
+        `${functions.getFormatedDate(Petition?.Created)}`,
         `${functions.getPetitionsStatus(Petition?.Status)}`,
         `<div class="petitionAttachments" data-petitionid="${Petition?.ID}" data-petitionnumber="${Petition?.ID}"><a href="#!" style="color: black;">المرفقات</a></div>`,
       ]);
@@ -443,8 +443,8 @@ petitionsLog.ValidatedPetitionsTable = (Petitions, destroyTable) => {
     [
       { title: "رقم المخالفة" },
       { title: "", class: "all" },
-      { title: "تاريخ الالتماس" },
       { title: "تصنيف المخالفة" },
+      { title: "تاريخ الالتماس" },
       { title: "حالة الالتماس" },
       { title: "المرفقات" },
     ],
@@ -524,13 +524,13 @@ petitionsLog.ValidatedPetitionsTable = (Petitions, destroyTable) => {
                     `);
       }
 
-      if (
-        petitionsTable.length > 4 &&
-        $(".hiddenListBox").height() > 110 &&
-        jQueryRecord.is(":nth-last-child(-n + 4)")
-      ) {
-        $(".hiddenListBox").addClass("toTopDDL");
-      }
+      // if (
+      //   petitionsTable.length > 4 &&
+      //   $(".hiddenListBox").height() > 110 &&
+      //   jQueryRecord.is(":nth-last-child(-n + 4)")
+      // ) {
+      //   $(".hiddenListBox").addClass("toTopDDL");
+      // }
 
       jQueryRecord
         .find(".controls")
@@ -692,7 +692,7 @@ petitionsLog.findPetitionsByID = (petitionID, exDate) => {
                         <div class="col-md-4">
                           <div class="form-group customFormGroup">
                             <label for="petitionTotalOldPrice" class="customLabel">المبلغ القديم</label>
-                            <input class="form-control disabled customInput petitionTotalOldPrice" id="petitionTotalOldPrice" type="text" value="${formatValue(violationData.ActualAmountPaid)}" disabled>
+                            <input class="form-control disabled customInput petitionTotalOldPrice" id="petitionTotalOldPrice" type="text" value="${formatValue(violationData.TotalOldPrice)}" disabled>
                           </div> 
                         </div>
                         <div class="col-md-4">
@@ -1210,7 +1210,6 @@ petitionsLog.approvePetition = (
     return (!state.newPriceInput || state.newPriceInput === "") &&
       (!state.newDateInput || state.newDateInput === "");
   }
-
   function prepareRequest(state, violationTaskID, violationID, oldDateInput) {
     const oldDateNewFormat = oldDateInput !== "-"
       ? `${oldDateInput.split("-")[1]}-${oldDateInput.split("-")[0]}-${oldDateInput.split("-")[2]}`
@@ -1221,9 +1220,12 @@ petitionsLog.approvePetition = (
         Data: {
           ID: violationTaskID,
           ViolationId: violationID,
-          TotalPriceDue: Number(state.newPriceInput) || 0,
+          TotalPriceDue: Number(state.newPriceInput),
+          TotalOldPrice: Number(state.oldPriceInput),
           ReconciliationOldExpiredDate: oldDateNewFormat,
           ReconciliationExpiredDate: state.newDateInput || "",
+          Status: "قبول مع التعديل",
+
           Violation: {
             LawRoyalty: null,
             QuarryMaterialValue: null,
@@ -1233,7 +1235,6 @@ petitionsLog.approvePetition = (
       },
     };
   }
-
   function handleSubmission(state, e, petitionID, violationID, petitionComments) {
     const hasPrice = state.newPriceInput && state.newPriceInput !== "";
     const hasDate = state.newDateInput && state.newDateInput !== "";
@@ -1245,10 +1246,10 @@ petitionsLog.approvePetition = (
     }
 
     // Validate price
-    if (hasPrice && Number(state.newPriceInput) > state.oldPriceInput) {
-      showWarning("من فضلك قم بإدخال المبلغ الجديد لا يتجاوز المبلغ المحدد في المخالفة");
-      return;
-    }
+    // if (hasPrice && Number(state.newPriceInput) > state.oldPriceInput) {
+    //   showWarning("من فضلك قم بإدخال المبلغ الجديد لا يتجاوز المبلغ المحدد في المخالفة");
+    //   return;
+    // }
 
     // Validate date
     if (hasDate && state.oldDateInput !== "-") {
@@ -1342,7 +1343,7 @@ petitionsLog.approveAndCancelPetition = (
                             </div>
                             <div class="col-md-12">
                                 <div class="form-group customFormGroup">
-                                    <label for="approveCancelPetitionAttach" class="customLabel">إرفاق المؤيدات (اختياري)</label>
+                                    <label for="approveCancelPetitionAttach" class="customLabel">إرفاق المؤيدات <span class="required-star">*</span></label>
                                     <div class="fileBox" id="dropContainer">
                                         <div class="inputFileBox">
                                             <img src="/Style Library/MiningViolations/images/fileIcon.svg" alt="File Icon">
@@ -1442,7 +1443,12 @@ petitionsLog.approveAndCancelPetition = (
 
   let request = {};
   $(".approveAndCancelPetitionBtn").on("click", (e) => {
-    // Attachments are optional - no validation required
+    // Validate that attachments are provided (REQUIRED)
+    if (!allAttachments || allAttachments.length === 0) {
+      functions.warningAlert("من فضلك قم بإرفاق المستند الخاص بقبول وإلغاء المخالفة");
+      return;
+    }
+
     $(".overlay").addClass("active");
 
     request = {
@@ -1591,7 +1597,7 @@ petitionsLog.rejectPetition = (petitionId, violationID, violationCode) => {
                             </div>
                             <div class="col-md-12">
                                 <div class="form-group customFormGroup">
-                                    <label for="rejectPetitionAttach" class="customLabel">إرفاق المؤيدات (اختياري)</label>
+                                    <label for="rejectPetitionAttach" class="customLabel">إرفاق المؤيدات <span class="required-star">*</span></label>
                                     <div class="fileBox" id="dropContainer">
                                         <div class="inputFileBox">
                                             <img src="/Style Library/MiningViolations/images/fileIcon.svg" alt="File Icon">
@@ -1700,7 +1706,11 @@ petitionsLog.rejectPetition = (petitionId, violationID, violationCode) => {
       return;
     }
 
-    // Attachments are optional - no validation required
+    // Validate that attachments are provided (REQUIRED)
+    if (!allAttachments || allAttachments.length === 0) {
+      functions.warningAlert("من فضلك قم بإرفاق المستند الخاص برفض الالتماس");
+      return;
+    }
 
     $(".overlay").addClass("active");
     let request = {
@@ -2052,7 +2062,7 @@ const ViolationHistoryLogs = () => {
   let trackHistoryTable = null;
 
   // ===============================
-  // 🔥 فتح المودال
+  //  فتح المودال
   // ===============================
   $(".contentContainer").on("click", ".violationHistory", function (e) {
     e.preventDefault();
@@ -2065,7 +2075,7 @@ const ViolationHistoryLogs = () => {
   });
 
   // ===============================
-  // 🔥 إغلاق المودال - Close button handlers
+  //  إغلاق المودال - Close button handlers
   // ===============================
   const closeModal = () => {
     $("#trackHistoryModal").modal("hide");
@@ -2101,7 +2111,7 @@ const ViolationHistoryLogs = () => {
   });
 
   // ===============================
-  // 🔥 لما المودال يفتح
+  //  لما المودال يفتح
   // ===============================
   $(".track-history-modal").on("shown.bs.modal", function () {
 
@@ -2115,7 +2125,7 @@ const ViolationHistoryLogs = () => {
 
     const tableElement = $("#trackHistoryTable");
 
-    // ✅ لو أول مرة نعمل init
+    // init
     if (!trackHistoryTable) {
 
       trackHistoryTable = tableElement.DataTable({
@@ -2177,13 +2187,13 @@ const ViolationHistoryLogs = () => {
 
     } else {
 
-      // ✅ Reload فقط
+      // just Reload 
       trackHistoryTable.ajax.reload();
     }
   });
 
   // ===============================
-  // 🔥 لما المودال يقفل
+  //  لما المودال يقفل
   // ===============================
   $(".track-history-modal").on("hidden.bs.modal", function () {
 

@@ -33,53 +33,46 @@ quarryViolation.violatorDetails = () => {
     if (violationPrevCount !== "" && !isNaN(violationPrevCount)) {
       if (violationGov != "") {
         if (violationArea != "") {
+          if (violatorMobileNumber && violatorMobileNumber.trim() !== "") {
 
-          // Check National ID if provided
-          if (violatorNationalId !== "") {
-            // Check if exactly 14 digits
-            if (!/^\d{14}$/.test(violatorNationalId)) {
-              functions.warningAlert(
-                "الرقم القومي يجب أن يتكون من 14 رقمًا بالضبط",
-                "#violatorNationalId"
-              );
-              return false;
+            // Check National ID if provided
+            if (violatorNationalId !== "") {
+              // Check if exactly 14 digits
+              if (!/^\d{14}$/.test(violatorNationalId)) {
+                functions.warningAlert(
+                  "الرقم القومي يجب أن يتكون من 14 رقمًا بالضبط",
+                  "#violatorNationalId"
+                );
+                return false;
+              }
             }
-          }
 
-          violatorDetails = {
-            violatorName: violatorName,
-            violatorNationalId: violatorNationalId != "" ? violatorNationalId : "",
-            violatorMobileNumber: violatorMobileNumber != "" ? violatorMobileNumber : "",
-            violationPrevCount: Number(violationPrevCount),
-            companyName: companyName != "" ? companyName : "",
-            commercialRegister: commercialRegister != "" ? commercialRegister : "",
-            violationAreaName: violationArea,
-            violationGov: violationGovId,
-          };
-          vaildViolator = true;
+            violatorDetails = {
+              violatorName: violatorName,
+              violatorNationalId: violatorNationalId != "" ? violatorNationalId : "",
+              violatorMobileNumber: violatorMobileNumber.trim(),
+              violationPrevCount: Number(violationPrevCount),
+              companyName: companyName != "" ? companyName : "",
+              commercialRegister: commercialRegister != "" ? commercialRegister : "",
+              violationAreaName: violationArea,
+              violationGov: violationGovId,
+            };
+            vaildViolator = true;
+
+          } else {
+            functions.warningAlert("من فضلك قم بادخال رقم الهاتف المحمول", "#violatorMobileNumber");
+          }
         } else {
-          functions.warningAlert(
-            "من فضلك قم بادخال منطقة ضبط المخالفة",
-            "#violationArea"
-          );
+          functions.warningAlert("من فضلك قم بادخال منطقة ضبط المخالفة", "#violationArea");
         }
       } else {
-        functions.warningAlert(
-          "من فضلك قم باختيار المحافظة الواقع بها المخالفة",
-          "#violationGov"
-        );
+        functions.warningAlert("من فضلك قم باختيار المحافظة الواقع بها المخالفة", "#violationGov");
       }
     } else {
-      functions.warningAlert(
-        "من فضلك قم بالتأكد من ظهور عدد المخالفات السابقة",
-        ".previous-violations-display"
-      );
+      functions.warningAlert("من فضلك قم بالتأكد من ظهور عدد المخالفات السابقة", ".previous-violations-display");
     }
   } else {
-    functions.warningAlert(
-      "من فضلك قم بادخال اسم المخالف ثلاثي بشكل صحيح",
-      "#violatorName"
-    );
+    functions.warningAlert("من فضلك قم بادخال اسم المخالف ثلاثي بشكل صحيح", "#violatorName");
   }
 
   if (vaildViolator) {
@@ -789,72 +782,72 @@ quarryViolation.formActions = () => {
     }
   });
 
-  let tableRows = $("#coordinatesTable tr:not(:first-child)");
-  tableRows.each((index, row) => {
-    let currentRow = $(row);
-    $(currentRow)
-      .find("td:nth-child(2)")
-      .find("input:nth-child(1)")
-      .on("keyup", (e) => {
-        if (Number($(e.currentTarget).val()) == 37) {
-          $(e.currentTarget).closest("td").find("input:nth-child(2)").val(0);
-          $(e.currentTarget)
-            .closest("td")
-            .find("input:nth-child(2)")
-            .attr("disabled", "disabled");
-          $(e.currentTarget).closest("td").find("input:nth-child(3)").val(0);
-          $(e.currentTarget)
-            .closest("td")
-            .find("input:nth-child(3)")
-            .attr("disabled", "disabled");
-        } else if (
-          $(e.currentTarget).val() == "" ||
-          Number($(e.currentTarget).val()) != 37
-        ) {
-          $(e.currentTarget).closest("td").find("input:nth-child(2)").val("");
-          $(e.currentTarget)
-            .closest("td")
-            .find("input:nth-child(2)")
-            .removeAttr("disabled");
-          $(e.currentTarget).closest("td").find("input:nth-child(3)").val("");
-          $(e.currentTarget)
-            .closest("td")
-            .find("input:nth-child(3)")
-            .removeAttr("disabled");
-        }
-      });
-    $(currentRow)
-      .find("td:nth-child(3)")
-      .find("input:nth-child(1)")
-      .on("keyup", (e) => {
-        if (Number($(e.currentTarget).val()) == 32) {
-          $(e.currentTarget).closest("td").find("input:nth-child(2)").val(0);
-          $(e.currentTarget)
-            .closest("td")
-            .find("input:nth-child(2)")
-            .attr("disabled", "disabled");
-          $(e.currentTarget).closest("td").find("input:nth-child(3)").val(0);
-          $(e.currentTarget)
-            .closest("td")
-            .find("input:nth-child(3)")
-            .attr("disabled", "disabled");
-        } else if (
-          $(e.currentTarget).val() == "" ||
-          Number($(e.currentTarget).val()) != 32
-        ) {
-          $(e.currentTarget).closest("td").find("input:nth-child(2)").val("");
-          $(e.currentTarget)
-            .closest("td")
-            .find("input:nth-child(2)")
-            .removeAttr("disabled");
-          $(e.currentTarget).closest("td").find("input:nth-child(3)").val("");
-          $(e.currentTarget)
-            .closest("td")
-            .find("input:nth-child(3)")
-            .removeAttr("disabled");
-        }
-      });
-  });
+  // let tableRows = $("#coordinatesTable tr:not(:first-child)");
+  // tableRows.each((index, row) => {
+  //   let currentRow = $(row);
+  //   $(currentRow)
+  //     .find("td:nth-child(2)")
+  //     .find("input:nth-child(1)")
+  //     .on("keyup", (e) => {
+  //       if (Number($(e.currentTarget).val()) == 37) {
+  //         $(e.currentTarget).closest("td").find("input:nth-child(2)").val(0);
+  //         $(e.currentTarget)
+  //           .closest("td")
+  //           .find("input:nth-child(2)")
+  //           .attr("disabled", "disabled");
+  //         $(e.currentTarget).closest("td").find("input:nth-child(3)").val(0);
+  //         $(e.currentTarget)
+  //           .closest("td")
+  //           .find("input:nth-child(3)")
+  //           .attr("disabled", "disabled");
+  //       } else if (
+  //         $(e.currentTarget).val() == "" ||
+  //         Number($(e.currentTarget).val()) != 37
+  //       ) {
+  //         $(e.currentTarget).closest("td").find("input:nth-child(2)").val("");
+  //         $(e.currentTarget)
+  //           .closest("td")
+  //           .find("input:nth-child(2)")
+  //           .removeAttr("disabled");
+  //         $(e.currentTarget).closest("td").find("input:nth-child(3)").val("");
+  //         $(e.currentTarget)
+  //           .closest("td")
+  //           .find("input:nth-child(3)")
+  //           .removeAttr("disabled");
+  //       }
+  //     });
+  //   $(currentRow)
+  //     .find("td:nth-child(3)")
+  //     .find("input:nth-child(1)")
+  //     .on("keyup", (e) => {
+  //       if (Number($(e.currentTarget).val()) == 32) {
+  //         $(e.currentTarget).closest("td").find("input:nth-child(2)").val(0);
+  //         $(e.currentTarget)
+  //           .closest("td")
+  //           .find("input:nth-child(2)")
+  //           .attr("disabled", "disabled");
+  //         $(e.currentTarget).closest("td").find("input:nth-child(3)").val(0);
+  //         $(e.currentTarget)
+  //           .closest("td")
+  //           .find("input:nth-child(3)")
+  //           .attr("disabled", "disabled");
+  //       } else if (
+  //         $(e.currentTarget).val() == "" ||
+  //         Number($(e.currentTarget).val()) != 32
+  //       ) {
+  //         $(e.currentTarget).closest("td").find("input:nth-child(2)").val("");
+  //         $(e.currentTarget)
+  //           .closest("td")
+  //           .find("input:nth-child(2)")
+  //           .removeAttr("disabled");
+  //         $(e.currentTarget).closest("td").find("input:nth-child(3)").val("");
+  //         $(e.currentTarget)
+  //           .closest("td")
+  //           .find("input:nth-child(3)")
+  //           .removeAttr("disabled");
+  //       }
+  //     });
+  // });
 
   sharedApis.getGovernrates("#violationGov");
   // sharedApis.getViolationZones("#violationArea")

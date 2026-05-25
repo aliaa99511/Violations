@@ -120,6 +120,12 @@
   }
 }
 
+.ms-webpart-zone,
+.ms-webpartzone-cell,
+.ms-webpart-chrome {
+  display: block !important;
+}
+
 .contentContainer {
   background-color: $white;
   border-radius: 10px;

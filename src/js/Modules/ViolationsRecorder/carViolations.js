@@ -28,72 +28,99 @@ carViolation.violatorDetails = () => {
         if (violationPrevCount !== "" && !isNaN(violationPrevCount)) {
             if (violationGov != "") {
                 if (violationArea != "") {
-                    if (carType != "" && carType == "عربة فردي") {
+                    if (violatorMobileNumber && violatorMobileNumber.trim() !== "") {
 
-                        //  Check National ID if provided
-                        if (violatorNationalId !== "") {
-                            // Check if exactly 14 digits
-                            if (!/^\d{14}$/.test(violatorNationalId)) {
-                                functions.warningAlert(
-                                    "الرقم القومي يجب أن يتكون من 14 رقمًا بالضبط",
-                                    "#violatorNationalId"
-                                );
-                                return false;
+                        if (carType != "" && carType == "عربة فردي") {
+                            //  Check National ID if provided
+                            if (violatorNationalId !== "") {
+                                // Check if exactly 14 digits
+                                if (!/^\d{14}$/.test(violatorNationalId)) {
+                                    functions.warningAlert(
+                                        "الرقم القومي يجب أن يتكون من 14 رقمًا بالضبط",
+                                        "#violatorNationalId"
+                                    );
+                                    return false;
+                                }
                             }
-                        }
 
-                        violatorDetails = {
-                            violatorName: violatorName,
-                            violatorNationalId: violatorNationalId != "" ? violatorNationalId : "",
-                            violatorMobileNumber: violatorMobileNumber != "" ? violatorMobileNumber : "",
-                            violationPrevCount: Number(violationPrevCount), // Use the display value
-                            violationGov: violationGovId,
-                            violationAreaName: violationArea,
-                            companyName: companyName != "" ? companyName : "",
-                            commercialRegister: commercialRegister != "" ? commercialRegister : "",
-                            carType: carType,
-                        }
-                        vaildViolator = true;
-                    } else if (carType != "" && carType == "عربة بمقطورة" && $(".tractorBox").is(":visible")) {
-                        let TractorLetters = $("#tractorLetters").val()
-                        let TractorNumbers = $("#tractorNumbers").val()
-                        if ((TractorLetters.length > 0 && TractorLetters.trim().length > 0) || $("#unmarkedCheckbox:checked").length != 0) {
-                            if ((TractorNumbers.length > 0 && TractorNumbers.length > 0) || $("#unmarkedCheckbox:checked").length != 0) {
-                                let TractorFullNumber = TractorLetters + " " + TractorNumbers;
+                            violatorDetails = {
+                                violatorName: violatorName,
+                                violatorNationalId: violatorNationalId != "" ? violatorNationalId : "",
+                                violatorMobileNumber: violatorMobileNumber.trim(),
+                                violationPrevCount: Number(violationPrevCount), // Use the display value
+                                violationGov: violationGovId,
+                                violationAreaName: violationArea,
+                                companyName: companyName != "" ? companyName : "",
+                                commercialRegister: commercialRegister != "" ? commercialRegister : "",
+                                carType: carType,
+                            }
+                            vaildViolator = true;
+                        } else if (carType != "" && carType == "عربة بمقطورة" && $(".tractorBox").is(":visible")) {
 
-                                //  Check National ID if provided
-                                if (violatorNationalId !== "") {
-                                    // Check if exactly 14 digits
-                                    if (!/^\d{14}$/.test(violatorNationalId)) {
-                                        functions.warningAlert(
-                                            "الرقم القومي يجب أن يتكون من 14 رقمًا بالضبط",
-                                            "#violatorNationalId"
-                                        );
+                            let TractorLetters = $("#tractorLetters").val()
+                            let TractorNumbers = $("#tractorNumbers").val()
+
+                            if ((TractorLetters.length > 0 && TractorLetters.trim().length > 0) || $("#unmarkedCheckbox:checked").length != 0) {
+
+                                if ((TractorNumbers.length > 0 && TractorNumbers.length > 0) || $("#unmarkedCheckbox:checked").length != 0) {
+
+                                    // Validate trailer number is different from car number
+                                    let carLicenseLetters = $("#carLicenseLetters").val().trim();
+                                    let carLicenseNumbers = $("#carLicenseNumbres").val().trim();
+
+                                    if (
+                                        carLicenseLetters === TractorLetters.trim() &&
+                                        carLicenseNumbers === TractorNumbers.trim()
+                                    ) {
+                                        functions.warningAlert("رقم العربة لا يمكن أن يكون مطابقا لرقم المقطورة");
                                         return false;
                                     }
+
+                                    let TractorFullNumber = TractorLetters + " " + TractorNumbers;
+
+                                    // Check National ID if provided
+                                    if (violatorNationalId !== "") {
+
+                                        if (!/^\d{14}$/.test(violatorNationalId)) {
+
+                                            functions.warningAlert(
+                                                "الرقم القومي يجب أن يتكون من 14 رقمًا بالضبط",
+                                                "#violatorNationalId"
+                                            );
+
+                                            return false;
+                                        }
+                                    }
+
+                                    violatorDetails = {
+                                        violatorName: violatorName,
+                                        violatorNationalId: violatorNationalId != "" ? violatorNationalId : "",
+                                        violationPrevCount: Number(violationPrevCount),
+                                        violationGov: violationGovId,
+                                        violationAreaName: violationArea,
+                                        companyName: companyName != "" ? companyName : "",
+                                        commercialRegister: commercialRegister != "" ? commercialRegister : "",
+                                        carType: carType,
+                                        TractorNumber: TractorFullNumber,
+                                    }
+
+                                    vaildViolator = true;
+
+                                } else {
+                                    functions.warningAlert("من فضلك قم بادخال أرقام المقطورة لا تتجاوز 7 أرقام")
                                 }
 
-                                violatorDetails = {
-                                    violatorName: violatorName,
-                                    violatorNationalId: violatorNationalId != "" ? violatorNationalId : "",
-                                    violationPrevCount: Number(violationPrevCount), // Use the display value
-                                    violationGov: violationGovId,
-                                    violationAreaName: violationArea,
-                                    companyName: companyName != "" ? companyName : "",
-                                    commercialRegister: commercialRegister != "" ? commercialRegister : "",
-                                    carType: carType,
-                                    TractorNumber: TractorFullNumber,
-                                }
-                                vaildViolator = true;
                             } else {
-                                functions.warningAlert("من فضلك قم بادخال أرقام المقطورة لا تتجاوز 7 أرقام")
+                                functions.warningAlert("من فضلك قم بادخال حروف المقطورة بشكل صحيح وباللغة العربية")
                             }
                         } else {
-                            functions.warningAlert("من فضلك قم بادخال حروف المقطورة بشكل صحيح وباللغة العربية")
+                            functions.warningAlert("من فضلك قم باختيار تصنيف العربة")
                         }
+
                     } else {
-                        functions.warningAlert("من فضلك قم باختيار تصنيف العربة")
+                        functions.warningAlert("من فضلك قم بادخال رقم الهاتف المحمول", "#violatorMobileNumber");
                     }
+
                 } else {
                     functions.warningAlert("من فضلك قم بادخال منطقة ضبط المخالفة")
                 }
@@ -129,6 +156,7 @@ carViolation.violatorCarDetails = () => {
     let carLicenseNumbers = $("#carLicenseNumbres").val();
     let driverLicenceNumber = $("#driverLicenseNumber").val();
     let driverLicenceTraffic = $(".driverLicenseTraffic").val();
+    let vehicleIdentificationNumber = $("#vehicleIdentificationNumber").val();
     let NationalIdRegExp = /^(2|3)[0-9][0-9][0-1][0-9][0-3][0-9](01|02|03|04|11|12|13|14|15|16|17|18|19|21|22|23|24|25|26|27|28|29|31|32|33|34|35|88)\d\d\d\d\d$/;
     if (violatorDetails != false) {
         if ((carLicenseLetters.length > 0 && carLicenseLetters.trim().length > 0) || $("#unmarkedCheckbox:checked").length != 0) {
@@ -145,7 +173,8 @@ carViolation.violatorCarDetails = () => {
                             carBrand: carBrand,
                             carLicenseTraffic: carLicenseTraffic != "" ? carLicenseTraffic : "",
                             driverLicenceNumber: driverLicenceNumber != "" ? driverLicenceNumber : "",
-                            driverLicenceTraffic: driverLicenceTraffic != "" ? driverLicenceTraffic : ""
+                            driverLicenceTraffic: driverLicenceTraffic != "" ? driverLicenceTraffic : "",
+                            vehicleIdentificationNumber: vehicleIdentificationNumber != "" ? vehicleIdentificationNumber : ""
                         }
                         validLicenses = true;
                         // }else{
@@ -730,36 +759,36 @@ carViolation.formActions = () => {
         }
     })
 
-    let tableRows = $("#coordinatesTable tr:not(:first-child)")
-    tableRows.each((index, row) => {
-        let currentRow = $(row)
-        $(currentRow).find("td:nth-child(2)").find("input:nth-child(1)").on("keyup", (e) => {
-            if (Number($(e.currentTarget).val()) == 37) {
-                $(e.currentTarget).closest("td").find("input:nth-child(2)").val(0)
-                $(e.currentTarget).closest("td").find("input:nth-child(2)").attr("disabled", "disabled")
-                $(e.currentTarget).closest("td").find("input:nth-child(3)").val(0)
-                $(e.currentTarget).closest("td").find("input:nth-child(3)").attr("disabled", "disabled")
-            } else if ($(e.currentTarget).val() == "" || Number($(e.currentTarget).val()) != 37) {
-                $(e.currentTarget).closest("td").find("input:nth-child(2)").val("")
-                $(e.currentTarget).closest("td").find("input:nth-child(2)").removeAttr("disabled")
-                $(e.currentTarget).closest("td").find("input:nth-child(3)").val("")
-                $(e.currentTarget).closest("td").find("input:nth-child(3)").removeAttr("disabled")
-            }
-        })
-        $(currentRow).find("td:nth-child(3)").find("input:nth-child(1)").on("keyup", (e) => {
-            if (Number($(e.currentTarget).val()) == 32) {
-                $(e.currentTarget).closest("td").find("input:nth-child(2)").val(0)
-                $(e.currentTarget).closest("td").find("input:nth-child(2)").attr("disabled", "disabled")
-                $(e.currentTarget).closest("td").find("input:nth-child(3)").val(0)
-                $(e.currentTarget).closest("td").find("input:nth-child(3)").attr("disabled", "disabled")
-            } else if ($(e.currentTarget).val() == "" || Number($(e.currentTarget).val()) != 32) {
-                $(e.currentTarget).closest("td").find("input:nth-child(2)").val("")
-                $(e.currentTarget).closest("td").find("input:nth-child(2)").removeAttr("disabled")
-                $(e.currentTarget).closest("td").find("input:nth-child(3)").val("")
-                $(e.currentTarget).closest("td").find("input:nth-child(3)").removeAttr("disabled")
-            }
-        })
-    });
+    // let tableRows = $("#coordinatesTable tr:not(:first-child)")
+    // tableRows.each((index, row) => {
+    //     let currentRow = $(row)
+    //     $(currentRow).find("td:nth-child(2)").find("input:nth-child(1)").on("keyup", (e) => {
+    //         if (Number($(e.currentTarget).val()) == 37) {
+    //             $(e.currentTarget).closest("td").find("input:nth-child(2)").val(0)
+    //             $(e.currentTarget).closest("td").find("input:nth-child(2)").attr("disabled", "disabled")
+    //             $(e.currentTarget).closest("td").find("input:nth-child(3)").val(0)
+    //             $(e.currentTarget).closest("td").find("input:nth-child(3)").attr("disabled", "disabled")
+    //         } else if ($(e.currentTarget).val() == "" || Number($(e.currentTarget).val()) != 37) {
+    //             $(e.currentTarget).closest("td").find("input:nth-child(2)").val("")
+    //             $(e.currentTarget).closest("td").find("input:nth-child(2)").removeAttr("disabled")
+    //             $(e.currentTarget).closest("td").find("input:nth-child(3)").val("")
+    //             $(e.currentTarget).closest("td").find("input:nth-child(3)").removeAttr("disabled")
+    //         }
+    //     })
+    //     $(currentRow).find("td:nth-child(3)").find("input:nth-child(1)").on("keyup", (e) => {
+    //         if (Number($(e.currentTarget).val()) == 32) {
+    //             $(e.currentTarget).closest("td").find("input:nth-child(2)").val(0)
+    //             $(e.currentTarget).closest("td").find("input:nth-child(2)").attr("disabled", "disabled")
+    //             $(e.currentTarget).closest("td").find("input:nth-child(3)").val(0)
+    //             $(e.currentTarget).closest("td").find("input:nth-child(3)").attr("disabled", "disabled")
+    //         } else if ($(e.currentTarget).val() == "" || Number($(e.currentTarget).val()) != 32) {
+    //             $(e.currentTarget).closest("td").find("input:nth-child(2)").val("")
+    //             $(e.currentTarget).closest("td").find("input:nth-child(2)").removeAttr("disabled")
+    //             $(e.currentTarget).closest("td").find("input:nth-child(3)").val("")
+    //             $(e.currentTarget).closest("td").find("input:nth-child(3)").removeAttr("disabled")
+    //         }
+    //     })
+    // });
 
     sharedApis.getGovernrates("#violationGov")
     // sharedApis.getViolationZones("#violationArea")
@@ -850,6 +879,7 @@ carViolation.validateForm = (e) => {
                             ViolationsZone: violatorDetails.violationAreaName,
                             VehicleType: violatorDetails.carType,
                             TrailerNum: violatorDetails.carType == "عربة بمقطورة" ? violatorDetails.TractorNumber : "",
+                            VehicleIdentificationNumber: violatorCarDetails.vehicleIdentificationNumber || "",
 
                             CarNumber: violatorCarDetails.carLicenseFullNumbers,
                             CarColor: violatorCarDetails.carLicenceColor,

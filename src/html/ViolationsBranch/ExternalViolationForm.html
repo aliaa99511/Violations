@@ -56,7 +56,8 @@
                                 </div>
                                 <div class="col-md-6">
                                     <div class="form-group customFormGroup">
-                                        <label for="violatorMobileNumber" class="customLabel">رقم الهاتف المحمول</label>
+                                        <label for="violatorMobileNumber" class="customLabel">رقم الهاتف المحمول<span
+                                                class="redAstric">*</span></label>
                                         <input class="form-control customInput violatorMobileNumber"
                                             id="violatorMobileNumber" type="text" maxlength="11"
                                             placeholder="ادخل رقم الهاتف المحمول" />
@@ -87,12 +88,9 @@
                                     <div class="form-group customFormGroup">
                                         <label for="assignedProsecution" class="customLabel">النيابة المختصة<span
                                                 class="redAstric">*</span></label>
-                                        <div class="selectBox">
-                                            <select class="form-control assignedProsecution" id="assignedProsecution">
-                                                <option value="" disabled selected hidden>النيابة المختصة</option>
-                                            </select>
-                                            <i class="fa-solid fa-sort-down"></i>
-                                        </div>
+                                        <input class="form-control customInput assignedProsecution"
+                                            id="assignedProsecution" type="text"
+                                            placeholder="ادخل اسم النيابة المختصة" />
                                     </div>
                                 </div>
                             </div>
@@ -299,7 +297,8 @@
                             <div class="row">
                                 <div class="col-md-6">
                                     <div class="form-group customFormGroup">
-                                        <label for="attachViolationFiles" class="customLabel">إرفاق مستندات</label>
+                                        <label for="attachViolationFiles" class="customLabel">إرفاق مستندات<span
+                                                class="redAstric">*</span></label>
                                         <div class="fileBox" id="dropContainer">
                                             <div class="inputFileBox">
                                                 <img src="/Style Library/MiningViolations/images/fileIcon.svg"
@@ -393,40 +392,13 @@
                                                         </label>
                                                     </div>
 
-                                                    <div class="col-md-12 tractorBox_dynamic" style="display: none;">
-                                                        <div class="row">
-                                                            <div class="col-md-6">
-                                                                <div class="form-group customFormGroup">
-                                                                    <label for="tractorLetters_dynamic"
-                                                                        class="customLabel">حروف المقطورة</label>
-                                                                    <input
-                                                                        class="form-control customInput tractorLetters"
-                                                                        id="tractorLetters_dynamic" type="text"
-                                                                        minlength="4" maxlength="7"
-                                                                        placeholder="ادخل حروف المقطورة" />
-                                                                </div>
-                                                            </div>
-                                                            <div class="col-md-6">
-                                                                <div class="form-group customFormGroup">
-                                                                    <label for="tractorNumbers_dynamic"
-                                                                        class="customLabel">أرقام المقطورة</label>
-                                                                    <input
-                                                                        class="form-control customInput tractorNumbers"
-                                                                        id="tractorNumbers_dynamic" type="text"
-                                                                        minlength="3" maxlength="7"
-                                                                        placeholder="ادخل أرقام المقطورة" />
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-
                                                     <div class="col-12">
                                                         <p class="formSectionLabel">* رخصة تسيير مركبة</p>
                                                     </div>
 
                                                     <div class="col-md-12">
                                                         <div class="row">
-                                                            <div class="col-md-5">
+                                                            <div class="col-md-4">
                                                                 <div class="form-group customFormGroup">
                                                                     <label for="carLicenseLetters_dynamic"
                                                                         class="customLabel">حروف<span
@@ -438,7 +410,7 @@
                                                                         placeholder="أحرف العربة" />
                                                                 </div>
                                                             </div>
-                                                            <div class="col-md-5">
+                                                            <div class="col-md-4">
                                                                 <div class="form-group customFormGroup">
                                                                     <label for="carLicenseNumbers_dynamic"
                                                                         class="customLabel">أرقام<span
@@ -489,6 +461,7 @@
                                                                         placeholder="ترخيص المرور" />
                                                                 </div>
                                                             </div>
+
                                                         </div>
                                                     </div>
 
@@ -496,7 +469,7 @@
                                                         <p class="formSectionLabel">* رخصة القيادة</p>
                                                     </div>
 
-                                                    <div class="col-md-6">
+                                                    <div class="col-md-4">
                                                         <div class="form-group customFormGroup">
                                                             <label for="driverLicenseNumber_dynamic"
                                                                 class="customLabel">رقم رخصة القيادة</label>
@@ -506,7 +479,7 @@
                                                         </div>
                                                     </div>
 
-                                                    <div class="col-md-3">
+                                                    <div class="col-md-4">
                                                         <div class="form-group customFormGroup">
                                                             <label for="driverLicenseTraffic_dynamic"
                                                                 class="customLabel">ترخيص المرور</label>
@@ -514,6 +487,35 @@
                                                                 class="form-control customInput driverLicenseTraffic"
                                                                 id="driverLicenseTraffic_dynamic"
                                                                 placeholder="ترخيص المرور" />
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="col-md-12 tractorBox_dynamic" style="display: none;">
+                                                        <div class="row">
+                                                            <div class="col-md-4">
+                                                                <div class="form-group customFormGroup">
+                                                                    <label for="tractorLetters_dynamic"
+                                                                        class="customLabel">حروف
+                                                                        المقطورة</label>
+                                                                    <input
+                                                                        class="form-control customInput tractorLetters"
+                                                                        id="tractorLetters_dynamic" type="text"
+                                                                        minlength="4" maxlength="7"
+                                                                        placeholder="ادخل حروف المقطورة" />
+                                                                </div>
+                                                            </div>
+                                                            <div class="col-md-4">
+                                                                <div class="form-group customFormGroup">
+                                                                    <label for="tractorNumbers_dynamic"
+                                                                        class="customLabel">أرقام
+                                                                        المقطورة</label>
+                                                                    <input
+                                                                        class="form-control customInput tractorNumbers"
+                                                                        id="tractorNumbers_dynamic" type="text"
+                                                                        minlength="3" maxlength="7"
+                                                                        placeholder="ادخل أرقام المقطورة" />
+                                                                </div>
+                                                            </div>
                                                         </div>
                                                     </div>
 
