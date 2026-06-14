@@ -25,7 +25,7 @@ confirmedViolationLog.getConfirmedLog = (
 
   if (theCodeValue && theCodeValue.trim() !== "" && (!violationCategoryValue || violationCategoryValue === "")) {
     functions.warningAlert("من فضلك قم باختيار تصنيف المخالفة قبل إدخال رقم المحجر/عربة/معدة");
-    $(".PreLoader").removeClass("active");
+    $(".overlay").removeClass("active");
     return;
   }
 
@@ -82,7 +82,7 @@ confirmedViolationLog.getConfirmedLog = (
         : null,
     },
   };
-
+  $(".overlay").addClass("active");
   functions
     .requester("_layouts/15/Uranium.Violations.SharePoint/Tasks.aspx/Search", {
       request,
@@ -93,7 +93,7 @@ confirmedViolationLog.getConfirmedLog = (
       }
     })
     .then((data) => {
-      $(".PreLoader").removeClass("active");
+      $(".overlay").removeClass("active");
       let ConfirmedViolation = [];
       let ItemsData = data.d.Result;
       if (data.d.Result.GridData != null) {
@@ -110,6 +110,7 @@ confirmedViolationLog.getConfirmedLog = (
       confirmedViolationLog.pageIndex = ItemsData.CurrentPage;
     })
     .catch((err) => {
+      $(".overlay").removeClass("active");
       console.log(err);
     });
 };
@@ -151,7 +152,7 @@ confirmedViolationLog.filterConfirmedLog = (e) => {
     ViolationTypeVal != "0" ||
     ViolationGeneralSearch != ""
   ) {
-    $(".PreLoader").addClass("active");
+    $(".overlay").addClass("active");
     ViolationSector = Number($("#violationSector").children("option:selected").val());
     ViolationType = Number($("#TypeofViolation").children("option:selected").data("id"));
 
@@ -180,7 +181,7 @@ confirmedViolationLog.resetFilter = (e) => {
   $("#theCode").val("");
   $("#ViolationStatus").val("");
 
-  $(".PreLoader").addClass("active");
+  $(".overlay").addClass("active");
   pagination.reset();
   confirmedViolationLog.getConfirmedLog();
 };
@@ -338,7 +339,7 @@ confirmedViolationLog.exportToExcel = () => {
         record.Violation?.ViolationsZone || "----",
     },
     {
-      title: "قيمة المخالفة",
+      title: "مبلغ المادة المحجرية",
       render: (record) => {
         const value = record.Violation?.TotalPriceDue;
 
@@ -360,6 +361,13 @@ confirmedViolationLog.exportToExcel = () => {
 
         return value && value > 0 ? value : "-";
       },
+    },
+    {
+      title: "الكمية",
+      render: (record) => {
+        const value = record.Violation?.TotalQuantity;
+        return value && value > 0 ? value : "-";
+      }
     },
     {
       title: "حالة المخالفة",
@@ -410,7 +418,7 @@ confirmedViolationLog.exportToExcel = () => {
   functions.exportFromAPI({
     searchUrl: "/_layouts/15/Uranium.Violations.SharePoint/Tasks.aspx/Search",
     requestData: { Data: currentFilters },
-    columns: columns,
+    columns: allColumns,
     fileName: "سجل المحاضر المصدق عليها.xlsx",
     sheetName: "سجل المحاضر المصدق عليها",
     columnWidths: 25,
@@ -591,22 +599,22 @@ confirmedViolationLog.ConfirmedViolationTable = (
 
   let violationlog = Table.rows().nodes().to$();
 
-  $(".ellipsisButton").on("click", (e) => {
-    $(".hiddenListBox").hide(300);
-    $(e.currentTarget).siblings(".hiddenListBox").toggle(300);
-  });
+  // $(".ellipsisButton").on("click", (e) => {
+  //   $(".hiddenListBox").hide(300);
+  //   $(e.currentTarget).siblings(".hiddenListBox").toggle(300);
+  // });
 
   $.each(violationlog, (index, record) => {
     let jQueryRecord = $(record);
     let taskID = jQueryRecord.find(".violationId").data("taskid");
 
-    jQueryRecord
-      .find(".controls")
-      .children(".ellipsisButton")
-      .on("click", (e) => {
-        $(".hiddenListBox").hide(300);
-        $(e.currentTarget).siblings(".hiddenListBox").toggle(300);
-      });
+    // Toggle menu
+    jQueryRecord.find(".controls").children(".ellipsisButton").on("click", (e) => {
+      e.stopPropagation();
+      const currentBox = $(e.currentTarget).siblings(".hiddenListBox");
+      $(".hiddenListBox").not(currentBox).stop(true, true).hide(300);
+      currentBox.stop(true, true).toggle(300);
+    });
     jQueryRecord
       .find(".controls")
       .children(".hiddenListBox")

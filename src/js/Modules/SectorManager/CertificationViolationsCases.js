@@ -25,7 +25,7 @@ certificationCases.getViolationsCases = () => {
       CaseNumber: certificationCases.dataObj.CaseNumber,
     },
   };
-
+  $(".overlay").addClass("active");
   functions
     .requester(
       "/_layouts/15/Uranium.Violations.SharePoint/Cases.aspx/Search",
@@ -37,7 +37,7 @@ certificationCases.getViolationsCases = () => {
       }
     })
     .then((data) => {
-      $(".PreLoader").removeClass("active");
+      $(".overlay").removeClass("active");
       let Cases = [];
       let ItemsData = data?.d?.Result;
       if (data?.d?.Result?.GridData != null) {
@@ -57,7 +57,10 @@ certificationCases.getViolationsCases = () => {
       );
       certificationCases.pageIndex = ItemsData.CurrentPage;
     })
-    .catch((err) => { });
+    .catch((err) => {
+      $(".overlay").removeClass("active");
+      console.log(err);
+    });
 };
 
 certificationCases.setPaginations = (TotalPages, RowsPerPage) => {
@@ -123,10 +126,10 @@ certificationCases.ViolationsCasesTable = (Cases) => {
   // 🔹 create column selector
   functions.createColumnSelector(Table, "#columnSelector", 'green');
 
-  $(".ellipsisButton").on("click", (e) => {
-    $(".hiddenListBox").hide(300);
-    $(e.currentTarget).siblings(".hiddenListBox").toggle(300);
-  });
+  // $(".ellipsisButton").on("click", (e) => {
+  //   $(".hiddenListBox").hide(300);
+  //   $(e.currentTarget).siblings(".hiddenListBox").toggle(300);
+  // });
   let UserId = _spPageContextInfo.userId;
   let casesLog = Table.rows().nodes().to$();
   functions.callSharePointListApi("Configurations").then((Users) => {
@@ -311,19 +314,29 @@ certificationCases.drawCaseAttachmentsPopupTable = (
       counter++;
     });
   }
-  let Table = functions.tableDeclare(
-    TableId,
-    data,
-    [
-      { title: "م", class: "tableCounter" },
-      { title: "المرفقات", class: "attachBoxHeader" },
+  let Table = $(TableId).DataTable({
+    destroy: true,
+    paging: false,
+    searching: false,
+    ordering: false,
+    info: false,
+    responsive: true,
+    autoWidth: false,
+    scrollX: false,
+    data: data,
+
+    columns: [
+      { title: "م" },
+      { title: "المرفقات" },
       { title: "سبب الإرفاق" },
       { title: "تاريخ الإرفاق" },
-      { title: "ملاحظات" },
+      { title: "ملاحظات" }
     ],
-    false,
-    false
-  );
+
+    language: {
+      emptyTable: "لا توجد بيانات"
+    }
+  });
   let caseAttachmentsLog = Table.rows().nodes().to$();
   $.each(caseAttachmentsLog, (index, record) => {
     let jQueryRecord = $(record);
@@ -737,7 +750,7 @@ certificationCases.filterViolationsLog = (e) => {
       "من فضلك قم بإدخال قيمة واحدة على الأقل من قيم البحث"
     );
   } else if (CaseNumber != "" || CaseStatusVal != "") {
-    $(".PreLoader").addClass("active");
+    $(".overlay").addClass("active");
     CaseStatus = $("#CaseStatus").children("option:selected").val();
     certificationCases.dataObj.caseStatus = CaseStatus;
     certificationCases.dataObj.CaseNumber = CaseNumber;

@@ -25,6 +25,7 @@ rejectedViolations.getRejectedViolations = (
             GlobalSearch: $("#violationSearch").val(),
         },
     };
+    $(".overlay").addClass("active");
     functions.requester("/_layouts/15/Uranium.Violations.SharePoint/Tasks.aspx/Search", { request, })
         .then((response) => {
             if (response.ok) {
@@ -32,7 +33,7 @@ rejectedViolations.getRejectedViolations = (
             }
         })
         .then((data) => {
-            $(".PreLoader").removeClass("active");
+            $(".overlay").removeClass("active");
             let rejectedViolationDate = [];
             let ItemsData = data.d.Result;
             if (data.d.Result.GridData != null) {
@@ -49,6 +50,7 @@ rejectedViolations.getRejectedViolations = (
             rejectedViolations.pageIndex = ItemsData.CurrentPage;
         })
         .catch((err) => {
+            $(".overlay").removeClass("active");
             console.log(err);
         });
 };
@@ -81,7 +83,7 @@ rejectedViolations.filterViolationsLog = (e) => {
         ViolationTypeVal != "0" ||
         ViolationGeneralSearch != ""
     ) {
-        $(".PreLoader").addClass("active");
+        $(".overlay").addClass("active");
         ViolationSector = Number($("#violationSector").children("option:selected").val());
         ViolationType = Number($("#TypeofViolation").children("option:selected").data("id"));
         rejectedViolations.getRejectedViolations(
@@ -100,7 +102,7 @@ rejectedViolations.resetFilter = (e) => {
     $("#TypeofViolation").val("0");
     $("#violationSearch").val("");
 
-    $(".PreLoader").addClass("active");
+    $(".overlay").addClass("active");
     pagination.reset();
     rejectedViolations.getRejectedViolations();
 };
@@ -126,10 +128,33 @@ rejectedViolations.exportToExcel = () => {
             title: "",
             skip: true
         },
-
         {
             title: "تصنيف المخالفة",
             render: (record) => functions.getViolationArabicName(record.Violation?.OffenderType),
+        },
+        {
+            title: "اسم المخالف",
+            render: (record) => record.Violation?.ViolatorName || "-",
+        },
+        {
+            title: "نوع المخالفة",
+            render: (record) =>
+                functions.getViolationArabicName(
+                    record.Violation?.OffenderType,
+                    record.Violation?.ViolationTypes?.Title
+                )
+        },
+        {
+            title: "تاريخ الإنشاء",
+            render: (record) => functions.getFormatedDate(record.Created)
+        },
+        {
+            title: "تاريخ الضبط",
+            render: (record) => functions.getFormatedDate(record.Violation?.ViolationDate)
+        },
+        {
+            title: "إسم الشركة المخالفة",
+            data: "Violation.ViolatorCompany"
         },
         {
             title: "رقم المحجر/العربة",
@@ -142,29 +167,9 @@ rejectedViolations.exportToExcel = () => {
             }
         },
         {
-            title: "إسم الشركة المخالفة",
-            data: "Violation.ViolatorCompany"
-        },
-        {
-            title: "نوع المخالفة",
-            render: (record) =>
-                functions.getViolationArabicName(
-                    record.Violation?.OffenderType,
-                    record.Violation?.ViolationTypes?.Title
-                )
-        },
-        {
             title: "المنطقة",
             data: "Violation.ViolationsZone"
         },
-        {
-            title: "تاريخ الضبط",
-            render: (record) => functions.getFormatedDate(record.Violation?.ViolationDate)
-        },
-        {
-            title: "تاريخ الإنشاء",
-            render: (record) => functions.getFormatedDate(record.Created)
-        }
     ];
 
     functions.exportFromAPI({
@@ -249,10 +254,10 @@ rejectedViolations.rejectedViolationTable = (rejectedViolationDate, destroyTable
         rejectedViolations.exportToExcel();
     });
 
-    $(".ellipsisButton").on("click", (e) => {
-        $(".hiddenListBox").hide(300);
-        $(e.currentTarget).siblings(".hiddenListBox").toggle(300);
-    });
+    // $(".ellipsisButton").on("click", (e) => {
+    //     $(".hiddenListBox").hide(300);
+    //     $(e.currentTarget).siblings(".hiddenListBox").toggle(300);
+    // });
 
     let violationlog = Table.rows().nodes().to$();
     $.each(violationlog, (index, record) => {
@@ -261,6 +266,14 @@ rejectedViolations.rejectedViolationTable = (rejectedViolationDate, destroyTable
         let rejectReason = jQueryRecord.find(".violationId").data("rejectreason");
         let OffenderType = jQueryRecord.find(".violationId").data("offendertype");
         let hiddenListBox = jQueryRecord.find(".controls").children(".hiddenListBox")
+
+        // Toggle menu
+        jQueryRecord.find(".controls").children(".ellipsisButton").on("click", (e) => {
+            e.stopPropagation();
+            const currentBox = $(e.currentTarget).siblings(".hiddenListBox");
+            $(".hiddenListBox").not(currentBox).stop(true, true).hide(300);
+            currentBox.stop(true, true).toggle(300);
+        });
 
         jQueryRecord.find(".controls").children(".hiddenListBox").find(".itemDetails").on("click", (e) => {
             $(".overlay").addClass("active");

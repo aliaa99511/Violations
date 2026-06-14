@@ -35,7 +35,7 @@ vehicleViolationReferral.getVehicleViolationReferrals = (
                 : null,
         }
     };
-
+    $(".overlay").addClass("active");
     functions
         .requester(
             "/_layouts/15/Uranium.Violations.SharePoint/Cases.aspx/Search",
@@ -47,7 +47,7 @@ vehicleViolationReferral.getVehicleViolationReferrals = (
             }
         })
         .then((data) => {
-            $(".PreLoader").removeClass("active");
+            $(".overlay").removeClass("active");
             let Referrals = [];
             let ItemsData = data?.d?.Result;
 
@@ -66,6 +66,7 @@ vehicleViolationReferral.getVehicleViolationReferrals = (
             vehicleViolationReferral.pageIndex = ItemsData.CurrentPage;
         })
         .catch((err) => {
+            $(".overlay").removeClass("active");
             console.error(err);
         });
 };
@@ -77,7 +78,7 @@ vehicleViolationReferral.setPaginations = (TotalPages, RowsPerPage) => {
 vehicleViolationReferral.filterVehicleViolationReferrals = (e) => {
     let pageIndex = vehicleViolationReferral.pageIndex;
 
-    $(".PreLoader").addClass("active");
+    $(".overlay").addClass("active");
     vehicleViolationReferral.getVehicleViolationReferrals(
         pageIndex,
         true,
@@ -99,7 +100,6 @@ vehicleViolationReferral.filterVehicleViolationReferrals = (e) => {
     //     VehicleRegistrationNumberVal != "" ||
     //     CaseStatusVal != ""
     // ) {
-    //     $(".PreLoader").addClass("active");
     //     VehicleRegistrationNumber = $("#vehicleRegistrationNumber").val();
     //     CaseStatus = $("#CaseStatus").children("option:selected").val();
     //     vehicleViolationReferral.getVehicleViolationReferrals(
@@ -125,7 +125,7 @@ vehicleViolationReferral.resetFilter = (e) => {
     $("#TrafficName").val("");
     $("#ViolatorCompany").val("");
 
-    $(".PreLoader").addClass("active");
+    $(".overlay").addClass("active");
     pagination.reset();
     vehicleViolationReferral.getVehicleViolationReferrals();
 };
@@ -408,10 +408,10 @@ vehicleViolationReferral.VehicleViolationReferralTable = (Referrals, destroyTabl
         vehicleViolationReferral.exportToExcel();
     });
 
-    $(".ellipsisButton").on("click", (e) => {
-        $(".hiddenListBox").hide(300);
-        $(e.currentTarget).siblings(".hiddenListBox").toggle(300);
-    });
+    // $(".ellipsisButton").on("click", (e) => {
+    //     $(".hiddenListBox").hide(300);
+    //     $(e.currentTarget).siblings(".hiddenListBox").toggle(300);
+    // });
 
     let referralsLog = Table.rows().nodes().to$();
 
@@ -421,6 +421,14 @@ vehicleViolationReferral.VehicleViolationReferralTable = (Referrals, destroyTabl
         let referralID = violationCodeElement.data("referralid");
         let referralNumber = violationCodeElement.data("referralnumber");
         let hiddenListBox = jQueryRecord.find(".controls").children(".hiddenListBox");
+
+        // Toggle menu
+        jQueryRecord.find(".controls").children(".ellipsisButton").on("click", (e) => {
+            e.stopPropagation();
+            const currentBox = $(e.currentTarget).siblings(".hiddenListBox");
+            $(".hiddenListBox").not(currentBox).stop(true, true).hide(300);
+            currentBox.stop(true, true).toggle(300);
+        });
 
         // Attachments click handler
         jQueryRecord.find(".referralAttachments").find("a").off('click').on('click', function (e) {
@@ -695,7 +703,7 @@ vehicleViolationReferral.addRegistrationNumberPopup = (ReferralID, ViolationID, 
             let fileSplited = allAttachments[i].name.split(".");
             let fileExt = fileSplited[fileSplited.length - 1].toLowerCase();
             if ($.inArray(fileExt, filesExtension) == -1) {
-                functions.warningAlert("من فضلك أدخل الملفات بالامتدادات المسموح بها فقط");
+                functions.warningAlert("من فضلك أدخل الملفات بالمرفقات المسموح بها فقط");
                 $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").hide();
                 $(e.currentTarget).val("");
             }
@@ -872,7 +880,7 @@ vehicleViolationReferral.addRegistrationNumberPopup = (ReferralID, ViolationID, 
 //             let fileSplited = allAttachments[i].name.split(".");
 //             let fileExt = fileSplited[fileSplited.length - 1].toLowerCase();
 //             if ($.inArray(fileExt, filesExtension) == -1) {
-//                 functions.warningAlert("من فضلك أدخل الملفات بالامتدادات المسموح بها فقط");
+//                 functions.warningAlert("من فضلك أدخل الملفات بالمرفقات المسموح بها فقط");
 //                 $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").hide();
 //                 $(e.currentTarget).val("");
 //             }
@@ -1026,7 +1034,7 @@ vehicleViolationReferral.addRegistrationNumberPopup = (ReferralID, ViolationID, 
 //             let fileSplited = allAttachments[i].name.split(".");
 //             let fileExt = fileSplited[fileSplited.length - 1].toLowerCase();
 //             if ($.inArray(fileExt, filesExtension) == -1) {
-//                 functions.warningAlert("من فضلك أدخل الملفات بالامتدادات المسموح بها فقط");
+//                 functions.warningAlert("من فضلك أدخل الملفات بالمرفقات المسموح بها فقط");
 //                 $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").hide();
 //                 $(e.currentTarget).val("");
 //             }
@@ -1186,7 +1194,7 @@ vehicleViolationReferral.payCasePopup = (
             let fileSplited = allAttachments[i].name.split(".");
             let fileExt = fileSplited[fileSplited.length - 1].toLowerCase();
             if ($.inArray(fileExt, filesExtension) == -1) {
-                functions.warningAlert("من فضلك أدخل الملفات بالامتدادات المسموح بها فقط");
+                functions.warningAlert("من فضلك أدخل الملفات بالمرفقات المسموح بها فقط");
                 $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").hide();
                 $(e.currentTarget).val("");
             }
@@ -1375,7 +1383,7 @@ vehicleViolationReferral.payCaseAfterEditPopup = (
         }
 
         if (invalidFiles) {
-            functions.warningAlert("من فضلك أدخل الملفات بالامتدادات المسموح بها فقط");
+            functions.warningAlert("من فضلك أدخل الملفات بالمرفقات المسموح بها فقط");
             $(e.currentTarget).val("");
             $dropFilesArea.hide();
             popupState.attachments = null;
@@ -1912,21 +1920,29 @@ vehicleViolationReferral.drawReferralAttachmentsPopupTable = (
         });
     }
 
-    let Table = functions.tableDeclare(
-        TableId,
-        data,
-        [
-            { title: "م", class: "tableCounter" },
-            { title: "المرفقات", class: "attachBoxHeader" },
+    let Table = $(TableId).DataTable({
+        destroy: true,
+        paging: false,
+        searching: false,
+        ordering: false,
+        info: false,
+        responsive: true,
+        autoWidth: false,
+        scrollX: false,
+        data: data,
+
+        columns: [
+            { title: "م" },
+            { title: "المرفقات" },
             { title: "سبب الإرفاق" },
             { title: "تاريخ الإرفاق" },
-            { title: "ملاحظات" },
+            { title: "ملاحظات" }
         ],
-        false,
-        false,
-        "سجل إحالات المخالفات المركبة.xlsx",
-        "سجل إحالات المخالفات المركبة"
-    );
+
+        language: {
+            emptyTable: "لا توجد بيانات"
+        }
+    });
 
     let referralAttachmentsLog = Table.rows().nodes().to$();
     $.each(referralAttachmentsLog, (index, record) => {
@@ -2555,7 +2571,7 @@ vehicleViolationReferral.saveCaseAndCancelViolationPopup = (
             let fileSplited = allAttachments[i].name.split(".");
             let fileExt = fileSplited[fileSplited.length - 1].toLowerCase();
             if ($.inArray(fileExt, filesExtension) == -1) {
-                functions.warningAlert("من فضلك أدخل الملفات بالامتدادات المسموح بها فقط");
+                functions.warningAlert("من فضلك أدخل الملفات بالمرفقات المسموح بها فقط");
                 $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").hide();
                 $(e.currentTarget).val("");
             }

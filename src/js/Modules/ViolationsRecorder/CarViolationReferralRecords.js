@@ -34,7 +34,7 @@ vehicleViolationReferralRecords.getVehicleViolationReferralsRecords = (
                 : null,
         }
     };
-
+    $(".overlay").addClass("active");
     functions
         .requester(
             "/_layouts/15/Uranium.Violations.SharePoint/Cases.aspx/Search",
@@ -46,7 +46,7 @@ vehicleViolationReferralRecords.getVehicleViolationReferralsRecords = (
             }
         })
         .then((data) => {
-            $(".PreLoader").removeClass("active");
+            $(".overlay").removeClass("active");
             let Referrals = [];
             let ItemsData = data?.d?.Result;
 
@@ -65,6 +65,7 @@ vehicleViolationReferralRecords.getVehicleViolationReferralsRecords = (
             vehicleViolationReferralRecords.pageIndex = ItemsData.CurrentPage;
         })
         .catch((err) => {
+            $(".overlay").removeClass("active");
             console.log(err);
         });
 };
@@ -76,7 +77,7 @@ vehicleViolationReferralRecords.setPaginations = (TotalPages, RowsPerPage) => {
 vehicleViolationReferralRecords.filterVehicleViolationReferralsRecords = (e) => {
     let pageIndex = vehicleViolationReferralRecords.pageIndex;
 
-    $(".PreLoader").addClass("active");
+    $(".overlay").addClass("active");
     vehicleViolationReferralRecords.getVehicleViolationReferralsRecords(
         pageIndex,
         true,
@@ -98,7 +99,7 @@ vehicleViolationReferralRecords.filterVehicleViolationReferralsRecords = (e) => 
     //     VehicleRegistrationNumberVal != "" ||
     //     CaseStatusVal != ""
     // ) {
-    //     $(".PreLoader").addClass("active");
+    //     $(".overlay").addClass("active");
     //     VehicleRegistrationNumber = $("#vehicleRegistrationNumber").val();
     //     CaseStatus = $("#CaseStatus").children("option:selected").val();
     //     vehicleViolationReferralRecords.getVehicleViolationReferralsRecords(
@@ -124,7 +125,7 @@ vehicleViolationReferralRecords.resetFilter = (e) => {
     $("#TrafficName").val("");
     $("#ViolatorCompany").val("");
 
-    $(".PreLoader").addClass("active");
+    $(".overlay").addClass("active");
     pagination.reset();
     vehicleViolationReferralRecords.getVehicleViolationReferralsRecords();
 };
@@ -309,10 +310,10 @@ vehicleViolationReferralRecords.VehicleViolationReferralRecordsTable = (Referral
         vehicleViolationReferralRecords.exportToExcel();
     });
 
-    $(".ellipsisButton").on("click", (e) => {
-        $(".hiddenListBox").hide(300);
-        $(e.currentTarget).siblings(".hiddenListBox").toggle(300);
-    });
+    // $(".ellipsisButton").on("click", (e) => {
+    //     $(".hiddenListBox").hide(300);
+    //     $(e.currentTarget).siblings(".hiddenListBox").toggle(300);
+    // });
 
     let referralsLog = Table.rows().nodes().to$();
 
@@ -323,6 +324,14 @@ vehicleViolationReferralRecords.VehicleViolationReferralRecordsTable = (Referral
         let referralID = violationCodeElement.data("referralid");
         let referralNumber = violationCodeElement.data("referralnumber");
         let hiddenListBox = jQueryRecord.find(".controls").children(".hiddenListBox");
+
+        // Toggle menu
+        jQueryRecord.find(".controls").children(".ellipsisButton").on("click", (e) => {
+            e.stopPropagation();
+            const currentBox = $(e.currentTarget).siblings(".hiddenListBox");
+            $(".hiddenListBox").not(currentBox).stop(true, true).hide(300);
+            currentBox.stop(true, true).toggle(300);
+        });
 
         // Attachments click handler
         jQueryRecord.find(".referralAttachments").find("a").off('click').on('click', function (e) {
@@ -457,19 +466,29 @@ vehicleViolationReferralRecords.drawReferralAttachmentsPopupTable = (
         });
     }
 
-    let Table = functions.tableDeclare(
-        TableId,
-        data,
-        [
-            { title: "م", class: "tableCounter" },
-            { title: "المرفقات", class: "attachBoxHeader" },
+    let Table = $(TableId).DataTable({
+        destroy: true,
+        paging: false,
+        searching: false,
+        ordering: false,
+        info: false,
+        responsive: true,
+        autoWidth: false,
+        scrollX: false,
+        data: data,
+
+        columns: [
+            { title: "م" },
+            { title: "المرفقات" },
             { title: "سبب الإرفاق" },
             { title: "تاريخ الإرفاق" },
-            { title: "ملاحظات" },
+            { title: "ملاحظات" }
         ],
-        false,
-        false
-    );
+
+        language: {
+            emptyTable: "لا توجد بيانات"
+        }
+    });
 
     let referralAttachmentsLog = Table.rows().nodes().to$();
     $.each(referralAttachmentsLog, (index, record) => {
@@ -1070,7 +1089,7 @@ ViolationHistoryLogs();
 //     });
 
 //     // Load initial data
-//     $(".PreLoader").addClass("active");
+//     $(".overlay").addClass("active");
 //     vehicleViolationReferralRecords.getVehicleViolationReferralsRecords();
 // };
 

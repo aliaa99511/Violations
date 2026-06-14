@@ -11,6 +11,16 @@ quarryViolationReferralRecords.getQuarryViolationReferralsRecords = (
     // ReferralNumber = $("#CaseNumber").val(),
     // CaseStatus = $("#CaseStatus").children("option:selected").val(),
 ) => {
+    // Remove Arabic & English letters from Referral Number filter
+    $("#CaseNumber").on("input", function () {
+        let value = $(this).val();
+
+        // Remove English and Arabic letters only
+        value = value.replace(/[a-zA-Z\u0600-\u06FF]/g, "");
+
+        $(this).val(value);
+    });
+
     let request = {
         Request: {
             RowsPerPage: 10,
@@ -31,7 +41,7 @@ quarryViolationReferralRecords.getQuarryViolationReferralsRecords = (
                 : null,
         }
     };
-
+    $(".overlay").addClass("active");
     functions
         .requester(
             "/_layouts/15/Uranium.Violations.SharePoint/Cases.aspx/Search",
@@ -43,7 +53,7 @@ quarryViolationReferralRecords.getQuarryViolationReferralsRecords = (
             }
         })
         .then((data) => {
-            $(".PreLoader").removeClass("active");
+            $(".overlay").removeClass("active");
             let Referrals = [];
             let ItemsData = data?.d?.Result;
 
@@ -62,6 +72,7 @@ quarryViolationReferralRecords.getQuarryViolationReferralsRecords = (
             quarryViolationReferralRecords.pageIndex = ItemsData.CurrentPage;
         })
         .catch((err) => {
+            $(".overlay").removeClass("active");
             console.log(err);
         });
 };
@@ -75,7 +86,7 @@ quarryViolationReferralRecords.setPaginations = (TotalPages, RowsPerPage) => {
 quarryViolationReferralRecords.filterQuarryViolationReferralsRecords = (e) => {
     let pageIndex = quarryViolationReferralRecords.pageIndex;
 
-    $(".PreLoader").addClass("active");
+    $(".overlay").addClass("active");
     quarryViolationReferralRecords.getQuarryViolationReferralsRecords(
         pageIndex,
         true,
@@ -98,7 +109,7 @@ quarryViolationReferralRecords.filterQuarryViolationReferralsRecords = (e) => {
     //     ReferralNumberVal != "" ||
     //     CaseStatusVal != ""
     // ) {
-    //     $(".PreLoader").addClass("active");
+    //     $(".overlay").addClass("active");
     //     ReferralNumber = $("#CaseNumber").val();
     //     CaseStatus = $("#CaseStatus").children("option:selected").val();
     //     quarryViolationReferralRecords.getQuarryViolationReferralsRecords(
@@ -121,7 +132,7 @@ quarryViolationReferralRecords.resetFilter = (e) => {
     $("#RefferedDateFrom").val("");
     $("#RefferedDateTo").val("");
 
-    $(".PreLoader").addClass("active");
+    $(".overlay").addClass("active");
     pagination.reset();
     quarryViolationReferralRecords.getQuarryViolationReferralsRecords();
 };
@@ -168,14 +179,14 @@ quarryViolationReferralRecords.exportToExcel = () => {
                 functions.getQuarryViolationStatus(record.ViolationStatus) || "-----",
         },
         {
+            title: "المبلغ المستحق",
+            render: (record) => record.TotalPriceDue || 0,
+        },
+        {
             title: "موقف الإحالة",
             render: (record) =>
                 functions.getCaseStatus(record.Status) || "-----",
         },
-        {
-            title: "المبلغ المستحق",
-            render: (record) => record.TotalPriceDue || 0,
-        }
     ];
 
     functions.exportCasesFromAPI({
@@ -320,10 +331,10 @@ quarryViolationReferralRecords.QuarryViolationReferralRecordsTable = (Referrals,
         quarryViolationReferralRecords.exportToExcel();
     });
 
-    $(".ellipsisButton").on("click", (e) => {
-        $(".hiddenListBox").hide(300);
-        $(e.currentTarget).siblings(".hiddenListBox").toggle(300);
-    });
+    // $(".ellipsisButton").on("click", (e) => {
+    //     $(".hiddenListBox").hide(300);
+    //     $(e.currentTarget).siblings(".hiddenListBox").toggle(300);
+    // });
 
     let referralsLog = Table.rows().nodes().to$();
 
@@ -334,6 +345,14 @@ quarryViolationReferralRecords.QuarryViolationReferralRecordsTable = (Referrals,
         let referralID = violationCodeElement.data("referralid");
         let referralNumber = violationCodeElement.data("referralnumber");
         let hiddenListBox = jQueryRecord.find(".controls").children(".hiddenListBox");
+
+        // Toggle menu
+        jQueryRecord.find(".controls").children(".ellipsisButton").on("click", (e) => {
+            e.stopPropagation();
+            const currentBox = $(e.currentTarget).siblings(".hiddenListBox");
+            $(".hiddenListBox").not(currentBox).stop(true, true).hide(300);
+            currentBox.stop(true, true).toggle(300);
+        });
 
         // Attachments click handler
         jQueryRecord.find(".referralAttachments").find("a").off('click').on('click', function (e) {
@@ -448,7 +467,7 @@ quarryViolationReferralRecords.attachEndorsementPopup = (
      
                                 <div class="col-12">
                                     <div class="form-group customFormGroup">
-                                        <label for="endorsementAttach" class="customLabel">إرفاق مستند التأشيرة</label>
+                                        <label for="endorsementAttach" class="customLabel">إرفاق مستند التأشيرة * </label>
                                         <div class="fileBox" id="dropContainer">
                                             <div class="inputFileBox">
                                                 <img src="/Style Library/MiningViolations/images/fileIcon.svg" alt="File Icon">
@@ -551,7 +570,7 @@ quarryViolationReferralRecords.attachEndorsementPopup = (
             let fileSplited = allAttachments[i].name.split(".");
             let fileExt = fileSplited[fileSplited.length - 1].toLowerCase();
             if ($.inArray(fileExt, filesExtension) == -1) {
-                functions.warningAlert("من فضلك أدخل الملفات بالامتدادات المسموح بها فقط");
+                functions.warningAlert("من فضلك أدخل الملفات بالمرفقات المسموح بها فقط");
                 $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").hide();
                 $(e.currentTarget).val("");
             }
@@ -906,21 +925,29 @@ quarryViolationReferralRecords.drawReferralAttachmentsPopupTable = (
         });
     }
 
-    let Table = functions.tableDeclare(
-        TableId,
-        data,
-        [
-            { title: "م", class: "tableCounter" },
-            { title: "المرفقات", class: "attachBoxHeader" },
+    let Table = $(TableId).DataTable({
+        destroy: true,
+        paging: false,
+        searching: false,
+        ordering: false,
+        info: false,
+        responsive: true,
+        autoWidth: false,
+        scrollX: false,
+        data: data,
+
+        columns: [
+            { title: "م" },
+            { title: "المرفقات" },
             { title: "سبب الإرفاق" },
             { title: "تاريخ الإرفاق" },
-            { title: "ملاحظات" },
+            { title: "ملاحظات" }
         ],
-        false,
-        false,
-        "سجل إحالات المخالفات المحجرية.xlsx",
-        "سجل إحالات المخالفات المحجرية"
-    );
+
+        language: {
+            emptyTable: "لا توجد بيانات"
+        }
+    });
 
     let referralAttachmentsLog = Table.rows().nodes().to$();
     $.each(referralAttachmentsLog, (index, record) => {
@@ -1548,7 +1575,7 @@ ViolationHistoryLogs();
 //     });
 
 //     // Load initial data
-//     $(".PreLoader").addClass("active");
+//     $(".overlay").addClass("active");
 //     quarryViolationReferralRecords.getQuarryViolationReferralsRecords();
 // };
 

@@ -18,7 +18,7 @@ pendingPaymentRecords.getPendingPayment = (
 
     if (theCodeValue && theCodeValue.trim() !== "" && (!violationCategoryValue || violationCategoryValue === "")) {
         functions.warningAlert("من فضلك قم باختيار تصنيف المخالفة قبل إدخال رقم المحجر/عربة/معدة");
-        $(".PreLoader").removeClass("active");
+        $(".overlay").removeClass("active");
         return;
     }
 
@@ -50,7 +50,7 @@ pendingPaymentRecords.getPendingPayment = (
                 : null,
         }
     };
-
+    $(".overlay").addClass("active");
     functions
         .requester("_layouts/15/Uranium.Violations.SharePoint/Tasks.aspx/Search", {
             request,
@@ -61,7 +61,7 @@ pendingPaymentRecords.getPendingPayment = (
             }
         })
         .then((data) => {
-            $(".PreLoader").removeClass("active");
+            $(".overlay").removeClass("active");
             let pendingPaymentData = [];
             let ItemsData = data.d.Result;
             if (data.d.Result.GridData != null) {
@@ -78,6 +78,7 @@ pendingPaymentRecords.getPendingPayment = (
             pendingPaymentRecords.pageIndex = ItemsData.CurrentPage;
         })
         .catch((err) => {
+            $(".overlay").removeClass("active");
             console.log(err);
         });
 };
@@ -117,7 +118,7 @@ pendingPaymentRecords.filterPaymentsLog = () => {
             "من فضلك قم بإدخال قيمة واحدة على الأقل من قيم البحث"
         );
     } else {
-        $(".PreLoader").addClass("active");
+        $(".overlay").addClass("active");
         let ViolationType = Number($("#TypeofViolation").children("option:selected").data("id"));
         pendingPaymentRecords.getPendingPayment(
             pageIndex,
@@ -139,7 +140,7 @@ pendingPaymentRecords.resetFilter = (e) => {
     $("#createdFrom").val("");
     $("#createdTo").val("");
 
-    $(".PreLoader").addClass("active");
+    $(".overlay").addClass("active");
     pagination.reset();
     pendingPaymentRecords.getPendingPayment();
 
@@ -282,13 +283,17 @@ pendingPaymentRecords.PendingPaymentTable = (PendingPaymentData, destroyTable) =
 
     // 🔹 create column selector
     functions.createColumnSelector(Table, "#columnSelector", 'blue');
-
     pendingPaymentRecords.destroyTable = true;
 
-    $(".ellipsisButton").on("click", (e) => {
-        $(".hiddenListBox").hide(300);
-        $(e.currentTarget).siblings(".hiddenListBox").toggle(300);
+    // Update export button handler
+    $("#exportBtn").off("click").on("click", () => {
+        pendingPaymentRecords.exportToExcel();
     });
+
+    // $(".ellipsisButton").on("click", (e) => {
+    //     $(".hiddenListBox").hide(300);
+    //     $(e.currentTarget).siblings(".hiddenListBox").toggle(300);
+    // });
 
     let paymentLog = Table.rows().nodes().to$();
     let UserId = _spPageContextInfo.userId;
@@ -315,6 +320,14 @@ pendingPaymentRecords.PendingPaymentTable = (PendingPaymentData, destroyTable) =
             //     hiddenListBox.addClass("toTopDDL");
             // }
 
+            // Toggle menu
+            jQueryRecord.find(".controls").children(".ellipsisButton").on("click", (e) => {
+                e.stopPropagation();
+                const currentBox = $(e.currentTarget).siblings(".hiddenListBox");
+                $(".hiddenListBox").not(currentBox).stop(true, true).hide(300);
+                currentBox.stop(true, true).toggle(300);
+            });
+
             jQueryRecord
                 .find(".controls")
                 .children(".hiddenListBox")
@@ -327,6 +340,104 @@ pendingPaymentRecords.PendingPaymentTable = (PendingPaymentData, destroyTable) =
     });
 
     functions.hideTargetElement(".controls", ".hiddenListBox");
+};
+pendingPaymentRecords.exportToExcel = () => {
+    // Get current filter values
+    const theCodeValue = $("#theCode").val();
+    const violationCategoryValue = $("#violationCategory").val();
+
+    const theCode = {};
+    if (theCodeValue && theCodeValue.trim() !== "" && violationCategoryValue) {
+        if (violationCategoryValue === "Quarry") {
+            theCode.QuarryCode = theCodeValue;
+        } else if (violationCategoryValue === "Vehicle") {
+            theCode.CarNumber = theCodeValue;
+        }
+    }
+
+    let UserId = _spPageContextInfo.userId;
+
+    const currentFilters = {
+        ...theCode,
+        RowsPerPage: 10000000, // Get all records for export
+        PageIndex: 1,
+        ColName: "created",
+        SortOrder: "desc",
+        Status: "UnderPayment",
+        Sector: UserId,
+        ViolationType: Number($("#TypeofViolation").children("option:selected").data("id")),
+        GlobalSearch: $("#violationSearch").val(),
+        OffenderType: $("#violationCategory").val(),
+        ViolatorName: $("#violatorName").val(),
+        ViolatorCompany: $("#companyName").val(),
+        CreatedFrom: $("#createdFrom").val() ? moment($("#createdFrom").val(), "DD-MM-YYYY").format("YYYY-MM-DD") : null,
+        CreatedTo: $("#createdTo").val() ? moment($("#createdTo").val(), "DD-MM-YYYY").format("YYYY-MM-DD") : null,
+    };
+
+    // Define columns with their data mapping
+    const columns = [
+        {
+            title: "رقم المخالفة",
+            data: "Violation.ViolationCode",
+        },
+        {
+            title: "",
+            skip: true
+        },
+        {
+            title: "تصنيف المخالفة",
+            render: (record) => functions.getViolationArabicName(record.Violation?.OffenderType),
+        },
+        {
+            title: "إسم المخالف",
+            data: "Violation.ViolatorName",
+        },
+        {
+            title: "رقم المحجر/العربة",
+            render: (record) => {
+                const violation = record.Violation;
+                if (!violation) return "---";
+                return violation.OffenderType === "Vehicle" ? (violation.CarNumber || "---") : (violation.QuarryCode || "---");
+            },
+        },
+        {
+            title: "إسم الشركة المخالفة",
+            data: "Violation.ViolatorCompany",
+        },
+        {
+            title: "نوع المخالفة",
+            render: (record) => functions.getViolationArabicName(record.Violation?.OffenderType, record.Violation?.ViolationTypes?.Title),
+        },
+        {
+            title: "المنطقة",
+            data: "Violation.ViolationsZone",
+        },
+        {
+            title: "تاريخ أخر قسط",
+            render: (record) => record.Violation?.InstallmentDate ? functions.getFormatedDate(record.Violation.InstallmentDate) : "-",
+        },
+        {
+            title: "المبلغ المسدد",
+            render: (record) => functions.splitBigNumbersByComma(record.Violation?.TotalInstallmentsPaidAmount || 0),
+        },
+        {
+            title: "المبلغ المتبقي",
+            render: (record) => functions.splitBigNumbersByComma(record.Violation?.RemainingAmount || 0),
+        },
+    ];
+
+    functions.exportFromAPI({
+        searchUrl: "/_layouts/15/Uranium.Violations.SharePoint/Tasks.aspx/Search",
+        requestData: { Data: currentFilters },
+        columns: columns,
+        fileName: "المخالفات قيد السداد.xlsx",
+        sheetName: "المخالفات قيد السداد",
+        columnWidths: 25,
+        rtl: true,
+        dataPath: "d.Result.GridData",
+        exportButtonSelector: "#exportBtn",
+        tableSelector: "#PendingPaymentRecords"
+    });
 };
 
 pendingPaymentRecords.findViolationByID = (event, taskID, print = false) => {

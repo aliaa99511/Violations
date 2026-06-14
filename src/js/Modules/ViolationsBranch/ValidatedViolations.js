@@ -22,7 +22,7 @@ validatedViolations.getValidatedViolations = (
 
   if (theCodeValue && theCodeValue.trim() !== "" && (!violationCategoryValue || violationCategoryValue === "")) {
     functions.warningAlert("من فضلك قم باختيار تصنيف المخالفة قبل إدخال رقم المحجر/عربة/معدة");
-    $(".PreLoader").removeClass("active");
+    $(".overlay").removeClass("active");
     return;
   }
 
@@ -70,7 +70,7 @@ validatedViolations.getValidatedViolations = (
         : null,
     },
   };
-
+  $(".overlay").addClass("active");
   functions
     .requester("/_layouts/15/Uranium.Violations.SharePoint/Tasks.aspx/Search", {
       request,
@@ -81,7 +81,7 @@ validatedViolations.getValidatedViolations = (
       }
     })
     .then((data) => {
-      $(".PreLoader").removeClass("active");
+      $(".overlay").removeClass("active");
       let ValidatedViolationData = [];
 
       let ItemsData = data.d.Result;
@@ -99,6 +99,7 @@ validatedViolations.getValidatedViolations = (
       validatedViolations.pageIndex = ItemsData.CurrentPage;
     })
     .catch((err) => {
+      $(".overlay").removeClass("active");
       console.log(err);
     });
 };
@@ -135,7 +136,7 @@ validatedViolations.filterViolationsLog = (e) => {
     ViolationTypeVal != "0" ||
     ViolationGeneralSearch != ""
   ) {
-    $(".PreLoader").addClass("active");
+    $(".overlay").addClass("active");
     ViolationSector = Number($("#violationSector").children("option:selected").val());
     ViolationType = Number($("#TypeofViolation").children("option:selected").data("id"));
 
@@ -163,7 +164,7 @@ validatedViolations.resetFilter = (e) => {
   $("#theCode").val("");
   $("#ViolationStatus").val("");
 
-  $(".PreLoader").addClass("active");
+  $(".overlay").addClass("active");
   pagination.reset();
   validatedViolations.getValidatedViolations();
 };
@@ -332,7 +333,7 @@ validatedViolations.exportToExcel = () => {
         record.Violation?.ViolationsZone || "----",
     },
     {
-      title: "قيمة المخالفة",
+      title: "مبلغ المادة المحجرية",
       render: (record) => {
         const value = record.Violation?.TotalPriceDue;
 
@@ -352,6 +353,13 @@ validatedViolations.exportToExcel = () => {
       render: (record) => {
         const value = record.Violation?.TotalEquipmentsPrice;
 
+        return value && value > 0 ? value : "-";
+      },
+    },
+    {
+      title: "الكمية",
+      render: (record) => {
+        const value = record.Violation?.TotalQuantity;
         return value && value > 0 ? value : "-";
       },
     },
@@ -610,10 +618,10 @@ validatedViolations.ValidatedViolationTable = (ValidatedViolation, destroyTable)
     validatedViolations.exportToExcel();
   });
 
-  $(".ellipsisButton").on("click", (e) => {
-    $(".hiddenListBox").hide(300);
-    $(e.currentTarget).siblings(".hiddenListBox").toggle(300);
-  });
+  // $(".ellipsisButton").on("click", (e) => {
+  //   $(".hiddenListBox").hide(300);
+  //   $(e.currentTarget).siblings(".hiddenListBox").toggle(300);
+  // });
 
   let UserId = _spPageContextInfo.userId;
   let violationlog = Table.rows().nodes().to$();
@@ -680,6 +688,14 @@ validatedViolations.ValidatedViolationTable = (ValidatedViolation, destroyTable)
       //   jQueryRecord.is(":nth-last-child(-n + 4)")) {
       //   hiddenListBox.addClass("toTopDDL");
       // }
+
+      // Toggle menu
+      jQueryRecord.find(".controls").children(".ellipsisButton").on("click", (e) => {
+        e.stopPropagation();
+        const currentBox = $(e.currentTarget).siblings(".hiddenListBox");
+        $(".hiddenListBox").not(currentBox).stop(true, true).hide(300);
+        currentBox.stop(true, true).toggle(300);
+      });
 
       // Common event handlers
       jQueryRecord.find(".controls").children(".hiddenListBox").find(".itemDetails").on("click", (e) => {
@@ -1096,7 +1112,7 @@ validatedViolations.printPaymentForm = (event, taskID, print = false) => {
             .attr("style", "display: none !important");
         }, 50);
 
-        $(".printPaymentForm").hide();
+        // $(".printPaymentForm").hide();
         $(".printConfirmationForm").css("display", "flex !important");
 
         // Remove previous handler before adding new one
@@ -1337,16 +1353,21 @@ validatedViolations.paymentFormHtml = (TaskData) => {
 
 
   let equipmentsPriceInDetails = `
-        <div class="col-md-6 equipmentsPriceBox">
-            <div class="form-group customFormGroup">
-                <label for="equipmentsPrice" class="customLabel">غرامة المعدات</label>
-                <input class="form-control customInput equipmentsPrice disabledInput" id="equipmentsPrice" type="text" value="${functions.splitBigNumbersByComma(
-    TaskData?.Violation?.TotalEquipmentsPrice,
-  )}" disabled>
-            </div>
+    <div class="col-md-12 equipmentsPriceBox">
+        <div class="form-group customFormGroup">
+            <label for="equipmentsPrice" class="customLabel">غرامة المعدات</label>
+            <input
+                class="form-control customInput equipmentsPrice disabledInput"
+                id="equipmentsPrice"
+                type="text"
+                value="${functions.splitBigNumbersByComma(
+    TaskData?.Violation?.TotalEquipmentsPrice
+  )}"
+                disabled
+            >
         </div>
-        `;
-
+    </div>
+`;
 
   let paymentFormHtml = `
         <div class="paymentFormBody">
@@ -1436,7 +1457,7 @@ validatedViolations.paymentFormHtml = (TaskData) => {
                                   ${offenderType != "Equipment"
       ? `
                                     <div class="form-group customFormGroup payQuarryAttachBox">
-                                        <label for="attachQuarryPaymentReceipt" class="customLabel">إرفاق إيصال غرامة القيمة المحجرية</label>
+                                        <label for="attachQuarryPaymentReceipt" class="customLabel">إرفاق إيصال غرامة القيمة المحجرية * </label>
                                         <div class="fileBox" id="dropContainer">
                                             <div class="inputFileBox">
                                                 <p class="dragDropFilesLabel">قم بالسحب والإفلات لرفع الملف , أو <a href="#!" class="attachFileLink">استعراض ملفاتي</a></p>
@@ -1447,7 +1468,7 @@ validatedViolations.paymentFormHtml = (TaskData) => {
                                         <div class="dropFilesArea" id="dropFilesArea"></div>
                                     </div>
                                     <div class="form-group customFormGroup payRoyaltyAttachBox">
-                                        <label for="attachLawRoyaltyPaymentReceipt" class="customLabel">إرفاق إيصال الإتاوة</label>
+                                        <label for="attachLawRoyaltyPaymentReceipt" class="customLabel">إرفاق إيصال الإتاوة * </label>
                                         <div class="fileBox" id="dropContainer">
                                             <div class="inputFileBox">
                                                 <p class="dragDropFilesLabel">قم بالسحب والإفلات لرفع الملف , أو <a href="#!" class="attachFileLink">استعراض ملفاتي</a></p>
@@ -1467,7 +1488,7 @@ validatedViolations.paymentFormHtml = (TaskData) => {
       ? "block !important"
       : "none !important"
     }">
-                                        <label for="attachEquipmentsPaymentReceipt" class="customLabel">إرفاق إيصال غرامة المعدات</label>
+                                        <label for="attachEquipmentsPaymentReceipt" class="customLabel">إرفاق إيصال غرامة المعدات * </label>
                                         <div class="fileBox" id="dropContainer">
                                             <div class="inputFileBox">
                                                 <p class="dragDropFilesLabel">قم بالسحب والإفلات لرفع الملف , أو <a href="#!" class="attachFileLink">استعراض ملفاتي</a></p>
@@ -1594,15 +1615,10 @@ validatedViolations.paymentFormActions = () => {
   }
 
   function validateEquipmentReceiptRequired() {
+    // Check if equipment attachment is required based on offender type and price
+    let isEquipmentVisible = $(".payEquipmentsAttachBox").is(":visible");
 
-    let isEquipmentViolation =
-      offenderType == "Equipment" ||
-      totalEquipmentsPrice > 0;
-
-    if (
-      isEquipmentViolation &&
-      !hasEquipmentsReceipt()
-    ) {
+    if (isEquipmentVisible && !hasEquipmentsReceipt()) {
       functions.warningAlert(
         "من فضلك قم بإرفاق إيصال غرامة المعدات"
       );
@@ -1623,6 +1639,15 @@ validatedViolations.paymentFormActions = () => {
   }
 
   function validateAllAttachments() {
+    if (offenderType === "Equipment") {
+      // For equipment, only validate equipment receipt
+      if (!validateEquipmentReceiptRequired()) {
+        return false;
+      }
+      return true;
+    }
+
+    // For Quarry and Vehicle types
     if (!validateQuarryReceiptRequired()) {
       return false;
     }
@@ -1660,11 +1685,20 @@ validatedViolations.paymentFormActions = () => {
   // =========================================
   // UI RULES
   // =========================================
+  if (offenderType === "Equipment") {
+    // For equipment, show only equipment-related fields
+    $(".payQuarryAttachBox").hide();
+    $(".payRoyaltyAttachBox").hide();
+    $(".violationPriceBox").hide();
+    $(".royaltyPriceBox").hide();
 
-  if (
-    violtionPriceType == "fixed" ||
-    violtionPriceType == "store"
-  ) {
+    // Show equipment attachment if there are equipment prices
+    if (totalEquipmentsPrice > 0) {
+      $(".payEquipmentsAttachBox").show();
+    } else {
+      $(".payEquipmentsAttachBox").hide();
+    }
+  } else if (violtionPriceType == "fixed" || violtionPriceType == "store") {
     $(".payEquipmentsAttachBox").hide();
     $(".payRoyaltyAttachBox").hide();
 
@@ -1675,7 +1709,6 @@ validatedViolations.paymentFormActions = () => {
       .removeClass("col-md-4")
       .addClass("col-md-7");
   }
-
   // =========================================
   // FILE UPLOAD HANDLER
   // =========================================
@@ -1700,7 +1733,7 @@ validatedViolations.paymentFormActions = () => {
 
         if ($.inArray(ext, filesExtension) === -1) {
           functions.warningAlert(
-            "من فضلك أدخل الملفات بالامتدادات المسموح بها فقط"
+            "من فضلك أدخل الملفات بالمرفقات المسموح بها فقط"
           );
           $(e.currentTarget).val("");
           dropArea.hide();
@@ -2008,7 +2041,7 @@ validatedViolations.reffereViolationToCase = (
                 -->
                 <div class="col-md-6">
                   <div class="form-group customFormGroup">
-                    <label for="reffereViolationDate" class="customLabel">تاريخ الإحالة</label>
+                    <label for="reffereViolationDate" class="customLabel">تاريخ الإحالة * </label>
                     <div class="inputIconBox">
                       <input class="form-control customInput inputDate reffereViolationDate" id="reffereViolationDate" type="text" placeholder="MM/DD/YYYY">
                       <i class="fa-solid fa-calendar-days"></i>
@@ -2023,7 +2056,7 @@ validatedViolations.reffereViolationToCase = (
                 </div>
                 <div class="col-12">
                   <div class="form-group customFormGroup">
-                    <label for="reffereViolationAttach" class="customLabel">إرفاق مستند</label>
+                    <label for="reffereViolationAttach" class="customLabel">إرفاق مستند * </label>
                     <div class="fileBox" id="dropContainer">
                       <div class="inputFileBox">
                         <img src="/Style Library/MiningViolations/images/fileIcon.svg" alt="File Icon">
@@ -2131,7 +2164,7 @@ validatedViolations.reffereViolationToCase = (
       let fileSplited = allAttachments[i].name.split(".");
       let fileExt = fileSplited[fileSplited.length - 1].toLowerCase();
       if ($.inArray(fileExt, filesExtension) == -1) {
-        functions.warningAlert("من فضلك أدخل الملفات بالامتدادات المسموح بها فقط");
+        functions.warningAlert("من فضلك أدخل الملفات بالمرفقات المسموح بها فقط");
         $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").hide();
         $(e.currentTarget).val("");
       }
@@ -2412,13 +2445,13 @@ validatedViolations.requestNewPetition = (
               <div class="row">
                 <div class="col-12">
                   <div class="form-group customFormGroup">
-                    <label for="addPetitionComments" class="customLabel">موضوع الالتماس</label>
+                    <label for="addPetitionComments" class="customLabel">موضوع الالتماس * </label>
                     <textarea class="form-control addPetitionComments petitionComments customTextArea" id="addPetitionComments" placeholder="أدخل سبب وموضوع تقديم الالتماس"></textarea>
                   </div>
                 </div>
                 <div class="col-12">
                   <div class="form-group customFormGroup">
-                    <label for="addPetitionAttach" class="customLabel">إرفاق مستند الالتماس</label>
+                    <label for="addPetitionAttach" class="customLabel">إرفاق مستند الالتماس * </label>
                     <div class="fileBox" id="dropContainer">
                       <div class="inputFileBox">
                         <img src="/Style Library/MiningViolations/images/fileIcon.svg" alt="File Icon">
@@ -2516,7 +2549,7 @@ validatedViolations.requestNewPetition = (
       let fileExt = fileSplited[fileSplited.length - 1].toLowerCase();
       if ($.inArray(fileExt, filesExtension) == -1) {
         functions.warningAlert(
-          "من فضلك أدخل الملفات بالامتدادات المسموح بها فقط",
+          "من فضلك أدخل الملفات بالمرفقات المسموح بها فقط",
         );
         $(e.currentTarget)
           .parents(".fileBox")

@@ -26,6 +26,8 @@ rejectedViolationsRecords.getViolations = (
       GlobalSearch: $("#violationSearch").val(),
     },
   };
+
+  $(".overlay").addClass("active");
   functions.requester("/_layouts/15/Uranium.Violations.SharePoint/Tasks.aspx/Search", { request })
     .then((response) => {
       if (response.ok) {
@@ -33,7 +35,7 @@ rejectedViolationsRecords.getViolations = (
       }
     })
     .then((data) => {
-      $(".PreLoader").removeClass("active");
+      $(".overlay").removeClass("active");
       let violationsData = [];
       let ItemsData = data.d.Result;
       if (data.d.Result.GridData != null) {
@@ -50,6 +52,7 @@ rejectedViolationsRecords.getViolations = (
       rejectedViolationsRecords.pageIndex = ItemsData.CurrentPage;
     })
     .catch((err) => {
+      $(".overlay").removeClass("active");
       console.log(err);
     });
 };
@@ -89,6 +92,26 @@ rejectedViolationsRecords.exportToExcel = () => {
       render: (record) => functions.getViolationArabicName(record.Violation?.OffenderType),
     },
     {
+      title: "اسم المخالف",
+      render: (record) => record.Violation?.ViolatorName || "-",
+    },
+    {
+      title: "نوع المخالفة",
+      render: (record) => functions.getViolationArabicName(record.Violation?.OffenderType, record.Violation?.ViolationTypes?.Title),
+    },
+    {
+      title: "تاريخ الإنشاء",
+      render: (record) => functions.getFormatedDate(record.Created),
+    },
+    {
+      title: "تاريخ الضبط",
+      render: (record) => functions.getFormatedDate(record.Violation?.ViolationDate),
+    },
+    {
+      title: "إسم الشركة المخالفة",
+      data: "Violation.ViolatorCompany",
+    },
+    {
       title: "رقم المحجر/العربة",
       render: (record) => {
         const violation = record.Violation;
@@ -97,24 +120,8 @@ rejectedViolationsRecords.exportToExcel = () => {
       },
     },
     {
-      title: "إسم الشركة المخالفة",
-      data: "Violation.ViolatorCompany",
-    },
-    {
-      title: "نوع المخالفة",
-      render: (record) => functions.getViolationArabicName(record.Violation?.OffenderType, record.Violation?.ViolationTypes?.Title),
-    },
-    {
       title: "المنطقة",
       data: "Violation.ViolationsZone",
-    },
-    {
-      title: "تاريخ الضبط",
-      render: (record) => functions.getFormatedDate(record.Violation?.ViolationDate),
-    },
-    {
-      title: "تاريخ الإنشاء",
-      render: (record) => functions.getFormatedDate(record.Created),
     },
   ];
 
@@ -209,10 +216,10 @@ rejectedViolationsRecords.dashBoardTable = (violationsData, destroyTable) => {
     rejectedViolationsRecords.exportToExcel();
   });
 
-  $(".ellipsisButton").on("click", (e) => {
-    $(".hiddenListBox").hide(300);
-    $(e.currentTarget).siblings(".hiddenListBox").toggle(300);
-  });
+  // $(".ellipsisButton").on("click", (e) => {
+  //   $(".hiddenListBox").hide(300);
+  //   $(e.currentTarget).siblings(".hiddenListBox").toggle(300);
+  // });
 
   let violationlog = Table.rows().nodes().to$();
   $.each(violationlog, (index, record) => {
@@ -220,6 +227,14 @@ rejectedViolationsRecords.dashBoardTable = (violationsData, destroyTable) => {
     let violationID = jQueryRecord.find(".violationId").data("violationid");
     let taskID = jQueryRecord.find(".violationId").data("taskid");
     let OffenderType = jQueryRecord.find(".violationId").data("offendertype");
+
+    // Toggle menu
+    jQueryRecord.find(".controls").children(".ellipsisButton").on("click", (e) => {
+      e.stopPropagation();
+      const currentBox = $(e.currentTarget).siblings(".hiddenListBox");
+      $(".hiddenListBox").not(currentBox).stop(true, true).hide(300);
+      currentBox.stop(true, true).toggle(300);
+    });
 
     jQueryRecord.find(".controls").children(".hiddenListBox").find(".itemDetails").on("click", (e) => {
       $(".overlay").addClass("active");
@@ -318,7 +333,7 @@ rejectedViolationsRecords.filterViolationsLog = (e) => {
     ViolationTypeVal != "0" ||
     ViolationGeneralSearch != ""
   ) {
-    $(".PreLoader").addClass("active");
+    $(".overlay").addClass("active");
     ViolationType = Number($("#TypeofViolation").children("option:selected").data("id"));
     rejectedViolationsRecords.getViolations(
       pageIndex,
@@ -334,7 +349,7 @@ rejectedViolationsRecords.resetFilter = (e) => {
   $("#TypeofViolation").val("0");
   $("#violationSearch").val("");
 
-  $(".PreLoader").addClass("active");
+  $(".overlay").addClass("active");
   pagination.reset();
   rejectedViolationsRecords.getViolations();
 };

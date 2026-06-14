@@ -18,7 +18,7 @@ ExternalViolationLog.getExternalViolations = (
             ColName: "created",
             SortOrder: "desc",
             IsExternalRecord: true,
-            Status: "ExternalReviewed",  // will delete if counters ok
+            // Status: "ExternalReviewed",  // will delete if counters ok
             CaseNumber: $("#caseNumber").val(),
             ViolationCode: $("#violationCode").val(),
             CreatedFrom: $("#createdFrom").val()
@@ -29,6 +29,7 @@ ExternalViolationLog.getExternalViolations = (
                 : null,
         }
     };
+    $(".overlay").addClass("active");
     functions
         .requester("_layouts/15/Uranium.Violations.SharePoint/Tasks.aspx/Search", {
             request,
@@ -39,7 +40,7 @@ ExternalViolationLog.getExternalViolations = (
             }
         })
         .then((data) => {
-            $(".PreLoader").removeClass("active");
+            $(".overlay").removeClass("active");
             let ExternalViolationDate = [];
             let ItemsData = data.d.Result;
             if (data.d.Result.GridData != null) {
@@ -57,6 +58,7 @@ ExternalViolationLog.getExternalViolations = (
             ExternalViolationLog.pageIndex = ItemsData.CurrentPage;
         })
         .catch((err) => {
+            $(".overlay").removeClass("active");
             console.log(err);
         });
 };
@@ -69,7 +71,7 @@ ExternalViolationLog.setPaginations = (TotalPages, RowsPerPage) => {
 ExternalViolationLog.filterExternalViolations = () => {
     let pageIndex = ExternalViolationLog.pageIndex;
 
-    $(".PreLoader").addClass("active");
+    $(".overlay").addClass("active");
     ExternalViolationLog.getExternalViolations(
         pageIndex,
         true
@@ -83,7 +85,7 @@ ExternalViolationLog.resetFilter = (e) => {
     $("#createdFrom").val("");
     $("#createdTo").val("");
 
-    $(".PreLoader").addClass("active");
+    $(".overlay").addClass("active");
     pagination.reset();
     ExternalViolationLog.getExternalViolations();
 };
@@ -190,13 +192,17 @@ ExternalViolationLog.ExternalViolationTable = (ExternalViolationDate, destroyTab
 
     // 🔹 create column selector
     functions.createColumnSelector(Table, "#columnSelector", 'green');
-
     ExternalViolationLog.destroyTable = true;
 
-    $(".ellipsisButton").on("click", (e) => {
-        $(".hiddenListBox").hide(300);
-        $(e.currentTarget).siblings(".hiddenListBox").toggle(300);
+    // Update export button handler
+    $("#exportBtn").off("click").on("click", () => {
+        ExternalViolationLog.exportToExcel();
     });
+
+    // $(".ellipsisButton").on("click", (e) => {
+    //     $(".hiddenListBox").hide(300);
+    //     $(e.currentTarget).siblings(".hiddenListBox").toggle(300);
+    // });
 
     let violationlog = Table.rows().nodes().to$();
     let UserId = _spPageContextInfo.userId;
@@ -223,6 +229,14 @@ ExternalViolationLog.ExternalViolationTable = (ExternalViolationDate, destroyTab
             // ) {
             //     hiddenListBox.addClass("toTopDDL");
             // }
+
+            // Toggle menu
+            jQueryRecord.find(".controls").children(".ellipsisButton").on("click", (e) => {
+                e.stopPropagation();
+                const currentBox = $(e.currentTarget).siblings(".hiddenListBox");
+                $(".hiddenListBox").not(currentBox).stop(true, true).hide(300);
+                currentBox.stop(true, true).toggle(300);
+            });
 
             jQueryRecord
                 .find(".controls")
@@ -289,6 +303,83 @@ ExternalViolationLog.ExternalViolationTable = (ExternalViolationDate, destroyTab
     functions.hideTargetElement(".controls", ".hiddenListBox");
 };
 
+ExternalViolationLog.exportToExcel = () => {
+    const currentFilters = {
+        RowsPerPage: 10000000, // Get all records for export
+        PageIndex: 1,
+        ColName: "created",
+        SortOrder: "desc",
+        IsExternalRecord: true,
+        CaseNumber: $("#caseNumber").val(),
+        ViolationCode: $("#violationCode").val(),
+        CreatedFrom: $("#createdFrom").val()
+            ? moment($("#createdFrom").val(), "DD-MM-YYYY").format("YYYY-MM-DD")
+            : null,
+        CreatedTo: $("#createdTo").val()
+            ? moment($("#createdTo").val(), "DD-MM-YYYY").format("YYYY-MM-DD")
+            : null,
+    };
+
+    // Define columns with their data mapping
+    const columns = [
+        {
+            title: "رقم المخالفة",
+            data: "Violation.ViolationCode",
+        },
+        {
+            title: "",
+            skip: true
+        },
+        {
+            title: "تصنيف المخالفة",
+            render: (record) => functions.getViolationArabicName(record.Violation?.OffenderType),
+        },
+        {
+            title: "نوع المخالفة",
+            render: (record) => functions.getViolationArabicName(
+                record.Violation?.OffenderType,
+                record.Violation?.ViolationTypes?.Title
+            ),
+        },
+        {
+            title: "إسم الشركة المخالفة",
+            data: "Violation.ViolatorCompany",
+        },
+        {
+            title: "رقم القضية",
+            data: "Violation.CaseNumber",
+        },
+        {
+            title: "النيابة المختصة",
+            data: "Violation.AssignedProsecution",
+        },
+        {
+            title: "جهة الضبط",
+            data: "Violation.Governrates.Title",
+        },
+        {
+            title: "حالة المخالفة",
+            render: (record) => {
+                const status = record.Status || record.StatusAr || "";
+                return getViolationStatusText(status);
+            },
+        },
+    ];
+
+    functions.exportFromAPI({
+        searchUrl: "/_layouts/15/Uranium.Violations.SharePoint/Tasks.aspx/Search",
+        requestData: { Data: currentFilters },
+        columns: columns,
+        fileName: "سجل المخالفات الخارجية.xlsx",
+        sheetName: "سجل المخالفات الخارجية",
+        columnWidths: 25,
+        rtl: true,
+        dataPath: "d.Result.GridData",
+        exportButtonSelector: "#exportExternalBtn",
+        tableSelector: "#ExternalViolationLog"
+    });
+};
+
 // Helper function to get violation status text in Arabic
 function getViolationStatusText(status) {
     const statusMap = {
@@ -312,7 +403,6 @@ function getViolationStatusText(status) {
 }
 
 // ExternalViolationLog.bindTableEvents = (table) => {
-
 //     $(document)
 //         .off("click", ".ellipsisButton")
 //         .on("click", ".ellipsisButton", function () {
@@ -559,7 +649,7 @@ ExternalViolationLog.saveCaseAndCancelViolationPopup = (
             let fileSplited = allAttachments[i].name.split(".");
             let fileExt = fileSplited[fileSplited.length - 1].toLowerCase();
             if ($.inArray(fileExt, filesExtension) == -1) {
-                functions.warningAlert("من فضلك أدخل الملفات بالامتدادات المسموح بها فقط");
+                functions.warningAlert("من فضلك أدخل الملفات بالمرفقات المسموح بها فقط");
                 $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").hide();
                 $(e.currentTarget).val("");
             }
@@ -717,7 +807,7 @@ ExternalViolationLog.editExternalViolationAmountPopup = (
                                 </div>
                                 <div class="col-12">
                                     <div class="form-group customFormGroup">
-                                        <label for="editAmountAttach" class="customLabel">إرفاق مستند تعديل المبلغ</label>
+                                        <label for="editAmountAttach" class="customLabel">إرفاق مستند تعديل المبلغ * </label>
                                         <div class="fileBox" id="dropContainer">
                                             <div class="inputFileBox">
                                                 <img src="/Style Library/MiningViolations/images/fileIcon.svg" alt="File Icon">
@@ -803,7 +893,7 @@ ExternalViolationLog.editExternalViolationAmountPopup = (
             let fileSplited = allAttachments[i].name.split(".");
             let fileExt = fileSplited[fileSplited.length - 1].toLowerCase();
             if ($.inArray(fileExt, filesExtension) == -1) {
-                functions.warningAlert("من فضلك أدخل الملفات بالامتدادات المسموح بها فقط");
+                functions.warningAlert("من فضلك أدخل الملفات بالمرفقات المسموح بها فقط");
                 $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").hide();
                 $(e.currentTarget).val("");
             }

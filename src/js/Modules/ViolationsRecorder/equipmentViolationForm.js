@@ -555,7 +555,7 @@ equipmentViolation.formActions = () => {
       let fileExt = fileSplited[fileSplited.length - 1].toLowerCase();
       if ($.inArray(fileExt, filesExtension) == -1) {
         functions.warningAlert(
-          "من فضلك أدخل الملفات بالامتدادات المسموح بها فقط"
+          "من فضلك أدخل الملفات بالمرفقات المسموح بها فقط"
         );
         $(e.currentTarget)
           .parents(".fileBox")
@@ -613,7 +613,7 @@ equipmentViolation.formActions = () => {
       let fileExt = fileSplited[fileSplited.length - 1].toLowerCase();
       if ($.inArray(fileExt, filesExtension) == -1) {
         functions.warningAlert(
-          "من فضلك أدخل الملفات بالامتدادات المسموح بها فقط"
+          "من فضلك أدخل الملفات بالمرفقات المسموح بها فقط"
         );
         $(e.currentTarget)
           .parents(".fileBox")

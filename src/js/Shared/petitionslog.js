@@ -12,17 +12,15 @@ petitionsLog.getPetitions = (Status = "All", pageIndex = 1, isFiltered = false, 
 
   if (theCodeValue && theCodeValue.trim() !== "" && (!violationCategoryValue || violationCategoryValue === "")) {
     functions.warningAlert("من فضلك قم باختيار تصنيف المخالفة قبل إدخال رقم المحجر/عربة/معدة");
-    $(".PreLoader").removeClass("active");
+    $(".overlay").removeClass("active");
     return;
   }
 
   // Determine the ViolationCode value
   let ViolationCodeValue;
   if (isFiltered && ViolationType) {
-    // If filtered, use the passed ViolationType
     ViolationCodeValue = ViolationType;
   } else {
-    // Otherwise use the input field value (which will be empty after reset)
     ViolationCodeValue = $("#violationCode").val();
   }
 
@@ -44,6 +42,7 @@ petitionsLog.getPetitions = (Status = "All", pageIndex = 1, isFiltered = false, 
   // Use provided pageIndex or current pagination page
   const currentPage = pageIndex || Number(pagination.currentPage) || 1;
 
+  $(".overlay").addClass("active");
   functions
     .requester(
       "/_layouts/15/Uranium.Violations.SharePoint/Petitions.aspx/Search",
@@ -55,7 +54,7 @@ petitionsLog.getPetitions = (Status = "All", pageIndex = 1, isFiltered = false, 
           ColName: "Created",
           SortOrder: "desc",
           ViolationId: 0,
-          ViolationCode: ViolationCodeValue, // Use the determined value
+          ViolationCode: ViolationCodeValue,
           Status: PetitionStatusVal,
           IsPetition: true,
           ViolatorCompany: $("#ViolatorCompany").val(),
@@ -71,12 +70,13 @@ petitionsLog.getPetitions = (Status = "All", pageIndex = 1, isFiltered = false, 
       },
     )
     .then((response) => {
-      if (response.ok) {
-        return response.json();
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
+      return response.json();
     })
     .then((data) => {
-      $(".PreLoader").removeClass("active");
+      $(".overlay").removeClass("active");
       let ValidatedViolation = [];
       let ItemsData = data.d.Result;
 
@@ -105,34 +105,12 @@ petitionsLog.getPetitions = (Status = "All", pageIndex = 1, isFiltered = false, 
       );
       petitionsLog.pageIndex = ItemsData.CurrentPage;
     })
-
-    // .then((data) => {
-    //   $(".PreLoader").removeClass("active");
-    //   let ValidatedViolation = [];
-    //   let ItemsData = data.d.Result;
-
-    //   if (data.d.Result.GridData != null) {
-    //     if (data.d.Result.GridData.length > 0) {
-    //       Array.from(data.d.Result.GridData).forEach((element) => {
-    //         ValidatedViolation.push(element);
-    //       });
-    //     } else {
-    //       ValidatedViolation = [];
-    //     }
-    //   }
-    //   petitionsLog.setPaginations(ItemsData.TotalPageCount, ShownRows);
-    //   petitionsLog.ValidatedPetitionsTable(
-    //     ValidatedViolation,
-    //     petitionsLog.destroyTable,
-    //     ShownRows,
-    //   );
-    //   petitionsLog.pageIndex = ItemsData.CurrentPage;
-    // })
     .catch((err) => {
-      $(".PreLoader").removeClass("active");
+      $(".overlay").removeClass("active");
       console.error("Error fetching petitions:", err);
     });
 };
+
 petitionsLog.setPaginations = (TotalPages, RowsPerPage) => {
   if (TotalPages > 0) {
     // Clear existing pagination first
@@ -213,8 +191,6 @@ petitionsLog.filterPetitionsLog = (e, defaultStatus = "All") => {
     return;
   }
 
-  $(".PreLoader").addClass("active");
-
   // Convert values to proper types
   ViolationSector = ViolationSectorVal && ViolationSectorVal !== "0" ? Number(ViolationSectorVal) : null;
   ViolationType = ViolationTypeVal && ViolationTypeVal !== "0" ? Number(ViolationTypeVal) : null;
@@ -234,6 +210,7 @@ petitionsLog.filterPetitionsLog = (e, defaultStatus = "All") => {
     PetitionStatus
   );
 };
+
 petitionsLog.resetFilter = (e, defaultStatus = "All") => {
   e.preventDefault();
 
@@ -259,8 +236,6 @@ petitionsLog.resetFilter = (e, defaultStatus = "All") => {
     $("#TypeofViolation").val("0");
   }
 
-  $(".PreLoader").addClass("active");
-
   // Reset pagination to first page
   if (pagination && typeof pagination.reset === 'function') {
     pagination.reset();
@@ -270,6 +245,7 @@ petitionsLog.resetFilter = (e, defaultStatus = "All") => {
   pagination.currentPage = 1;
 
   // Fetch all petitions with default status
+  // The overlay will be handled inside getPetitions
   petitionsLog.getPetitions(defaultStatus, 1, false);
 };
 petitionsLog.handleViolationCategoryChange = () => {
@@ -303,8 +279,7 @@ petitionsLog.exportToExcel = () => {
 
   const violationCategoryValue = $("#violationCategory").val();
   const theCodeValue = $("#theCode").val();
-  const petitionStatusValue =
-    $("#petitionStatus").val() || defaultStatus;
+  const petitionStatusValue = $("#petitionStatus").val() || defaultStatus;
 
   const theCode =
     violationCategoryValue === "Quarry"
@@ -335,8 +310,8 @@ petitionsLog.exportToExcel = () => {
   const columns = [
     { title: "رقم المخالفة", skip: false },
     { title: "", skip: true }, // controls column
-    { title: "تاريخ الالتماس", skip: false },
     { title: "تصنيف المخالفة", skip: false },
+    { title: "تاريخ الالتماس", skip: false },
     { title: "حالة الالتماس", skip: false }
   ];
 
@@ -357,13 +332,13 @@ petitionsLog.exportToExcel = () => {
       case "رقم المخالفة":
         return violation?.ViolationCode || "---";
 
-      case "تاريخ الالتماس":
-        return functions.getFormatedDate(record.Created);
-
       case "تصنيف المخالفة":
         return violation
           ? functions.getViolationArabicName(violation.OffenderType)
           : "---";
+
+      case "تاريخ الالتماس":
+        return functions.getFormatedDate(record.Created);
 
       case "حالة الالتماس":
         return record.Status || "---";
@@ -372,6 +347,16 @@ petitionsLog.exportToExcel = () => {
         return "";
     }
   };
+
+  const table = $("#PetitionsTable").DataTable();
+
+  table.columns().every(function (index) {
+    console.log(
+      index,
+      $(this.header()).text(),
+      this.visible()
+    );
+  });
 
   functions.exportPetitionFromAPI({
     searchUrl:
@@ -461,10 +446,10 @@ petitionsLog.ValidatedPetitionsTable = (Petitions, destroyTable) => {
     petitionsLog.exportToExcel();
   });
 
-  $(".ellipsisButton").on("click", (e) => {
-    $(".hiddenListBox").hide(300);
-    $(e.currentTarget).siblings(".hiddenListBox").toggle(300);
-  });
+  // $(".ellipsisButton").on("click", (e) => {
+  //   $(".hiddenListBox").hide(300);
+  //   $(e.currentTarget).siblings(".hiddenListBox").toggle(300);
+  // });
 
   let UserId = _spPageContextInfo.userId;
   let petitionsTable = Table.rows().nodes().to$();
@@ -482,26 +467,24 @@ petitionsLog.ValidatedPetitionsTable = (Petitions, destroyTable) => {
       let Content;
       let jQueryRecord = $(record);
 
-      let hiddenListBox = jQueryRecord
-        .find(".controls")
-        .children(".hiddenListBox");
+      let hiddenListBox = jQueryRecord.find(".controls").children(".hiddenListBox");
       let petitionId = jQueryRecord.find(".violationId").data("petitionid");
-      let petitionStatus = jQueryRecord
-        .find(".violationId")
-        .data("petitionstatus");
+      let petitionStatus = jQueryRecord.find(".violationId").data("petitionstatus");
       let petitionID = jQueryRecord.find(".violationId").data("petitionid");
       let violationTaskID = jQueryRecord.find(".violationId").data("taskid");
       let ViolationId = jQueryRecord.find(".violationId").data("violationid");
-      let violationCode = jQueryRecord
-        .find(".violationId")
-        .data("violationcode");
-      let ViolationTotalPrice = jQueryRecord
-        .find(".violationId")
-        .data("totalprice");
+      let violationCode = jQueryRecord.find(".violationId").data("violationcode");
+      let ViolationTotalPrice = jQueryRecord.find(".violationId").data("totalprice");
       let ExDate = jQueryRecord.find(".violationId").data("exdate");
-      let PetitionComments = jQueryRecord
-        .find(".violationId")
-        .data("petitioncomments");
+      let PetitionComments = jQueryRecord.find(".violationId").data("petitioncomments");
+
+      // Toggle menu
+      jQueryRecord.find(".controls").children(".ellipsisButton").on("click", (e) => {
+        e.stopPropagation();
+        const currentBox = $(e.currentTarget).siblings(".hiddenListBox");
+        $(".hiddenListBox").not(currentBox).stop(true, true).hide(300);
+        currentBox.stop(true, true).toggle(300);
+      });
 
       // NEW: Attachments click handler
       jQueryRecord.find(".petitionAttachments").find("a").off('click').on('click', function (e) {
@@ -1081,7 +1064,7 @@ petitionsLog.approvePetition = (
 
                   <div class="col-md-6">
                     <div class="form-group customFormGroup">
-                      <label for="approvePetitionAttach" class="customLabel">إرفاق المؤيدات</label>
+                      <label for="approvePetitionAttach" class="customLabel">إرفاق المؤيدات <span class="required-star">*</span></label>
                       <div class="fileBox" id="dropContainer">
                         <div class="inputFileBox">
                           <img src="/Style Library/MiningViolations/images/fileIcon.svg" alt="File Icon">
@@ -1157,7 +1140,7 @@ petitionsLog.approvePetition = (
     });
 
     if (invalidFiles.length > 0) {
-      functions.warningAlert("من فضلك أدخل الملفات بالامتدادات المسموح بها فقط");
+      functions.warningAlert("من فضلك أدخل الملفات بالمرفقات المسموح بها فقط");
       $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").hide();
       $(e.currentTarget).val("");
       state.allAttachments = undefined;
@@ -1430,7 +1413,7 @@ petitionsLog.approveAndCancelPetition = (
       let fileSplited = allAttachments[i].name.split(".");
       let fileExt = fileSplited[fileSplited.length - 1].toLowerCase();
       if ($.inArray(fileExt, filesExtension) == -1) {
-        functions.warningAlert("من فضلك أدخل الملفات بالامتدادات المسموح بها فقط");
+        functions.warningAlert("من فضلك أدخل الملفات بالمرفقات المسموح بها فقط");
         $(e.currentTarget)
           .parents(".fileBox")
           .siblings("#dropFilesAreaApproveCancel")
@@ -1689,7 +1672,7 @@ petitionsLog.rejectPetition = (petitionId, violationID, violationCode) => {
       let fileSplited = allAttachments[i].name.split(".");
       let fileExt = fileSplited[fileSplited.length - 1].toLowerCase();
       if ($.inArray(fileExt, filesExtension) == -1) {
-        functions.warningAlert("من فضلك أدخل الملفات بالامتدادات المسموح بها فقط");
+        functions.warningAlert("من فضلك أدخل الملفات بالمرفقات المسموح بها فقط");
         $(e.currentTarget)
           .parents(".fileBox")
           .siblings("#dropFilesAreaReject")
@@ -2001,19 +1984,29 @@ petitionsLog.drawPetitionAttachmentsPopupTable = (
     ]);
   }
 
-  let Table = functions.tableDeclare(
-    TableId,
-    data,
-    [
-      { title: "م", class: "tableCounter" },
-      { title: "المرفقات", class: "attachBoxHeader" },
+  let Table = $(TableId).DataTable({
+    destroy: true,
+    paging: false,
+    searching: false,
+    ordering: false,
+    info: false,
+    responsive: true,
+    autoWidth: false,
+    scrollX: false,
+    data: data,
+
+    columns: [
+      { title: "م" },
+      { title: "المرفقات" },
       { title: "سبب الإرفاق" },
       { title: "تاريخ الإرفاق" },
-      { title: "ملاحظات" },
+      { title: "ملاحظات" }
     ],
-    false,
-    false
-  );
+
+    language: {
+      emptyTable: "لا توجد بيانات"
+    }
+  });
 
   let petitionAttachmentsLog = Table.rows().nodes().to$();
   $.each(petitionAttachmentsLog, (index, record) => {

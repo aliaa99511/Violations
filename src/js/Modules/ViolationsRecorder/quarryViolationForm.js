@@ -526,14 +526,17 @@ quarryViolation.formActions = () => {
   $(".BonesCount").on("keypress", (e) => {
     return functions.isNumberKey(e);
   });
-  // $(".violationDepth").on("keypress", (e) => {
-  //     return functions.isNumberKey(e)
-  // })
-  // $(".AreaSpace").on("keypress", (e) => {
-  //     return functions.isNumberKey(e)
-  // })
+  $(".violationDepth").on("keypress", (e) => {
+    return functions.isDecimalNumberKey(e);
+  });
+  $(".AreaSpace").on("keypress", (e) => {
+    return functions.isDecimalNumberKey(e);
+  });
   $(".distanceToNearQuarry").on("keypress", (e) => {
-    return functions.isNumberKey(e);
+    return functions.isDecimalNumberKey(e);
+  });
+  $(".NearestQuarryNumber").on("keypress", (e) => {
+    return functions.isDecimalNumberKey(e);
   });
   // .toFixed(1);
   // $(".coordinatesTable").children("table").find("input").on("keypress",(e)=>{
@@ -713,7 +716,7 @@ quarryViolation.formActions = () => {
       let fileExt = fileSplited[fileSplited.length - 1].toLowerCase();
       if ($.inArray(fileExt, filesExtension) == -1) {
         functions.warningAlert(
-          "من فضلك أدخل الملفات بالامتدادات المسموح بها فقط"
+          "من فضلك أدخل الملفات بالمرفقات المسموح بها فقط"
         );
         $(e.currentTarget)
           .parents(".fileBox")
@@ -771,7 +774,7 @@ quarryViolation.formActions = () => {
       let fileExt = fileSplited[fileSplited.length - 1].toLowerCase();
       if ($.inArray(fileExt, filesExtension) == -1) {
         functions.warningAlert(
-          "من فضلك أدخل الملفات بالامتدادات المسموح بها فقط"
+          "من فضلك أدخل الملفات بالمرفقات المسموح بها فقط"
         );
         $(e.currentTarget)
           .parents(".fileBox")

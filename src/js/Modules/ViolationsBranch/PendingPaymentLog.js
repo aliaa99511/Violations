@@ -19,7 +19,7 @@ pendingPayment.getPendingPayment = (
 
     if (theCodeValue && theCodeValue.trim() !== "" && (!violationCategoryValue || violationCategoryValue === "")) {
         functions.warningAlert("من فضلك قم باختيار تصنيف المخالفة قبل إدخال رقم المحجر/عربة/معدة");
-        $(".PreLoader").removeClass("active");
+        $(".overlay").removeClass("active");
         return;
     }
 
@@ -50,7 +50,7 @@ pendingPayment.getPendingPayment = (
                 : null,
         }
     };
-
+    $(".overlay").addClass("active");
     functions
         .requester("_layouts/15/Uranium.Violations.SharePoint/Tasks.aspx/Search", {
             request,
@@ -61,7 +61,7 @@ pendingPayment.getPendingPayment = (
             }
         })
         .then((data) => {
-            $(".PreLoader").removeClass("active");
+            $(".overlay").removeClass("active");
             let pendingPaymentData = [];
             let ItemsData = data.d.Result;
             if (data.d.Result.GridData != null) {
@@ -79,6 +79,7 @@ pendingPayment.getPendingPayment = (
             pendingPayment.pageIndex = ItemsData.CurrentPage;
         })
         .catch((err) => {
+            $(".overlay").removeClass("active");
             console.log(err);
         });
 };
@@ -119,7 +120,7 @@ pendingPayment.filterPaymentsLog = () => {
         ViolationTypeVal != "0" ||
         ViolationGeneralSearch != ""
     ) {
-        $(".PreLoader").addClass("active");
+        $(".overlay").addClass("active");
         ViolationSector = Number($("#violationSector").children("option:selected").val());
         ViolationType = Number($("#TypeofViolation").children("option:selected").data("id"));
         pendingPayment.getPendingPayment(
@@ -144,7 +145,7 @@ pendingPayment.resetFilter = (e) => {
     $("#createdFrom").val("");
     $("#createdTo").val("");
 
-    $(".PreLoader").addClass("active");
+    $(".overlay").addClass("active");
     pagination.reset();
     pendingPayment.getPendingPayment();
 };
@@ -234,6 +235,13 @@ pendingPayment.exportToExcel = () => {
             render: (record) => functions.getViolationArabicName(record.Violation?.OffenderType),
         },
         {
+            title: "نوع المخالفة",
+            render: (record) => functions.getViolationArabicName(
+                record.Violation?.OffenderType,
+                record.Violation?.ViolationTypes?.Title
+            ),
+        },
+        {
             title: "إسم المخالف",
             data: "Violation.ViolatorName",
         },
@@ -250,13 +258,6 @@ pendingPayment.exportToExcel = () => {
                     ? (violation.CarNumber || "---")
                     : (violation.QuarryCode || "---");
             },
-        },
-        {
-            title: "نوع المخالفة",
-            render: (record) => functions.getViolationArabicName(
-                record.Violation?.OffenderType,
-                record.Violation?.ViolationTypes?.Title
-            ),
         },
         {
             title: "المنطقة",
@@ -400,12 +401,12 @@ pendingPayment.PendingPaymentTable = (PendingPaymentData, destroyTable) => {
         pendingPayment.exportToExcel();
     });
 
-    // Use event delegation for ellipsis button clicks
-    $(document).on("click", ".ellipsisButton", function (e) {
-        e.stopPropagation();
-        $(".hiddenListBox").hide(300);
-        $(this).siblings(".hiddenListBox").toggle(300);
-    });
+    // // Use event delegation for ellipsis button clicks
+    // $(document).on("click", ".ellipsisButton", function (e) {
+    //     e.stopPropagation();
+    //     $(".hiddenListBox").hide(300);
+    //     $(this).siblings(".hiddenListBox").toggle(300);
+    // });
 
     let paymentLog = Table.rows().nodes().to$();
     let UserId = _spPageContextInfo.userId;
@@ -432,6 +433,14 @@ pendingPayment.PendingPaymentTable = (PendingPaymentData, destroyTable) => {
             // ) {
             //     hiddenListBox.addClass("toTopDDL");
             // }
+
+            // Toggle menu
+            jQueryRecord.find(".controls").children(".ellipsisButton").on("click", (e) => {
+                e.stopPropagation();
+                const currentBox = $(e.currentTarget).siblings(".hiddenListBox");
+                $(".hiddenListBox").not(currentBox).stop(true, true).hide(300);
+                currentBox.stop(true, true).toggle(300);
+            });
 
             jQueryRecord
                 .find(".controls")
@@ -625,7 +634,7 @@ pendingPayment.paymentFormHtml = (TaskData) => {
     `;
 
     let equipmentsPriceInDetails = `
-        <div class="col-md-6 equipmentsPriceBox">
+        <div class="col-md-12 equipmentsPriceBox">
             <div class="form-group customFormGroup">
                 <label for="equipmentsPrice" class="customLabel">غرامة المعدات</label>
                 <input class="form-control customInput equipmentsPrice disabledInput" id="equipmentsPrice" type="text" value="${functions.splitBigNumbersByComma(violationData?.TotalEquipmentsPrice)}" disabled>
@@ -703,7 +712,7 @@ pendingPayment.paymentFormHtml = (TaskData) => {
                                 <div class="col-md-6">
                                     ${offenderType != "Equipment" ? `
                                     <div class="form-group customFormGroup payQuarryAttachBox">
-                                        <label for="attachQuarryPaymentReceipt" class="customLabel">إرفاق إيصال غرامة القيمة المحجرية</label>
+                                        <label for="attachQuarryPaymentReceipt" class="customLabel">إرفاق إيصال غرامة القيمة المحجرية * </label>
                                         <div class="fileBox" id="dropContainer">
                                             <div class="inputFileBox">
                                                 <p class="dragDropFilesLabel">قم بالسحب والإفلات لرفع الملف , أو <a href="#!" class="attachFileLink">استعراض ملفاتي</a></p>
@@ -714,7 +723,7 @@ pendingPayment.paymentFormHtml = (TaskData) => {
                                         <div class="dropFilesArea" id="dropFilesArea"></div>
                                     </div>
                                     <div class="form-group customFormGroup payRoyaltyAttachBox">
-                                        <label for="attachLawRoyaltyPaymentReceipt" class="customLabel">إرفاق إيصال الإتاوة</label>
+                                        <label for="attachLawRoyaltyPaymentReceipt" class="customLabel">إرفاق إيصال الإتاوة * </label>
                                         <div class="fileBox" id="dropContainer">
                                             <div class="inputFileBox">
                                                 <p class="dragDropFilesLabel">قم بالسحب والإفلات لرفع الملف , أو <a href="#!" class="attachFileLink">استعراض ملفاتي</a></p>
@@ -728,7 +737,7 @@ pendingPayment.paymentFormHtml = (TaskData) => {
                                     
                                     <div class="form-group customFormGroup payEquipmentsAttachBox" 
                                           style="display:${offenderType == "Quarry" || offenderType == "Equipment" ? "block !important" : "none !important"}">
-                                        <label for="attachEquipmentsPaymentReceipt" class="customLabel">إرفاق إيصال غرامة المعدات</label>
+                                        <label for="attachEquipmentsPaymentReceipt" class="customLabel">إرفاق إيصال غرامة المعدات * </label>
                                         <div class="fileBox" id="dropContainer">
                                             <div class="inputFileBox">
                                                 <p class="dragDropFilesLabel">قم بالسحب والإفلات لرفع الملف , أو <a href="#!" class="attachFileLink">استعراض ملفاتي</a></p>
@@ -835,7 +844,7 @@ pendingPayment.showInstallmentPaymentPopup = (TaskData) => {
     `;
 
     let equipmentsPriceInDetails = `
-        <div class="col-md-6 equipmentsPriceBox">
+        <div class="col-md-12 equipmentsPriceBox">
             <div class="form-group customFormGroup">
                 <label for="equipmentsPrice" class="customLabel">غرامة المعدات</label>
                 <input class="form-control customInput equipmentsPrice disabledInput" id="equipmentsPrice" type="text" value="${functions.splitBigNumbersByComma(violationData?.TotalEquipmentsPrice)}" disabled>
@@ -910,7 +919,7 @@ pendingPayment.showInstallmentPaymentPopup = (TaskData) => {
                                 <div class="col-md-6">
                                     ${offenderType != "Equipment" ? `
                                     <div class="form-group customFormGroup payQuarryAttachBox">
-                                        <label for="attachQuarryPaymentReceipt" class="customLabel">إرفاق إيصال غرامة القيمة المحجرية</label>
+                                        <label for="attachQuarryPaymentReceipt" class="customLabel">إرفاق إيصال غرامة القيمة المحجرية * </label>
                                         <div class="fileBox" id="dropContainer">
                                             <div class="inputFileBox">
                                                 <p class="dragDropFilesLabel">قم بالسحب والإفلات لرفع الملف , أو <a href="#!" class="attachFileLink">استعراض ملفاتي</a></p>
@@ -921,7 +930,7 @@ pendingPayment.showInstallmentPaymentPopup = (TaskData) => {
                                         <div class="dropFilesArea" id="dropFilesArea"></div>
                                     </div>
                                     <div class="form-group customFormGroup payRoyaltyAttachBox">
-                                        <label for="attachLawRoyaltyPaymentReceipt" class="customLabel">إرفاق إيصال الإتاوة</label>
+                                        <label for="attachLawRoyaltyPaymentReceipt" class="customLabel">إرفاق إيصال الإتاوة * </label>
                                         <div class="fileBox" id="dropContainer">
                                             <div class="inputFileBox">
                                                 <p class="dragDropFilesLabel">قم بالسحب والإفلات لرفع الملف , أو <a href="#!" class="attachFileLink">استعراض ملفاتي</a></p>
@@ -935,7 +944,7 @@ pendingPayment.showInstallmentPaymentPopup = (TaskData) => {
                                     
                                     <div class="form-group customFormGroup payEquipmentsAttachBox" 
                                           style="display:${offenderType == "Quarry" || offenderType == "Equipment" ? "block !important" : "none !important"}">
-                                        <label for="attachEquipmentsPaymentReceipt" class="customLabel">إرفاق إيصال غرامة المعدات</label>
+                                        <label for="attachEquipmentsPaymentReceipt" class="customLabel">إرفاق إيصال غرامة المعدات * </label>
                                         <div class="fileBox" id="dropContainer">
                                             <div class="inputFileBox">
                                                 <p class="dragDropFilesLabel">قم بالسحب والإفلات لرفع الملف , أو <a href="#!" class="attachFileLink">استعراض ملفاتي</a></p>
@@ -976,9 +985,7 @@ pendingPayment.showInstallmentPaymentPopup = (TaskData) => {
 };
 
 pendingPayment.paymentFormActions = () => {
-
     let request = {};
-
     let violtionPriceType = $(".paymentForm").data("violationpricetype");
     let offenderType = $(".paymentForm").data("offendertype");
 
@@ -1059,9 +1066,7 @@ pendingPayment.paymentFormActions = () => {
     // =========================================
 
     function validateRoyaltyReceiptRequired() {
-
         let isVisible = $(".payRoyaltyAttachBox").is(":visible");
-
         if (
             isVisible &&
             // lawRoyalty > 0 &&
@@ -1070,20 +1075,16 @@ pendingPayment.paymentFormActions = () => {
             functions.warningAlert(
                 "من فضلك قم بإرفاق إيصال الإتاوة"
             );
-
             return false;
         }
-
         return true;
     }
 
 
     function validateEquipmentReceiptRequired() {
-
         let isEquipmentViolation =
             offenderType == "Equipment" ||
             totalEquipmentsPrice > 0;
-
         if (
             isEquipmentViolation &&
             !hasEquipmentsReceipt()
@@ -1093,26 +1094,20 @@ pendingPayment.paymentFormActions = () => {
             );
             return false;
         }
-
         return true;
     }
 
     function validateQuarryReceiptRequired() {
-
         if (!hasQuarryReceipt()) {
-
             functions.warningAlert(
                 "من فضلك قم بإرفاق إيصال غرامة المخالفة المحددة أو غرامة القيمة المحجرية"
             );
-
             return false;
         }
-
         return true;
     }
 
     function validateAllAttachments() {
-
         if (!validateQuarryReceiptRequired()) {
             return false;
         }
@@ -1133,22 +1128,15 @@ pendingPayment.paymentFormActions = () => {
     // =========================================
 
     if ($(".installmentCheckbox").is(":checked")) {
-
         $(".payInstallmentBtn").show();
-
     } else {
-
         $(".payInstallmentBtn").hide();
     }
 
     $(".installmentCheckbox").on("change", function () {
-
         if ($(this).is(":checked")) {
-
             $(".payInstallmentBtn").show();
-
         } else {
-
             $(".payInstallmentBtn").hide();
         }
     });
@@ -1165,7 +1153,6 @@ pendingPayment.paymentFormActions = () => {
         violtionPriceType == "fixed" ||
         violtionPriceType == "store"
     ) {
-
         $(".payEquipmentsAttachBox").hide();
         $(".payRoyaltyAttachBox").hide();
 
@@ -1198,16 +1185,14 @@ pendingPayment.paymentFormActions = () => {
             // ============================
 
             for (let i = 0; i < files.length; i++) {
-
                 let ext = files[i].name
                     .split(".")
                     .pop()
                     .toLowerCase();
 
                 if ($.inArray(ext, filesExtension) === -1) {
-
                     functions.warningAlert(
-                        "من فضلك أدخل الملفات بالامتدادات المسموح بها فقط"
+                        "من فضلك أدخل الملفات بالمرفقات المسموح بها فقط"
                     );
 
                     $(e.currentTarget).val("");
@@ -1237,14 +1222,14 @@ pendingPayment.paymentFormActions = () => {
             for (let i = 0; i < files.length; i++) {
 
                 dropArea.append(`
-          <div class="file">
-            <p class="fileName">${files[i].name}</p>
+                    <div class="file">
+                        <p class="fileName">${files[i].name}</p>
 
-            <span class="deleteFile" data-index="${i}">
-              <i class="fa-sharp fa-solid fa-x"></i>
-            </span>
-          </div>
-        `);
+                        <span class="deleteFile" data-index="${i}">
+                        <i class="fa-sharp fa-solid fa-x"></i>
+                        </span>
+                    </div>
+                `);
             }
 
             // ============================
@@ -1252,7 +1237,6 @@ pendingPayment.paymentFormActions = () => {
             // ============================
 
             dropArea.find(".deleteFile").on("click", (event) => {
-
                 let index = $(event.currentTarget)
                     .closest(".file")
                     .index();
@@ -1311,7 +1295,6 @@ pendingPayment.paymentFormActions = () => {
     // =========================================
 
     $(".payedPrice").on("keyup", (e) => {
-
         let val = $(e.currentTarget)
             .val()
             .replace(/,/g, "");
@@ -1332,22 +1315,17 @@ pendingPayment.paymentFormActions = () => {
     // =========================================
 
     $(".payInstallmentBtn").on("click", () => {
-
         if (!payedPrice || payedPrice <= 0) {
-
             functions.warningAlert(
                 "من فضلك أدخل مبلغ صحيح"
             );
-
             return;
         }
 
         if (payedPrice > remainingAmount) {
-
             functions.warningAlert(
                 "المبلغ المدخل أكبر من المبلغ المتبقي"
             );
-
             return;
         }
 

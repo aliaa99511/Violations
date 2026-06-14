@@ -35,6 +35,7 @@ runningViolations.getRunningViolations = (
         : null,
     },
   };
+  $(".overlay").addClass("active");
   functions
     .requester("/_layouts/15/Uranium.Violations.SharePoint/Tasks.aspx/Search", {
       request,
@@ -45,7 +46,7 @@ runningViolations.getRunningViolations = (
       }
     })
     .then((data) => {
-      $(".PreLoader").removeClass("active");
+      $(".overlay").removeClass("active");
       let RunningViolation = [];
       let ItemsData = data?.d?.Result;
       if (data?.d?.Result?.GridData != null) {
@@ -62,6 +63,7 @@ runningViolations.getRunningViolations = (
       runningViolations.pageIndex = ItemsData.CurrentPage;
     })
     .catch((err) => {
+      $(".overlay").removeClass("active");
       console.log(err);
     });
 };
@@ -94,7 +96,7 @@ runningViolations.filterViolationsLog = (e) => {
     ViolationTypeVal != "0" ||
     ViolationGeneralSearch != ""
   ) {
-    $(".PreLoader").addClass("active");
+    $(".overlay").addClass("active");
     ViolationSector = Number($("#violationSector").children("option:selected").val());
     ViolationType = Number($("#TypeofViolation").children("option:selected").data("id"));
     runningViolations.getRunningViolations(
@@ -117,7 +119,7 @@ runningViolations.resetFilter = (e) => {
   $("#createdFrom").val("");
   $("#createdTo").val("");
 
-  $(".PreLoader").addClass("active");
+  $(".overlay").addClass("active");
   pagination.reset();
   runningViolations.getRunningViolations();
 };
@@ -185,6 +187,26 @@ runningViolations.exportToExcel = () => {
       render: (record) => functions.getViolationArabicName(record.Violation?.OffenderType),
     },
     {
+      title: "اسم المخالف",
+      render: (record) => record.Violation?.ViolatorName || "-",
+    },
+    {
+      title: "نوع المخالفة",
+      render: (record) => functions.getViolationArabicName(record.Violation?.OffenderType, record.Violation?.ViolationTypes?.Title),
+    },
+    {
+      title: "تاريخ الإنشاء",
+      render: (record) => functions.getFormatedDate(record.Created),
+    },
+    {
+      title: "تاريخ الضبط",
+      render: (record) => functions.getFormatedDate(record.Violation?.ViolationDate),
+    },
+    {
+      title: "إسم الشركة المخالفة",
+      data: "Violation.ViolatorCompany",
+    },
+    {
       title: "رقم المحجر/العربة",
       render: (record) => {
         const violation = record.Violation;
@@ -193,24 +215,8 @@ runningViolations.exportToExcel = () => {
       },
     },
     {
-      title: "إسم الشركة المخالفة",
-      data: "Violation.ViolatorCompany",
-    },
-    {
-      title: "نوع المخالفة",
-      render: (record) => functions.getViolationArabicName(record.Violation?.OffenderType, record.Violation?.ViolationTypes?.Title),
-    },
-    {
       title: "المنطقة",
       data: "Violation.ViolationsZone",
-    },
-    {
-      title: "تاريخ الضبط",
-      render: (record) => functions.getFormatedDate(record.Violation?.ViolationDate),
-    },
-    {
-      title: "تاريخ الإنشاء",
-      render: (record) => functions.getFormatedDate(record.Created),
     },
   ];
 
@@ -305,10 +311,10 @@ runningViolations.RunningViolationTable = (RunningViolation, destroyTable) => {
     runningViolations.exportToExcel();
   });
 
-  $(".ellipsisButton").on("click", (e) => {
-    $(".hiddenListBox").hide(300);
-    $(e.currentTarget).siblings(".hiddenListBox").toggle(300);
-  });
+  // $(".ellipsisButton").on("click", (e) => {
+  //   $(".hiddenListBox").hide(300);
+  //   $(e.currentTarget).siblings(".hiddenListBox").toggle(300);
+  // });
 
   let violationlog = Table.rows().nodes().to$();
 
@@ -328,13 +334,14 @@ runningViolations.RunningViolationTable = (RunningViolation, destroyTable) => {
     //   hiddenListBox.addClass("toTopDDL");
     // }
 
-    jQueryRecord
-      .find(".controls")
-      .children(".ellipsisButton")
-      .on("click", (e) => {
-        $(".hiddenListBox").hide(300);
-        $(e.currentTarget).siblings(".hiddenListBox").toggle(300);
-      });
+    // Toggle menu
+    jQueryRecord.find(".controls").children(".ellipsisButton").on("click", (e) => {
+      e.stopPropagation();
+      const currentBox = $(e.currentTarget).siblings(".hiddenListBox");
+      $(".hiddenListBox").not(currentBox).stop(true, true).hide(300);
+      currentBox.stop(true, true).toggle(300);
+    });
+
     jQueryRecord
       .find(".controls")
       .children(".hiddenListBox")

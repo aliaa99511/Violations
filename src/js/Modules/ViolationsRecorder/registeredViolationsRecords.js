@@ -20,7 +20,7 @@ registeredViolationsRecords.getRegisteredViolations = (
 
   if (theCodeValue && theCodeValue.trim() !== "" && (!violationCategoryValue || violationCategoryValue === "")) {
     functions.warningAlert("من فضلك قم باختيار تصنيف المخالفة قبل إدخال رقم المحجر/عربة/معدة");
-    $(".PreLoader").removeClass("active");
+    $(".overlay").removeClass("active");
     return;
   }
 
@@ -52,7 +52,7 @@ registeredViolationsRecords.getRegisteredViolations = (
         : null,
     },
   };
-
+  $(".overlay").addClass("active");
   functions
     .requester("/_layouts/15/Uranium.Violations.SharePoint/Tasks.aspx/Search", {
       request,
@@ -63,7 +63,7 @@ registeredViolationsRecords.getRegisteredViolations = (
       }
     })
     .then((data) => {
-      $(".PreLoader").removeClass("active");
+      $(".overlay").removeClass("active");
       let violationsData = [];
       let ItemsData = data.d.Result;
       if (data.d.Result?.GridData != null) {
@@ -80,6 +80,7 @@ registeredViolationsRecords.getRegisteredViolations = (
       registeredViolationsRecords.pageIndex = ItemsData.CurrentPage;
     })
     .catch((err) => {
+      $(".overlay").removeClass("active");
       console.log(err);
     });
 };
@@ -125,7 +126,7 @@ registeredViolationsRecords.filterViolationsLog = (e) => {
       "من فضلك قم بإدخال قيمة واحدة على الأقل من قيم البحث"
     );
   } else {
-    $(".PreLoader").addClass("active");
+    $(".overlay").addClass("active");
     ViolationType = Number(
       $("#TypeofViolation").children("option:selected").data("id")
     );
@@ -151,7 +152,7 @@ registeredViolationsRecords.resetFilter = (e) => {
   $("#createdTo").val("");
   $("#theCode").val("");
 
-  $(".PreLoader").addClass("active");
+  $(".overlay").addClass("active");
   pagination.reset();
   registeredViolationsRecords.getRegisteredViolations();
 };
@@ -230,6 +231,18 @@ registeredViolationsRecords.exportToExcel = () => {
       render: (record) => functions.getViolationArabicName(record.Violation?.OffenderType),
     },
     {
+      title: "نوع المخالفة",
+      render: (record) => functions.getViolationArabicName(record.Violation?.OffenderType, record.Violation?.ViolationTypes?.Title),
+    },
+    {
+      title: "تاريخ الضبط",
+      render: (record) => functions.getFormatedDate(record.Violation?.ViolationDate),
+    },
+    {
+      title: "إسم الشركة المخالفة",
+      data: "Violation.ViolatorCompany",
+    },
+    {
       title: "رقم المحجر/العربة",
       render: (record) => {
         const violation = record.Violation;
@@ -238,20 +251,8 @@ registeredViolationsRecords.exportToExcel = () => {
       },
     },
     {
-      title: "إسم الشركة المخالفة",
-      data: "Violation.ViolatorCompany",
-    },
-    {
-      title: "نوع المخالفة",
-      render: (record) => functions.getViolationArabicName(record.Violation?.OffenderType, record.Violation?.ViolationTypes?.Title),
-    },
-    {
       title: "المنطقة",
       data: "Violation.ViolationsZone",
-    },
-    {
-      title: "تاريخ الضبط",
-      render: (record) => functions.getFormatedDate(record.Violation?.ViolationDate),
     },
   ];
 
@@ -349,10 +350,10 @@ registeredViolationsRecords.dashBoardTable = (violationsData, destroyTable) => {
     registeredViolationsRecords.exportToExcel();
   });
 
-  $(".ellipsisButton").on("click", (e) => {
-    $(".hiddenListBox").hide(300);
-    $(e.currentTarget).siblings(".hiddenListBox").toggle(300);
-  });
+  // $(".ellipsisButton").on("click", (e) => {
+  //   $(".hiddenListBox").hide(300);
+  //   $(e.currentTarget).siblings(".hiddenListBox").toggle(300);
+  // });
 
   let violationlog = Table.rows().nodes().to$();
   $.each(violationlog, (index, record) => {
@@ -361,6 +362,14 @@ registeredViolationsRecords.dashBoardTable = (violationsData, destroyTable) => {
     let taskID = jQueryRecord.find(".violationId").data("taskid");
     let OffenderType = jQueryRecord.find(".violationId").data("offendertype");
     let violationCode = jQueryRecord.find(".violationId").text().trim(); // Get violation code
+
+    // Toggle menu
+    jQueryRecord.find(".controls").children(".ellipsisButton").on("click", (e) => {
+      e.stopPropagation();
+      const currentBox = $(e.currentTarget).siblings(".hiddenListBox");
+      $(".hiddenListBox").not(currentBox).stop(true, true).hide(300);
+      currentBox.stop(true, true).toggle(300);
+    });
 
     jQueryRecord.find(".violationAttachments").find("a").off('click').on('click', function (e) {
       e.preventDefault();
@@ -618,19 +627,29 @@ registeredViolationsRecords.drawViolationAttachmentsPopupTable = (
     ]);
   }
 
-  let Table = functions.tableDeclare(
-    TableId,
-    data,
-    [
-      { title: "م", class: "tableCounter" },
-      { title: "المرفقات", class: "attachBoxHeader" },
+  let Table = $(TableId).DataTable({
+    destroy: true,
+    paging: false,
+    searching: false,
+    ordering: false,
+    info: false,
+    responsive: true,
+    autoWidth: false,
+    scrollX: false,
+    data: data,
+
+    columns: [
+      { title: "م" },
+      { title: "المرفقات" },
       { title: "سبب الإرفاق" },
       { title: "تاريخ الإرفاق" },
-      { title: "ملاحظات" },
+      { title: "ملاحظات" }
     ],
-    false,
-    false
-  );
+
+    language: {
+      emptyTable: "لا توجد بيانات"
+    }
+  });
 
   let attachmentsLog = Table.rows().nodes().to$();
   $.each(attachmentsLog, (index, record) => {

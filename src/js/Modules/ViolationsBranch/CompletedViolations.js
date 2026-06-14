@@ -22,6 +22,7 @@ completedViolations.getCompletedLog = (pageIndex = 1, destroyTable = false, Viol
             SectorConfigId: ViolationSector,
         },
     };
+    $(".overlay").addClass("active");
     functions
         .requester("_layouts/15/Uranium.Violations.SharePoint/Tasks.aspx/Search", {
             request,
@@ -32,7 +33,7 @@ completedViolations.getCompletedLog = (pageIndex = 1, destroyTable = false, Viol
             }
         })
         .then((data) => {
-            $(".PreLoader").removeClass("active");
+            $(".overlay").removeClass("active");
             let CompletedViolation = [];
             let ItemsData = data.d.Result;
 
@@ -51,6 +52,7 @@ completedViolations.getCompletedLog = (pageIndex = 1, destroyTable = false, Viol
             completedViolations.pageIndex = ItemsData.CurrentPage;
         })
         .catch((err) => {
+            $(".overlay").removeClass("active");
             console.log(err);
         });
 };
@@ -134,9 +136,12 @@ completedViolations.CompletedViolationTable = (CompletedViolation, destroyTable)
         let violationCode = jQueryRecord.find(".violationId").data("violationcode");
         let OffenderType = jQueryRecord.find(".violationId").data("offendertype");
 
+        // Toggle menu
         jQueryRecord.find(".controls").children(".ellipsisButton").on("click", (e) => {
-            $(".hiddenListBox").hide(300);
-            $(e.currentTarget).siblings(".hiddenListBox").toggle(300);
+            e.stopPropagation();
+            const currentBox = $(e.currentTarget).siblings(".hiddenListBox");
+            $(".hiddenListBox").not(currentBox).stop(true, true).hide(300);
+            currentBox.stop(true, true).toggle(300);
         });
 
         jQueryRecord.find(".controls").children(".hiddenListBox").find(".itemDetails").on("click", (e) => {
@@ -221,7 +226,7 @@ completedViolations.filterCompletedLog = (e) => {
             "من فضلك قم بإدخال قيمة واحدة على الأقل من قيم البحث"
         );
     } else if (ViolationSectorVal != "" || ViolationTypeVal != "0") {
-        $(".PreLoader").addClass("active");
+        $(".overlay").addClass("active");
         ViolationSector = Number($("#violationSector").children("option:selected").val());
         ViolationType = Number($("#TypeofViolation").children("option:selected").data("id"));
         completedViolations.getCompletedLog(pageIndex, true, ViolationSector, ViolationType);

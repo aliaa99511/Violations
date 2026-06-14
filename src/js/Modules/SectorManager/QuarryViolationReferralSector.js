@@ -9,6 +9,16 @@ quarryViolationReferralSector.getQuarryViolationReferralsRecords = (
     pageIndex = 1,
     destroyTable = false,
 ) => {
+    // Remove Arabic & English letters from Referral Number filter
+    $("#CaseNumber").on("input", function () {
+        let value = $(this).val();
+
+        // Remove English and Arabic letters only
+        value = value.replace(/[a-zA-Z\u0600-\u06FF]/g, "");
+
+        $(this).val(value);
+    });
+
     let request = {
         Request: {
             RowsPerPage: 10,
@@ -29,7 +39,7 @@ quarryViolationReferralSector.getQuarryViolationReferralsRecords = (
                 : null,
         }
     };
-
+    $(".overlay").addClass("active");
     functions
         .requester(
             "/_layouts/15/Uranium.Violations.SharePoint/Cases.aspx/Search",
@@ -41,7 +51,7 @@ quarryViolationReferralSector.getQuarryViolationReferralsRecords = (
             }
         })
         .then((data) => {
-            $(".PreLoader").removeClass("active");
+            $(".overlay").removeClass("active");
             let Referrals = [];
             let ItemsData = data?.d?.Result;
 
@@ -60,6 +70,7 @@ quarryViolationReferralSector.getQuarryViolationReferralsRecords = (
             quarryViolationReferralSector.pageIndex = ItemsData.CurrentPage;
         })
         .catch((err) => {
+            $(".overlay").removeClass("active");
             console.log(err);
         });
 };
@@ -71,7 +82,7 @@ quarryViolationReferralSector.setPaginations = (TotalPages, RowsPerPage) => {
 quarryViolationReferralSector.filterQuarryViolationReferralsRecords = (e) => {
     let pageIndex = quarryViolationReferralSector.pageIndex;
 
-    $(".PreLoader").addClass("active");
+    $(".overlay").addClass("active");
     quarryViolationReferralSector.getQuarryViolationReferralsRecords(
         pageIndex,
         true,
@@ -89,7 +100,7 @@ quarryViolationReferralSector.resetFilter = (e) => {
     $("#RefferedDateFrom").val("");
     $("#RefferedDateTo").val("");
 
-    $(".PreLoader").addClass("active");
+    $(".overlay").addClass("active");
     pagination.reset();
     quarryViolationReferralSector.getQuarryViolationReferralsRecords();
 };
@@ -136,14 +147,14 @@ quarryViolationReferralSector.exportToExcel = () => {
                 functions.getQuarryViolationStatus(record.ViolationStatus) || "-----",
         },
         {
+            title: "المبلغ المستحق",
+            render: (record) => record.TotalPriceDue || 0,
+        },
+        {
             title: "موقف الإحالة",
             render: (record) =>
                 functions.getCaseStatus(record.Status) || "-----",
         },
-        {
-            title: "المبلغ المستحق",
-            render: (record) => record.TotalPriceDue || 0,
-        }
     ];
 
     functions.exportCasesFromAPI({
@@ -270,10 +281,10 @@ quarryViolationReferralSector.QuarryViolationReferralSectorTable = (Referrals, d
         quarryViolationReferralSector.exportToExcel();
     });
 
-    $(".ellipsisButton").on("click", (e) => {
-        $(".hiddenListBox").hide(300);
-        $(e.currentTarget).siblings(".hiddenListBox").toggle(300);
-    });
+    // $(".ellipsisButton").on("click", (e) => {
+    //     $(".hiddenListBox").hide(300);
+    //     $(e.currentTarget).siblings(".hiddenListBox").toggle(300);
+    // });
 
     let referralsLog = Table.rows().nodes().to$();
 
@@ -284,6 +295,14 @@ quarryViolationReferralSector.QuarryViolationReferralSectorTable = (Referrals, d
         let referralID = violationCodeElement.data("referralid");
         let referralNumber = violationCodeElement.data("referralnumber");
         let hiddenListBox = jQueryRecord.find(".controls").children(".hiddenListBox");
+
+        // Toggle menu
+        jQueryRecord.find(".controls").children(".ellipsisButton").on("click", (e) => {
+            e.stopPropagation();
+            const currentBox = $(e.currentTarget).siblings(".hiddenListBox");
+            $(".hiddenListBox").not(currentBox).stop(true, true).hide(300);
+            currentBox.stop(true, true).toggle(300);
+        });
 
         // Attachments click handler
         jQueryRecord.find(".referralAttachments").find("a").off('click').on('click', function (e) {
@@ -418,19 +437,29 @@ quarryViolationReferralSector.drawReferralAttachmentsPopupTable = (
         });
     }
 
-    let Table = functions.tableDeclare(
-        TableId,
-        data,
-        [
-            { title: "م", class: "tableCounter" },
-            { title: "المرفقات", class: "attachBoxHeader" },
+    let Table = $(TableId).DataTable({
+        destroy: true,
+        paging: false,
+        searching: false,
+        ordering: false,
+        info: false,
+        responsive: true,
+        autoWidth: false,
+        scrollX: false,
+        data: data,
+
+        columns: [
+            { title: "م" },
+            { title: "المرفقات" },
             { title: "سبب الإرفاق" },
             { title: "تاريخ الإرفاق" },
-            { title: "ملاحظات" },
+            { title: "ملاحظات" }
         ],
-        false,
-        false
-    );
+
+        language: {
+            emptyTable: "لا توجد بيانات"
+        }
+    });
 
     let referralAttachmentsLog = Table.rows().nodes().to$();
     $.each(referralAttachmentsLog, (index, record) => {

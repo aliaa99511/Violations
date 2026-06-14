@@ -22,7 +22,7 @@ violationsCases.getViolationsCases = () => {
       CaseNumber: violationsCases.CaseNumber,
     },
   };
-
+  $(".overlay").addClass("active");
   functions
     .requester(
       "/_layouts/15/Uranium.Violations.SharePoint/Cases.aspx/Search",
@@ -34,7 +34,7 @@ violationsCases.getViolationsCases = () => {
       }
     })
     .then((data) => {
-      $(".PreLoader").removeClass("active");
+      $(".overlay").removeClass("active");
       let Cases = [];
       let ItemsData = data?.d?.Result;
 
@@ -55,7 +55,10 @@ violationsCases.getViolationsCases = () => {
       );
       violationsCases.pageIndex = ItemsData.CurrentPage;
     })
-    .catch((err) => { });
+    .catch((err) => {
+      $(".overlay").removeClass("active");
+      console.log(err);
+    });
 };
 
 violationsCases.setPaginations = (TotalPages, RowsPerPage) => {
@@ -130,10 +133,10 @@ violationsCases.ViolationsCasesTable = (Cases) => {
   if (violationsCases.dataObj.destroyTable) {
     $("#CasesLogTable").DataTable().destroy();
   }
-  $(".ellipsisButton").on("click", (e) => {
-    $(".hiddenListBox").hide(300);
-    $(e.currentTarget).siblings(".hiddenListBox").toggle(300);
-  });
+  // $(".ellipsisButton").on("click", (e) => {
+  //   $(".hiddenListBox").hide(300);
+  //   $(e.currentTarget).siblings(".hiddenListBox").toggle(300);
+  // });
   let UserId = _spPageContextInfo.userId;
   let casesLog = Table.rows().nodes().to$();
   violationsCases.dataObj.destroyTable = true;
@@ -215,6 +218,14 @@ violationsCases.ViolationsCasesTable = (Cases) => {
       // ) {
       //   hiddenListBox.addClass("toTopDDL");
       // }
+
+      // Toggle menu
+      jQueryRecord.find(".controls").children(".ellipsisButton").on("click", (e) => {
+        e.stopPropagation();
+        const currentBox = $(e.currentTarget).siblings(".hiddenListBox");
+        $(".hiddenListBox").not(currentBox).stop(true, true).hide(300);
+        currentBox.stop(true, true).toggle(300);
+      });
 
       jQueryRecord
         .find(".caseAttachments")
@@ -526,7 +537,7 @@ violationsCases.addCaseNumberPopup = (CaseID, ViolationID, ViolationCode) => {
       let fileExt = fileSplited[fileSplited.length - 1].toLowerCase();
       if ($.inArray(fileExt, filesExtension) == -1) {
         functions.warningAlert(
-          "من فضلك أدخل الملفات بالامتدادات المسموح بها فقط"
+          "من فضلك أدخل الملفات بالمرفقات المسموح بها فقط"
         );
         $(e.currentTarget)
           .parents(".fileBox")
@@ -713,7 +724,7 @@ violationsCases.editCasePrice = (
       let fileExt = fileSplited[fileSplited.length - 1].toLowerCase();
       if ($.inArray(fileExt, filesExtension) == -1) {
         functions.warningAlert(
-          "من فضلك أدخل الملفات بالامتدادات المسموح بها فقط"
+          "من فضلك أدخل الملفات بالمرفقات المسموح بها فقط"
         );
         $(e.currentTarget)
           .parents(".fileBox")
@@ -905,7 +916,7 @@ violationsCases.payCasePrice = (
       let fileExt = fileSplited[fileSplited.length - 1].toLowerCase();
       if ($.inArray(fileExt, filesExtension) == -1) {
         functions.warningAlert(
-          "من فضلك أدخل الملفات بالامتدادات المسموح بها فقط"
+          "من فضلك أدخل الملفات بالمرفقات المسموح بها فقط"
         );
         $(e.currentTarget)
           .parents(".fileBox")
@@ -1065,7 +1076,7 @@ violationsCases.saveCase = (CaseID, ViolationID, taskID, caseNumber) => {
       let fileExt = fileSplited[fileSplited.length - 1].toLowerCase();
       if ($.inArray(fileExt, filesExtension) == -1) {
         functions.warningAlert(
-          "من فضلك أدخل الملفات بالامتدادات المسموح بها فقط"
+          "من فضلك أدخل الملفات بالمرفقات المسموح بها فقط"
         );
         $(e.currentTarget)
           .parents(".fileBox")
@@ -1231,7 +1242,7 @@ violationsCases.addAttachmentToCase = (CaseID, ViolationID, caseNumber) => {
       let fileExt = fileSplited[fileSplited.length - 1].toLowerCase();
       if ($.inArray(fileExt, filesExtension) == -1) {
         functions.warningAlert(
-          "من فضلك أدخل الملفات بالامتدادات المسموح بها فقط"
+          "من فضلك أدخل الملفات بالمرفقات المسموح بها فقط"
         );
         $(e.currentTarget)
           .parents(".fileBox")
@@ -1505,19 +1516,31 @@ violationsCases.drawCaseAttachmentsPopupTable = (
       counter++;
     });
   }
-  let Table = functions.tableDeclare(
-    TableId,
-    data,
-    [
-      { title: "م", class: "tableCounter" },
-      { title: "المرفقات", class: "attachBoxHeader" },
+
+  let Table = $(TableId).DataTable({
+    destroy: true,
+    paging: false,
+    searching: false,
+    ordering: false,
+    info: false,
+    responsive: true,
+    autoWidth: false,
+    scrollX: false,
+    data: data,
+
+    columns: [
+      { title: "م" },
+      { title: "المرفقات" },
       { title: "سبب الإرفاق" },
       { title: "تاريخ الإرفاق" },
-      { title: "ملاحظات" },
+      { title: "ملاحظات" }
     ],
-    false,
-    false
-  );
+
+    language: {
+      emptyTable: "لا توجد بيانات"
+    }
+  });
+
   let caseAttachmentsLog = Table.rows().nodes().to$();
   $.each(caseAttachmentsLog, (index, record) => {
     let jQueryRecord = $(record);
@@ -1845,7 +1868,7 @@ violationsCases.filterViolationsLog = (e) => {
       "من فضلك قم بإدخال قيمة واحدة على الأقل من قيم البحث"
     );
   } else if (CaseNumber != "" || CaseStatusVal != "") {
-    $(".PreLoader").addClass("active");
+    $(".overlay").addClass("active");
     CaseStatus = $("#CaseStatus").children("option:selected").val();
     violationsCases.caseStatus = CaseStatus;
     violationsCases.CaseNumber = CaseNumber;

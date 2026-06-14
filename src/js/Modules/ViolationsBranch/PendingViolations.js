@@ -19,7 +19,7 @@ PendingViolations.getPendingViolations = (
 
   if (theCodeValue && theCodeValue.trim() !== "" && (!violationCategoryValue || violationCategoryValue === "")) {
     functions.warningAlert("من فضلك قم باختيار تصنيف المخالفة قبل إدخال رقم المحجر/عربة/معدة");
-    $(".PreLoader").removeClass("active");
+    $(".overlay").removeClass("active");
     return;
   }
 
@@ -53,7 +53,7 @@ PendingViolations.getPendingViolations = (
         : null,
     },
   };
-
+  $(".overlay").addClass("active");
   functions
     .requester("_layouts/15/Uranium.Violations.SharePoint/Tasks.aspx/Search", {
       request,
@@ -64,7 +64,7 @@ PendingViolations.getPendingViolations = (
       }
     })
     .then((data) => {
-      $(".PreLoader").removeClass("active");
+      $(".overlay").removeClass("active");
       let Pendingviolation = [];
       let ItemsData = data.d.Result;
       if (data.d.Result.GridData != null) {
@@ -82,6 +82,7 @@ PendingViolations.getPendingViolations = (
       PendingViolations.pageIndex = ItemsData.CurrentPage;
     })
     .catch((err) => {
+      $(".overlay").removeClass("active");
       console.log(err);
     });
 };
@@ -127,7 +128,7 @@ PendingViolations.filterViolationsLog = (e) => {
     ViolationTypeVal != "0" ||
     ViolationGeneralSearch != ""
   ) {
-    $(".PreLoader").addClass("active");
+    $(".overlay").addClass("active");
     ViolationSector = Number(
       $("#violationSector").children("option:selected").val()
     );
@@ -158,7 +159,7 @@ PendingViolations.resetFilter = (e) => {
   $("#createdTo").val("");
   $("#theCode").val("");
 
-  $(".PreLoader").addClass("active");
+  $(".overlay").addClass("active");
   pagination.reset();
   PendingViolations.getPendingViolations();
 };
@@ -236,6 +237,22 @@ PendingViolations.exportToExcel = () => {
       render: (record) => functions.getViolationArabicName(record.Violation?.OffenderType),
     },
     {
+      title: "نوع المخالفة",
+      render: (record) => functions.getViolationArabicName(record.Violation?.OffenderType, record.Violation?.ViolationTypes?.Title),
+    },
+    {
+      title: "تاريخ الإنشاء",
+      render: (record) => functions.getFormatedDate(record.Created),
+    },
+    {
+      title: "تاريخ الضبط",
+      render: (record) => functions.getFormatedDate(record.Violation?.ViolationDate),
+    },
+    {
+      title: "إسم الشركة المخالفة",
+      data: "Violation.ViolatorCompany",
+    },
+    {
       title: "رقم المحجر/العربة",
       render: (record) => {
         const violation = record.Violation;
@@ -244,24 +261,8 @@ PendingViolations.exportToExcel = () => {
       },
     },
     {
-      title: "إسم الشركة المخالفة",
-      data: "Violation.ViolatorCompany",
-    },
-    {
-      title: "نوع المخالفة",
-      render: (record) => functions.getViolationArabicName(record.Violation?.OffenderType, record.Violation?.ViolationTypes?.Title),
-    },
-    {
       title: "المنطقة",
       data: "Violation.ViolationsZone",
-    },
-    {
-      title: "تاريخ الضبط",
-      render: (record) => functions.getFormatedDate(record.Violation?.ViolationDate),
-    },
-    {
-      title: "تاريخ الإنشاء",
-      render: (record) => functions.getFormatedDate(record.Created),
     },
   ];
 
@@ -381,19 +382,21 @@ PendingViolations.PendingviolationTable = (Pendingviolation, destroyTable) => {
       let violationCode = jQueryRecord.find(".violationId").data("violationcode");
       let hiddenListBox = jQueryRecord.find(".controls").children(".hiddenListBox");
 
-      jQueryRecord.find(".violationAttachments").find("a").off('click').on('click', function (e) {
-        e.preventDefault();
-        $(".overlay").addClass("active");
-        PendingViolations.getViolationAttachmentsById(violationId, violationCode);
-      });
-
       jQueryRecord
         .find(".controls")
         .children(".hiddenListBox")
         .find(".controlsList").append(`
         <li><a href="#" class="ApprovedViolation">قبول المخالفة</a></li> 
         <li><a href="#" class="RejectedViolations">رفض المخالفة</a></li>   
-    `);
+     `);
+
+      // Toggle menu
+      jQueryRecord.find(".controls").children(".ellipsisButton").on("click", (e) => {
+        e.stopPropagation();
+        const currentBox = $(e.currentTarget).siblings(".hiddenListBox");
+        $(".hiddenListBox").not(currentBox).stop(true, true).hide(300);
+        currentBox.stop(true, true).toggle(300);
+      });
 
       jQueryRecord
         .find(".controls")
@@ -408,6 +411,13 @@ PendingViolations.PendingviolationTable = (Pendingviolation, destroyTable) => {
             UserDetails ? UserDetails.JobTitle1 : ""
           );
         });
+
+      jQueryRecord.find(".violationAttachments").find("a").off('click').on('click', function (e) {
+        e.preventDefault();
+        $(".overlay").addClass("active");
+        PendingViolations.getViolationAttachmentsById(violationId, violationCode);
+      });
+
       jQueryRecord
         .find(".controls")
         .children(".hiddenListBox")
@@ -451,12 +461,12 @@ PendingViolations.PendingviolationTable = (Pendingviolation, destroyTable) => {
         });
     });
 
-    // Use event delegation to handle clicks on dynamically added elements
-    $(document).on("click", ".ellipsisButton", function (e) {
-      e.stopPropagation();
-      $(".hiddenListBox").hide(300);
-      $(this).siblings(".hiddenListBox").toggle(300);
-    });
+    // // Use event delegation to handle clicks on dynamically added elements
+    // $(document).on("click", ".ellipsisButton", function (e) {
+    //   e.stopPropagation();
+    //   $(".hiddenListBox").hide(300);
+    //   $(this).siblings(".hiddenListBox").toggle(300);
+    // });
   });
 
   functions.hideTargetElement(".controls", ".hiddenListBox");
@@ -540,38 +550,51 @@ PendingViolations.findViolationByID = (
           .show()
           .find(".formElements")
           .css("border-bottom", "none");
+
+        // Hide all action buttons first
+        $(".editMaterialMinPrice").css("display", "none");
+        $(".approveViolation").css("display", "none");
+        $(".rejectViolation").css("display", "none");
+
         if (UserJopTitle == "فرع المخالفات") {
-          $(".editMaterialMinPrice").css("display", "none");
-          if (violationTypeId == 1 || violationTypeId == 5) {
-            $(".editMaterialMinPrice").css("display", "flex");
-            $(".editMaterialMinPrice").on("click", (e) => {
-              PendingViolations.editMinPriceTaskPopup(
-                taskID,
-                violationCode,
-                violationId,
-                materialMinPrice,
-                materialTitle
-              );
-            });
-          }
-          $(".approveViolation").css("display", "flex");
-          $(".rejectViolation").css("display", "flex");
-
-          $(".approveViolation").on("click", (e) => {
-            PendingViolations.approveTaskPopup(
+          // Show editMaterialMinPrice for specific violation types (1 or 5)
+          // if (violationTypeId == 1 || violationTypeId == 5) {
+          $(".editMaterialMinPrice").css("display", "flex");
+          $(".editMaterialMinPrice").off("click").on("click", (e) => {
+            $(".overlay").addClass("active");
+            PendingViolations.editMinPriceTaskPopup(
               taskID,
               violationCode,
-              violationId
+              violationId,
+              materialMinPrice,
+              materialTitle
             );
           });
+          // }
 
-          $(".rejectViolation").on("click", (e) => {
-            PendingViolations.RejectTaskPopup(
-              violationCode,
-              taskID,
-              violationId
-            );
-          });
+          // // Show approve and reject buttons for other violation types
+          // if (violationTypeId != 1 && violationTypeId != 5) {
+          //   $(".approveViolation").css("display", "flex");
+          //   $(".rejectViolation").css("display", "flex");
+
+          //   $(".approveViolation").off("click").on("click", (e) => {
+          //     $(".overlay").addClass("active");
+          //     PendingViolations.approveTaskPopup(
+          //       taskID,
+          //       violationCode,
+          //       violationId
+          //     );
+          //   });
+
+          //   $(".rejectViolation").off("click").on("click", (e) => {
+          //     $(".overlay").addClass("active");
+          //     PendingViolations.RejectTaskPopup(
+          //       violationCode,
+          //       taskID,
+          //       violationId
+          //     );
+          //   });
+          // }
         }
       } else {
         violationData = null;
@@ -1037,19 +1060,29 @@ PendingViolations.drawViolationAttachmentsPopupTable = (
     ]);
   }
 
-  let Table = functions.tableDeclare(
-    TableId,
-    data,
-    [
-      { title: "م", class: "tableCounter" },
-      { title: "المرفقات", class: "attachBoxHeader" },
+  let Table = $(TableId).DataTable({
+    destroy: true,
+    paging: false,
+    searching: false,
+    ordering: false,
+    info: false,
+    responsive: true,
+    autoWidth: false,
+    scrollX: false,
+    data: data,
+
+    columns: [
+      { title: "م" },
+      { title: "المرفقات" },
       { title: "سبب الإرفاق" },
       { title: "تاريخ الإرفاق" },
-      { title: "ملاحظات" },
+      { title: "ملاحظات" }
     ],
-    false,
-    false
-  );
+
+    language: {
+      emptyTable: "لا توجد بيانات"
+    }
+  });
 
   let attachmentsLog = Table.rows().nodes().to$();
   $.each(attachmentsLog, (index, record) => {

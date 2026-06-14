@@ -1,4 +1,6 @@
-﻿const sideMenuFunctions = {};
+﻿import functions from "../Shared/functions";
+
+const sideMenuFunctions = {};
 
 // ==========================
 // Counter Mapping
@@ -136,24 +138,14 @@ sideMenuFunctions.fetchNavigation = async function () {
 // ==========================
 sideMenuFunctions.fetchCounters = async function () {
   try {
-    const currentPage = this.normalizeUrl(window.location.pathname);
-    let UserId = _spPageContextInfo.userId;
+    const siteName = functions.getSiteName();
+    const userId = _spPageContextInfo.userId;
 
     let payload = { Sector: 0 };
 
-    // For Violations Recorder, we need to pass the UserId as Sector to get the correct counters
-    const sectorPages = [
-      "registered-violations.aspx",
-      "approvedviolationsrecords.aspx",
-      "rejectedviolationsrecords.aspx",
-      "pending-payment.aspx",
-      "validatedviolationsrecords.aspx",
-      "quarryviolationreferralrecords.aspx",
-      "carviolationreferralrecords.aspx",
-    ];
-
-    if (sectorPages.some(page => currentPage.includes(page))) {
-      payload = { Sector: UserId };
+    // For Violations Recorder use UserId as Sector
+    if (siteName === "ViolationsRecorder") {
+      payload = { Sector: userId };
     }
 
     const countersResponse = await $.ajax({
@@ -173,7 +165,6 @@ sideMenuFunctions.fetchCounters = async function () {
     console.error("Counters error:", error);
   }
 };
-
 
 // ==========================
 // Calculate Counter Value

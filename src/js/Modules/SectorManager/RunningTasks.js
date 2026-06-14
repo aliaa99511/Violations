@@ -21,6 +21,7 @@ runningSectorTask.getRunningTasks = (pageIndex = 1, ViolationSector = 0, Violati
       GlobalSearch: $("#violationSearch").val()
     },
   };
+  $(".overlay").addClass("active");
   functions.requester("_layouts/15/Uranium.Violations.SharePoint/Tasks.aspx/Search", {
     request,
   })
@@ -30,7 +31,7 @@ runningSectorTask.getRunningTasks = (pageIndex = 1, ViolationSector = 0, Violati
       }
     })
     .then((data) => {
-      $(".PreLoader").removeClass("active");
+      $(".overlay").removeClass("active");
       let runningTasks = [];
       let ItemsData = data.d.Result;
       if (data.d.Result.GridData != null) {
@@ -47,6 +48,7 @@ runningSectorTask.getRunningTasks = (pageIndex = 1, ViolationSector = 0, Violati
       runningSectorTask.pageIndex = ItemsData.CurrentPage;
     })
     .catch((err) => {
+      $(".overlay").removeClass("active");
       console.log(err);
     });
 };
@@ -86,6 +88,26 @@ runningSectorTask.exportToExcel = () => {
       render: (record) => functions.getViolationArabicName(record.Violation?.OffenderType),
     },
     {
+      title: "اسم المخالف",
+      render: (record) => record.Violation?.ViolatorName || "-",
+    },
+    {
+      title: "نوع المخالفة",
+      render: (record) => functions.getViolationArabicName(record.Violation?.OffenderType, record.Violation?.ViolationTypes?.Title),
+    },
+    {
+      title: "تاريخ الإنشاء",
+      render: (record) => functions.getFormatedDate(record.Created),
+    },
+    {
+      title: "تاريخ الضبط",
+      render: (record) => functions.getFormatedDate(record.Violation?.ViolationDate),
+    },
+    {
+      title: "إسم الشركة المخالفة",
+      data: "Violation.ViolatorCompany",
+    },
+    {
       title: "رقم المحجر/العربة",
       render: (record) => {
         const violation = record.Violation;
@@ -94,24 +116,8 @@ runningSectorTask.exportToExcel = () => {
       },
     },
     {
-      title: "إسم الشركة المخالفة",
-      data: "Violation.ViolatorCompany",
-    },
-    {
-      title: "نوع المخالفة",
-      render: (record) => functions.getViolationArabicName(record.Violation?.OffenderType, record.Violation?.ViolationTypes?.Title),
-    },
-    {
       title: "المنطقة",
       data: "Violation.ViolationsZone",
-    },
-    {
-      title: "تاريخ الضبط",
-      render: (record) => functions.getFormatedDate(record.Violation?.ViolationDate),
-    },
-    {
-      title: "تاريخ الإنشاء",
-      render: (record) => functions.getFormatedDate(record.Created),
     },
   ];
 
@@ -234,10 +240,11 @@ runningSectorTask.runningSectorTaskTable = (runningTasks) => {
         `);
 
       // Toggle menu
-      jQueryRecord.find(".controls").children(".ellipsisButton").off("click").on("click", (e) => {
-        // Hide all other menus first
-        $(".hiddenListBox").not($(e.currentTarget).siblings(".hiddenListBox")).hide(300);
-        $(e.currentTarget).siblings(".hiddenListBox").toggle(300);
+      jQueryRecord.find(".controls").children(".ellipsisButton").on("click", (e) => {
+        e.stopPropagation();
+        const currentBox = $(e.currentTarget).siblings(".hiddenListBox");
+        $(".hiddenListBox").not(currentBox).stop(true, true).hide(300);
+        currentBox.stop(true, true).toggle(300);
       });
 
       // Item details
@@ -401,7 +408,7 @@ runningSectorTask.findViolationByID = (event, taskID, print = false, UserJopTitl
             let fileSplited = editFiles[i].name.split(".")
             let fileExt = fileSplited[fileSplited.length - 1].toLowerCase()
             if ($.inArray(fileExt, filesExtension) == -1) {
-              functions.warningAlert("من فضلك أدخل الملفات بالامتدادات المسموح بها فقط")
+              functions.warningAlert("من فضلك أدخل الملفات بالمرفقات المسموح بها فقط")
               $(".dropFilesArea").hide()
               $(e.currentTarget).val("")
               editFiles = null;
@@ -602,7 +609,7 @@ runningSectorTask.violationConfirmPopup = (TaskId, violationID, violationCode) =
       let fileSplited = editFiles[i].name.split(".")
       let fileExt = fileSplited[fileSplited.length - 1].toLowerCase()
       if ($.inArray(fileExt, filesExtension) == -1) {
-        functions.warningAlert("من فضلك أدخل الملفات بالامتدادات المسموح بها فقط")
+        functions.warningAlert("من فضلك أدخل الملفات بالمرفقات المسموح بها فقط")
         $(".dropFilesArea").hide()
         $(e.currentTarget).val("")
         editFiles = null;
@@ -735,7 +742,7 @@ runningSectorTask.filterTasksLog = (e) => {
       "من فضلك قم بإدخال قيمة واحدة على الأقل من قيم البحث"
     );
   } else if (ViolationSectorVal != "" || ViolationTypeVal != "0" || ViolationGeneralSearch != "") {
-    $(".PreLoader").addClass("active");
+    $(".overlay").addClass("active");
     ViolationSector = Number($("#violationSector").children("option:selected").val());
     ViolationType = Number(
       $("#TypeofViolation").children("option:selected").data("id")
@@ -753,7 +760,7 @@ runningSectorTask.resetFilter = (e) => {
   pagination.reset();
   runningSectorTask.pageIndex = 1;
 
-  $(".PreLoader").addClass("active");
+  $(".overlay").addClass("active");
 
   runningSectorTask.getRunningTasks(1, 0, 0, "");
 };

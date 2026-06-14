@@ -558,6 +558,10 @@ carViolation.formActions = () => {
     //     return functions.isNumberKey(e)
     // })
 
+    $("#AddPoint").on("click", (e) => {
+        carViolation.AddCoordinatePoint(e);
+    });
+
     $(".coordinatesTable").children("table").find("td").children("input:nth-child(1)").on("keypress", (e) => {
         return functions.isNumberKey(e)
     })
@@ -705,7 +709,7 @@ carViolation.formActions = () => {
             let fileSplited = violationFiles[i].name.split(".")
             let fileExt = fileSplited[fileSplited.length - 1].toLowerCase()
             if ($.inArray(fileExt, filesExtension) == -1) {
-                functions.warningAlert("من فضلك أدخل الملفات بالامتدادات المسموح بها فقط")
+                functions.warningAlert("من فضلك أدخل الملفات بالمرفقات المسموح بها فقط")
                 $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").hide()
                 // violationFiles = fileBuffer
                 $(e.currentTarget).val("")
@@ -752,7 +756,7 @@ carViolation.formActions = () => {
             let fileSplited = violationReportFiles[i].name.split(".")
             let fileExt = fileSplited[fileSplited.length - 1].toLowerCase()
             if ($.inArray(fileExt, filesExtension) == -1) {
-                functions.warningAlert("من فضلك أدخل الملفات بالامتدادات المسموح بها فقط")
+                functions.warningAlert("من فضلك أدخل الملفات بالمرفقات المسموح بها فقط")
                 $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").hide()
                 $(e.currentTarget).val("")
             }
@@ -1239,6 +1243,60 @@ carViolation.getPreviousViolationsCount = () => {
             $(".previous-violations-count-value").text("0");
             functions.warningAlert("حدث خطأ في جلب عدد المخالفات السابقة");
         }
+    });
+};
+
+
+carViolation.AddCoordinatePoint = (e) => {
+    let coordinatesTable = $("#coordinatesTable");
+    let cloneRow = $("#coordinatesTable")
+        .find("tr.hideRow")
+        .clone(true)
+        .removeClass("hideRow table-line");
+    let ClonedTr = $(cloneRow);
+    ClonedTr.children().hide();
+    ClonedTr.find("td input").val("");
+    ClonedTr.find("td:last-child").append(
+        `<span class="deleteCoordinate"><i class="fas fa-trash-alt"></i></span>`
+    );
+    ClonedTr.find(".deleteCoordinate").on("click", (e) =>
+        carViolation.DeleteCoordinatePoint(e)
+    );
+    coordinatesTable.find("table").append(cloneRow);
+    coordinatesTable.find("table tr:last-child").children().fadeIn();
+    carViolation.OrderTableRow();
+};
+
+carViolation.DeleteCoordinatePoint = (e) => {
+    var element = $(e.currentTarget);
+
+    Swal.fire({
+        icon: "warning",
+        customClass: "sweetStyle",
+        title: "هل انت متأكد؟",
+        text: "تأكيد حذف الإحداثيات ؟",
+        showCancelButton: true,
+        cancelButtonText: "لا",
+        confirmButtonColor: "#3085d6",
+        confirmButtonText: "نعم",
+        heightAuto: true,
+    }).then((result) => {
+        if (result.value) {
+            let CurrentRow = $(element).parents("tr");
+            CurrentRow.children().fadeOut(300, () => {
+                CurrentRow.remove();
+                carViolation.OrderTableRow();
+            });
+        }
+    });
+};
+
+carViolation.OrderTableRow = () => {
+    var Rows = $("#coordinatesTable tr:not(:first-child)");
+    Rows.each((index, Row) => {
+        let CurrentRow = $(Row);
+        let CurrentIndex = CurrentRow.index();
+        CurrentRow.find("th").html(CurrentIndex);
     });
 };
 

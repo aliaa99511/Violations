@@ -358,7 +358,7 @@ DetailsPopup.quarryDetailsPopupContent = (violationData, LogName = "") => {
                                 <div class="row">
                                     <div class="col-12">
                                         <div class="form-group customFormGroup">
-                                            <label for="attachEditFile" class="customLabel">إرفاق مستند</label>
+                                            <label for="attachEditFile" class="customLabel">إرفاق مستند * </label>
                                             <div class="fileBox" id="dropContainer">
                                                 <div class="inputFileBox">
                                                     <img src="/Style Library/MiningViolations/images/fileIcon.svg" alt="File Icon">
@@ -813,7 +813,7 @@ DetailsPopup.equipmentDetailsPopupContent = (violationData, LogName = "") => {
                                 <div class="row">
                                     <div class="col-12">
                                         <div class="form-group customFormGroup">
-                                            <label for="attachEditFile" class="customLabel">إرفاق مستند</label>
+                                            <label for="attachEditFile" class="customLabel">إرفاق مستند * </label>
                                             <div class="fileBox" id="dropContainer">
                                                 <div class="inputFileBox">
                                                     <img src="/Style Library/MiningViolations/images/fileIcon.svg" alt="File Icon">
@@ -1270,7 +1270,7 @@ DetailsPopup.vehicleDetailsPopupContent = (violationData, LogName = "") => {
                                 <div class="row">
                                     <div class="col-12">
                                         <div class="form-group customFormGroup">
-                                            <label for="attachEditFile" class="customLabel">إرفاق مستند</label>
+                                            <label for="attachEditFile" class="customLabel">إرفاق مستند * </label>
                                             <div class="fileBox" id="dropContainer">
                                                 <div class="inputFileBox">
                                                     <img src="/Style Library/MiningViolations/images/fileIcon.svg" alt="File Icon">

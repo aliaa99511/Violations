@@ -44,7 +44,7 @@ prevViolations.getViolations = (
     functions.warningAlert(
       "من فضلك قم باختيار تصنيف المخالفة قبل إدخال رقم المحجر/عربة/معدة"
     );
-    $(".PreLoader").removeClass("active");
+    $(".overlay").removeClass("active");
     return;
   }
 
@@ -64,7 +64,7 @@ prevViolations.getViolations = (
       PageIndex: pagination.currentPage,
       ColName: "created",
       SortOrder: "desc",
-      Status: selectedStatus,
+      Status: selectedStatus || null, // Send null when empty instead of empty string
       ViolatorName: $("#violatorName").val(),
       NationalID: $("#nationalID").val(),
       ViolationCode: $("#violationCode").val(),
@@ -81,7 +81,7 @@ prevViolations.getViolations = (
         : null,
     },
   };
-
+  $(".overlay").addClass("active");
   functions
     .requester(
       "/_layouts/15/Uranium.Violations.SharePoint/Tasks.aspx/Search",
@@ -93,7 +93,7 @@ prevViolations.getViolations = (
       }
     })
     .then((data) => {
-      $(".PreLoader").removeClass("active");
+      $(".overlay").removeClass("active");
 
       let violationsData = [];
       let ItemsData = data.d.Result;
@@ -121,6 +121,7 @@ prevViolations.getViolations = (
       prevViolations.dataObj.destroyTable = true;
     })
     .catch((err) => {
+      $(".overlay").removeClass("active");
       console.log(err);
     });
 };
@@ -349,7 +350,7 @@ prevViolations.exportToExcel = () => {
       render: (record) => record.Violation?.ViolationsZone || "----",
     },
     {
-      title: "قيمة المخالفة",
+      title: "مبلغ المادة المحجرية",
       render: (record) =>
         record.Violation?.TotalPriceDue > 0
           ? record.Violation?.TotalPriceDue
@@ -368,6 +369,13 @@ prevViolations.exportToExcel = () => {
         record.Violation?.TotalEquipmentsPrice > 0
           ? record.Violation?.TotalEquipmentsPrice
           : "-",
+    },
+    {
+      title: "الكمية",
+      render: (record) => {
+        const value = record.Violation?.TotalQuantity;
+        return value && value > 0 ? value : "-";
+      },
     },
     {
       title: "حالة المخالفة",
@@ -537,6 +545,10 @@ prevViolations.dashBoardTable = (
           : "-"
         }`,
 
+        `${taskViolation?.TotalQuantity > 0
+          ? taskViolation?.TotalQuantity
+          : "-"}`,
+
         `${prevViolations.getViolationStatus(record.Status)}`,
 
         `${taskViolation?.IsPetition
@@ -577,9 +589,10 @@ prevViolations.dashBoardTable = (
       { title: "رقم المحجر / العربة" },
       { title: "رقم المقطورة" },
       { title: "المنطقة" },
-      { title: "قيمة المخالفة" },
+      { title: "مبلغ المادة المحجرية" },
       { title: "قيمة الإتاوة" },
       { title: "قيمة المعدة" },
+      { title: "الكمية" },
       { title: "حالة المخالفة" },
       { title: "حالة الالتماس" },
       { title: "موقف الإحالة" },
@@ -601,10 +614,10 @@ prevViolations.dashBoardTable = (
 
   functions.createColumnSelector(Table, "#columnSelector", theme);
 
-  $(".ellipsisButton").on("click", (e) => {
-    $(".hiddenListBox").hide(300);
-    $(e.currentTarget).siblings(".hiddenListBox").toggle(300);
-  });
+  // $(".ellipsisButton").on("click", (e) => {
+  //   $(".hiddenListBox").hide(300);
+  //   $(e.currentTarget).siblings(".hiddenListBox").toggle(300);
+  // });
 
   $("#exportBtn").off("click").on("click", () => {
     prevViolations.exportToExcel();
@@ -616,6 +629,14 @@ prevViolations.dashBoardTable = (
 
     let jQueryRecord = $(record);
     let taskID = jQueryRecord.find(".violationId").data("taskid");
+
+    // Toggle menu
+    jQueryRecord.find(".controls").children(".ellipsisButton").on("click", (e) => {
+      e.stopPropagation();
+      const currentBox = $(e.currentTarget).siblings(".hiddenListBox");
+      $(".hiddenListBox").not(currentBox).stop(true, true).hide(300);
+      currentBox.stop(true, true).toggle(300);
+    });
 
     jQueryRecord
       .find(".controls")
@@ -872,7 +893,7 @@ prevViolations.filterViolationsLog = () => {
     return;
   }
 
-  $(".PreLoader").addClass("active");
+  $(".overlay").addClass("active");
 
   prevViolations.getViolations(
     pageIndex,
@@ -904,7 +925,7 @@ prevViolations.resetFilter = (e) => {
 
   pagination.reset();
 
-  $(".PreLoader").addClass("active");
+  $(".overlay").addClass("active");
 
   prevViolations.getViolations();
 };

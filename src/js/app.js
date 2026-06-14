@@ -104,6 +104,11 @@ $(window).on("load", () => {
         $(".PreLoader").removeClass("active");
         functions.setPageMetaData("الاستعلام عن المخالفات السابقة");
 
+        sharedApis.getViolationSectors("#violationSector");
+        sharedApis.getOffenderType("#violationCategory");
+        sharedApis.getViolationType("#TypeofViolation");
+        sharedApis.getViolationStatus("#ViolationStatus");
+
         // Initialize datepickers
         functions.inputDateFormat("#createdFrom", "", "", "dd-mm-yyyy");
         functions.inputDateFormat("#createdTo", "", "", "dd-mm-yyyy");
@@ -394,6 +399,11 @@ $(window).on("load", () => {
       if (functions.getPageName() === "prevViolationsQueryLog") {
         $(".PreLoader").removeClass("active");
 
+        sharedApis.getViolationSectors("#violationSector");
+        sharedApis.getOffenderType("#violationCategory");
+        sharedApis.getViolationType("#TypeofViolation");
+        sharedApis.getViolationStatus("#ViolationStatus");
+
         functions.setPageMetaData("الاستعلام عن المخالفات السابقة");
 
         // Initialize datepickers
@@ -428,8 +438,6 @@ $(window).on("load", () => {
       }
 
       if (functions.getPageName() === "PendingPetitionsLog") {
-        $(".PreLoader").find("span").addClass("greenLoader");
-        $(".PreLoader").addClass("active");
         functions.setPageMetaData("سجل الإلتماسات قيد الإنتظار");
 
         sharedApis.getOffenderType("#violationCategory");
@@ -453,8 +461,6 @@ $(window).on("load", () => {
       }
 
       if (functions.getPageName() === "PetitionsLog") {
-        $(".PreLoader").find("span").addClass("greenLoader");
-        $(".PreLoader").addClass("active");
         functions.setPageMetaData("سجل الالتماسات");
 
         sharedApis.getOffenderType("#violationCategory");
@@ -658,8 +664,6 @@ $(window).on("load", () => {
         });
       }
       if (functions.getPageName() === "PendingPetitionsLog") {
-        $(".PreLoader").find("span").addClass("greenLoader");
-        $(".PreLoader").addClass("active");
         functions.setPageMetaData("سجل الإلتماسات قيد الإنتظار");
 
         sharedApis.getOffenderType("#violationCategory");
@@ -682,8 +686,6 @@ $(window).on("load", () => {
         });
       }
       if (functions.getPageName() === "PetitionsLog") {
-        $(".PreLoader").find("span").addClass("greenLoader");
-        $(".PreLoader").addClass("active");
         functions.setPageMetaData("سجل الالتماسات");
 
         sharedApis.getOffenderType("#violationCategory");

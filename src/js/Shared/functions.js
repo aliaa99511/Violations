@@ -10,7 +10,6 @@ functions.createColumnSelector = (table, containerID, theme = 'blue') => {
   const container = $(containerID);
   container.html("");
 
-  // Add theme class to dropdown
   container.addClass(`${theme}-theme`);
 
   table.columns().every(function (index) {
@@ -18,7 +17,7 @@ functions.createColumnSelector = (table, containerID, theme = 'blue') => {
     let header = $(column.header()).text().trim();
 
     // ignore controls column
-    if (index === 1) return;
+    if (index == 1) return;
 
     let checked = column.visible() ? "checked" : "";
 
@@ -30,20 +29,38 @@ functions.createColumnSelector = (table, containerID, theme = 'blue') => {
     `);
   });
 
-  // toggle column
   container.find("input").on("change", function () {
     let columnIndex = $(this).data("column");
     let column = table.column(columnIndex);
-    column.visible(!column.visible());
+
+    // Count visible columns except controls column
+    let visibleColumns = 0;
+
+    table.columns().every(function (idx) {
+      if (idx !== 1 && this.visible()) {
+        visibleColumns++;
+      }
+    });
+
+    // Prevent hiding if only 5 columns remain visible
+    if (!$(this).is(":checked") && visibleColumns <= 4) {
+      $(this).prop("checked", true);
+
+      functions.warningAlert(
+        "لا يمكنك تحديد اقل من 4 أعمدة"
+      );
+
+      return;
+    }
+
+    column.visible($(this).is(":checked"));
   });
 
-  // Toggle dropdown button
   $("#columnToggleBtn").off("click").on("click", function (e) {
     e.stopPropagation();
     container.toggleClass("active");
   });
 
-  // click outside close dropdown
   $(document).on("click", function () {
     container.removeClass("active");
   });
@@ -80,10 +97,10 @@ functions.tableDeclare = (
     dom: "t<'Tablepaginate'p>",
     responsive: false,
     scrollX: true,
-
-    // // Add fixed height with scroll
-    // scrollY: "500px",
-    // scrollCollapse: false,
+    scrollY: tableData.length > 0
+      ? (tableData.length >= 10 ? "500px" : "300px")
+      : "",
+    scrollCollapse: true,
 
     fixedColumns: true,
     autoWidth: false,
@@ -129,25 +146,25 @@ functions.tableDeclare = (
       }
     ],
 
-    // initComplete: function () {
-    //   let wrapper = $(tableID)
-    //     .closest(".dataTables_wrapper")
-    //     .find(".dataTables_scrollBody");
+    initComplete: function () {
+      let wrapper = $(tableID)
+        .closest(".dataTables_wrapper")
+        .find(".dataTables_scrollBody");
 
-    //   // Apply height only when data exists
-    //   if (tableData && tableData.length > 0) {
-    //     wrapper.css({
-    //       "min-height": "300px",
-    //       "max-height": "800px",
-    //     });
-    //   } else {
-    //     // Remove height in no results case
-    //     wrapper.css({
-    //       "min-height": "",
-    //       "max-height": "",
-    //     });
-    //   }
-    // }
+      if (tableData && tableData.length > 0) {
+        wrapper.css({
+          "min-height": tableData.length > 0 ? "300" ? tableData.length >= 10 ? "500px" : "300px" : "300px" : "",
+          "max-height": "1000px",
+          "overflow-y": "auto"
+        });
+      } else {
+        wrapper.css({
+          "min-height": "",
+          "max-height": "",
+          "overflow-y": ""
+        });
+      }
+    }
   };
 
   if (destroyTable) {
@@ -500,8 +517,14 @@ functions.exportPetitionFromAPI = async (options) => {
     const table = $(tableSelector).DataTable();
 
     const visibleColumns = columns
-      .map((col, index) => ({ ...col, originalIndex: index }))
-      .filter(col => !col.skip);
+      .map((col, index) => ({ ...col, index }))
+      .filter(col => {
+        // skip explicitly hidden columns
+        if (col.skip) return false;
+
+        // respect DataTables visibility
+        return table.column(col.index).visible();
+      });
 
     let exportData = [];
 
@@ -561,11 +584,13 @@ functions.stripHTML = (html) => {
   return div.textContent || div.innerText || "";
 };
 functions.hideTargetElement = (element, targetEl) => {
-  $(document).on("click", (event) => {
-    if (!$(event.target).closest(element).length > 0) {
-      $(targetEl).hide(300);
-    }
-  });
+  $(document)
+    .off("click.hideTargetElement")
+    .on("click.hideTargetElement", (event) => {
+      if ($(event.target).closest(element).length === 0) {
+        $(targetEl).hide(300);
+      }
+    });
 };
 functions.parseSharePointDate = function (spDate) {
   if (!spDate) return "";
@@ -1059,7 +1084,7 @@ functions.uploadAttachmentsByInput = (AttchInput) => {
       let fileExt = fileSplited[fileSplited.length - 1].toLowerCase();
       if ($.inArray(fileExt, filesExtension) == -1) {
         functions.warningAlert(
-          "من فضلك أدخل الملفات بالامتدادات المسموح بها فقط"
+          "من فضلك أدخل الملفات بالمرفقات المسموح بها فقط"
         );
         $(e.currentTarget)
           .parents(".fileBox")

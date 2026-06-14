@@ -20,7 +20,7 @@ validatedViolationsRecords.getViolations = (
 
   if (theCodeValue && theCodeValue.trim() !== "" && (!violationCategoryValue || violationCategoryValue === "")) {
     functions.warningAlert("من فضلك قم باختيار تصنيف المخالفة قبل إدخال رقم المحجر/عربة/معدة");
-    $(".PreLoader").removeClass("active");
+    $(".overlay").removeClass("active");
     return;
   }
 
@@ -76,7 +76,7 @@ validatedViolationsRecords.getViolations = (
         : null,
     },
   };
-
+  $(".overlay").addClass("active");
   functions
     .requester("/_layouts/15/Uranium.Violations.SharePoint/Tasks.aspx/Search", {
       request,
@@ -87,7 +87,7 @@ validatedViolationsRecords.getViolations = (
       }
     })
     .then((data) => {
-      $(".PreLoader").removeClass("active");
+      $(".overlay").removeClass("active");
       let ValidatedViolationData = [];
 
       let ItemsData = data.d.Result;
@@ -105,6 +105,7 @@ validatedViolationsRecords.getViolations = (
       validatedViolationsRecords.pageIndex = ItemsData.CurrentPage;
     })
     .catch((err) => {
+      $(".overlay").removeClass("active");
       console.log(err);
     });
 };
@@ -148,7 +149,7 @@ validatedViolationsRecords.filterViolationsLog = (e) => {
       "من فضلك قم بإدخال قيمة واحدة على الأقل من قيم البحث"
     );
   } else {
-    $(".PreLoader").addClass("active");
+    $(".overlay").addClass("active");
     let ViolationType = Number($("#TypeofViolation").children("option:selected").data("id"));
 
     validatedViolationsRecords.getViolations(
@@ -174,7 +175,7 @@ validatedViolationsRecords.resetFilter = (e) => {
   $("#theCode").val("");
   $("#ViolationStatus").val("");
 
-  $(".PreLoader").addClass("active");
+  $(".overlay").addClass("active");
   pagination.reset();
   validatedViolationsRecords.getViolations();
 };
@@ -337,7 +338,7 @@ validatedViolationsRecords.exportToExcel = () => {
         record.Violation?.ViolationsZone || "----",
     },
     {
-      title: "قيمة المخالفة",
+      title: "مبلغ المادة المحجرية",
       render: (record) => {
         const value = record.Violation?.TotalPriceDue;
 
@@ -357,6 +358,13 @@ validatedViolationsRecords.exportToExcel = () => {
       render: (record) => {
         const value = record.Violation?.TotalEquipmentsPrice;
 
+        return value && value > 0 ? value : "-";
+      },
+    },
+    {
+      title: "الكمية",
+      render: (record) => {
+        const value = record.Violation?.TotalQuantity;
         return value && value > 0 ? value : "-";
       },
     },
@@ -409,7 +417,7 @@ validatedViolationsRecords.exportToExcel = () => {
   functions.exportFromAPI({
     searchUrl: "/_layouts/15/Uranium.Violations.SharePoint/Tasks.aspx/Search",
     requestData: { Data: currentFilters },
-    columns: columns,
+    columns: allColumns,
     fileName: "سجل المحاضر المصدق عليها.xlsx",
     sheetName: "سجل المحاضر المصدق عليها",
     columnWidths: 25,
@@ -586,15 +594,23 @@ validatedViolationsRecords.dashBoardTable = (violationsData, destroyTable) => {
     validatedViolationsRecords.exportToExcel();
   });
 
-  $(".ellipsisButton").on("click", (e) => {
-    $(".hiddenListBox").hide(300);
-    $(e.currentTarget).siblings(".hiddenListBox").toggle(300);
-  });
+  // $(".ellipsisButton").on("click", (e) => {
+  //   $(".hiddenListBox").hide(300);
+  //   $(e.currentTarget).siblings(".hiddenListBox").toggle(300);
+  // });
 
   let violationlog = Table.rows().nodes().to$();
   $.each(violationlog, (index, record) => {
     let jQueryRecord = $(record);
     let taskID = jQueryRecord.find(".violationId").data("taskid");
+
+    // Toggle menu
+    jQueryRecord.find(".controls").children(".ellipsisButton").on("click", (e) => {
+      e.stopPropagation();
+      const currentBox = $(e.currentTarget).siblings(".hiddenListBox");
+      $(".hiddenListBox").not(currentBox).stop(true, true).hide(300);
+      currentBox.stop(true, true).toggle(300);
+    });
 
     jQueryRecord
       .find(".controls")
