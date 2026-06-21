@@ -188,6 +188,29 @@ quarryViolationReferral.exportToExcel = () => {
             render: (record) =>
                 functions.getCaseStatus(record.Status) || "-----",
         },
+        {
+            title: "الإحداثيات",
+            exportOnly: true,
+            render: (record) => {
+                const coordinates = record.Coordinates;
+
+                if (!coordinates) return "---";
+
+                try {
+                    const coordsArray = JSON.parse(coordinates);
+
+                    if (Array.isArray(coordsArray)) {
+                        return coordsArray
+                            .map(coord => Array.isArray(coord) ? coord.join(" , ") : coord)
+                            .join(" | ");
+                    }
+
+                    return coordinates;
+                } catch {
+                    return coordinates;
+                }
+            }
+        }
     ];
 
     functions.exportCasesFromAPI({
@@ -284,16 +307,20 @@ quarryViolationReferral.QuarryViolationReferralTable = (Referrals, destroyTable)
                     <ul class='list-unstyled controlsList'>
                         <li><a href="#" class="itemDetails">المزيد من التفاصيل</a></li>
                         <li><a href="#" data-violationid="${referral?.ViolationId}" data-violationcode="${referral?.ViolationCode}" class="violationHistory" data-toggle="modal" data-target="#trackHistoryModal">تتبع مرحلة المخالفة</a></li>
-                </ul>`;
+                    </ul>`;
             } else {
                 actionsMenuHTML = `
                 <ul class='list-unstyled controlsList'>
                     <li><a href="#" class="itemDetails">المزيد من التفاصيل</a></li>
                     <li><a href="#" data-violationid="${referral?.ViolationId}" data-violationcode="${referral?.ViolationCode}" class="violationHistory" data-toggle="modal" data-target="#trackHistoryModal">تتبع مرحلة المخالفة</a></li>`;
 
+                // Add petition option for all non-Paid statuses
+                actionsMenuHTML += `
+                    <li><a href="#" class="requestPetition">تقديم بيان التماس</a></li>`;
+
                 if (hasAddReferralNumberAction) {
                     actionsMenuHTML += `
-                        <li><a href="#" class="addReferralNumberAction">إضافة رقم الإحالة</a></li>`;
+                    <li><a href="#" class="addReferralNumberAction">إضافة رقم الإحالة</a></li>`;
                 }
 
                 if (hasPayCaseBeforeEditAction) {
@@ -464,6 +491,23 @@ quarryViolationReferral.QuarryViolationReferralTable = (Referrals, destroyTable)
         //     hiddenListBox.addClass("toTopDDL");
         // }
 
+    });
+
+    // Request Petition Action Handler
+    $(document).off('click', '.requestPetition').on('click', '.requestPetition', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        let $row = $(this).closest('tr');
+        let $violationCode = $row.find('.violationCode');
+
+        let taskId = $violationCode.data('taskid');
+        let violationId = $violationCode.data('violationid');
+        let violationCode = $violationCode.data('violationcode');
+
+        $(".overlay").addClass("active");
+        quarryViolationReferral.requestNewPetition(taskId, violationId, violationCode);
+        $(".hiddenListBox").hide(300);
     });
 
     // Add Referral Number Action
@@ -2935,7 +2979,209 @@ quarryViolationReferral.updateViolationTaskStatus = (TaskID, ViolationID, CaseSt
         });
 };
 /////////////////////////////////////
+quarryViolationReferral.requestNewPetition = (
+    violationTaskID,
+    violationID,
+    violationCode,
+) => {
+    $(".overlay").removeClass("active");
 
+    // Generate unique IDs for close buttons
+    const closeHeaderId = "closePetitionHeader_" + Math.random().toString(36).substr(2, 9);
+    const closeFooterId = "closePetitionFooter_" + Math.random().toString(36).substr(2, 9);
+
+    let popupHtml = `
+        <div class="popupHeader" style="display: flex; justify-content: space-between; align-items: center;">
+            <div class="violationsCode"> 
+                <p>إضافة التماس للمخالفة رقم (${violationCode})</p>
+            </div>
+            <div class="btnStyle cancelBtn popupBtn ${closeHeaderId}" id="${closeHeaderId}" style="color: #fff; cursor: pointer;" data-dismiss="modal" aria-label="Close">
+                <i class="fa-solid fa-x"></i>
+            </div>
+        </div> 
+        <div class="popupBody">
+            <div class="popupForm detailsPopupForm" id="detailsPopupForm">
+
+                <div class="formContent"> 
+                    <div class="formBox">
+                        <div class="formElements">
+                            <div class="row">
+                                <div class="col-12">
+                                    <div class="form-group customFormGroup">
+                                        <label for="addPetitionComments" class="customLabel">موضوع الالتماس * </label>
+                                        <textarea class="form-control addPetitionComments petitionComments customTextArea" id="addPetitionComments" placeholder="أدخل سبب وموضوع تقديم الالتماس"></textarea>
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <div class="form-group customFormGroup">
+                                        <label for="addPetitionAttach" class="customLabel">إرفاق مستند الالتماس * </label>
+                                        <div class="fileBox" id="dropContainer">
+                                            <div class="inputFileBox">
+                                                <img src="/Style Library/MiningViolations/images/fileIcon.svg" alt="File Icon">
+                                                <p class="dragDropFilesLabel">قم بالسحب والإفلات لرفع الملف , أو <a href="#!" class="attachFileLink">استعراض ملفاتي</a></p>
+                                                <input type="file" class="customInput attachFilesInput addPetitionAttach form-control" id="addPetitionAttach" accept="image/gif,image/svg,image/jpg,image/jpeg,image/png,.doc,.docx,.pdf,.xls,.xlsx,.pptx" multiple>
+                                            </div>
+                                        </div>
+                                        <div class="dropFilesArea" id="dropFilesArea"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="formButtonsBox">
+                    <div class="row">
+                        <div class="col-12">   
+                            <div class="buttonsBox centerButtonsBox">
+                                <div class="btnStyle confirmBtnGreen popupBtn addPetitionBtn" id="addPetitionBtn">تأكيد</div>
+                                <div class="btnStyle cancelBtn popupBtn ${closeFooterId}" id="${closeFooterId}" data-dismiss="modal" aria-label="Close">إلغاء</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>`;
+
+    functions.declarePopup(
+        ["generalPopupStyle", "greenPopup", "editPopup"],
+        popupHtml,
+    );
+
+    // Add close button handlers
+    $(`#${closeHeaderId}, #${closeFooterId}`).on("click", function () {
+        functions.closePopup();
+    });
+
+    let petitionComments = "";
+    let filesExtension = [
+        "gif", "svg", "jpg", "jpeg", "png",
+        "doc", "docx", "pdf", "xls", "xlsx", "pptx"
+    ];
+    let allAttachments;
+    let countOfFiles;
+
+    $("#addPetitionComments").on("keyup", (e) => {
+        petitionComments = $(e.currentTarget).val().trim();
+    });
+
+    $("#addPetitionAttach").on("change", (e) => {
+        allAttachments = $(e.currentTarget)[0].files;
+        if (allAttachments.length > 0) {
+            $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").show().empty();
+        }
+        for (let i = 0; i < allAttachments.length; i++) {
+            $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").append(`
+                <div class="file">
+                    <p class="fileName">${allAttachments[i].name}</p>
+                    <span class="deleteFile" data-index="${i}"><i class="fa-sharp fa-solid fa-x"></i></span>
+                </div>
+            `);
+        }
+
+        $(".deleteFile").on("click", (event) => {
+            let index = $(event.currentTarget).closest(".file").index();
+            $(event.currentTarget).closest(".file").remove();
+            let fileBuffer = new DataTransfer();
+            for (let i = 0; i < allAttachments.length; i++) {
+                if (index !== i) {
+                    fileBuffer.items.add(allAttachments[i]);
+                }
+            }
+            allAttachments = fileBuffer.files;
+            countOfFiles = allAttachments.length;
+            if (countOfFiles == 0) {
+                $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").hide();
+            }
+        });
+
+        for (let i = 0; i < allAttachments.length; i++) {
+            let fileSplited = allAttachments[i].name.split(".");
+            let fileExt = fileSplited[fileSplited.length - 1].toLowerCase();
+            if ($.inArray(fileExt, filesExtension) == -1) {
+                functions.warningAlert("من فضلك أدخل الملفات بالمرفقات المسموح بها فقط");
+                $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").hide();
+                $(e.currentTarget).val("");
+            }
+        }
+    });
+
+    $(".addPetitionBtn").on("click", (e) => {
+        if (petitionComments != "") {
+            if (allAttachments != null && allAttachments.length > 0) {
+                $(".overlay").addClass("active");
+                functions
+                    .requester(
+                        "/_layouts/15/Uranium.Violations.SharePoint/Petitions.aspx/Save",
+                        {
+                            Request: {
+                                Title: "تقديم بيان الإلتماس",
+                                Status: "التماس قيد الإنتظار",
+                                ViolationId: violationID,
+                                Comments: petitionComments,
+                            },
+                        }
+                    )
+                    .then((response) => {
+                        if (response.ok) {
+                            return response.json();
+                        }
+                    })
+                    .then((data) => {
+                        if (data.d.Status) {
+                            let id = data.d.Result.Id;
+                            quarryViolationReferral.addNewPetitionAttachment(id, "Petitions");
+                        } else {
+                            $(".overlay").removeClass("active");
+                            functions.warningAlert("حدث خطأ ما, لم يتم إضافة الالتماس");
+                        }
+                    })
+                    .catch((err) => {
+                        $(".overlay").removeClass("active");
+                        functions.warningAlert("خطأ في إرسال البيانات لقاعدة البيانات");
+                    });
+            } else {
+                functions.warningAlert("من فضلك قم بإرفاق مستند الالتماس");
+            }
+        } else {
+            functions.warningAlert("من فضلك قم بإدخال سبب وموضوع الالتماس");
+        }
+    });
+};
+
+quarryViolationReferral.addNewPetitionAttachment = (petitionID, ListName) => {
+    let Data = new FormData();
+    Data.append("itemId", petitionID);
+    Data.append("listName", ListName);
+    for (
+        let i = 0;
+        i <= $(".detailsPopupForm #addPetitionAttach")[0].files.length;
+        i++
+    ) {
+        Data.append(
+            "file" + i,
+            $(".detailsPopupForm #addPetitionAttach")[0].files[i],
+        );
+    }
+    $.ajax({
+        type: "POST",
+        url: "/_layouts/15/Uranium.Violations.SharePoint/Attachments.aspx/Upload",
+        processData: false,
+        contentType: false,
+        data: Data,
+        success: (data) => {
+            $(".overlay").removeClass("active");
+            functions.sucessAlert("تم تقديم الإلتماس بنجاح");
+            functions.closePopup();
+        },
+        error: (err) => {
+            functions.warningAlert("خطأ في إرسال البيانات لقاعدة البيانات");
+            $(".overlay").removeClass("active");
+        },
+    });
+};
+////////////////////////////////
 const ViolationHistoryLogs = () => {
     let selectedViolationId = null;
     let selectedViolationCode = null;

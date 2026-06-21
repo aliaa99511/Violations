@@ -11,6 +11,9 @@ ExternalViolationLog.getExternalViolations = (
     pageIndex = 1,
     destroyTable = false,
 ) => {
+    const selectedStatus =
+        $("#ViolationStatus").children("option:selected").val();
+
     let request = {
         Data: {
             RowsPerPage: 10,
@@ -21,6 +24,9 @@ ExternalViolationLog.getExternalViolations = (
             // Status: "ExternalReviewed",  // will delete if counters ok
             CaseNumber: $("#caseNumber").val(),
             ViolationCode: $("#violationCode").val(),
+            OffenderType: $("#violationCategory").val(),
+            ViolationType: Number($("#TypeofViolation").children("option:selected").data("id")),
+            Status: selectedStatus,
             CreatedFrom: $("#createdFrom").val()
                 ? moment($("#createdFrom").val(), "DD-MM-YYYY").format("YYYY-MM-DD")
                 : null,
@@ -71,23 +77,54 @@ ExternalViolationLog.setPaginations = (TotalPages, RowsPerPage) => {
 ExternalViolationLog.filterExternalViolations = () => {
     let pageIndex = ExternalViolationLog.pageIndex;
 
+    let violationType = Number($("#TypeofViolation").children("option:selected").data("id"));
+
     $(".overlay").addClass("active");
+
     ExternalViolationLog.getExternalViolations(
         pageIndex,
-        true
+        true,
+        violationType
     );
 };
-
 ExternalViolationLog.resetFilter = (e) => {
     e.preventDefault();
+
     $("#caseNumber").val("");
     $("#violationCode").val("");
+
+    $("#violationCategory").val("");
+    $("#TypeofViolation").val("0");
+    $("#ViolationStatus").val("");
+
     $("#createdFrom").val("");
     $("#createdTo").val("");
 
-    $(".overlay").addClass("active");
+    // Re-enable field
+    $("#TypeofViolation").prop("disabled", false);
+
     pagination.reset();
+
+    $(".overlay").addClass("active");
+
     ExternalViolationLog.getExternalViolations();
+};
+ExternalViolationLog.handleViolationCategoryChange = () => {
+
+    $("#violationCategory").on("change", function () {
+        const selectedCategory = $(this).val();
+        const $typeOfViolationField = $("#TypeofViolation");
+
+        $typeOfViolationField.prop("disabled", false);
+
+        if (
+            selectedCategory === "Equipment" ||
+            selectedCategory === "Vehicle"
+        ) {
+            $typeOfViolationField.prop("disabled", true).val("0");
+        }
+    });
+
 };
 ExternalViolationLog.ExternalViolationTable = (ExternalViolationDate, destroyTable) => {
     let data = [];
@@ -364,6 +401,45 @@ ExternalViolationLog.exportToExcel = () => {
                 return getViolationStatusText(status);
             },
         },
+        {
+            title: "الإحداثيات",
+            exportOnly: true,
+            render: (record) => {
+                const violation = record.Violation;
+                if (!violation) return "---";
+
+                // Try to get coordinates in degrees format first, fallback to regular format
+                const coordinatesDegrees = violation.CoordinatesDegrees;
+                const coordinates = violation.Coordinates;
+
+                if (coordinatesDegrees) {
+                    // Parse the coordinates array and format them nicely
+                    try {
+                        const coordsArray = JSON.parse(coordinatesDegrees);
+                        if (Array.isArray(coordsArray) && coordsArray.length > 0) {
+                            return coordsArray.join(" | ");
+                        }
+                        return coordinatesDegrees;
+                    } catch (e) {
+                        return coordinatesDegrees;
+                    }
+                }
+
+                if (coordinates) {
+                    try {
+                        const coordsArray = JSON.parse(coordinates);
+                        if (Array.isArray(coordsArray) && coordsArray.length > 0) {
+                            return coordsArray.join(" | ");
+                        }
+                        return coordinates;
+                    } catch (e) {
+                        return coordinates;
+                    }
+                }
+
+                return "---";
+            },
+        },
     ];
 
     functions.exportFromAPI({
@@ -375,7 +451,7 @@ ExternalViolationLog.exportToExcel = () => {
         columnWidths: 25,
         rtl: true,
         dataPath: "d.Result.GridData",
-        exportButtonSelector: "#exportExternalBtn",
+        exportButtonSelector: "#exportBtn",
         tableSelector: "#ExternalViolationLog"
     });
 };

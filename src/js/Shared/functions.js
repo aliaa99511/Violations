@@ -360,11 +360,14 @@ functions.exportFromAPI = async (options) => {
 
     // FIX: indexes now match DataTable EXACTLY
     columns.forEach((col, index) => {
-      if (col.skip) return; // skip control column
+      if (col.skip) return;
 
-      const isVisible = table.column(index).visible();
+      if (col.exportOnly) {
+        visibleColumns.push({ ...col, originalIndex: index });
+        return;
+      }
 
-      if (isVisible) {
+      if (table.column(index).visible()) {
         visibleColumns.push({ ...col, originalIndex: index });
       }
     });
@@ -519,10 +522,17 @@ functions.exportPetitionFromAPI = async (options) => {
     const visibleColumns = columns
       .map((col, index) => ({ ...col, index }))
       .filter(col => {
-        // skip explicitly hidden columns
+
         if (col.skip) return false;
 
-        // respect DataTables visibility
+        if (col.exportOnly) return true;
+
+        const dtColumn = table.settings()[0].aoColumns[col.index];
+
+        if (!dtColumn) {
+          return false;
+        }
+
         return table.column(col.index).visible();
       });
 

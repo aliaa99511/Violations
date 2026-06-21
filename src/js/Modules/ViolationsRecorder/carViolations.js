@@ -151,13 +151,30 @@ carViolation.violatorCarDetails = () => {
 
     let carLicenceColor = $("#carLicenseColor").val();
     let carBrand = $("#carBrand").val();
-    let carLicenseTraffic = $("#carLicenseTraffic").val();
+    let carLicenseTraffic = $("#carLicenseTraffic").children("option:selected").text();
     let carLicenseLetters = $("#carLicenseLetters").val();
     let carLicenseNumbers = $("#carLicenseNumbres").val();
     let driverLicenceNumber = $("#driverLicenseNumber").val();
-    let driverLicenceTraffic = $(".driverLicenseTraffic").val();
+    let driverLicenceTraffic = $("#driverLicenseTraffic").children("option:selected").text();
     let vehicleIdentificationNumber = $("#vehicleIdentificationNumber").val();
     let NationalIdRegExp = /^(2|3)[0-9][0-9][0-1][0-9][0-3][0-9](01|02|03|04|11|12|13|14|15|16|17|18|19|21|22|23|24|25|26|27|28|29|31|32|33|34|35|88)\d\d\d\d\d$/;
+
+    let carLicenseTrafficValue = $("#carLicenseTraffic").val();
+    let driverLicenceTrafficValue = $("#driverLicenseTraffic").val();
+
+    // Only get the text if a valid option is selected (has value)
+    if (carLicenseTrafficValue && carLicenseTrafficValue !== "") {
+        carLicenseTraffic = $("#carLicenseTraffic").children("option:selected").text();
+    } else {
+        carLicenseTraffic = "";
+    }
+
+    if (driverLicenceTrafficValue && driverLicenceTrafficValue !== "") {
+        driverLicenceTraffic = $("#driverLicenseTraffic").children("option:selected").text();
+    } else {
+        driverLicenceTraffic = "";
+    }
+
     if (violatorDetails != false) {
         if ((carLicenseLetters.length > 0 && carLicenseLetters.trim().length > 0) || $("#unmarkedCheckbox:checked").length != 0) {
             if ((carLicenseNumbers.length > 0 && carLicenseNumbers.length > 0) || $("#unmarkedCheckbox:checked").length != 0) {
@@ -171,9 +188,9 @@ carViolation.violatorCarDetails = () => {
                             carLicenseFullNumbers: carLicenseLetters + " " + carLicenseNumbers,
                             carLicenceColor: carLicenceColor,
                             carBrand: carBrand,
-                            carLicenseTraffic: carLicenseTraffic != "" ? carLicenseTraffic : "",
+                            carLicenseTraffic: carLicenseTraffic,
                             driverLicenceNumber: driverLicenceNumber != "" ? driverLicenceNumber : "",
-                            driverLicenceTraffic: driverLicenceTraffic != "" ? driverLicenceTraffic : "",
+                            driverLicenceTraffic: driverLicenceTraffic,
                             vehicleIdentificationNumber: vehicleIdentificationNumber != "" ? vehicleIdentificationNumber : ""
                         }
                         validLicenses = true;
@@ -795,16 +812,15 @@ carViolation.formActions = () => {
     // });
 
     sharedApis.getGovernrates("#violationGov")
-    // sharedApis.getViolationZones("#violationArea")
+    // Remove the old getTrafficName calls and replace with getGovernrates
+    sharedApis.getGovernrates("#carLicenseTraffic")
+    sharedApis.getGovernrates("#driverLicenseTraffic")
     sharedApis.getCarType("#violationCarType")
-    sharedApis.getTrafficName("#carLicenseTraffic")
-    sharedApis.getTrafficName("#driverLicenseTraffic")
     sharedApis.getViolationType("#violationType")
     sharedApis.getViolationMaterails("#carViolationRawType")
     sharedApis.getMaterialAmmount("#RawQuantity")
     sharedApis.getEquipments(".carToolsBox")
     sharedApis.getCommitteeRecorder(".committeeBox.recorder", ".committeeBox.sectorManager")
-    // sharedApis.getCommitteeMember(".committeeMember")
 
     carViolation.getCommitteeMember()
     $(".PreLoader").removeClass("active");

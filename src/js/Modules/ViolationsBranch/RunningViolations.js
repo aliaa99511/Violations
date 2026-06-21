@@ -13,14 +13,37 @@ runningViolations.getRunningViolations = (
   ViolationType = Number($("#TypeofViolation").children("option:selected").data("id")),
   ViolationGeneralSearch = ""
 ) => {
+  const theCodeValue = $("#theCode").val();
+  const violationCategoryValue = $("#violationCategory").val();
+
+  if (
+    theCodeValue &&
+    theCodeValue.trim() !== "" &&
+    (!violationCategoryValue || violationCategoryValue === "")
+  ) {
+    functions.warningAlert(
+      "من فضلك قم باختيار تصنيف المخالفة قبل إدخال رقم المحجر/عربة/معدة"
+    );
+    $(".overlay").removeClass("active");
+    return;
+  }
+
+  const theCode =
+    violationCategoryValue == "Quarry"
+      ? { QuarryCode: $("#theCode").val() }
+      : { CarNumber: $("#theCode").val() };
+
   let request = {
     Data: {
+      ...theCode,
       RowsPerPage: 10,
       PageIndex: pagination.currentPage,
       ColName: "created",
       SortOrder: "desc",
       Status: "Approved",
       PaymentStatus: "",
+      ViolatorName: $("#violatorName").val(),
+      ViolationCode: $("#violationCode").val(),
       ViolationType: ViolationType,
       SectorConfigId: ViolationSector,
       GlobalSearch: $("#violationSearch").val(),
@@ -33,7 +56,7 @@ runningViolations.getRunningViolations = (
       CreatedTo: $("#createdTo").val()
         ? moment($("#createdTo").val(), "DD-MM-YYYY").format("YYYY-MM-DD")
         : null,
-    },
+    }
   };
   $(".overlay").addClass("active");
   functions
@@ -80,6 +103,20 @@ runningViolations.filterViolationsLog = (e) => {
   let ViolationTypeVal = $("#TypeofViolation").children("option:selected").data("id");
   let ViolationGeneralSearch = $("#violationSearch").val();
 
+  const theCodeValue = $("#theCode").val();
+  const violationCategoryValue = $("#violationCategory").val();
+
+  if (
+    theCodeValue &&
+    theCodeValue.trim() !== "" &&
+    (!violationCategoryValue || violationCategoryValue === "")
+  ) {
+    functions.warningAlert(
+      "من فضلك قم باختيار تصنيف المخالفة قبل إدخال رقم المحجر/عربة/معدة"
+    );
+    return;
+  }
+
   let ViolationType;
   let ViolationSector;
 
@@ -116,6 +153,9 @@ runningViolations.resetFilter = (e) => {
   $("#TypeofViolation").val("0");
   $("#violationZone").val("");
   $("#violationSearch").val("");
+  $("#violatorName").val("");
+  $("#violationCode").val("");
+  $("#theCode").val("");
   $("#createdFrom").val("");
   $("#createdTo").val("");
 
@@ -127,29 +167,27 @@ runningViolations.resetFilter = (e) => {
 runningViolations.handleViolationCategoryChange = () => {
   $("#violationCategory").on("change", function () {
     const selectedCategory = $(this).val();
+    const $theCodeField = $("#theCode");
     const $typeOfViolationField = $("#TypeofViolation");
 
-    // First, enable both fields
+    $theCodeField.prop("disabled", false);
     $typeOfViolationField.prop("disabled", false);
 
-    // Handle "Equipment" selection
     if (selectedCategory === "Equipment") {
-      $typeOfViolationField.prop("disabled", true).val("0"); // Disable and set to default
-    }
-
-    // Handle "Vehicle" selection
-    else if (selectedCategory === "Vehicle") {
-      $typeOfViolationField.prop("disabled", true).val("0"); // Disable and set to default
+      $theCodeField.prop("disabled", true).val("");
+      $typeOfViolationField.prop("disabled", true).val("0");
+    } else if (selectedCategory === "Vehicle") {
+      $typeOfViolationField.prop("disabled", true).val("0");
     }
   });
 };
 
 const originalResetFilter = runningViolations.resetFilter;
+
 runningViolations.resetFilter = function (e) {
-  // Call the original resetFilter function
   originalResetFilter.call(this, e);
 
-  // Re-enable both fields after reset
+  $("#theCode").prop("disabled", false);
   $("#TypeofViolation").prop("disabled", false);
 };
 
@@ -217,6 +255,45 @@ runningViolations.exportToExcel = () => {
     {
       title: "المنطقة",
       data: "Violation.ViolationsZone",
+    },
+    {
+      title: "الإحداثيات",
+      exportOnly: true,
+      render: (record) => {
+        const violation = record.Violation;
+        if (!violation) return "---";
+
+        // Try to get coordinates in degrees format first, fallback to regular format
+        const coordinatesDegrees = violation.CoordinatesDegrees;
+        const coordinates = violation.Coordinates;
+
+        if (coordinatesDegrees) {
+          // Parse the coordinates array and format them nicely
+          try {
+            const coordsArray = JSON.parse(coordinatesDegrees);
+            if (Array.isArray(coordsArray) && coordsArray.length > 0) {
+              return coordsArray.join(" | ");
+            }
+            return coordinatesDegrees;
+          } catch (e) {
+            return coordinatesDegrees;
+          }
+        }
+
+        if (coordinates) {
+          try {
+            const coordsArray = JSON.parse(coordinates);
+            if (Array.isArray(coordsArray) && coordsArray.length > 0) {
+              return coordsArray.join(" | ");
+            }
+            return coordinates;
+          } catch (e) {
+            return coordinates;
+          }
+        }
+
+        return "---";
+      },
     },
   ];
 

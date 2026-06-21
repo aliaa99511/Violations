@@ -14,8 +14,16 @@ rejectedViolationsRecords.getViolations = (
 ) => {
   let UserId = _spPageContextInfo.userId;
 
+  const violationCategoryValue = $("#violationCategory").val();
+
+  const theCode =
+    violationCategoryValue == "Quarry"
+      ? { QuarryCode: $("#theCode").val() }
+      : { CarNumber: $("#theCode").val() };
+
   let request = {
     Data: {
+      ...theCode,
       RowsPerPage: 10,
       PageIndex: pagination.currentPage,
       ColName: "created",
@@ -24,6 +32,10 @@ rejectedViolationsRecords.getViolations = (
       Sector: UserId,
       ViolationType: ViolationType,
       GlobalSearch: $("#violationSearch").val(),
+      ViolatorName: $("#violatorName").val(),
+      ViolationCode: $("#violationCode").val(),
+      OffenderType: $("#violationCategory").val(),
+      ViolationsZone: $("#violationZone").val(),
     },
   };
 
@@ -122,6 +134,45 @@ rejectedViolationsRecords.exportToExcel = () => {
     {
       title: "المنطقة",
       data: "Violation.ViolationsZone",
+    },
+    {
+      title: "الإحداثيات",
+      exportOnly: true,
+      render: (record) => {
+        const violation = record.Violation;
+        if (!violation) return "---";
+
+        // Try to get coordinates in degrees format first, fallback to regular format
+        const coordinatesDegrees = violation.CoordinatesDegrees;
+        const coordinates = violation.Coordinates;
+
+        if (coordinatesDegrees) {
+          // Parse the coordinates array and format them nicely
+          try {
+            const coordsArray = JSON.parse(coordinatesDegrees);
+            if (Array.isArray(coordsArray) && coordsArray.length > 0) {
+              return coordsArray.join(" | ");
+            }
+            return coordinatesDegrees;
+          } catch (e) {
+            return coordinatesDegrees;
+          }
+        }
+
+        if (coordinates) {
+          try {
+            const coordsArray = JSON.parse(coordinates);
+            if (Array.isArray(coordsArray) && coordsArray.length > 0) {
+              return coordsArray.join(" | ");
+            }
+            return coordinates;
+          } catch (e) {
+            return coordinates;
+          }
+        }
+
+        return "---";
+      },
     },
   ];
 
@@ -322,19 +373,49 @@ rejectedViolationsRecords.filterViolationsLog = (e) => {
 
   let ViolationType;
 
+  const theCodeValue = $("#theCode").val();
+  const violationCategoryValue = $("#violationCategory").val();
+
+  if (
+    theCodeValue &&
+    theCodeValue.trim() !== "" &&
+    (!violationCategoryValue || violationCategoryValue === "")
+  ) {
+    functions.warningAlert(
+      "من فضلك قم باختيار تصنيف المخالفة قبل إدخال رقم المحجر/عربة/معدة"
+    );
+    return;
+  }
+
   if (
     ViolationTypeVal == "" &&
-    ViolationGeneralSearch == ""
+    ViolationGeneralSearch == "" &&
+    $("#violatorName").val() == "" &&
+    $("#violationCode").val() == "" &&
+    $("#theCode").val() == "" &&
+    $("#violationZone").val() == "" &&
+    $("#violationCategory").val() == ""
   ) {
     functions.warningAlert(
       "من فضلك قم بإدخال قيمة واحدة على الأقل من قيم البحث"
     );
   } else if (
     ViolationTypeVal != "0" ||
-    ViolationGeneralSearch != ""
+    ViolationGeneralSearch != "" ||
+    $("#violatorName").val() != "" ||
+    $("#violationCode").val() != "" ||
+    $("#theCode").val() != "" ||
+    $("#violationZone").val() != "" ||
+    $("#violationCategory").val() != ""
   ) {
     $(".overlay").addClass("active");
-    ViolationType = Number($("#TypeofViolation").children("option:selected").data("id"));
+
+    ViolationType = Number(
+      $("#TypeofViolation")
+        .children("option:selected")
+        .data("id")
+    );
+
     rejectedViolationsRecords.getViolations(
       pageIndex,
       true,
@@ -346,12 +427,37 @@ rejectedViolationsRecords.filterViolationsLog = (e) => {
 
 rejectedViolationsRecords.resetFilter = (e) => {
   e.preventDefault();
+
   $("#TypeofViolation").val("0");
   $("#violationSearch").val("");
+  $("#violatorName").val("");
+  $("#violationCode").val("");
+  $("#violationCategory").val("");
+  $("#theCode").val("");
+  $("#violationZone").val("");
 
   $(".overlay").addClass("active");
   pagination.reset();
   rejectedViolationsRecords.getViolations();
 };
+
+rejectedViolationsRecords.handleViolationCategoryChange = () => {
+  $("#violationCategory").on("change", function () {
+    const selectedCategory = $(this).val();
+    const $theCodeField = $("#theCode");
+    const $typeOfViolationField = $("#TypeofViolation");
+
+    $theCodeField.prop("disabled", false);
+    $typeOfViolationField.prop("disabled", false);
+
+    if (selectedCategory === "Equipment") {
+      $theCodeField.prop("disabled", true).val("");
+      $typeOfViolationField.prop("disabled", true).val("0");
+    } else if (selectedCategory === "Vehicle") {
+      $typeOfViolationField.prop("disabled", true).val("0");
+    }
+  });
+};
+
 
 export default rejectedViolationsRecords;

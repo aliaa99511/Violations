@@ -42,6 +42,8 @@ pendingPaymentRecords.getPendingPayment = (
             OffenderType: $("#violationCategory").val(),
             ViolatorName: $("#violatorName").val(),
             ViolatorCompany: $("#companyName").val(),
+            ViolationCode: $("#violationCode").val(),
+            ViolationsZone: $("#violationZone").val(),
             CreatedFrom: $("#createdFrom").val()
                 ? moment($("#createdFrom").val(), "DD-MM-YYYY").format("YYYY-MM-DD")
                 : null,
@@ -91,42 +93,69 @@ pendingPaymentRecords.setPaginations = (TotalPages, RowsPerPage) => {
 
 pendingPaymentRecords.filterPaymentsLog = () => {
     let pageIndex = pendingPaymentRecords.pageIndex;
+
     let ViolationTypeVal = $("#TypeofViolation").children("option:selected").data("id");
+
     let ViolationGeneralSearch = $("#violationSearch").val();
-    let violationCategory = $("#violationCategory").val();
+
     const theCodeValue = $("#theCode").val();
     const violationCategoryValue = $("#violationCategory").val();
+    const violationCode = $("#violationCode").val();
+    const violationZone = $("#violationZone").val();
+    const violatorName = $("#violatorName").val();
+    const companyName = $("#companyName").val();
+    const createdFrom = $("#createdFrom").val();
+    const createdTo = $("#createdTo").val();
 
-    // Check if theCode has value but violationCategory is empty
-    if (theCodeValue && theCodeValue.trim() !== "" && (!violationCategoryValue || violationCategoryValue === "")) {
-        functions.warningAlert("من فضلك قم باختيار تصنيف المخالفة قبل إدخال رقم المحجر/عربة/معدة");
+    if (
+        theCodeValue &&
+        theCodeValue.trim() !== "" &&
+        (
+            !violationCategoryValue ||
+            violationCategoryValue === ""
+        )
+    ) {
+        functions.warningAlert(
+            "من فضلك قم باختيار تصنيف المخالفة قبل إدخال رقم المحجر/عربة/معدة"
+        );
+
         return;
     }
 
-    // Check if at least one filter has a value
     if (
-        ViolationTypeVal == "0" &&
+
+        (ViolationTypeVal == "" || ViolationTypeVal == "0") &&
         ViolationGeneralSearch == "" &&
-        (!violationCategory || violationCategory === "") &&
-        $("#createdFrom").val() == "" &&
-        $("#createdTo").val() == "" &&
-        $("#violatorName").val() == "" &&
-        $("#companyName").val() == "" &&
-        $("#theCode").val() == ""
+        violationCode == "" &&
+        violationZone == "" &&
+        violatorName == "" &&
+        companyName == "" &&
+        theCodeValue == "" &&
+        createdFrom == "" &&
+        createdTo == ""
     ) {
         functions.warningAlert(
             "من فضلك قم بإدخال قيمة واحدة على الأقل من قيم البحث"
         );
-    } else {
-        $(".overlay").addClass("active");
-        let ViolationType = Number($("#TypeofViolation").children("option:selected").data("id"));
-        pendingPaymentRecords.getPendingPayment(
-            pageIndex,
-            true,
-            ViolationType,
-            ViolationGeneralSearch
-        );
+
+        return;
     }
+
+    $(".overlay").addClass("active");
+
+    let ViolationType = Number(
+        $("#TypeofViolation")
+            .children("option:selected")
+            .data("id")
+    );
+
+    pendingPaymentRecords.getPendingPayment(
+        pageIndex,
+        true,
+        ViolationType,
+        ViolationGeneralSearch
+    );
+
 };
 
 pendingPaymentRecords.resetFilter = (e) => {
@@ -137,6 +166,8 @@ pendingPaymentRecords.resetFilter = (e) => {
     $("#violatorName").val("");
     $("#companyName").val("");
     $("#theCode").val("");
+    $("#violationCode").val("");
+    $("#violationZone").val("");
     $("#createdFrom").val("");
     $("#createdTo").val("");
 
@@ -423,6 +454,45 @@ pendingPaymentRecords.exportToExcel = () => {
         {
             title: "المبلغ المتبقي",
             render: (record) => functions.splitBigNumbersByComma(record.Violation?.RemainingAmount || 0),
+        },
+        {
+            title: "الإحداثيات",
+            exportOnly: true,
+            render: (record) => {
+                const violation = record.Violation;
+                if (!violation) return "---";
+
+                // Try to get coordinates in degrees format first, fallback to regular format
+                const coordinatesDegrees = violation.CoordinatesDegrees;
+                const coordinates = violation.Coordinates;
+
+                if (coordinatesDegrees) {
+                    // Parse the coordinates array and format them nicely
+                    try {
+                        const coordsArray = JSON.parse(coordinatesDegrees);
+                        if (Array.isArray(coordsArray) && coordsArray.length > 0) {
+                            return coordsArray.join(" | ");
+                        }
+                        return coordinatesDegrees;
+                    } catch (e) {
+                        return coordinatesDegrees;
+                    }
+                }
+
+                if (coordinates) {
+                    try {
+                        const coordsArray = JSON.parse(coordinates);
+                        if (Array.isArray(coordsArray) && coordsArray.length > 0) {
+                            return coordsArray.join(" | ");
+                        }
+                        return coordinates;
+                    } catch (e) {
+                        return coordinates;
+                    }
+                }
+
+                return "---";
+            },
         },
     ];
 

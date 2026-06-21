@@ -312,7 +312,8 @@ petitionsLog.exportToExcel = () => {
     { title: "", skip: true }, // controls column
     { title: "تصنيف المخالفة", skip: false },
     { title: "تاريخ الالتماس", skip: false },
-    { title: "حالة الالتماس", skip: false }
+    { title: "حالة الالتماس", skip: false },
+    { title: "الإحداثيات", skip: false, exportOnly: true }
   ];
 
   const fileName =
@@ -343,6 +344,43 @@ petitionsLog.exportToExcel = () => {
       case "حالة الالتماس":
         return record.Status || "---";
 
+      case "الإحداثيات": {
+        if (!violation) return "---";
+
+        const coordinatesDegrees = violation.CoordinatesDegrees;
+        const coordinates = violation.Coordinates;
+
+        if (coordinatesDegrees) {
+          try {
+            const coordsArray = JSON.parse(coordinatesDegrees);
+
+            if (Array.isArray(coordsArray) && coordsArray.length > 0) {
+              return coordsArray.join(" | ");
+            }
+
+            return coordinatesDegrees;
+          } catch (e) {
+            return coordinatesDegrees;
+          }
+        }
+
+        if (coordinates) {
+          try {
+            const coordsArray = JSON.parse(coordinates);
+
+            if (Array.isArray(coordsArray) && coordsArray.length > 0) {
+              return coordsArray.join(" | ");
+            }
+
+            return coordinates;
+          } catch (e) {
+            return coordinates;
+          }
+        }
+
+        return "---";
+      }
+
       default:
         return "";
     }
@@ -351,11 +389,6 @@ petitionsLog.exportToExcel = () => {
   const table = $("#PetitionsTable").DataTable();
 
   table.columns().every(function (index) {
-    console.log(
-      index,
-      $(this.header()).text(),
-      this.visible()
-    );
   });
 
   functions.exportPetitionFromAPI({

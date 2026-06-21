@@ -153,6 +153,29 @@ vehicleViolationReferralSector.exportToExcel = () => {
             title: "موقف الإحالة",
             render: (record) =>
                 functions.getCaseStatus(record.Status) || "-----",
+        },
+        {
+            title: "الإحداثيات",
+            exportOnly: true,
+            render: (record) => {
+                const coordinates = record.Coordinates;
+
+                if (!coordinates) return "---";
+
+                try {
+                    const coordsArray = JSON.parse(coordinates);
+
+                    if (Array.isArray(coordsArray)) {
+                        return coordsArray
+                            .map(coord => Array.isArray(coord) ? coord.join(" , ") : coord)
+                            .join(" | ");
+                    }
+
+                    return coordinates;
+                } catch {
+                    return coordinates;
+                }
+            }
         }
     ];
 

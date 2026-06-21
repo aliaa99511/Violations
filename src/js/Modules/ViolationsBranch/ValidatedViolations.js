@@ -1,5 +1,3 @@
-
-
 import functions from "../../Shared/functions";
 import DetailsPopup from "../../Shared/detailsPopupContent";
 import confirmPopup from "../../Shared/confirmationPopup";
@@ -407,6 +405,45 @@ validatedViolations.exportToExcel = () => {
       render: (record) =>
         record?.ReferralStatus || "----",
     },
+    {
+      title: "الإحداثيات",
+      exportOnly: true,
+      render: (record) => {
+        const violation = record.Violation;
+        if (!violation) return "---";
+
+        // Try to get coordinates in degrees format first, fallback to regular format
+        const coordinatesDegrees = violation.CoordinatesDegrees;
+        const coordinates = violation.Coordinates;
+
+        if (coordinatesDegrees) {
+          // Parse the coordinates array and format them nicely
+          try {
+            const coordsArray = JSON.parse(coordinatesDegrees);
+            if (Array.isArray(coordsArray) && coordsArray.length > 0) {
+              return coordsArray.join(" | ");
+            }
+            return coordinatesDegrees;
+          } catch (e) {
+            return coordinatesDegrees;
+          }
+        }
+
+        if (coordinates) {
+          try {
+            const coordsArray = JSON.parse(coordinates);
+            if (Array.isArray(coordsArray) && coordsArray.length > 0) {
+              return coordsArray.join(" | ");
+            }
+            return coordinates;
+          } catch (e) {
+            return coordinates;
+          }
+        }
+
+        return "---";
+      },
+    },
   ];
 
   functions.exportFromAPI({
@@ -418,7 +455,7 @@ validatedViolations.exportToExcel = () => {
     columnWidths: 25,
     rtl: true,
     dataPath: "d.Result.GridData",
-    exportButtonSelector: "#ValidatedViolations #exportBtn",
+    exportButtonSelector: "#exportBtn",
     tableSelector: "#ValidatedViolation"
   });
 };
@@ -445,6 +482,7 @@ validatedViolations.ValidatedViolationTable = (ValidatedViolation, destroyTable)
       violationDate = functions.getFormatedDate(record.ReconciliationExpiredDate);
       let createdDate = functions.getFormatedDate(record.Created);
       let caseStatus = record?.ReferralStatus || "";
+      let IsDublicated = record.IsDublicated;
 
       if (
         moment(new Date()).format("MM-DD-YYYY") >
@@ -470,7 +508,10 @@ validatedViolations.ValidatedViolationTable = (ValidatedViolation, destroyTable)
             data-violationcode="${taskViolation?.ViolationCode}"
             data-totalprice="${taskViolation?.TotalPriceDue}"
             data-enddate="${record.ReconciliationExpiredDate}"
-            data-offendertype="${taskViolation?.OffenderType}">
+            data-offendertype="${taskViolation?.OffenderType}"
+            data-isdublicated="${IsDublicated}"
+            data-equipments_count="${taskViolation?.Equipments_Count}"
+            >
             ${taskViolation?.ViolationCode || "-"}
         </div>`,
 
@@ -647,6 +688,8 @@ validatedViolations.ValidatedViolationTable = (ValidatedViolation, destroyTable)
       let hiddenListBox = jQueryRecord.find(".controls").children(".hiddenListBox");
       let TotalPrice = jQueryRecord.find(".violationId").data("totalprice");
       let EndDate = jQueryRecord.find(".violationId").data("enddate");
+      let IsDublicated = jQueryRecord.find(".violationId").data("isdublicated");
+      let Equipments_Count = jQueryRecord.find(".violationId").data("equipments_count");
 
       // Create separate buttons based on offender type
       let referralButtonHtml = '';
@@ -667,12 +710,12 @@ validatedViolations.ValidatedViolationTable = (ValidatedViolation, destroyTable)
           `);
           break;
         }
-        // case "UnderPayment": {
-        //   jQueryRecord.find(".controls").children(".hiddenListBox").find(".controlsList").append(`
-        //     <li><a href="#" class="payViolation">تسديد المخالفة</a></li>
-        //   `);
-        //   break;
-        // }
+        case "UnderPayment": {
+          jQueryRecord.find(".controls").children(".hiddenListBox").find(".controlsList").append(`
+            ${referralButtonHtml}
+          `);
+          break;
+        }
         case "Exceeded": {
           jQueryRecord.find(".controls").children(".hiddenListBox").find(".controlsList").append(`
             ${referralButtonHtml}
@@ -751,7 +794,8 @@ validatedViolations.ValidatedViolationTable = (ValidatedViolation, destroyTable)
           violationID,
           violationCode,
           offenderType,
-          TotalPrice
+          TotalPrice,
+          IsDublicated
         );
       });
       jQueryRecord.find(".controls").children(".hiddenListBox").find(".reffereViolationEquipment").on("click", (e) => {
@@ -761,7 +805,9 @@ validatedViolations.ValidatedViolationTable = (ValidatedViolation, destroyTable)
           violationID,
           violationCode,
           offenderType,
-          TotalPrice
+          TotalPrice,
+          IsDublicated,
+          Equipments_Count
         );
       });
       jQueryRecord.find(".controls").children(".hiddenListBox").find(".printPaymentForm").off("click").on("click", (e) => {
@@ -1971,6 +2017,8 @@ validatedViolations.reffereViolationToCase = (
   ViolationCode,
   OffenderType,
   TotalPrice,
+  IsDublicated,
+  Equipments_Count
 ) => {
   $(".overlay").removeClass("active");
 
@@ -2191,6 +2239,8 @@ validatedViolations.reffereViolationToCase = (
           violationRefferedDate,
           violationRefferedComments,
           "#reffereViolationAttach",
+          IsDublicated,
+          Equipments_Count
         );
       } else {
         functions.warningAlert("من فضلك قم بإرفاق المستند الخاص بالإحالة");
@@ -2209,11 +2259,21 @@ validatedViolations.reffereViolationAPIResponse = (
   // ReferralNumber,
   Comments = "",
   attachInput,
+  IsDublicated,
+  Equipments_Count
 ) => {
   let DouplePrice = TotalPrice * 2 + 10000;
 
   // Get the stored referral status
   let referralStatus = $("body").data("currentReferralStatus") || "";
+
+  let TotalPriceDueEquation;
+
+  if (OffenderType === "Vehicle") {
+    TotalPriceDueEquation = IsDublicated ? TotalPrice : DouplePrice;
+  } else if (OffenderType === "Equipment") {
+    TotalPriceDueEquation = TotalPrice + (Equipments_Count * 10000);
+  }
 
   let request = {
     Data: {
@@ -2221,7 +2281,7 @@ validatedViolations.reffereViolationAPIResponse = (
       Title: OffenderType == "Vehicle" ? "تم حظر عربة" : OffenderType == "Equipment" ? "تم حظر معدة" : "تم إحالة الطلب للنيابة المختصة",
       Status: "UnderReview",
       ViolationId: ViolationId,
-      TotalPriceDue: OffenderType == "Vehicle" ? DouplePrice : TotalPrice,
+      TotalPriceDue: TotalPriceDueEquation,
       ReferralStatus: referralStatus,
     },
   };

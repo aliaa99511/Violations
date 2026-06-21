@@ -8,12 +8,23 @@ approvedViolationsRecords.dataObj = {
   destroyTable: false,
   OffenderType: "",
   ViolationType: 0,
-}
-
+  GlobalSearch: "",
+  ViolationCode: "",
+  ViolationsZone: "",
+  CarNumber: "",
+  QuarryCode: "",
+};
 approvedViolationsRecords.getApprovedViolations = () => {
   let UserId = _spPageContextInfo.userId;
+
+  const theCode =
+    approvedViolationsRecords.dataObj.OffenderType === "Quarry"
+      ? { QuarryCode: approvedViolationsRecords.dataObj.QuarryCode }
+      : { CarNumber: approvedViolationsRecords.dataObj.CarNumber };
+
   let request = {
     Data: {
+      ...theCode,
       RowsPerPage: 10,
       PageIndex: pagination.currentPage,
       ColName: "created",
@@ -22,10 +33,19 @@ approvedViolationsRecords.getApprovedViolations = () => {
       Sector: UserId,
       ViolationType: approvedViolationsRecords.dataObj.ViolationType,
       OffenderType: approvedViolationsRecords.dataObj.OffenderType,
+      GlobalSearch: approvedViolationsRecords.dataObj.GlobalSearch,
+      ViolationCode: approvedViolationsRecords.dataObj.ViolationCode,
+      ViolationsZone: approvedViolationsRecords.dataObj.ViolationsZone,
     },
   };
+
   $(".overlay").addClass("active");
-  functions.requester("/_layouts/15/Uranium.Violations.SharePoint/Tasks.aspx/Search", { request })
+
+  functions
+    .requester(
+      "/_layouts/15/Uranium.Violations.SharePoint/Tasks.aspx/Search",
+      { request }
+    )
     .then((response) => {
       if (response.ok) {
         return response.json();
@@ -33,8 +53,10 @@ approvedViolationsRecords.getApprovedViolations = () => {
     })
     .then((data) => {
       $(".overlay").removeClass("active");
+
       let violationsData = [];
       let ItemsData = data.d.Result;
+
       if (data.d.Result.GridData != null) {
         if (data.d.Result.GridData.length > 0) {
           Array.from(data.d.Result.GridData).forEach((element) => {
@@ -44,10 +66,14 @@ approvedViolationsRecords.getApprovedViolations = () => {
           violationsData = [];
         }
       }
-      approvedViolationsRecords.setPaginations(ItemsData.TotalPageCount, ItemsData.RowsPerPage);
+
+      approvedViolationsRecords.setPaginations(
+        ItemsData.TotalPageCount,
+        ItemsData.RowsPerPage
+      );
+
       approvedViolationsRecords.dashBoardTable(violationsData);
       approvedViolationsRecords.dataObj.destroyTable = true;
-      // approvedViolationsRecords.pageIndex = ItemsData.CurrentPage;
     })
     .catch((err) => {
       $(".overlay").removeClass("active");
@@ -64,19 +90,18 @@ approvedViolationsRecords.setPaginations = (TotalPages, RowsPerPage) => {
 approvedViolationsRecords.handleViolationCategoryChange = () => {
   $("#violationCategory").on("change", function () {
     const selectedCategory = $(this).val();
+
+    const $theCodeField = $("#theCode");
     const $typeOfViolationField = $("#TypeofViolation");
 
-    // First, enable both fields
+    $theCodeField.prop("disabled", false);
     $typeOfViolationField.prop("disabled", false);
 
-    // Handle "Equipment" selection
     if (selectedCategory === "Equipment") {
-      $typeOfViolationField.prop("disabled", true).val("0"); // Disable and set to default
-    }
-
-    // Handle "Vehicle" selection
-    else if (selectedCategory === "Vehicle") {
-      $typeOfViolationField.prop("disabled", true).val("0"); // Disable and set to default
+      $theCodeField.prop("disabled", true).val("");
+      $typeOfViolationField.prop("disabled", true).val("0");
+    } else if (selectedCategory === "Vehicle") {
+      $typeOfViolationField.prop("disabled", true).val("0");
     }
   });
 };
@@ -264,6 +289,45 @@ approvedViolationsRecords.exportToExcel = () => {
       title: "تاريخ الإنشاء",
       render: (record) => functions.getFormatedDate(record.Created),
     },
+    {
+      title: "الإحداثيات",
+      exportOnly: true,
+      render: (record) => {
+        const violation = record.Violation;
+        if (!violation) return "---";
+
+        // Try to get coordinates in degrees format first, fallback to regular format
+        const coordinatesDegrees = violation.CoordinatesDegrees;
+        const coordinates = violation.Coordinates;
+
+        if (coordinatesDegrees) {
+          // Parse the coordinates array and format them nicely
+          try {
+            const coordsArray = JSON.parse(coordinatesDegrees);
+            if (Array.isArray(coordsArray) && coordsArray.length > 0) {
+              return coordsArray.join(" | ");
+            }
+            return coordinatesDegrees;
+          } catch (e) {
+            return coordinatesDegrees;
+          }
+        }
+
+        if (coordinates) {
+          try {
+            const coordsArray = JSON.parse(coordinates);
+            if (Array.isArray(coordsArray) && coordsArray.length > 0) {
+              return coordsArray.join(" | ");
+            }
+            return coordinates;
+          } catch (e) {
+            return coordinates;
+          }
+        }
+
+        return "---";
+      },
+    },
   ];
 
   functions.exportFromAPI({
@@ -335,37 +399,90 @@ approvedViolationsRecords.findViolationByID = (event, taskID, print = false) => 
     });
 };
 approvedViolationsRecords.filterViolationsLog = (e) => {
-  // let pageIndex = approvedViolationsRecords.pageIndex;
-  let OffenderTypeVal = $("#violationCategory").children("option:selected").val();
-  let ViolationTypeVal = $("#TypeofViolation").children("option:selected").data("id");
-  // let ViolationType;
-  // let offenderType;
+  let OffenderTypeVal = $("#violationCategory")
+    .children("option:selected")
+    .val();
 
-  if (ViolationTypeVal == "" && OffenderTypeVal == "") {
+  let ViolationTypeVal = $("#TypeofViolation")
+    .children("option:selected")
+    .data("id");
+
+  let GlobalSearchVal = $("#violationSearch").val();
+  let ViolationCodeVal = $("#violationCode").val();
+  let ViolationsZoneVal = $("#violationZone").val();
+  let TheCodeVal = $("#theCode").val();
+
+  if (
+    TheCodeVal &&
+    TheCodeVal.trim() !== "" &&
+    (!OffenderTypeVal || OffenderTypeVal === "")
+  ) {
+    functions.warningAlert(
+      "من فضلك قم باختيار تصنيف المخالفة قبل إدخال رقم المحجر/عربة/معدة"
+    );
+    return;
+  }
+
+  if (
+    OffenderTypeVal == "" &&
+    ViolationTypeVal == "0" &&
+    GlobalSearchVal == "" &&
+    ViolationCodeVal == "" &&
+    ViolationsZoneVal == "" &&
+    TheCodeVal == ""
+  ) {
     functions.warningAlert(
       "من فضلك قم بإدخال قيمة واحدة على الأقل من قيم البحث"
     );
-  } else if (OffenderTypeVal != "" || ViolationTypeVal != "0") {
-    $(".overlay").addClass("active");
-    approvedViolationsRecords.dataObj.OffenderType = $("#violationCategory").children("option:selected").val();
-    approvedViolationsRecords.dataObj.ViolationType = Number($("#TypeofViolation").children("option:selected").data("id"));
-    approvedViolationsRecords.dataObj.destroyTable = true;
-    approvedViolationsRecords.dataObj.pageIndex = pagination.currentPage
-    approvedViolationsRecords.getApprovedViolations();
+    return;
   }
+
+  $(".overlay").addClass("active");
+  approvedViolationsRecords.dataObj.OffenderType = OffenderTypeVal;
+  approvedViolationsRecords.dataObj.ViolationType = Number(ViolationTypeVal);
+  approvedViolationsRecords.dataObj.GlobalSearch = GlobalSearchVal;
+  approvedViolationsRecords.dataObj.ViolationCode = ViolationCodeVal;
+  approvedViolationsRecords.dataObj.ViolationsZone = ViolationsZoneVal;
+
+  if (OffenderTypeVal === "Quarry") {
+    approvedViolationsRecords.dataObj.QuarryCode = TheCodeVal;
+    approvedViolationsRecords.dataObj.CarNumber = "";
+  } else {
+    approvedViolationsRecords.dataObj.CarNumber = TheCodeVal;
+    approvedViolationsRecords.dataObj.QuarryCode = "";
+  }
+
+  approvedViolationsRecords.dataObj.destroyTable = true;
+  approvedViolationsRecords.getApprovedViolations();
 };
 approvedViolationsRecords.resetFilter = (e) => {
   e.preventDefault();
-  $("#violationCategory").val(""); // Reset to "الكل" (the disabled selected hidden option)
-  $("#TypeofViolation").val("0"); // Reset to "الكل" with data-id="0"
 
-  // Reset the data object properties
-  approvedViolationsRecords.dataObj.OffenderType = "";
-  approvedViolationsRecords.dataObj.ViolationType = 0;
-  approvedViolationsRecords.dataObj.destroyTable = true;
+  $("#violationCategory").val("");
+  $("#TypeofViolation").val("0");
+  $("#violationZone").val("");
+  $("#violationSearch").val("");
+  $("#violationCode").val("");
+  $("#theCode").val("");
+
+  approvedViolationsRecords.dataObj = {
+    destroyTable: true,
+    OffenderType: "",
+    ViolationType: 0,
+    GlobalSearch: "",
+    ViolationCode: "",
+    ViolationsZone: "",
+    CarNumber: "",
+    QuarryCode: "",
+  };
+
+  $("#theCode").prop("disabled", false);
+  $("#TypeofViolation").prop("disabled", false);
 
   pagination.reset();
+
   $(".overlay").addClass("active");
+
   approvedViolationsRecords.getApprovedViolations();
 };
 

@@ -7,24 +7,63 @@ let runningSectorTask = {};
 runningSectorTask.destroyTable = false;
 runningSectorTask.pageIndex = 1;
 
-runningSectorTask.getRunningTasks = (pageIndex = 1, ViolationSector = 0, ViolationType = 0, ViolationGeneralSearch = "") => {
+runningSectorTask.getRunningTasks = (
+  pageIndex = 1,
+  destroyTable = false,
+  ViolationSector = Number($("#violationSector").children("option:selected").val()),
+  ViolationType = Number($("#TypeofViolation").children("option:selected").data("id")),
+  ViolationGeneralSearch = ""
+) => {
+  const theCodeValue = $("#theCode").val();
+  const violationCategoryValue = $("#violationCategory").val();
+
+  if (
+    theCodeValue &&
+    theCodeValue.trim() !== "" &&
+    (!violationCategoryValue || violationCategoryValue === "")
+  ) {
+    functions.warningAlert(
+      "من فضلك قم باختيار تصنيف المخالفة قبل إدخال رقم المحجر/عربة/معدة"
+    );
+    $(".overlay").removeClass("active");
+    return;
+  }
+
+  const theCode =
+    violationCategoryValue == "Quarry"
+      ? { QuarryCode: $("#theCode").val() }
+      : { CarNumber: $("#theCode").val() };
+
   let request = {
     Data: {
+      ...theCode,
       RowsPerPage: 10,
       PageIndex: pagination.currentPage,
       ColName: "created",
       SortOrder: "desc",
       Status: "Approved",
       PaymentStatus: "",
+      ViolatorName: $("#violatorName").val(),
+      ViolationCode: $("#violationCode").val(),
       ViolationType: ViolationType,
       SectorConfigId: ViolationSector,
-      GlobalSearch: $("#violationSearch").val()
-    },
+      GlobalSearch: $("#violationSearch").val(),
+      Sector: 0,
+      OffenderType: $("#violationCategory").val(),
+      ViolationsZone: $("#violationZone").val(),
+      CreatedFrom: $("#createdFrom").val()
+        ? moment($("#createdFrom").val(), "DD-MM-YYYY").format("YYYY-MM-DD")
+        : null,
+      CreatedTo: $("#createdTo").val()
+        ? moment($("#createdTo").val(), "DD-MM-YYYY").format("YYYY-MM-DD")
+        : null,
+    }
   };
   $(".overlay").addClass("active");
-  functions.requester("_layouts/15/Uranium.Violations.SharePoint/Tasks.aspx/Search", {
-    request,
-  })
+  functions
+    .requester("/_layouts/15/Uranium.Violations.SharePoint/Tasks.aspx/Search", {
+      request,
+    })
     .then((response) => {
       if (response.ok) {
         return response.json();
@@ -33,9 +72,9 @@ runningSectorTask.getRunningTasks = (pageIndex = 1, ViolationSector = 0, Violati
     .then((data) => {
       $(".overlay").removeClass("active");
       let runningTasks = [];
-      let ItemsData = data.d.Result;
-      if (data.d.Result.GridData != null) {
-        if (data.d.Result.GridData.length > 0) {
+      let ItemsData = data?.d?.Result;
+      if (data?.d?.Result?.GridData != null) {
+        if (data?.d?.Result?.GridData.length > 0) {
           Array.from(data.d.Result.GridData).forEach((element) => {
             runningTasks.push(element);
           });
@@ -44,7 +83,7 @@ runningSectorTask.getRunningTasks = (pageIndex = 1, ViolationSector = 0, Violati
         }
       }
       runningSectorTask.setPaginations(ItemsData.TotalPageCount, ItemsData.RowsPerPage);
-      runningSectorTask.runningSectorTaskTable(runningTasks, runningSectorTask.destroyTable);
+      runningSectorTask.runningSectorTaskTable(runningTasks, destroyTable);
       runningSectorTask.pageIndex = ItemsData.CurrentPage;
     })
     .catch((err) => {
@@ -118,6 +157,45 @@ runningSectorTask.exportToExcel = () => {
     {
       title: "المنطقة",
       data: "Violation.ViolationsZone",
+    },
+    {
+      title: "الإحداثيات",
+      exportOnly: true,
+      render: (record) => {
+        const violation = record.Violation;
+        if (!violation) return "---";
+
+        // Try to get coordinates in degrees format first, fallback to regular format
+        const coordinatesDegrees = violation.CoordinatesDegrees;
+        const coordinates = violation.Coordinates;
+
+        if (coordinatesDegrees) {
+          // Parse the coordinates array and format them nicely
+          try {
+            const coordsArray = JSON.parse(coordinatesDegrees);
+            if (Array.isArray(coordsArray) && coordsArray.length > 0) {
+              return coordsArray.join(" | ");
+            }
+            return coordinatesDegrees;
+          } catch (e) {
+            return coordinatesDegrees;
+          }
+        }
+
+        if (coordinates) {
+          try {
+            const coordsArray = JSON.parse(coordinates);
+            if (Array.isArray(coordsArray) && coordsArray.length > 0) {
+              return coordsArray.join(" | ");
+            }
+            return coordinates;
+          } catch (e) {
+            return coordinates;
+          }
+        }
+
+        return "---";
+      },
     },
   ];
 
@@ -728,40 +806,99 @@ runningSectorTask.uploadConfirmAttachment = (taskID, ListName) => {
     },
   });
 };
-
 runningSectorTask.filterTasksLog = (e) => {
   let pageIndex = runningSectorTask.pageIndex;
   let ViolationSectorVal = $("#violationSector").children("option:selected").val();
   let ViolationTypeVal = $("#TypeofViolation").children("option:selected").data("id");
   let ViolationGeneralSearch = $("#violationSearch").val();
+
+  const theCodeValue = $("#theCode").val();
+  const violationCategoryValue = $("#violationCategory").val();
+
+  if (
+    theCodeValue &&
+    theCodeValue.trim() !== "" &&
+    (!violationCategoryValue || violationCategoryValue === "")
+  ) {
+    functions.warningAlert(
+      "من فضلك قم باختيار تصنيف المخالفة قبل إدخال رقم المحجر/عربة/معدة"
+    );
+    return;
+  }
+
   let ViolationType;
   let ViolationSector;
 
-  if (ViolationTypeVal == "" && ViolationSectorVal == "" && ViolationGeneralSearch == "") {
+  if (
+    ViolationTypeVal == "" &&
+    ViolationSectorVal == "" &&
+    ViolationGeneralSearch == ""
+  ) {
     functions.warningAlert(
       "من فضلك قم بإدخال قيمة واحدة على الأقل من قيم البحث"
     );
-  } else if (ViolationSectorVal != "" || ViolationTypeVal != "0" || ViolationGeneralSearch != "") {
+  } else if (
+    ViolationSectorVal != "" ||
+    ViolationTypeVal != "0" ||
+    ViolationGeneralSearch != ""
+  ) {
     $(".overlay").addClass("active");
     ViolationSector = Number($("#violationSector").children("option:selected").val());
-    ViolationType = Number(
-      $("#TypeofViolation").children("option:selected").data("id")
+    ViolationType = Number($("#TypeofViolation").children("option:selected").data("id"));
+    runningSectorTask.getRunningTasks(
+      pageIndex,
+      true,
+      ViolationSector,
+      ViolationType,
+      ViolationGeneralSearch
     );
-    runningSectorTask.getRunningTasks(pageIndex, ViolationSector, ViolationType, ViolationGeneralSearch);
   }
 };
 
 runningSectorTask.resetFilter = (e) => {
   e.preventDefault();
   $("#violationSector").val("0");
+  $("#violationCategory").val("");
   $("#TypeofViolation").val("0");
+  $("#violationZone").val("");
   $("#violationSearch").val("");
+  $("#violatorName").val("");
+  $("#violationCode").val("");
+  $("#theCode").val("");
+  $("#createdFrom").val("");
+  $("#createdTo").val("");
 
+  $(".overlay").addClass("active");
   pagination.reset();
   runningSectorTask.pageIndex = 1;
 
-  $(".overlay").addClass("active");
+  runningSectorTask.getRunningTasks(1, false, 0, 0, "");
+};
 
-  runningSectorTask.getRunningTasks(1, 0, 0, "");
+runningSectorTask.handleViolationCategoryChange = () => {
+  $("#violationCategory").on("change", function () {
+    const selectedCategory = $(this).val();
+    const $theCodeField = $("#theCode");
+    const $typeOfViolationField = $("#TypeofViolation");
+
+    $theCodeField.prop("disabled", false);
+    $typeOfViolationField.prop("disabled", false);
+
+    if (selectedCategory === "Equipment") {
+      $theCodeField.prop("disabled", true).val("");
+      $typeOfViolationField.prop("disabled", true).val("0");
+    } else if (selectedCategory === "Vehicle") {
+      $typeOfViolationField.prop("disabled", true).val("0");
+    }
+  });
+};
+
+const originalResetFilterSector = runningSectorTask.resetFilter;
+
+runningSectorTask.resetFilter = function (e) {
+  originalResetFilterSector.call(this, e);
+
+  $("#theCode").prop("disabled", false);
+  $("#TypeofViolation").prop("disabled", false);
 };
 export default runningSectorTask;

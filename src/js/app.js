@@ -194,10 +194,12 @@ $(window).on("load", () => {
       if (functions.getPageName() === "RejectedViolationsRecordsLog") {
         functions.setPageMetaData("سجل المخالفات المرفوضة");
         // sharedApis.getViolationZones("#violationZone");
+        sharedApis.getOffenderType("#violationCategory");
         sharedApis.getViolationSectors("#violationSector");
         sharedApis.getViolationType("#TypeofViolation");
 
         rejectedViolationsRecords.getViolations();
+        rejectedViolationsRecords.handleViolationCategoryChange()
 
         $(".searchBtn").on("click", (e) => {
           e.preventDefault();
@@ -359,10 +361,13 @@ $(window).on("load", () => {
       if (functions.getPageName() === "RejectedViolations") {
         functions.setPageMetaData("سجل المخالفات المرفوضة");
         // sharedApis.getViolationZones("#violationZone");
+        sharedApis.getOffenderType("#violationCategory");
         sharedApis.getViolationSectors("#violationSector");
         sharedApis.getViolationType("#TypeofViolation");
 
         rejectedViolations.getRejectedViolations();
+
+        rejectedViolations.handleViolationCategoryChange();
 
         $(".searchBtn").on("click", (e) => {
           e.preventDefault();
@@ -490,8 +495,9 @@ $(window).on("load", () => {
         functions.setPageMetaData("سجل مخالفات ضبط خارجية");
 
         // sharedApis.getViolationSectors("#violationSector");
-        // sharedApis.getOffenderType("#violationCategory");
-        // sharedApis.getViolationType("#TypeofViolation");
+        sharedApis.getViolationType("#TypeofViolation");
+        sharedApis.getOffenderType("#violationCategory");
+        sharedApis.getViolationStatus("#ViolationStatus");
 
         // Initialize datepickers for date inputs
         functions.inputDateFormat("#createdFrom", "", "", "dd-mm-yyyy");
@@ -500,6 +506,8 @@ $(window).on("load", () => {
         // Call init instead of getExternalViolations directly
         // ExternalViolationLog.init(); // This will setup events AND call the API
         ExternalViolationLog.getExternalViolations();
+
+        ExternalViolationLog.handleViolationCategoryChange()
 
         $(".searchBtn").on("click", (e) => {
           e.preventDefault();
@@ -619,8 +627,10 @@ $(window).on("load", () => {
         // sharedApis.getViolationZones("#violationZone");
         sharedApis.getViolationSectors("#violationSector");
         sharedApis.getViolationType("#TypeofViolation");
+        sharedApis.getOffenderType("#violationCategory");
 
         runningSectorTask.getRunningTasks();
+        runningSectorTask.handleViolationCategoryChange()
         $(".searchBtn").on("click", (e) => {
           e.preventDefault();
           pagination.reset();

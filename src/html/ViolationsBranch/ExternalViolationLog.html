@@ -37,6 +37,45 @@
                         </div>
                         <div class="col-6 col-md-3">
                             <div class="form-group customFormGroup">
+                                <label for="violationCategory" class="customLabel greenLabel">تصنيف المخالفة
+                                </label>
+                                <div class="selectBox smallSelectBox">
+                                    <select class="form-control violationCategory" id="violationCategory">
+                                        <option value="" disabled selected hidden>الكل</option>
+                                        <!-- <option value="all">الكل</option> -->
+                                    </select>
+                                    <i class="fa-solid fa-sort-down"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="form-group customFormGroup">
+                                <label for="TypeofViolation" class="customLabel greenLabel">نوع المخالفة
+                                </label>
+                                <div class="selectBox smallSelectBox">
+                                    <select class="form-control TypeofViolation greenSelect" id="TypeofViolation">
+                                        <option data-id="0" value="0" disabled selected hidden>
+                                            الكل
+                                        </option>
+                                    </select>
+                                    <i class="fa-solid fa-sort-down"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="form-group customFormGroup">
+                                <label for="ViolationStatus" class="customLabel greenLabel">حالة المخالفة
+                                </label>
+                                <div class="selectBox smallSelectBox">
+                                    <select class="form-control ViolationStatus greenSelect" id="ViolationStatus">
+                                        <option value="" disabled selected hidden>الكل</option>
+                                    </select>
+                                    <i class="fa-solid fa-sort-down"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="form-group customFormGroup">
                                 <label for="createdFrom" class="customLabel greenLabel">من</label>
                                 <div class="inputIconBox">
                                     <input class="form-control customInput inputDate createdFrom" id="createdFrom"
