@@ -117,8 +117,8 @@ pagination.draw = (parent, total, pageLength) => {
     }
     holder.innerHTML = `<div class="pages-holder"> ${pages} </div>`
 }
-{/* <div class="page-item prev-page">►</div> */}
-{/* <div class="page-item next-page">◄</div>`; */}
+{/* <div class="page-item prev-page">►</div> */ }
+{/* <div class="page-item next-page">◄</div>`; */ }
 
 pagination.start = (parent, callback) => {
     let holder = document.querySelector(parent)
@@ -127,13 +127,13 @@ pagination.start = (parent, callback) => {
 
         page.addEventListener("click", (e) => {
             if (Number(page.innerHTML) != Number(pagination.currentPage)) {
-                $(".PreLoader").addClass("active");
+                $(".overlay").addClass("active");
                 pagination.currentPage = Number(page.innerHTML)
                 callback()
                 holder.setAttribute("current", page.innerHTML)
                 page.classList.add("active")
             }
-            if(page.classList.contains("active")){
+            if (page.classList.contains("active")) {
                 e.preventDefault()
             }
         })

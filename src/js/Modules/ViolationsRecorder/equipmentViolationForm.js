@@ -703,7 +703,7 @@ equipmentViolation.formActions = () => {
   );
   // sharedApis.getCommitteeMember(".committeeMember")
   equipmentViolation.getCommitteeMember();
-  $(".PreLoader").removeClass("active");
+  $(".overlay").removeClass("active");
 };
 equipmentViolation.getCommitteeMember = () => {
   return new Promise(function (resolve, reject) {
@@ -1064,7 +1064,7 @@ equipmentViolation.drawCoordinates = (Coords) => {
 };
 equipmentViolation.editViolation = () => {
   if (urlParams.get("taskId") !== null) {
-    $(".PreLoader").addClass("active");
+    $(".overlay").addClass("active");
     functions
       .requester(
         "/_layouts/15/Uranium.Violations.SharePoint/Tasks.aspx/FindbyId",
@@ -1099,7 +1099,7 @@ equipmentViolation.editViolation = () => {
         $("#distanceToNearQuarry").val(violationData.DistanceToNearestQuarry);
         $("#NearestQuarryNumber").val(violationData.NearestQuarryCode);
         $("#s4-workspace").scrollTop(0, 0);
-        $(".PreLoader").removeClass("active");
+        $(".overlay").removeClass("active");
       });
   }
 };

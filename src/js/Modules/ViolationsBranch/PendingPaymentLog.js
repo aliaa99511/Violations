@@ -10,15 +10,21 @@ pendingPayment.getPendingPayment = (
     pageIndex = 1,
     destroyTable = false,
     ViolationSector = Number($("#violationSector").children("option:selected").val()),
-    ViolationType = Number($("#TypeofViolation").children("option:selected").data("id")),
-    ViolationGeneralSearch = ""
+    ViolationType = Number($("#TypeofViolation").children("option:selected").data("id"))
 ) => {
     // Check if theCode field has a value but violationCategory is empty
     const theCodeValue = $("#theCode").val();
+    const trailerNumValue = $("#trailerNum").val();
     const violationCategoryValue = $("#violationCategory").val();
 
-    if (theCodeValue && theCodeValue.trim() !== "" && (!violationCategoryValue || violationCategoryValue === "")) {
-        functions.warningAlert("من فضلك قم باختيار تصنيف المخالفة قبل إدخال رقم المحجر/عربة/معدة");
+    if (
+        (theCodeValue?.trim() || trailerNumValue?.trim()) &&
+        (!violationCategoryValue || violationCategoryValue === "")
+    ) {
+        functions.warningAlert(
+            "من فضلك قم باختيار تصنيف المخالفة قبل إدخال رقم المحجر/عربة/مقطورة"
+        );
+
         $(".overlay").removeClass("active");
         return;
     }
@@ -38,12 +44,12 @@ pendingPayment.getPendingPayment = (
             Sector: 0,
             ViolationType: ViolationType,
             SectorConfigId: ViolationSector,
-            GlobalSearch: $("#violationSearch").val(),
             OffenderType: $("#violationCategory").val(),
             ViolatorName: $("#violatorName").val(),
             ViolatorCompany: $("#companyName").val(),
             ViolationCode: $("#violationCode").val(),
             ViolationsZone: $("#violationZone").val(),
+            TrailerNum: $("#trailerNum").val(),
             CreatedFrom: $("#createdFrom").val()
                 ? moment($("#createdFrom").val(), "DD-MM-YYYY").format("YYYY-MM-DD")
                 : null,
@@ -97,9 +103,9 @@ pendingPayment.filterPaymentsLog = () => {
 
     let ViolationSectorVal = $("#violationSector").children("option:selected").val();
     let ViolationTypeVal = $("#TypeofViolation").children("option:selected").data("id");
-    let ViolationGeneralSearch = $("#violationSearch").val();
 
     const theCodeValue = $("#theCode").val();
+    const trailerNumValue = $("#trailerNum").val();
     const violationCategoryValue = $("#violationCategory").val();
 
     const violationCode = $("#violationCode").val();
@@ -111,12 +117,11 @@ pendingPayment.filterPaymentsLog = () => {
 
     // Check if theCode has value but violationCategory is empty
     if (
-        theCodeValue &&
-        theCodeValue.trim() !== "" &&
+        (theCodeValue?.trim() || trailerNumValue?.trim()) &&
         (!violationCategoryValue || violationCategoryValue === "")
     ) {
         functions.warningAlert(
-            "من فضلك قم باختيار تصنيف المخالفة قبل إدخال رقم المحجر/عربة/معدة"
+            "من فضلك قم باختيار تصنيف المخالفة قبل إدخال رقم المحجر/عربة/مقطورة"
         );
         return;
     }
@@ -128,7 +133,6 @@ pendingPayment.filterPaymentsLog = () => {
     if (
         (ViolationTypeVal == "" || ViolationTypeVal == "0") &&
         (ViolationSectorVal == "" || ViolationSectorVal == "0") &&
-        ViolationGeneralSearch == "" &&
         violationCode == "" &&
         violationZone == "" &&
         violatorName == "" &&
@@ -157,8 +161,7 @@ pendingPayment.filterPaymentsLog = () => {
         pageIndex,
         true,
         ViolationSector,
-        ViolationType,
-        ViolationGeneralSearch
+        ViolationType
     );
 };
 
@@ -168,12 +171,12 @@ pendingPayment.resetFilter = (e) => {
     $("#violationSector").val("0");
     $("#violationCategory").val("");
     $("#TypeofViolation").val("0");
-    $("#violationSearch").val("");
     $("#violatorName").val("");
     $("#companyName").val("");
     $("#theCode").val("");
     $("#violationCode").val("");
     $("#violationZone").val("");
+    $("#trailerNum").val("");
     $("#createdFrom").val("");
     $("#createdTo").val("");
 
@@ -240,10 +243,10 @@ pendingPayment.exportToExcel = () => {
         Sector: 0,
         ViolationType: Number($("#TypeofViolation").children("option:selected").data("id")),
         SectorConfigId: Number($("#violationSector").children("option:selected").val()),
-        GlobalSearch: $("#violationSearch").val(),
         OffenderType: $("#violationCategory").val(),
         ViolatorName: $("#violatorName").val(),
         ViolatorCompany: $("#companyName").val(),
+        TrailerNum: $("#trailerNum").val(),
         CreatedFrom: $("#createdFrom").val()
             ? moment($("#createdFrom").val(), "DD-MM-YYYY").format("YYYY-MM-DD")
             : null,

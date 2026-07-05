@@ -39,12 +39,12 @@ import pendingPaymentRecords from "./Modules/ViolationsRecorder/PendingPaymentRe
 import vehicleViolationReferralSector from "./Modules/SectorManager/CarViolationReferralSector";
 import quarryViolationReferralSector from "./Modules/SectorManager/QuarryViolationReferralSector";
 
-$(".PreLoader").addClass("active");
+$(".overlay").addClass("active");
 $(window).on("load", () => {
 
   if (typeof window.SP_CONNECTION !== "undefined" && !window.SP_CONNECTION) {
 
-    $(".PreLoader").addClass("active");
+    $(".overlay").addClass("active");
 
     Swal.fire({
       icon: "error",
@@ -54,7 +54,7 @@ $(window).on("load", () => {
     });
 
   } else {
-    $(".PreLoader").removeClass("active");
+    $(".overlay").removeClass("active");
   }
 
   if (document.readyState == "complete") {
@@ -63,8 +63,9 @@ $(window).on("load", () => {
     functions.handleArabicLetterSpacing("#theCode");
 
     if (functions.getSiteName() === "Home") {
-      $(".PreLoader").find("span").addClass("greenLoader");
+      // $(".PreLoader").find("span").addClass("greenLoader");
       // $(".PreLoader").addClass("active");
+      $(".overlay").addClass("active");
       $("#s4-workspace").addClass("greenScroller");
       home.redirectUser();
     }
@@ -80,8 +81,9 @@ $(window).on("load", () => {
         .find(".userDetailsImg")
         .children("img")
         .attr("src", "/Style Library/MiningViolations/images/userIconBlue.png");
-      $(".PreLoader").find("span").addClass("blueLoader");
+      // $(".PreLoader").find("span").addClass("blueLoader");
       // $(".PreLoader").addClass("active");
+      $(".overlay").addClass("active");
       $("#s4-workspace").addClass("blueScroller");
       // $(".popupHeader").find(".printBtn").children("img").attr("src","/Style Library/MiningViolations/images/BluePrintBtn.png")
 
@@ -101,7 +103,7 @@ $(window).on("load", () => {
         equipmentViolation.editViolation();
       }
       if (functions.getPageName() === "prevViolationsQueryLog") {
-        $(".PreLoader").removeClass("active");
+        $(".overlay").removeClass("active");
         functions.setPageMetaData("الاستعلام عن المخالفات السابقة");
 
         sharedApis.getViolationSectors("#violationSector");
@@ -152,8 +154,11 @@ $(window).on("load", () => {
         sharedApis.getOffenderType("#violationCategory");
         sharedApis.getViolationType("#TypeofViolation");
 
-        approvedViolationsRecords.handleViolationCategoryChange()
+        // Initialize datepickers
+        functions.inputDateFormat("#createdFrom", "", "", "dd-mm-yyyy");
+        functions.inputDateFormat("#createdTo", "", "", "dd-mm-yyyy");
 
+        approvedViolationsRecords.handleViolationCategoryChange()
         approvedViolationsRecords.getApprovedViolations();
 
         $(".searchBtn").on("click", (e) => {
@@ -197,6 +202,10 @@ $(window).on("load", () => {
         sharedApis.getOffenderType("#violationCategory");
         sharedApis.getViolationSectors("#violationSector");
         sharedApis.getViolationType("#TypeofViolation");
+
+        // Initialize datepickers
+        functions.inputDateFormat("#createdFrom", "", "", "dd-mm-yyyy");
+        functions.inputDateFormat("#createdTo", "", "", "dd-mm-yyyy");
 
         rejectedViolationsRecords.getViolations();
         rejectedViolationsRecords.handleViolationCategoryChange()
@@ -282,7 +291,8 @@ $(window).on("load", () => {
       }
       if (functions.getPageName() === "DashBoard") {
         functions.setPageMetaData("الصفحة الرئيسية");
-        $(".PreLoader").removeClass("active");
+        // $(".PreLoader").removeClass("active");
+        $(".overlay").removeClass("active");
       }
     }
     if (functions.getSiteName() === "ViolationsBranch") {
@@ -303,8 +313,9 @@ $(window).on("load", () => {
           "src",
           "/Style Library/MiningViolations/images/userIconGreen.png",
         );
-      $(".PreLoader").find("span").addClass("greenLoader");
+      // $(".PreLoader").find("span").addClass("greenLoader");
       // $(".PreLoader").addClass("active");
+      $(".overlay").addClass("active");
       $("#s4-workspace").addClass("greenScroller");
       // $(".popupHeader").find(".printBtn").children("img").attr("src","/Style Library/MiningViolations/images/GreenPrintBtn.png")
 
@@ -365,8 +376,11 @@ $(window).on("load", () => {
         sharedApis.getViolationSectors("#violationSector");
         sharedApis.getViolationType("#TypeofViolation");
 
-        rejectedViolations.getRejectedViolations();
+        // Initialize datepickers
+        functions.inputDateFormat("#createdFrom", "", "", "dd-mm-yyyy");
+        functions.inputDateFormat("#createdTo", "", "", "dd-mm-yyyy");
 
+        rejectedViolations.getRejectedViolations();
         rejectedViolations.handleViolationCategoryChange();
 
         $(".searchBtn").on("click", (e) => {
@@ -402,7 +416,8 @@ $(window).on("load", () => {
         });
       }
       if (functions.getPageName() === "prevViolationsQueryLog") {
-        $(".PreLoader").removeClass("active");
+        // $(".PreLoader").removeClass("active");
+        $(".overlay").removeClass("active");
 
         sharedApis.getViolationSectors("#violationSector");
         sharedApis.getOffenderType("#violationCategory");
@@ -597,7 +612,7 @@ $(window).on("load", () => {
       }
       if (functions.getPageName() === "DashBoard") {
         functions.setPageMetaData("الصفحة الرئيسية");
-        $(".PreLoader").removeClass("active");
+        $(".overlay").removeClass("active");
       }
     }
     if (functions.getSiteName() === "CertificationOfficer") {
@@ -618,8 +633,9 @@ $(window).on("load", () => {
           "src",
           "/Style Library/MiningViolations/images/userIconGreen.png",
         );
-      $(".PreLoader").find("span").addClass("greenLoader");
+      // $(".PreLoader").find("span").addClass("greenLoader");
       // $(".PreLoader").addClass("active");
+      $(".overlay").addClass("active");
       $("#s4-workspace").addClass("greenScroller");
 
       if (functions.getPageName() === "RunningTasks") {
@@ -628,6 +644,10 @@ $(window).on("load", () => {
         sharedApis.getViolationSectors("#violationSector");
         sharedApis.getViolationType("#TypeofViolation");
         sharedApis.getOffenderType("#violationCategory");
+
+        // Initialize datepickers
+        functions.inputDateFormat("#createdFrom", "", "", "dd-mm-yyyy");
+        functions.inputDateFormat("#createdTo", "", "", "dd-mm-yyyy");
 
         runningSectorTask.getRunningTasks();
         runningSectorTask.handleViolationCategoryChange()
@@ -646,14 +666,15 @@ $(window).on("load", () => {
         sharedApis.getViolationSectors("#violationSector");
         sharedApis.getViolationType("#TypeofViolation");
         sharedApis.getOffenderType("#violationCategory");
+        sharedApis.getViolationStatus("#ViolationStatus");
 
         // Initialize datepickers for date inputs
         functions.inputDateFormat("#createdFrom", "", "", "dd-mm-yyyy");
         functions.inputDateFormat("#createdTo", "", "", "dd-mm-yyyy");
 
         confirmedViolationLog.handleViolationCategoryChange()
-
         confirmedViolationLog.getConfirmedLog();
+
         $(".searchBtn").on("click", (e) => {
           e.preventDefault();
           pagination.reset();

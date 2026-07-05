@@ -613,7 +613,7 @@ violationsCases.editCasePrice = (
               <div class="row">
                 <div class="col-md-6">
                   <div class="form-group customFormGroup">
-                    <label for="oldViolationPrice" class="customLabel">المبلغ القديم (مبلغ المخالفة)</label>
+                    <label for="oldViolationPrice" class="customLabel">مبلغ النموذج</label>
                     <input class="form-control disabled customInput oldViolationPrice" id="oldViolationPrice" type="text" value="${functions.splitBigNumbersByComma(TotalViolationPrice)}" disabled>
                   </div> 
                 </div>

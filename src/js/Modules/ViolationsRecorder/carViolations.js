@@ -151,58 +151,41 @@ carViolation.violatorCarDetails = () => {
 
     let carLicenceColor = $("#carLicenseColor").val();
     let carBrand = $("#carBrand").val();
-    let carLicenseTraffic = $("#carLicenseTraffic").children("option:selected").text();
+    // Get the text value directly from the input fields
+    let carLicenseTraffic = $("#carLicenseTraffic").val();
     let carLicenseLetters = $("#carLicenseLetters").val();
     let carLicenseNumbers = $("#carLicenseNumbres").val();
     let driverLicenceNumber = $("#driverLicenseNumber").val();
-    let driverLicenceTraffic = $("#driverLicenseTraffic").children("option:selected").text();
+    // Get the text value directly from the input fields
+    let driverLicenceTraffic = $("#driverLicenseTraffic").val();
     let vehicleIdentificationNumber = $("#vehicleIdentificationNumber").val();
     let NationalIdRegExp = /^(2|3)[0-9][0-9][0-1][0-9][0-3][0-9](01|02|03|04|11|12|13|14|15|16|17|18|19|21|22|23|24|25|26|27|28|29|31|32|33|34|35|88)\d\d\d\d\d$/;
 
-    let carLicenseTrafficValue = $("#carLicenseTraffic").val();
-    let driverLicenceTrafficValue = $("#driverLicenseTraffic").val();
-
-    // Only get the text if a valid option is selected (has value)
-    if (carLicenseTrafficValue && carLicenseTrafficValue !== "") {
-        carLicenseTraffic = $("#carLicenseTraffic").children("option:selected").text();
-    } else {
-        carLicenseTraffic = "";
-    }
-
-    if (driverLicenceTrafficValue && driverLicenceTrafficValue !== "") {
-        driverLicenceTraffic = $("#driverLicenseTraffic").children("option:selected").text();
-    } else {
-        driverLicenceTraffic = "";
-    }
+    // Get governorate values for combination
+    let violationGovText = $("#violationGov").children("option:selected").text();
+    let violationGovId = $("#violationGov").children("option:selected").data("id");
 
     if (violatorDetails != false) {
         if ((carLicenseLetters.length > 0 && carLicenseLetters.trim().length > 0) || $("#unmarkedCheckbox:checked").length != 0) {
             if ((carLicenseNumbers.length > 0 && carLicenseNumbers.length > 0) || $("#unmarkedCheckbox:checked").length != 0) {
                 if (carLicenceColor != "" && isNaN(carLicenceColor)) {
                     if (carBrand != "") {
-                        // if(carLicenseTraffic != ""){
-                        // if(NationalIdRegExp.test(driverLicenceNumber) && driverLicenceNumber !=""){
-                        // if(driverLicenceTraffic !=""){
                         LicensesData = {
-                            // carLicenseLetters:carLicenseLetters,
                             carLicenseFullNumbers: carLicenseLetters + " " + carLicenseNumbers,
                             carLicenceColor: carLicenceColor,
                             carBrand: carBrand,
-                            carLicenseTraffic: carLicenseTraffic,
+                            // Store the combined value for API
+                            carLicenseTraffic: carLicenseTraffic ? `${violationGovText} - ${carLicenseTraffic}` : "",
+                            // Store original value for form display
+                            carLicenseTrafficOriginal: carLicenseTraffic,
                             driverLicenceNumber: driverLicenceNumber != "" ? driverLicenceNumber : "",
-                            driverLicenceTraffic: driverLicenceTraffic,
+                            // Store the combined value for API
+                            driverLicenceTraffic: driverLicenceTraffic ? `${violationGovText} - ${driverLicenceTraffic}` : "",
+                            // Store original value for form display
+                            driverLicenceTrafficOriginal: driverLicenceTraffic,
                             vehicleIdentificationNumber: vehicleIdentificationNumber != "" ? vehicleIdentificationNumber : ""
                         }
                         validLicenses = true;
-                        // }else{
-                        //     functions.warningAlert("من فضلك قم باختيار المرور الذي تم استخراج الرخصه من خلاله") 
-                        // }
-                        // }else{
-                        //     functions.warningAlert("من فضلك قم بادخال رقم رخصة السائق بشكل صحيح مكون من 14 رقم")    
-                        // }
-                        // }else{
-                        //     functions.warningAlert("من فضلك قم باختيار المرور المرخص من خلاله العربة")    
-                        // }
                     } else {
                         functions.warningAlert("من فضلك قم باختيار نوع العربة")
                     }
@@ -555,6 +538,54 @@ carViolation.formActions = () => {
         }
     });
 
+    // Clear trailer violations display when trailer fields are cleared
+    $("#tractorLetters, #tractorNumbers").on("input", function () {
+        let letters = $("#tractorLetters").val();
+        let numbers = $("#tractorNumbers").val();
+        if ((!letters || letters.trim() === "") && (!numbers || numbers.trim() === "")) {
+            $(".trailer-previous-violations-display").fadeOut();
+            $(".trailer-previous-violations-count-value").text("0");
+        }
+    });
+
+    // Trigger API call on trailer number fields change
+    $("#tractorLetters, #tractorNumbers").on("change keyup", functions.debounce(function () {
+        // Don't call if unmarked checkbox is checked
+        if ($("#unmarkedCheckbox").is(":checked")) {
+            return;
+        }
+
+        // Don't call if tractor box is not visible
+        if (!$(".tractorBox").is(":visible")) {
+            return;
+        }
+
+        let letters = $("#tractorLetters").val();
+        let numbers = $("#tractorNumbers").val();
+        if (letters && letters.trim() !== "" && numbers && numbers.trim() !== "") {
+            carViolation.getTrailerPreviousViolationsCount();
+        }
+    }, 500));
+
+    // Also trigger when user leaves the trailer fields
+    $("#tractorLetters, #tractorNumbers").on("blur", function () {
+        // Don't call if unmarked checkbox is checked
+        if ($("#unmarkedCheckbox").is(":checked")) {
+            return;
+        }
+
+        // Don't call if tractor box is not visible
+        if (!$(".tractorBox").is(":visible")) {
+            return;
+        }
+
+        let letters = $("#tractorLetters").val();
+        let numbers = $("#tractorNumbers").val();
+        if (letters && letters.trim() !== "" && numbers && numbers.trim() !== "") {
+            carViolation.getTrailerPreviousViolationsCount();
+        }
+    });
+
     $(".violatorNationalId").on("keypress", (e) => {
         return functions.isNumberKey(e)
     })
@@ -593,12 +624,21 @@ carViolation.formActions = () => {
         if ($(e.currentTarget).val() == "عربة بمقطورة") {
             $(".tractorBox").show()
             $(".MaterialQuantityBox").hide()
+            // Show trailer violations if trailer number exists
+            let tractorLetters = $("#tractorLetters").val();
+            let tractorNumbers = $("#tractorNumbers").val();
+            if (tractorLetters && tractorLetters.trim() !== "" &&
+                tractorNumbers && tractorNumbers.trim() !== "") {
+                carViolation.getTrailerPreviousViolationsCount();
+            }
         } else {
             $(".tractorBox").hide()
             $(".MaterialQuantityBox").show()
+            // Hide trailer violations display
+            $(".trailer-previous-violations-display").fadeOut();
+            $(".trailer-previous-violations-count-value").text("0");
         }
     })
-
 
     // $("#committeeMemberSelect").on('change', function () {
     //     DimensionsAndOtherDetails.violationMembersArr = $(this).val();
@@ -823,7 +863,7 @@ carViolation.formActions = () => {
     sharedApis.getCommitteeRecorder(".committeeBox.recorder", ".committeeBox.sectorManager")
 
     carViolation.getCommitteeMember()
-    $(".PreLoader").removeClass("active");
+    $(".overlay").removeClass("active");
 }
 carViolation.getCommitteeMember = () => {
     return new Promise(function (resolve, reject) {
@@ -870,20 +910,16 @@ carViolation.validateForm = (e) => {
     // Check if calculate by ton checkbox is checked
     let isCalculateByTon = $("#calculateByTon").is(":checked");
 
-    // if(violatorDetails != false){
     if (SectorMembers != "") {
-
         if (violatorCarDetails != false) {
             if (violationDetails != false) {
                 if (dimensionsOtherDetails != false) {
                     if (otherViolationDetails != false) {
-                        // otherViolationDetails.membersNamesText += '\n' + "otherViolationDetails.member"
                         functions.disableButton(e)
                         carViolationData = {
                             // Edit violation 
                             ID: urlParams.get("taskId") !== null ? editViolationId : "",
                             IsEdit: urlParams.get("taskId") !== null ? true : false,
-
                             IsRejectedBefore: urlParams.get("taskId") !== null ? true : false,
 
                             // End edit violation
@@ -904,28 +940,22 @@ carViolation.validateForm = (e) => {
                             CarNumber: violatorCarDetails.carLicenseFullNumbers,
                             CarColor: violatorCarDetails.carLicenceColor,
                             VehicleBrand: violatorCarDetails.carBrand,
-                            TrafficName: violatorCarDetails.carLicenseTraffic != "" ? violatorCarDetails.carLicenseTraffic : "",
+                            // Use the combined value for API
+                            TrafficName: violatorCarDetails.carLicenseTraffic,
                             DrivingLicense: violatorCarDetails.driverLicenceNumber != "" ? violatorCarDetails.driverLicenceNumber : "",
-                            TrafficLicense: violatorCarDetails.driverLicenceTraffic != "" ? violatorCarDetails.driverLicenceTraffic : "",
-                            // carLicenseLetters: violatorCarDetails.carLicenseLetters != "" ? violatorCarDetails.carLicenseLetters : "" ,
-                            // ViolationType:violationDetails.violationType,
+                            // Use the combined value for API
+                            TrafficLicense: violatorCarDetails.driverLicenceTraffic,
+
                             MaterialType: violationDetails.violationMaterail,
                             MaterialAmount: violationDetails.violationMaterailQuantity,
                             ViolationDate: violationDate,
                             ViolationTime: violationTime,
-                            // Equipments:violationDetails.selectedEquipementsIds,
-                            // EquipmentsCount:violationDetails.selectedEquipmentsData,
 
                             Coordinates: dimensionsOtherDetails.coordinates,
                             CoordinatesDegrees: dimensionsOtherDetails.coordinatesDegrees,
-                            // Description: dimensionsOtherDetails.violationDescription,
-                            // LeaderOpinion: dimensionsOtherDetails.violationLeaderOpinion,
-                            // CommiteeMember: dimensionsOtherDetails.violationMembersArr,
 
                             Description: otherViolationDetails?.violationDescription,
                             LeaderOpinion: otherViolationDetails?.violationLeaderOpinion,
-                            // CommiteeMember: otherViolationDetails?.member,
-                            // CommiteeMember: otherViolationDetails?.committeeMembersId?.length > 0 ? otherViolationDetails.committeeMembersId : [],
                             CommiteeMember: otherViolationDetails.membersNamesText != "" ? otherViolationDetails.membersNamesText : "-",
                             SectorMembers: SectorMembers,
                             Sector: 0,
@@ -938,14 +968,13 @@ carViolation.validateForm = (e) => {
 
                         carViolation.submitNewViolation(carViolationData)
                     }
-
                 }
             }
         }
     } else {
         functions.warningAlert("من فضلك قم بادخال اعضاء اللجنة")
     }
-    // }
+
     carViolation.violatorCarDetails()
 }
 carViolation.submitNewViolation = (carViolationData) => {
@@ -1148,7 +1177,7 @@ carViolation.drawCoordinates = (Coords) => {
 }
 carViolation.editViolation = () => {
     if (urlParams.get("taskId") !== null) {
-        $(".PreLoader").addClass("active");
+        $(".overlay").addClass("active");
         functions
             .requester(
                 "/_layouts/15/Uranium.Violations.SharePoint/Tasks.aspx/FindbyId",
@@ -1187,7 +1216,7 @@ carViolation.editViolation = () => {
                 $("#distanceToNearQuarry").val(violationData.DistanceToNearestQuarry);
                 $("#NearestQuarryNumber").val(violationData.NearestQuarryCode);
                 $("#s4-workspace").scrollTop(0, 0);
-                $(".PreLoader").removeClass("active");
+                $(".overlay").removeClass("active");
             });
     }
 };
@@ -1261,7 +1290,82 @@ carViolation.getPreviousViolationsCount = () => {
         }
     });
 };
+carViolation.getTrailerPreviousViolationsCount = () => {
+    // Get trailer number - combine letters and numbers
+    let tractorLetters = $("#tractorLetters").val();
+    let tractorNumbers = $("#tractorNumbers").val();
 
+    // Check if unmarked checkbox is checked
+    let unmarkedCheckbox = document.querySelector("#unmarkedCheckbox");
+    if (unmarkedCheckbox && unmarkedCheckbox.checked) {
+        $(".trailer-previous-violations-display").fadeOut();
+        $(".trailer-previous-violations-count-value").text("0");
+        return;
+    }
+
+    // Check if tractor box is visible (car type with trailer selected)
+    if (!$(".tractorBox").is(":visible")) {
+        $(".trailer-previous-violations-display").fadeOut();
+        $(".trailer-previous-violations-count-value").text("0");
+        return;
+    }
+
+    // Combine letters and numbers to form full trailer number
+    let trailerNumber = "";
+    if (tractorLetters && tractorLetters.trim() !== "" &&
+        tractorNumbers && tractorNumbers.trim() !== "") {
+        trailerNumber = (tractorLetters + " " + tractorNumbers).trim();
+    }
+
+    // Check if trailerNumber exists
+    if (!trailerNumber || trailerNumber.trim() === "") {
+        $(".trailer-previous-violations-display").fadeOut();
+        $(".trailer-previous-violations-count-value").text("0");
+        return;
+    }
+
+    let requestData = {
+        request: {
+            Data: {
+                OffenderType: "Vehicle",
+                TrailerNum: trailerNumber.trim()  // Use TrailerNum instead of CarNumber
+            }
+        }
+    };
+
+    $.ajax({
+        type: "POST",
+        url: "/_layouts/15/Uranium.Violations.SharePoint/Tasks.aspx/GetPreviousViolationsCount",
+        contentType: "application/json; charset=utf-8",
+        dataType: "json",
+        data: JSON.stringify(requestData),
+        success: (response) => {
+            if (response.d && response.d.Status) {
+                let count = response.d.Result;
+
+                // Update only the trailer display span
+                $(".trailer-previous-violations-count-value").text(count);
+                $(".trailer-previous-violations-display").fadeIn();
+
+                // Optional: Add animation
+                $(".trailer-previous-violations-display").addClass("fadeIn");
+                setTimeout(() => {
+                    $(".trailer-previous-violations-display").removeClass("fadeIn");
+                }, 500);
+            } else {
+                // Hide section if no data
+                $(".trailer-previous-violations-display").fadeOut();
+                $(".trailer-previous-violations-count-value").text("0");
+            }
+        },
+        error: (xhr) => {
+            console.log("Error fetching trailer previous violations count:", xhr.responseText);
+            $(".trailer-previous-violations-display").fadeOut();
+            $(".trailer-previous-violations-count-value").text("0");
+            functions.warningAlert("حدث خطأ في جلب عدد مخالفات المقطورة السابقة");
+        }
+    });
+};
 
 carViolation.AddCoordinatePoint = (e) => {
     let coordinatesTable = $("#coordinatesTable");

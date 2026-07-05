@@ -129,8 +129,8 @@ functions.tableDeclare = (
         createdCell: function (td) {
           $(td).css({
             "min-width": "75px",
-            "max-width": "225px",
-            "width": "225px",
+            "max-width": "fit-content",
+            "width": "fit-content",
             "white-space": "nowrap",
           });
         }

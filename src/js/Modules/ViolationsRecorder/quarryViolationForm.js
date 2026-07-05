@@ -864,7 +864,7 @@ quarryViolation.formActions = () => {
   );
   // sharedApis.getCommitteeMember(".committeeMember")
   quarryViolation.getCommitteeMember();
-  $(".PreLoader").removeClass("active");
+  $(".overlay").removeClass("active");
 };
 quarryViolation.getCommitteeMember = () => {
   return new Promise(function (resolve, reject) {
@@ -1313,7 +1313,7 @@ quarryViolation.drawCoordinates = (Coords) => {
 };
 quarryViolation.editViolation = () => {
   if (urlParams.get("taskId") !== null) {
-    $(".PreLoader").addClass("active");
+    $(".overlay").addClass("active");
     functions
       .requester(
         "/_layouts/15/Uranium.Violations.SharePoint/Tasks.aspx/FindbyId",
@@ -1351,7 +1351,7 @@ quarryViolation.editViolation = () => {
         $("#distanceToNearQuarry").val(violationData.DistanceToNearestQuarry);
         $("#NearestQuarryNumber").val(violationData.NearestQuarryCode);
         $("#s4-workspace").scrollTop(0, 0);
-        $(".PreLoader").removeClass("active");
+        $(".overlay").removeClass("active");
       });
   }
 };

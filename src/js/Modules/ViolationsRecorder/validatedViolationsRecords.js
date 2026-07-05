@@ -16,10 +16,17 @@ validatedViolationsRecords.getViolations = (
 
   // Check if theCode field has a value but violationCategory is empty
   const theCodeValue = $("#theCode").val();
+  const trailerNumValue = $("#trailerNum").val();
   const violationCategoryValue = $("#violationCategory").val();
 
-  if (theCodeValue && theCodeValue.trim() !== "" && (!violationCategoryValue || violationCategoryValue === "")) {
-    functions.warningAlert("من فضلك قم باختيار تصنيف المخالفة قبل إدخال رقم المحجر/عربة/معدة");
+  if (
+    (theCodeValue?.trim() || trailerNumValue?.trim()) &&
+    (!violationCategoryValue || violationCategoryValue === "")
+  ) {
+    functions.warningAlert(
+      "من فضلك قم باختيار تصنيف المخالفة قبل إدخال رقم المحجر/عربة/مقطورة"
+    );
+
     $(".overlay").removeClass("active");
     return;
   }
@@ -68,6 +75,7 @@ validatedViolationsRecords.getViolations = (
       Sector: UserId,
       OffenderType: $("#violationCategory").val(),
       ViolationsZone: $("#violationZone").val(),
+      TrailerNum: $("#trailerNum").val(),
       CreatedFrom: $("#createdFrom").val()
         ? moment($("#createdFrom").val(), "DD-MM-YYYY").format("YYYY-MM-DD")
         : null,
@@ -124,10 +132,16 @@ validatedViolationsRecords.filterViolationsLog = (e) => {
 
   // Check if theCode has value but violationCategory is empty
   const theCodeValue = $("#theCode").val();
+  const trailerNumValue = $("#trailerNum").val();
   const violationCategoryValue = $("#violationCategory").val();
 
-  if (theCodeValue && theCodeValue.trim() !== "" && (!violationCategoryValue || violationCategoryValue === "")) {
-    functions.warningAlert("من فضلك قم باختيار تصنيف المخالفة قبل إدخال رقم المحجر/عربة/معدة");
+  if (
+    (theCodeValue?.trim() || trailerNumValue?.trim()) &&
+    (!violationCategoryValue || violationCategoryValue === "")
+  ) {
+    functions.warningAlert(
+      "من فضلك قم باختيار تصنيف المخالفة قبل إدخال رقم المحجر/عربة/مقطورة"
+    );
     return;
   }
 
@@ -174,6 +188,7 @@ validatedViolationsRecords.resetFilter = (e) => {
   $("#createdTo").val("");
   $("#theCode").val("");
   $("#ViolationStatus").val("");
+  $("#trailerNum").val("");
 
   $(".overlay").addClass("active");
   pagination.reset();
@@ -264,6 +279,7 @@ validatedViolationsRecords.exportToExcel = () => {
     Sector: UserId,
     OffenderType: $("#violationCategory").val(),
     ViolationsZone: $("#violationZone").val(),
+    TrailerNum: $("#trailerNum").val(),
     CreatedFrom: $("#createdFrom").val() ? moment($("#createdFrom").val(), "DD-MM-YYYY").format("YYYY-MM-DD") : null,
     CreatedTo: $("#createdTo").val() ? moment($("#createdTo").val(), "DD-MM-YYYY").format("YYYY-MM-DD") : null,
   };

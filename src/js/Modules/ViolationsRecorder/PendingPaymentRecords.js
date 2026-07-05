@@ -14,10 +14,17 @@ pendingPaymentRecords.getPendingPayment = (
 ) => {
     // Check if theCode field has a value but violationCategory is empty
     const theCodeValue = $("#theCode").val();
+    const trailerNumValue = $("#trailerNum").val();
     const violationCategoryValue = $("#violationCategory").val();
 
-    if (theCodeValue && theCodeValue.trim() !== "" && (!violationCategoryValue || violationCategoryValue === "")) {
-        functions.warningAlert("من فضلك قم باختيار تصنيف المخالفة قبل إدخال رقم المحجر/عربة/معدة");
+    if (
+        (theCodeValue?.trim() || trailerNumValue?.trim()) &&
+        (!violationCategoryValue || violationCategoryValue === "")
+    ) {
+        functions.warningAlert(
+            "من فضلك قم باختيار تصنيف المخالفة قبل إدخال رقم المحجر/عربة/مقطورة"
+        );
+
         $(".overlay").removeClass("active");
         return;
     }
@@ -44,6 +51,7 @@ pendingPaymentRecords.getPendingPayment = (
             ViolatorCompany: $("#companyName").val(),
             ViolationCode: $("#violationCode").val(),
             ViolationsZone: $("#violationZone").val(),
+            TrailerNum: $("#trailerNum").val(),
             CreatedFrom: $("#createdFrom").val()
                 ? moment($("#createdFrom").val(), "DD-MM-YYYY").format("YYYY-MM-DD")
                 : null,
@@ -100,6 +108,7 @@ pendingPaymentRecords.filterPaymentsLog = () => {
 
     const theCodeValue = $("#theCode").val();
     const violationCategoryValue = $("#violationCategory").val();
+    const trailerNumValue = $("#trailerNum").val();
     const violationCode = $("#violationCode").val();
     const violationZone = $("#violationZone").val();
     const violatorName = $("#violatorName").val();
@@ -108,17 +117,12 @@ pendingPaymentRecords.filterPaymentsLog = () => {
     const createdTo = $("#createdTo").val();
 
     if (
-        theCodeValue &&
-        theCodeValue.trim() !== "" &&
-        (
-            !violationCategoryValue ||
-            violationCategoryValue === ""
-        )
+        (theCodeValue?.trim() || trailerNumValue?.trim()) &&
+        (!violationCategoryValue || violationCategoryValue === "")
     ) {
         functions.warningAlert(
-            "من فضلك قم باختيار تصنيف المخالفة قبل إدخال رقم المحجر/عربة/معدة"
+            "من فضلك قم باختيار تصنيف المخالفة قبل إدخال رقم المحجر/عربة/مقطورة"
         );
-
         return;
     }
 
@@ -170,6 +174,7 @@ pendingPaymentRecords.resetFilter = (e) => {
     $("#violationZone").val("");
     $("#createdFrom").val("");
     $("#createdTo").val("");
+    $("#trailerNum").val("");
 
     $(".overlay").addClass("active");
     pagination.reset();
@@ -401,6 +406,7 @@ pendingPaymentRecords.exportToExcel = () => {
         OffenderType: $("#violationCategory").val(),
         ViolatorName: $("#violatorName").val(),
         ViolatorCompany: $("#companyName").val(),
+        TrailerNum: $("#trailerNum").val(),
         CreatedFrom: $("#createdFrom").val() ? moment($("#createdFrom").val(), "DD-MM-YYYY").format("YYYY-MM-DD") : null,
         CreatedTo: $("#createdTo").val() ? moment($("#createdTo").val(), "DD-MM-YYYY").format("YYYY-MM-DD") : null,
     };

@@ -36,6 +36,13 @@ approvedViolationsRecords.getApprovedViolations = () => {
       GlobalSearch: approvedViolationsRecords.dataObj.GlobalSearch,
       ViolationCode: approvedViolationsRecords.dataObj.ViolationCode,
       ViolationsZone: approvedViolationsRecords.dataObj.ViolationsZone,
+      TrailerNum: $("#trailerNum").val(),
+      CreatedFrom: $("#createdFrom").val()
+        ? moment($("#createdFrom").val(), "DD-MM-YYYY").format("YYYY-MM-DD")
+        : null,
+      CreatedTo: $("#createdTo").val()
+        ? moment($("#createdTo").val(), "DD-MM-YYYY").format("YYYY-MM-DD")
+        : null,
     },
   };
 
@@ -230,6 +237,7 @@ approvedViolationsRecords.exportToExcel = () => {
     ViolationCode: $("#violationCode").val(),
     GlobalSearch: $("#violationSearch").val(),
     ViolationsZone: $("#violationZone").val(),
+    TrailerNum: $("#trailerNum").val(),
     SectorConfigId: Number($("#violationSector").children("option:selected").val()),
     CreatedFrom: $("#createdFrom").val() ? moment($("#createdFrom").val(), "DD-MM-YYYY").format("YYYY-MM-DD") : null,
     CreatedTo: $("#createdTo").val() ? moment($("#createdTo").val(), "DD-MM-YYYY").format("YYYY-MM-DD") : null,
@@ -399,26 +407,22 @@ approvedViolationsRecords.findViolationByID = (event, taskID, print = false) => 
     });
 };
 approvedViolationsRecords.filterViolationsLog = (e) => {
-  let OffenderTypeVal = $("#violationCategory")
-    .children("option:selected")
-    .val();
-
-  let ViolationTypeVal = $("#TypeofViolation")
-    .children("option:selected")
-    .data("id");
-
+  let OffenderTypeVal = $("#violationCategory").children("option:selected").val();
+  let trailerNumValue = $("#trailerNum").val();
+  let ViolationTypeVal = $("#TypeofViolation").children("option:selected").data("id");
   let GlobalSearchVal = $("#violationSearch").val();
   let ViolationCodeVal = $("#violationCode").val();
   let ViolationsZoneVal = $("#violationZone").val();
   let TheCodeVal = $("#theCode").val();
+  let CreatedFromVal = $("#createdFrom").val();
+  let CreatedToVal = $("#createdTo").val();
 
   if (
-    TheCodeVal &&
-    TheCodeVal.trim() !== "" &&
+    (TheCodeVal?.trim() || trailerNumValue?.trim()) &&
     (!OffenderTypeVal || OffenderTypeVal === "")
   ) {
     functions.warningAlert(
-      "من فضلك قم باختيار تصنيف المخالفة قبل إدخال رقم المحجر/عربة/معدة"
+      "من فضلك قم باختيار تصنيف المخالفة قبل إدخال رقم المحجر/عربة/مقطورة"
     );
     return;
   }
@@ -429,14 +433,15 @@ approvedViolationsRecords.filterViolationsLog = (e) => {
     GlobalSearchVal == "" &&
     ViolationCodeVal == "" &&
     ViolationsZoneVal == "" &&
-    TheCodeVal == ""
+    TheCodeVal == "" &&
+    CreatedFromVal == "" &&
+    CreatedToVal == ""
   ) {
     functions.warningAlert(
       "من فضلك قم بإدخال قيمة واحدة على الأقل من قيم البحث"
     );
     return;
   }
-
   $(".overlay").addClass("active");
   approvedViolationsRecords.dataObj.OffenderType = OffenderTypeVal;
   approvedViolationsRecords.dataObj.ViolationType = Number(ViolationTypeVal);
@@ -464,6 +469,9 @@ approvedViolationsRecords.resetFilter = (e) => {
   $("#violationSearch").val("");
   $("#violationCode").val("");
   $("#theCode").val("");
+  $("#createdFrom").val("");
+  $("#createdTo").val("");
+  $("#trailerNum").val("");
 
   approvedViolationsRecords.dataObj = {
     destroyTable: true,

@@ -16,10 +16,17 @@ registeredViolationsRecords.getRegisteredViolations = (
 
   // Check if theCode field has a value but violationCategory is empty
   const theCodeValue = $("#theCode").val();
+  const trailerNumValue = $("#trailerNum").val();
   const violationCategoryValue = $("#violationCategory").val();
 
-  if (theCodeValue && theCodeValue.trim() !== "" && (!violationCategoryValue || violationCategoryValue === "")) {
-    functions.warningAlert("من فضلك قم باختيار تصنيف المخالفة قبل إدخال رقم المحجر/عربة/معدة");
+  if (
+    (theCodeValue?.trim() || trailerNumValue?.trim()) &&
+    (!violationCategoryValue || violationCategoryValue === "")
+  ) {
+    functions.warningAlert(
+      "من فضلك قم باختيار تصنيف المخالفة قبل إدخال رقم المحجر/عربة/مقطورة"
+    );
+
     $(".overlay").removeClass("active");
     return;
   }
@@ -44,6 +51,7 @@ registeredViolationsRecords.getRegisteredViolations = (
       ViolationType: ViolationType,
       OffenderType: $("#violationCategory").val(),
       ViolationsZone: $("#violationZone").val(),
+      TrailerNum: $("#trailerNum").val(),
       CreatedFrom: $("#createdFrom").val()
         ? moment($("#createdFrom").val(), "DD-MM-YYYY").format("YYYY-MM-DD")
         : null,
@@ -94,16 +102,20 @@ registeredViolationsRecords.setPaginations = (TotalPages, RowsPerPage) => {
 registeredViolationsRecords.filterViolationsLog = (e) => {
   let pageIndex = registeredViolationsRecords.pageIndex;
 
-  let ViolationTypeVal = $("#TypeofViolation")
-    .children("option:selected")
-    .data("id");
+  let ViolationTypeVal = $("#TypeofViolation").children("option:selected").data("id");
   let ViolationGeneralSearch = $("#violationSearch").val();
+
   const theCodeValue = $("#theCode").val();
+  const trailerNumValue = $("#trailerNum").val();
   const violationCategoryValue = $("#violationCategory").val();
 
-  // Check if theCode has value but violationCategory is empty
-  if (theCodeValue && theCodeValue.trim() !== "" && (!violationCategoryValue || violationCategoryValue === "")) {
-    functions.warningAlert("من فضلك قم باختيار تصنيف المخالفة قبل إدخال رقم المحجر/عربة/معدة");
+  if (
+    (theCodeValue?.trim() || trailerNumValue?.trim()) &&
+    (!violationCategoryValue || violationCategoryValue === "")
+  ) {
+    functions.warningAlert(
+      "من فضلك قم باختيار تصنيف المخالفة قبل إدخال رقم المحجر/عربة/مقطورة"
+    );
     return;
   }
 
@@ -151,6 +163,7 @@ registeredViolationsRecords.resetFilter = (e) => {
   $("#createdFrom").val("");
   $("#createdTo").val("");
   $("#theCode").val("");
+  $("#trailerNum").val("");
 
   $(".overlay").addClass("active");
   pagination.reset();
@@ -212,6 +225,7 @@ registeredViolationsRecords.exportToExcel = () => {
     Sector: _spPageContextInfo.userId,
     OffenderType: $("#violationCategory").val(),
     ViolationsZone: $("#violationZone").val(),
+    TrailerNum: $("#trailerNum").val(),
     CreatedFrom: $("#createdFrom").val() ? moment($("#createdFrom").val(), "DD-MM-YYYY").format("YYYY-MM-DD") : null,
     CreatedTo: $("#createdTo").val() ? moment($("#createdTo").val(), "DD-MM-YYYY").format("YYYY-MM-DD") : null,
   };

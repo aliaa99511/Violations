@@ -795,7 +795,7 @@ vehicleViolationReferralRecords.referralQuarryDetails = (violationData) => {
         </div>
         <div class="col-md-4">
             <div class="form-group customFormGroup">
-                <label for="totalOldPrice" class="customLabel">المبلغ القديم</label>
+                <label for="totalOldPrice" class="customLabel">مبلغ النموذج</label>
                 <input class="form-control customInput totalOldPrice" id="totalOldPrice" type="text" value="${functions.splitBigNumbersByComma(violationData.TotalOldPrice || 0)}" disabled>
             </div>
         </div>
@@ -879,7 +879,7 @@ vehicleViolationReferralRecords.referralVehicleDetails = (violationData) => {
         </div>
         <div class="col-md-4">
             <div class="form-group customFormGroup">
-                <label for="totalOldPrice" class="customLabel">المبلغ القديم</label>
+                <label for="totalOldPrice" class="customLabel">مبلغ النموذج</label>
                 <input class="form-control customInput totalOldPrice" id="totalOldPrice" type="text" value="${functions.splitBigNumbersByComma(violationData.TotalOldPrice || 0)}" disabled>
             </div>
         </div>
@@ -963,7 +963,7 @@ vehicleViolationReferralRecords.referralEquipmentDetails = (violationData) => {
         </div>
         <div class="col-md-4">
             <div class="form-group customFormGroup">
-                <label for="totalOldPrice" class="customLabel">المبلغ القديم</label>
+                <label for="totalOldPrice" class="customLabel">مبلغ النموذج</label>
                 <input class="form-control customInput totalOldPrice" id="totalOldPrice" type="text" value="${functions.splitBigNumbersByComma(violationData.TotalOldPrice || 0)}" disabled>
             </div>
         </div>

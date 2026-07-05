@@ -1006,7 +1006,7 @@ externalViolationForm.uploadAttachment = (NewViolationID, ListName) => {
 externalViolationForm.init = () => {
     $(document).ready(function () {
         externalViolationForm.formActions();
-        $(".PreLoader").addClass("active");
+        $(".overlay").addClass("active");
 
         // Add the offender type change handler
         externalViolationForm.handleOffenderTypeChange();
@@ -1018,12 +1018,12 @@ externalViolationForm.init = () => {
             // externalViolationForm.getProsecutions()
         ])
             .then(() => {
-                $(".PreLoader").removeClass("active");
+                $(".overlay").removeClass("active");
                 // Ensure violation type stays disabled
                 $("#violationType").prop("disabled", true);
             })
             .catch((error) => {
-                $(".PreLoader").removeClass("active");
+                $(".overlay").removeClass("active");
                 console.error("Error loading dropdowns:", error);
             });
     });

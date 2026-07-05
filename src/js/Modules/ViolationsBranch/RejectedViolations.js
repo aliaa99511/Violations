@@ -36,6 +36,13 @@ rejectedViolations.getRejectedViolations = (
             ViolationCode: $("#violationCode").val(),
             OffenderType: $("#violationCategory").val(),
             ViolationsZone: $("#violationZone").val(),
+            TrailerNum: $("#trailerNum").val(),
+            CreatedFrom: $("#createdFrom").val()
+                ? moment($("#createdFrom").val(), "DD-MM-YYYY").format("YYYY-MM-DD")
+                : null,
+            CreatedTo: $("#createdTo").val()
+                ? moment($("#createdTo").val(), "DD-MM-YYYY").format("YYYY-MM-DD")
+                : null,
         },
     };
     $(".overlay").addClass("active");
@@ -84,15 +91,15 @@ rejectedViolations.filterViolationsLog = (e) => {
     let ViolationSector;
 
     const theCodeValue = $("#theCode").val();
+    const trailerNumValue = $("#trailerNum").val();
     const violationCategoryValue = $("#violationCategory").val();
 
     if (
-        theCodeValue &&
-        theCodeValue.trim() !== "" &&
+        (theCodeValue?.trim() || trailerNumValue?.trim()) &&
         (!violationCategoryValue || violationCategoryValue === "")
     ) {
         functions.warningAlert(
-            "من فضلك قم باختيار تصنيف المخالفة قبل إدخال رقم المحجر/عربة/معدة"
+            "من فضلك قم باختيار تصنيف المخالفة قبل إدخال رقم المحجر/عربة/مقطورة"
         );
         return;
     }
@@ -134,12 +141,14 @@ rejectedViolations.resetFilter = (e) => {
     $("#violationSector").val("0");
     $("#TypeofViolation").val("0");
     $("#violationSearch").val("");
-
     $("#violatorName").val("");
     $("#violationCode").val("");
     $("#violationCategory").val("");
     $("#theCode").val("");
     $("#violationZone").val("");
+    $("#createdFrom").val("");
+    $("#createdTo").val("");
+    $("#trailerNum").val("");
 
     $(".overlay").addClass("active");
     pagination.reset();
@@ -174,6 +183,9 @@ rejectedViolations.exportToExcel = () => {
         ViolationType: Number($("#TypeofViolation").children("option:selected").data("id")),
         SectorConfigId: Number($("#violationSector").children("option:selected").val()),
         GlobalSearch: $("#violationSearch").val(),
+        TrailerNum: $("#trailerNum").val(),
+        CreatedFrom: $("#createdFrom").val() ? moment($("#createdFrom").val(), "DD-MM-YYYY").format("YYYY-MM-DD") : null,
+        CreatedTo: $("#createdTo").val() ? moment($("#createdTo").val(), "DD-MM-YYYY").format("YYYY-MM-DD") : null,
     };
 
     const columns = [

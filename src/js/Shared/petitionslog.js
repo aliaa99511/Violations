@@ -8,10 +8,17 @@ petitionsLog.destroyTable = false;
 petitionsLog.getPetitions = (Status = "All", pageIndex = 1, isFiltered = false, ViolationSector = null, ViolationType = null, PetitionStatus = null) => {
   // Check if theCode field has a value but violationCategory is empty
   const theCodeValue = $("#theCode").val();
+  const trailerNumValue = $("#trailerNum").val();
   const violationCategoryValue = $("#violationCategory").val();
 
-  if (theCodeValue && theCodeValue.trim() !== "" && (!violationCategoryValue || violationCategoryValue === "")) {
-    functions.warningAlert("من فضلك قم باختيار تصنيف المخالفة قبل إدخال رقم المحجر/عربة/معدة");
+  if (
+    (theCodeValue?.trim() || trailerNumValue?.trim()) &&
+    (!violationCategoryValue || violationCategoryValue === "")
+  ) {
+    functions.warningAlert(
+      "من فضلك قم باختيار تصنيف المخالفة قبل إدخال رقم المحجر/عربة/مقطورة"
+    );
+
     $(".overlay").removeClass("active");
     return;
   }
@@ -60,6 +67,7 @@ petitionsLog.getPetitions = (Status = "All", pageIndex = 1, isFiltered = false, 
           ViolatorCompany: $("#ViolatorCompany").val(),
           ViolatorName: $("#ViolatorName").val(),
           OffenderType: $("#violationCategory").val() || "",
+          TrailerNum: $("#trailerNum").val(),
           CreatedFrom: $("#createdFrom").val()
             ? moment($("#createdFrom").val(), "DD-MM-YYYY").format("YYYY-MM-DD")
             : "",
@@ -162,15 +170,20 @@ petitionsLog.filterPetitionsLog = (e, defaultStatus = "All") => {
   // Get current filter values
   const theCodeValue = $("#theCode").val();
   const violationCategoryValue = $("#violationCategory").val();
+  const trailerNumValue = $("#trailerNum").val();
   const violationCodeValue = $("#violationCode").val();
   const violatorCompanyValue = $("#ViolatorCompany").val();
   const violatorNameValue = $("#ViolatorName").val();
   const createdFromValue = $("#createdFrom").val();
   const createdToValue = $("#createdTo").val();
 
-  // Check if theCode has value but violationCategory is empty
-  if (theCodeValue && theCodeValue.trim() !== "" && (!violationCategoryValue || violationCategoryValue === "")) {
-    functions.warningAlert("من فضلك قم باختيار تصنيف المخالفة قبل إدخال رقم المحجر/عربة/معدة");
+  if (
+    (theCodeValue?.trim() || trailerNumValue?.trim()) &&
+    (!violationCategoryValue || violationCategoryValue === "")
+  ) {
+    functions.warningAlert(
+      "من فضلك قم باختيار تصنيف المخالفة قبل إدخال رقم المحجر/عربة/مقطورة"
+    );
     return;
   }
 
@@ -223,6 +236,7 @@ petitionsLog.resetFilter = (e, defaultStatus = "All") => {
   $("#petitionStatus").val("");
   $("#ViolatorCompany").val("");
   $("#ViolatorName").val("");
+  $("#trailerNum").val("");
 
   // Also reset stored filter values
   petitionsLog.ViolationCode = "";
@@ -299,6 +313,7 @@ petitionsLog.exportToExcel = () => {
     ViolatorCompany: $("#ViolatorCompany").val() || "",
     ViolatorName: $("#ViolatorName").val() || "",
     OffenderType: violationCategoryValue || "",
+    TrailerNum: $("#trailerNum").val(),
     CreatedFrom: $("#createdFrom").val()
       ? moment($("#createdFrom").val(), "DD-MM-YYYY").format("YYYY-MM-DD")
       : "",
@@ -424,14 +439,19 @@ petitionsLog.ValidatedPetitionsTable = (Petitions, destroyTable) => {
           : "-";
 
       data.push([
-        `<div class="violationId" data-petitionid=${Petition?.ID
-        } data-petitionstatus="${Petition?.Status}" data-taskid="${Petition.Task?.ID
-        }" data-violationcode="${petitionViolation.ViolationCode
-        }" data-violationid="${Petition?.ViolationId}" data-totalprice="${petitionViolation.TotalPriceDue
-        }" data-exdate="${functions.getFormatedDate(
-          Petition.Task?.ReconciliationExpiredDate,
-        )}" data-petitioncomments="${Petition.Comments}">${Petition.Task != null ? petitionViolation.ViolationCode : "---"
-        }</div>`,
+        `<div class="violationId" 
+            data-petitionid=${Petition?.ID} 
+            data-petitionstatus="${Petition?.Status}" 
+            data-taskid="${Petition.Task?.ID}" 
+            data-violationcode="${petitionViolation.ViolationCode}" 
+            data-violationid="${Petition?.ViolationId}" 
+            data-totalprice="${petitionViolation.TotalPriceDue}" 
+            data-exdate="${functions.getFormatedDate(Petition.Task?.ReconciliationExpiredDate,)}" 
+            data-petitioncomments="${Petition.Comments}"
+            data-violationstatus="${Petition.Task?.Status}"
+        >
+            ${Petition.Task != null ? petitionViolation.ViolationCode : "---"}
+        </div>`,
         `<div class='controls'>
             <div class='ellipsisButton'>
                 <i class='fa-solid fa-ellipsis-vertical'></i>
@@ -510,6 +530,7 @@ petitionsLog.ValidatedPetitionsTable = (Petitions, destroyTable) => {
       let ViolationTotalPrice = jQueryRecord.find(".violationId").data("totalprice");
       let ExDate = jQueryRecord.find(".violationId").data("exdate");
       let PetitionComments = jQueryRecord.find(".violationId").data("petitioncomments");
+      let ViolationStatus = jQueryRecord.find(".violationId").data("violationstatus");
 
       // Toggle menu
       jQueryRecord.find(".controls").children(".ellipsisButton").on("click", (e) => {
@@ -527,17 +548,17 @@ petitionsLog.ValidatedPetitionsTable = (Petitions, destroyTable) => {
       });
 
       if (
-        petitionStatus == "قيد الإنتظار" ||
-        petitionStatus == "التماس قيد الإنتظار"
+        petitionStatus === "التماس قيد الإنتظار" &&
+        ViolationStatus !== "Paid"
       ) {
         jQueryRecord
           .find(".controls")
           .children(".hiddenListBox")
           .find(".controlsList").append(`
-                        <li><a href="#" class="approvePetition">قبول وتعديل المخالفة</a></li>
-                        <li><a href="#" class="approveAndCancelPetition"> قبول وإلغاء المخالفة</a></li>
-                        <li><a href="#" class="rejectPetition">رفض الالتماس</a></li>
-                    `);
+                <li><a href="#" class="approvePetition">قبول وتعديل المخالفة</a></li>
+                <li><a href="#" class="approveAndCancelPetition"> قبول وإلغاء المخالفة</a></li>
+                <li><a href="#" class="rejectPetition">رفض الالتماس</a></li>
+            `);
       }
 
       // if (
@@ -707,7 +728,7 @@ petitionsLog.findPetitionsByID = (petitionID, exDate) => {
                         </div>
                         <div class="col-md-4">
                           <div class="form-group customFormGroup">
-                            <label for="petitionTotalOldPrice" class="customLabel">المبلغ القديم</label>
+                            <label for="petitionTotalOldPrice" class="customLabel">مبلغ النموذج</label>
                             <input class="form-control disabled customInput petitionTotalOldPrice" id="petitionTotalOldPrice" type="text" value="${formatValue(violationData.TotalOldPrice)}" disabled>
                           </div> 
                         </div>

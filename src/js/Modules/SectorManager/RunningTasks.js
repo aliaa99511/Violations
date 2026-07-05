@@ -14,17 +14,19 @@ runningSectorTask.getRunningTasks = (
   ViolationType = Number($("#TypeofViolation").children("option:selected").data("id")),
   ViolationGeneralSearch = ""
 ) => {
+  // Check if theCode field has a value but violationCategory is empty
   const theCodeValue = $("#theCode").val();
+  const trailerNumValue = $("#trailerNum").val();
   const violationCategoryValue = $("#violationCategory").val();
 
   if (
-    theCodeValue &&
-    theCodeValue.trim() !== "" &&
+    (theCodeValue?.trim() || trailerNumValue?.trim()) &&
     (!violationCategoryValue || violationCategoryValue === "")
   ) {
     functions.warningAlert(
-      "من فضلك قم باختيار تصنيف المخالفة قبل إدخال رقم المحجر/عربة/معدة"
+      "من فضلك قم باختيار تصنيف المخالفة قبل إدخال رقم المحجر/عربة/مقطورة"
     );
+
     $(".overlay").removeClass("active");
     return;
   }
@@ -51,6 +53,7 @@ runningSectorTask.getRunningTasks = (
       Sector: 0,
       OffenderType: $("#violationCategory").val(),
       ViolationsZone: $("#violationZone").val(),
+      TrailerNum: $("#trailerNum").val(),
       CreatedFrom: $("#createdFrom").val()
         ? moment($("#createdFrom").val(), "DD-MM-YYYY").format("YYYY-MM-DD")
         : null,
@@ -109,7 +112,11 @@ runningSectorTask.exportToExcel = () => {
     PaymentStatus: "",
     ViolationType: Number($("#TypeofViolation").children("option:selected").data("id")),
     SectorConfigId: Number($("#violationSector").children("option:selected").val()),
-    GlobalSearch: $("#violationSearch").val()
+    GlobalSearch: $("#violationSearch").val(),
+    ViolationsZone: $("#violationZone").val(),
+    TrailerNum: $("#trailerNum").val(),
+    CreatedFrom: $("#createdFrom").val() ? moment($("#createdFrom").val(), "DD-MM-YYYY").format("YYYY-MM-DD") : null,
+    CreatedTo: $("#createdTo").val() ? moment($("#createdTo").val(), "DD-MM-YYYY").format("YYYY-MM-DD") : null,
   };
 
   // Define columns with their data mapping
@@ -813,15 +820,15 @@ runningSectorTask.filterTasksLog = (e) => {
   let ViolationGeneralSearch = $("#violationSearch").val();
 
   const theCodeValue = $("#theCode").val();
+  const trailerNumValue = $("#trailerNum").val();
   const violationCategoryValue = $("#violationCategory").val();
 
   if (
-    theCodeValue &&
-    theCodeValue.trim() !== "" &&
+    (theCodeValue?.trim() || trailerNumValue?.trim()) &&
     (!violationCategoryValue || violationCategoryValue === "")
   ) {
     functions.warningAlert(
-      "من فضلك قم باختيار تصنيف المخالفة قبل إدخال رقم المحجر/عربة/معدة"
+      "من فضلك قم باختيار تصنيف المخالفة قبل إدخال رقم المحجر/عربة/مقطورة"
     );
     return;
   }
@@ -865,6 +872,8 @@ runningSectorTask.resetFilter = (e) => {
   $("#violatorName").val("");
   $("#violationCode").val("");
   $("#theCode").val("");
+  $("#violationZone").val("");
+  $("#trailerNum").val("");
   $("#createdFrom").val("");
   $("#createdTo").val("");
 

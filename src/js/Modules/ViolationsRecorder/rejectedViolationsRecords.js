@@ -36,6 +36,13 @@ rejectedViolationsRecords.getViolations = (
       ViolationCode: $("#violationCode").val(),
       OffenderType: $("#violationCategory").val(),
       ViolationsZone: $("#violationZone").val(),
+      TrailerNum: $("#trailerNum").val(),
+      CreatedFrom: $("#createdFrom").val()
+        ? moment($("#createdFrom").val(), "DD-MM-YYYY").format("YYYY-MM-DD")
+        : null,
+      CreatedTo: $("#createdTo").val()
+        ? moment($("#createdTo").val(), "DD-MM-YYYY").format("YYYY-MM-DD")
+        : null,
     },
   };
 
@@ -87,6 +94,9 @@ rejectedViolationsRecords.exportToExcel = () => {
     Sector: UserId,
     ViolationType: Number($("#TypeofViolation").children("option:selected").data("id")),
     GlobalSearch: $("#violationSearch").val(),
+    TrailerNum: $("#trailerNum").val(),
+    CreatedFrom: $("#createdFrom").val() ? moment($("#createdFrom").val(), "DD-MM-YYYY").format("YYYY-MM-DD") : null,
+    CreatedTo: $("#createdTo").val() ? moment($("#createdTo").val(), "DD-MM-YYYY").format("YYYY-MM-DD") : null,
   };
 
   // Define columns with their data mapping
@@ -374,18 +384,19 @@ rejectedViolationsRecords.filterViolationsLog = (e) => {
   let ViolationType;
 
   const theCodeValue = $("#theCode").val();
+  const trailerNumValue = $("#trailerNum").val();
   const violationCategoryValue = $("#violationCategory").val();
 
   if (
-    theCodeValue &&
-    theCodeValue.trim() !== "" &&
+    (theCodeValue?.trim() || trailerNumValue?.trim()) &&
     (!violationCategoryValue || violationCategoryValue === "")
   ) {
     functions.warningAlert(
-      "من فضلك قم باختيار تصنيف المخالفة قبل إدخال رقم المحجر/عربة/معدة"
+      "من فضلك قم باختيار تصنيف المخالفة قبل إدخال رقم المحجر/عربة/مقطورة"
     );
     return;
   }
+
 
   if (
     ViolationTypeVal == "" &&
@@ -435,6 +446,9 @@ rejectedViolationsRecords.resetFilter = (e) => {
   $("#violationCategory").val("");
   $("#theCode").val("");
   $("#violationZone").val("");
+  $("#createdFrom").val("");
+  $("#createdTo").val("");
+  $("#trailerNum").val("");
 
   $(".overlay").addClass("active");
   pagination.reset();

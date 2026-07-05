@@ -16,10 +16,17 @@ validatedViolations.getValidatedViolations = (
 ) => {
   // Check if theCode field has a value but violationCategory is empty
   const theCodeValue = $("#theCode").val();
+  const trailerNumValue = $("#trailerNum").val();
   const violationCategoryValue = $("#violationCategory").val();
 
-  if (theCodeValue && theCodeValue.trim() !== "" && (!violationCategoryValue || violationCategoryValue === "")) {
-    functions.warningAlert("من فضلك قم باختيار تصنيف المخالفة قبل إدخال رقم المحجر/عربة/معدة");
+  if (
+    (theCodeValue?.trim() || trailerNumValue?.trim()) &&
+    (!violationCategoryValue || violationCategoryValue === "")
+  ) {
+    functions.warningAlert(
+      "من فضلك قم باختيار تصنيف المخالفة قبل إدخال رقم المحجر/عربة/مقطورة"
+    );
+
     $(".overlay").removeClass("active");
     return;
   }
@@ -49,7 +56,7 @@ validatedViolations.getValidatedViolations = (
       PageIndex: pagination.currentPage,
       ColName: "created",
       SortOrder: "desc",
-      Status: selectedStatus, // Keep this for reference
+      Status: selectedStatus,
       MultipleStatus: multipleStatus, // Use dynamic multipleStatus
       ViolatorName: $("#violatorName").val(),
       NationalID: $("#nationalID").val(),
@@ -60,6 +67,7 @@ validatedViolations.getValidatedViolations = (
       Sector: 0,
       OffenderType: $("#violationCategory").val(),
       ViolationsZone: $("#violationZone").val(),
+      TrailerNum: $("#trailerNum").val(),
       CreatedFrom: $("#createdFrom").val()
         ? moment($("#createdFrom").val(), "DD-MM-YYYY").format("YYYY-MM-DD")
         : null,
@@ -109,12 +117,17 @@ validatedViolations.filterViolationsLog = (e) => {
   let ViolationTypeVal = $("#TypeofViolation").children("option:selected").data("id");
   let ViolationGeneralSearch = $("#violationSearch").val();
 
-  // Check if theCode has value but violationCategory is empty
   const theCodeValue = $("#theCode").val();
+  const trailerNumValue = $("#trailerNum").val();
   const violationCategoryValue = $("#violationCategory").val();
 
-  if (theCodeValue && theCodeValue.trim() !== "" && (!violationCategoryValue || violationCategoryValue === "")) {
-    functions.warningAlert("من فضلك قم باختيار تصنيف المخالفة قبل إدخال رقم المحجر/عربة/معدة");
+  if (
+    (theCodeValue?.trim() || trailerNumValue?.trim()) &&
+    (!violationCategoryValue || violationCategoryValue === "")
+  ) {
+    functions.warningAlert(
+      "من فضلك قم باختيار تصنيف المخالفة قبل إدخال رقم المحجر/عربة/مقطورة"
+    );
     return;
   }
 
@@ -161,6 +174,7 @@ validatedViolations.resetFilter = (e) => {
   $("#createdTo").val("");
   $("#theCode").val("");
   $("#ViolationStatus").val("");
+  $("#trailerNum").val("");
 
   $(".overlay").addClass("active");
   pagination.reset();
@@ -232,14 +246,7 @@ validatedViolations.exportToExcel = () => {
     multipleStatus = [selectedStatus];
   } else {
     // If no status selected, use default list
-    multipleStatus = [
-      "Confirmed",
-      "Paid",
-      "Exceeded",
-      "Paid After Reffered",
-      "Saved",
-      "Cancelled"
-    ];
+    multipleStatus = ["Confirmed", "Paid", "Exceeded", "Paid After Reffered", "Saved", "Cancelled", "UnderReview", "UnderPayment"];
   }
 
   const currentFilters = {
@@ -258,6 +265,7 @@ validatedViolations.exportToExcel = () => {
     GlobalSearch: $("#violationSearch").val(),
     OffenderType: $("#violationCategory").val(),
     ViolationsZone: $("#violationZone").val(),
+    TrailerNum: $("#trailerNum").val(),
     CreatedFrom: $("#createdFrom").val() ? moment($("#createdFrom").val(), "DD-MM-YYYY").format("YYYY-MM-DD") : null,
     CreatedTo: $("#createdTo").val() ? moment($("#createdTo").val(), "DD-MM-YYYY").format("YYYY-MM-DD") : null,
   };
@@ -483,6 +491,7 @@ validatedViolations.ValidatedViolationTable = (ValidatedViolation, destroyTable)
       let createdDate = functions.getFormatedDate(record.Created);
       let caseStatus = record?.ReferralStatus || "";
       let IsDublicated = record.IsDublicated;
+      let PetitionStatus = taskViolation?.Petition?.GridData?.[0]?.Status;
 
       if (
         moment(new Date()).format("MM-DD-YYYY") >
@@ -507,10 +516,17 @@ validatedViolations.ValidatedViolationTable = (ValidatedViolation, destroyTable)
             data-paymentstatus="${record.PaymentStatus}"
             data-violationcode="${taskViolation?.ViolationCode}"
             data-totalprice="${taskViolation?.TotalPriceDue}"
+            data-totaloldprice="${taskViolation?.TotalOldPrice}"
             data-enddate="${record.ReconciliationExpiredDate}"
             data-offendertype="${taskViolation?.OffenderType}"
             data-isdublicated="${IsDublicated}"
-            data-equipments_count="${taskViolation?.Equipments_Count}"
+            data-equipments_count='${JSON.stringify(taskViolation?.Equipments_Count || [])}'
+            data-quarrymaterialvalue="${taskViolation?.QuarryMaterialValue || 0}"
+            data-lawroyalty="${taskViolation?.LawRoyalty || 0}"
+            data-petitionstatus="${PetitionStatus}"
+            data-totalinstallmentspaidamount="${taskViolation?.TotalInstallmentsPaidAmount}"
+            data-remainingamount="${taskViolation?.RemainingAmount}"
+            data-refundstatus="${record.RefundStatus || ''}"
             >
             ${taskViolation?.ViolationCode || "-"}
         </div>`,
@@ -687,12 +703,35 @@ validatedViolations.ValidatedViolationTable = (ValidatedViolation, destroyTable)
       let paymentStatus = jQueryRecord.find(".violationId").data("paymentstatus");
       let hiddenListBox = jQueryRecord.find(".controls").children(".hiddenListBox");
       let TotalPrice = jQueryRecord.find(".violationId").data("totalprice");
+      let TotalOldPrice = jQueryRecord.find(".violationId").data("totaloldprice");
       let EndDate = jQueryRecord.find(".violationId").data("enddate");
       let IsDublicated = jQueryRecord.find(".violationId").data("isdublicated");
-      let Equipments_Count = jQueryRecord.find(".violationId").data("equipments_count");
+      let QuarryMaterialValue = Number(jQueryRecord.find(".violationId").data("quarrymaterialvalue")) || 0;
+      let LawRoyalty = Number(jQueryRecord.find(".violationId").data("lawroyalty")) || 0;
+      let PetitionStatus = jQueryRecord.find(".violationId").data("petitionstatus");
+      let TotalInstallmentsPaidAmount = jQueryRecord.find(".violationId").data("totalinstallmentspaidamount");
+      let RemainingAmount = jQueryRecord.find(".violationId").data("remainingamount");
+
+      let RemainingPrice = TotalInstallmentsPaidAmount - RemainingAmount;
+
+      const canRefund =
+        RemainingPrice > 0 &&
+        PetitionStatus === "قبول مع التعديل" &&
+        (taskStatus === "UnderPayment" || taskStatus === "Paid")
+
+      let Equipments_Count = [];
+
+      try {
+        Equipments_Count = JSON.parse(
+          jQueryRecord.find(".violationId").attr("data-equipments_count")
+        );
+      } catch {
+        Equipments_Count = [];
+      }
 
       // Create separate buttons based on offender type
       let referralButtonHtml = '';
+      // if (!IsDublicated) {  // Only show referral buttons if NOT duplicated
       if (offenderType === "Quarry") {
         referralButtonHtml = `<li><a href="#" class="reffereViolationQuarry">إحالة إلى النيابة المختصة</a></li>`;
       } else if (offenderType === "Vehicle") {
@@ -700,29 +739,67 @@ validatedViolations.ValidatedViolationTable = (ValidatedViolation, destroyTable)
       } else if (offenderType === "Equipment") {
         referralButtonHtml = `<li><a href="#" class="reffereViolationEquipment">حظر معدة</a></li>`;
       }
+      // }
 
-      switch (taskStatus) {
-        case "Confirmed": {
-          jQueryRecord.find(".controls").children(".hiddenListBox").find(".controlsList").append(`
-            <li><a href="#" class="payViolation">تسديد المخالفة</a></li>
-            <li><a href="#" class="requestPetition">تقديم بيان التماس</a></li>
-            ${referralButtonHtml}
+      // switch (taskStatus) {
+      //   case "Confirmed": {
+      //     jQueryRecord.find(".controls").children(".hiddenListBox").find(".controlsList").append(`
+      //       <li><a href="#" class="payViolation">تسديد المخالفة</a></li>
+      //       <li><a href="#" class="requestPetition">تقديم بيان التماس</a></li>
+      //       ${referralButtonHtml}
+      //     `);
+      //     break;
+      //   }
+      //   case "UnderPayment": {
+      //     jQueryRecord.find(".controls").children(".hiddenListBox").find(".controlsList").append(`
+      //       <li><a href="#" class="requestPetition">تقديم بيان التماس</a></li>
+      //       ${referralButtonHtml}
+      //     `);
+      //     break;
+      //   }
+      //   case "Exceeded": {
+      //     jQueryRecord.find(".controls").children(".hiddenListBox").find(".controlsList").append(`
+      //       ${referralButtonHtml}
+      //       <li><a href="#" class="payViolation">تسديد المخالفة</a></li>
+      //       <li><a href="#" class="requestPetition">تقديم بيان التماس</a></li>
+      //     `);
+      //     break;
+      //   }
+      // }
+
+      const controlsList = hiddenListBox.find(".controlsList");
+
+      // Show payment only for these statuses
+      if (taskStatus === "Confirmed") {
+        controlsList.append(`
+          <li><a href="#" class="payViolation">تسديد المخالفة</a></li>
+        `);
+      }
+
+      // Show request petition in all cases except Paid
+      if (taskStatus !== "Paid") {
+        controlsList.append(`
+          <li><a href="#" class="requestPetition">تقديم بيان التماس</a></li>
+        `);
+      }
+
+      // Keep referral buttons where they are applicable
+      if (
+        taskStatus === "Confirmed" ||
+        taskStatus === "UnderPayment"
+      ) {
+        controlsList.append(referralButtonHtml);
+      }
+
+      if (canRefund) {
+        // Get RefundStatus from the data attribute
+        const refundStatus = jQueryRecord.find(".violationId").data("refundstatus");
+
+        // Only show refund button if not already refunded
+        if (refundStatus !== "Refunded") {
+          hiddenListBox.find(".controlsList").append(`
+            <li><a href="#" class="refundViolation" data-remaining="${RemainingPrice}">استرداد المبلغ</a></li>
           `);
-          break;
-        }
-        case "UnderPayment": {
-          jQueryRecord.find(".controls").children(".hiddenListBox").find(".controlsList").append(`
-            ${referralButtonHtml}
-          `);
-          break;
-        }
-        case "Exceeded": {
-          jQueryRecord.find(".controls").children(".hiddenListBox").find(".controlsList").append(`
-            ${referralButtonHtml}
-            <li><a href="#" class="payViolation">تسديد المخالفة</a></li>
-            <li><a href="#" class="requestPetition">تقديم بيان التماس</a></li>
-          `);
-          break;
         }
       }
 
@@ -789,13 +866,19 @@ validatedViolations.ValidatedViolationTable = (ValidatedViolation, destroyTable)
 
       jQueryRecord.find(".controls").children(".hiddenListBox").find(".reffereViolationVehicle").on("click", (e) => {
         $(".overlay").addClass("active");
+        console.log(TotalPrice,
+          IsDublicated,
+          QuarryMaterialValue,
+          LawRoyalty)
         validatedViolations.reffereViolationToCase(
           violationTaskID,
           violationID,
           violationCode,
           offenderType,
           TotalPrice,
-          IsDublicated
+          IsDublicated,
+          QuarryMaterialValue,
+          LawRoyalty
         );
       });
       jQueryRecord.find(".controls").children(".hiddenListBox").find(".reffereViolationEquipment").on("click", (e) => {
@@ -807,8 +890,11 @@ validatedViolations.ValidatedViolationTable = (ValidatedViolation, destroyTable)
           offenderType,
           TotalPrice,
           IsDublicated,
+          QuarryMaterialValue,
+          LawRoyalty,
           Equipments_Count
         );
+
       });
       jQueryRecord.find(".controls").children(".hiddenListBox").find(".printPaymentForm").off("click").on("click", (e) => {
         $(".overlay").addClass("active");
@@ -821,6 +907,17 @@ validatedViolations.ValidatedViolationTable = (ValidatedViolation, destroyTable)
         validatedViolations.printPaymentFormOnly(e, violationTaskID);
       });
 
+      // refund price
+      jQueryRecord.find(".refundViolation").off("click").on("click", function (e) {
+        e.preventDefault();
+        validatedViolations.confirmRefundPopup(
+          violationTaskID,
+          violationID,
+          RemainingPrice,
+          violationCode
+        );
+
+      });
     });
   });
 
@@ -2018,6 +2115,8 @@ validatedViolations.reffereViolationToCase = (
   OffenderType,
   TotalPrice,
   IsDublicated,
+  QuarryMaterialValue,
+  LawRoyalty,
   Equipments_Count
 ) => {
   $(".overlay").removeClass("active");
@@ -2240,6 +2339,8 @@ validatedViolations.reffereViolationToCase = (
           violationRefferedComments,
           "#reffereViolationAttach",
           IsDublicated,
+          QuarryMaterialValue,
+          LawRoyalty,
           Equipments_Count
         );
       } else {
@@ -2256,33 +2357,56 @@ validatedViolations.reffereViolationAPIResponse = (
   OffenderType,
   TotalPrice,
   violationRefferedDate,
-  // ReferralNumber,
   Comments = "",
   attachInput,
   IsDublicated,
+  QuarryMaterialValue,
+  LawRoyalty,
   Equipments_Count
 ) => {
-  let DouplePrice = TotalPrice * 2 + 10000;
-
   // Get the stored referral status
   let referralStatus = $("body").data("currentReferralStatus") || "";
 
-  let TotalPriceDueEquation;
+  let TotalPriceDueEquation = TotalPrice;
+  let LawRoyaltyEquation;
+  let QuarryMaterialValueEquation;
+
+  let DouplePrice = TotalPrice * 2 + 10000;
+  let DoupleLawRoyalty = LawRoyalty * 2;
+  let DoupleQuarryMaterialValue = (QuarryMaterialValue * 2) + 10000;
+
+  let equipmentsCount = 0;
+
+  if (Array.isArray(Equipments_Count)) {
+    equipmentsCount = Equipments_Count.reduce(
+      (sum, item) => sum + (item.count || 0),
+      0
+    );
+  }
 
   if (OffenderType === "Vehicle") {
     TotalPriceDueEquation = IsDublicated ? TotalPrice : DouplePrice;
+    LawRoyaltyEquation = IsDublicated ? LawRoyalty : DoupleLawRoyalty;
+    QuarryMaterialValueEquation = IsDublicated ? QuarryMaterialValue : DoupleQuarryMaterialValue;
   } else if (OffenderType === "Equipment") {
-    TotalPriceDueEquation = TotalPrice + (Equipments_Count * 10000);
+    TotalPriceDueEquation = TotalPrice + (equipmentsCount * 10000);
   }
 
   let request = {
     Data: {
       ID: TaskId,
       Title: OffenderType == "Vehicle" ? "تم حظر عربة" : OffenderType == "Equipment" ? "تم حظر معدة" : "تم إحالة الطلب للنيابة المختصة",
-      Status: "UnderReview",
       ViolationId: ViolationId,
+      Status: "UnderReview",
       TotalPriceDue: TotalPriceDueEquation,
       ReferralStatus: referralStatus,
+      IsDublicated: IsDublicated,
+      TotalOldPrice: TotalPrice,
+      Violation: {
+        QuarryMaterialValue: QuarryMaterialValueEquation,
+        LawRoyalty: LawRoyaltyEquation,
+        ID: ViolationId,
+      }
     },
   };
 
@@ -2913,6 +3037,119 @@ validatedViolations.violationExceedTimeStatusChange = (taskId, violationId) => {
 //   }
 // };
 
+/////////////////////////////refund Violation price/////////////////////
+validatedViolations.confirmRefundPopup = (
+  TaskId,
+  ViolationId,
+  RemainingPrice,
+  violationCode
+) => {
+  $(".overlay").removeClass("active");
+
+  let popupHtml = `
+    <div class="popupHeader" style="display:flex;justify-content:space-between;">
+        <div class="violationsCode">
+            <p>استرداد المبلغ للمخالفة رقم (${violationCode})</p>
+        </div>
+
+        <div class="btnStyle cancelBtn popupBtn closeRefundPopup" id="closeRefundPopup"
+            style="color:#fff;cursor:pointer;"
+            data-dismiss="modal">
+            <i class="fa-solid fa-x"></i>
+        </div>
+    </div>
+
+    <div class="popupBody">
+        <div class="popupForm detailsPopupForm">
+            <div class="formContent">
+                <div class="formBox">
+                    <div class="formElements">
+                        <div class="row">
+                            <div class="col-12" style="text-align:center;">
+                                <h4>
+                                    هل أنت متأكد من استرداد المبلغ المستحق ؟
+                                </h4>
+                                <h6 style="margin-top: 19px;font-size: 17px;">
+                                    قيمة المبلغ المستحق :
+                                    ${RemainingPrice}
+                                    جنيه
+                                </h6>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="formButtonsBox" style="margin-top:25px;">                
+                  <div class="row">
+                    <div class="col-12">
+                        <div class="buttonsBox centerButtonsBox">
+                            <div class="btnStyle confirmBtnGreen popupBtn refundBtn">
+                                تأكيد
+                            </div>
+                            <div class="btnStyle cancelBtn popupBtn closeRefundPopup" id="closeRefundPopup" data-dismiss="modal" aria-label="Close">
+                                إلغاء
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    `;
+
+  functions.declarePopup(
+    ["generalPopupStyle", "greenPopup", "editPopup"],
+    popupHtml,
+  );
+
+  $("#closeRefundPopup").on("click", () => {
+    functions.closePopup();
+  });
+
+  $(".refundBtn").on("click", () => {
+    functions.closePopup();
+
+    validatedViolations.refundViolation(
+      TaskId,
+      ViolationId,
+      RemainingPrice
+    );
+  });
+};
+
+validatedViolations.refundViolation = (TaskId, ViolationId, RemainingPrice) => {
+  let request = {
+    Data: {
+      ID: TaskId,
+      ViolationId: ViolationId,
+      Status: "Paid",
+      RefundStatus: "Refunded",
+      Comment: `تم تسديد المخالفة واسترداد المبلغ المستحق ${RemainingPrice}`
+    }
+  };
+
+  $(".overlay").addClass("active");
+
+  functions
+    .requester("/_layouts/15/Uranium.Violations.SharePoint/Tasks.aspx/Save", {
+      request,
+    })
+    .then((response) => {
+      if (response.ok) {
+        return response.json();
+      }
+    })
+    .then((data) => {
+      $(".overlay").removeClass("active");
+      functions.sucessAlert("تم استرداد المبلغ بنجاح");
+    })
+    .catch((err) => {
+      console.error(err);
+      $(".overlay").removeClass("active");
+    });
+};
+///////////////////////////////////////////////////
 const ViolationHistoryLogs = () => {
 
   let selectedViolationId = null;

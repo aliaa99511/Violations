@@ -21,10 +21,17 @@ confirmedViolationLog.getConfirmedLog = (
 ) => {
   // Check if theCode field has a value but violationCategory is empty
   const theCodeValue = $("#theCode").val();
+  const trailerNumValue = $("#trailerNum").val();
   const violationCategoryValue = $("#violationCategory").val();
 
-  if (theCodeValue && theCodeValue.trim() !== "" && (!violationCategoryValue || violationCategoryValue === "")) {
-    functions.warningAlert("من فضلك قم باختيار تصنيف المخالفة قبل إدخال رقم المحجر/عربة/معدة");
+  if (
+    (theCodeValue?.trim() || trailerNumValue?.trim()) &&
+    (!violationCategoryValue || violationCategoryValue === "")
+  ) {
+    functions.warningAlert(
+      "من فضلك قم باختيار تصنيف المخالفة قبل إدخال رقم المحجر/عربة/مقطورة"
+    );
+
     $(".overlay").removeClass("active");
     return;
   }
@@ -44,16 +51,7 @@ confirmedViolationLog.getConfirmedLog = (
     multipleStatus = [selectedStatus];
   } else {
     // If no status selected, use default list (excluding any you don't want)
-    multipleStatus = [
-      "Confirmed",
-      "Paid",
-      "Exceeded",
-      "Paid After Reffered",
-      "Saved",
-      "Cancelled",
-      "UnderReview",
-      "UnderPayment"
-    ];
+    multipleStatus = ["Confirmed", "Paid", "Exceeded", "Paid After Reffered", "Saved", "Cancelled", "UnderReview", "UnderPayment"];
   }
 
   let request = {
@@ -63,11 +61,12 @@ confirmedViolationLog.getConfirmedLog = (
       PageIndex: pagination.currentPage,
       ColName: "created",
       SortOrder: "desc",
-      Status: selectedStatus, // Keep this for reference
-      MultipleStatus: multipleStatus, // Use dynamic multipleStatus
+      Status: selectedStatus,
+      MultipleStatus: multipleStatus,
       ViolatorName: $("#violatorName").val(),
       NationalID: $("#nationalID").val(),
       ViolationCode: $("#violationCode").val(),
+      TrailerNum: $("#trailerNum").val(),
       ViolationType: ViolationType,
       SectorConfigId: ViolationSector,
       GlobalSearch: ViolationGeneralSearch,
@@ -127,12 +126,17 @@ confirmedViolationLog.filterConfirmedLog = (e) => {
   let ViolationTypeVal = $("#TypeofViolation").children("option:selected").data("id");
   let ViolationGeneralSearch = $("#violationSearch").val();
 
-  // Check if theCode has value but violationCategory is empty
   const theCodeValue = $("#theCode").val();
+  const trailerNumValue = $("#trailerNum").val();
   const violationCategoryValue = $("#violationCategory").val();
 
-  if (theCodeValue && theCodeValue.trim() !== "" && (!violationCategoryValue || violationCategoryValue === "")) {
-    functions.warningAlert("من فضلك قم باختيار تصنيف المخالفة قبل إدخال رقم المحجر/عربة/معدة");
+  if (
+    (theCodeValue?.trim() || trailerNumValue?.trim()) &&
+    (!violationCategoryValue || violationCategoryValue === "")
+  ) {
+    functions.warningAlert(
+      "من فضلك قم باختيار تصنيف المخالفة قبل إدخال رقم المحجر/عربة/مقطورة"
+    );
     return;
   }
 
@@ -171,6 +175,7 @@ confirmedViolationLog.resetFilter = (e) => {
   $("#nationalID").val("");
   $("#violatorName").val("");
   $("#violationCode").val("");
+  $("#trailerNum").val("");
   $("#violationSector").val("0");
   $("#violationCategory").val("");
   $("#TypeofViolation").val("0");
@@ -239,14 +244,7 @@ confirmedViolationLog.exportToExcel = () => {
   if (selectedStatus && selectedStatus !== "") {
     multipleStatus = [selectedStatus];
   } else {
-    multipleStatus = [
-      "Confirmed",
-      "Paid",
-      "Exceeded",
-      "Paid After Reffered",
-      "Saved",
-      "Cancelled"
-    ];
+    multipleStatus = ["Confirmed", "Paid", "Exceeded", "Paid After Reffered", "Saved", "Cancelled", "UnderReview", "UnderPayment"];
   }
 
   const currentFilters = {
@@ -260,6 +258,7 @@ confirmedViolationLog.exportToExcel = () => {
     ViolatorName: $("#violatorName").val(),
     NationalID: $("#nationalID").val(),
     ViolationCode: $("#violationCode").val(),
+    TrailerNum: $("#trailerNum").val(),
     ViolationType: Number($("#TypeofViolation").children("option:selected").data("id")),
     SectorConfigId: Number($("#violationSector").children("option:selected").val()),
     GlobalSearch: $("#violationSearch").val(),

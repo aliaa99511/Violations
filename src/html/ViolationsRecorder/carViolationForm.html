@@ -94,11 +94,12 @@
                     <input class="form-control customInput violationArea" id="violationArea" type="text"
                       placeholder="ادخل منطقة الضبط" />
                     <!-- <div class="selectBox">
-                                            <select class="form-control violationArea" id="violationArea">
-                                                <option value="" disabled selected hidden>منطقة الضبط</option>
-                                            </select>
-                                            <i class="fa-solid fa-sort-down"></i>
-                                        </div> -->
+                            <select class="form-control violationArea" id="violationArea">
+                                <option value="" disabled selected hidden>منطقة الضبط</option>
+                            </select>
+                            <i class="fa-solid fa-sort-down"></i>
+                        </div> 
+                    -->
                   </div>
                 </div>
 
@@ -179,22 +180,18 @@
                           placeholder="لون العربة" />
                       </div>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                       <div class="form-group customFormGroup">
                         <label for="carBrand" class="customLabel">النوع<span class="redAstric">*</span></label>
                         <input type="text" class="form-control customInput carBrand" id="carBrand"
                           placeholder="ادخل النوع" />
                       </div>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                       <div class="form-group customFormGroup">
                         <label for="carLicenseTraffic" class="customLabel">ترخيص المرور</label>
-                        <div class="selectBox">
-                          <select class="form-control customInput carLicenseTraffic" id="carLicenseTraffic">
-                            <option value="" disabled selected hidden>ترخيص المرور</option>
-                          </select>
-                          <i class="fa-solid fa-sort-down"></i>
-                        </div>
+                        <input class="form-control customInput carLicenseTraffic" id="carLicenseTraffic" type="text"
+                          placeholder="ترخيص المرور" />
                       </div>
                     </div>
                   </div>
@@ -213,12 +210,8 @@
                 <div class="col-md-3">
                   <div class="form-group customFormGroup">
                     <label for="driverLicenseTraffic" class="customLabel">ترخيص المرور</label>
-                    <div class="selectBox">
-                      <select class="form-control customInput driverLicenseTraffic" id="driverLicenseTraffic">
-                        <option value="" disabled selected hidden>ترخيص المرور</option>
-                      </select>
-                      <i class="fa-solid fa-sort-down"></i>
-                    </div>
+                    <input class="form-control customInput driverLicenseTraffic" id="driverLicenseTraffic" type="text"
+                      placeholder="ترخيص المرور" />
                   </div>
                 </div>
 
@@ -238,6 +231,23 @@
                             class="redAstric">*</span></label>
                         <input class="form-control customInput tractorNumbers" id="tractorNumbers" type="text"
                           minlength="3" maxlength="7" placeholder="ادخل أرقام المقطورة" />
+                      </div>
+                    </div>
+
+                  </div>
+                </div>
+
+                <!-- عدد مخالفات المقطورة السابقة  -->
+                <div class="col-12">
+                  <div class="row">
+                    <div class="col-md-3 trailer-previous-violations-display" style="display: none;">
+                      <div class="form-group customFormGroup">
+                        <div class=""
+                          style="margin-bottom: 0; padding: 10px 15px; background-color: #e9ecef; border-radius: 5px;">
+                          <strong>عدد المخالفات السابقة: </strong>
+                          <span class="trailer-previous-violations-count-value"
+                            style="font-size: 18px; font-weight: bold;">0</span>
+                        </div>
                       </div>
                     </div>
                   </div>

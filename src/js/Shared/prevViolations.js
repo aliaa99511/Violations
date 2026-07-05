@@ -34,16 +34,17 @@ prevViolations.getViolations = (
 ) => {
 
   const theCodeValue = $("#theCode").val();
+  const trailerNumValue = $("#trailerNum").val();
   const violationCategoryValue = $("#violationCategory").val();
 
   if (
-    theCodeValue &&
-    theCodeValue.trim() !== "" &&
+    (theCodeValue?.trim() || trailerNumValue?.trim()) &&
     (!violationCategoryValue || violationCategoryValue === "")
   ) {
     functions.warningAlert(
-      "من فضلك قم باختيار تصنيف المخالفة قبل إدخال رقم المحجر/عربة/معدة"
+      "من فضلك قم باختيار تصنيف المخالفة قبل إدخال رقم المحجر/عربة/مقطورة"
     );
+
     $(".overlay").removeClass("active");
     return;
   }
@@ -73,6 +74,7 @@ prevViolations.getViolations = (
       GlobalSearch: ViolationGeneralSearch,
       OffenderType: $("#violationCategory").val(),
       ViolationsZone: $("#violationZone").val(),
+      TrailerNum: $("#trailerNum").val(),
       CreatedFrom: $("#createdFrom").val()
         ? moment($("#createdFrom").val(), "DD-MM-YYYY").format("YYYY-MM-DD")
         : null,
@@ -271,15 +273,12 @@ prevViolations.exportToExcel = () => {
     ViolatorName: $("#violatorName").val(),
     NationalID: $("#nationalID").val(),
     ViolationCode: $("#violationCode").val(),
-    ViolationType: Number(
-      $("#TypeofViolation").children("option:selected").data("id")
-    ),
-    SectorConfigId: Number(
-      $("#violationSector").children("option:selected").val()
-    ),
+    ViolationType: Number($("#TypeofViolation").children("option:selected").data("id")),
+    SectorConfigId: Number($("#violationSector").children("option:selected").val()),
     GlobalSearch: $("#violationSearch").val(),
     OffenderType: $("#violationCategory").val(),
     ViolationsZone: $("#violationZone").val(),
+    TrailerNum: $("#trailerNum").val(),
     CreatedFrom: $("#createdFrom").val()
       ? moment($("#createdFrom").val(), "DD-MM-YYYY").format("YYYY-MM-DD")
       : null,
@@ -891,26 +890,20 @@ prevViolations.printPaymentFormOnly = (event, taskID) => {
 prevViolations.filterViolationsLog = () => {
   let pageIndex = prevViolations.pageIndex;
 
-  let ViolationSectorVal = $("#violationSector")
-    .children("option:selected")
-    .val();
-
-  let ViolationTypeVal = $("#TypeofViolation")
-    .children("option:selected")
-    .data("id");
-
+  let ViolationSectorVal = $("#violationSector").children("option:selected").val();
+  let ViolationTypeVal = $("#TypeofViolation").children("option:selected").data("id");
   let ViolationGeneralSearch = $("#violationSearch").val();
 
   const theCodeValue = $("#theCode").val();
+  const trailerNumValue = $("#trailerNum").val();
   const violationCategoryValue = $("#violationCategory").val();
 
   if (
-    theCodeValue &&
-    theCodeValue.trim() !== "" &&
+    (theCodeValue?.trim() || trailerNumValue?.trim()) &&
     (!violationCategoryValue || violationCategoryValue === "")
   ) {
     functions.warningAlert(
-      "من فضلك قم باختيار تصنيف المخالفة قبل إدخال رقم المحجر/عربة/معدة"
+      "من فضلك قم باختيار تصنيف المخالفة قبل إدخال رقم المحجر/عربة/مقطورة"
     );
     return;
   }
@@ -958,6 +951,7 @@ prevViolations.resetFilter = (e) => {
   $("#createdTo").val("");
   $("#theCode").val("");
   $("#ViolationStatus").val("");
+  $("#trailerNum").val("");
 
   $("#theCode").prop("disabled", false);
   $("#TypeofViolation").prop("disabled", false);

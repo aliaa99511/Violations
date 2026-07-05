@@ -13,17 +13,19 @@ runningViolations.getRunningViolations = (
   ViolationType = Number($("#TypeofViolation").children("option:selected").data("id")),
   ViolationGeneralSearch = ""
 ) => {
+  // Check if theCode field has a value but violationCategory is empty
   const theCodeValue = $("#theCode").val();
+  const trailerNumValue = $("#trailerNum").val();
   const violationCategoryValue = $("#violationCategory").val();
 
   if (
-    theCodeValue &&
-    theCodeValue.trim() !== "" &&
+    (theCodeValue?.trim() || trailerNumValue?.trim()) &&
     (!violationCategoryValue || violationCategoryValue === "")
   ) {
     functions.warningAlert(
-      "من فضلك قم باختيار تصنيف المخالفة قبل إدخال رقم المحجر/عربة/معدة"
+      "من فضلك قم باختيار تصنيف المخالفة قبل إدخال رقم المحجر/عربة/مقطورة"
     );
+
     $(".overlay").removeClass("active");
     return;
   }
@@ -50,6 +52,7 @@ runningViolations.getRunningViolations = (
       Sector: 0,
       OffenderType: $("#violationCategory").val(),
       ViolationsZone: $("#violationZone").val(),
+      TrailerNum: $("#trailerNum").val(),
       CreatedFrom: $("#createdFrom").val()
         ? moment($("#createdFrom").val(), "DD-MM-YYYY").format("YYYY-MM-DD")
         : null,
@@ -104,15 +107,15 @@ runningViolations.filterViolationsLog = (e) => {
   let ViolationGeneralSearch = $("#violationSearch").val();
 
   const theCodeValue = $("#theCode").val();
+  const trailerNumValue = $("#trailerNum").val();
   const violationCategoryValue = $("#violationCategory").val();
 
   if (
-    theCodeValue &&
-    theCodeValue.trim() !== "" &&
+    (theCodeValue?.trim() || trailerNumValue?.trim()) &&
     (!violationCategoryValue || violationCategoryValue === "")
   ) {
     functions.warningAlert(
-      "من فضلك قم باختيار تصنيف المخالفة قبل إدخال رقم المحجر/عربة/معدة"
+      "من فضلك قم باختيار تصنيف المخالفة قبل إدخال رقم المحجر/عربة/مقطورة"
     );
     return;
   }
@@ -158,6 +161,7 @@ runningViolations.resetFilter = (e) => {
   $("#theCode").val("");
   $("#createdFrom").val("");
   $("#createdTo").val("");
+  $("#trailerNum").val("");
 
   $(".overlay").addClass("active");
   pagination.reset();
@@ -206,6 +210,7 @@ runningViolations.exportToExcel = () => {
     Sector: 0,
     OffenderType: $("#violationCategory").val(),
     ViolationsZone: $("#violationZone").val(),
+    TrailerNum: $("#trailerNum").val(),
     CreatedFrom: $("#createdFrom").val() ? moment($("#createdFrom").val(), "DD-MM-YYYY").format("YYYY-MM-DD") : null,
     CreatedTo: $("#createdTo").val() ? moment($("#createdTo").val(), "DD-MM-YYYY").format("YYYY-MM-DD") : null,
   };
