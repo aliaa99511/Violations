@@ -3,23 +3,28 @@
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
+
   .printBox {
     direction: rtl;
+
     .backBtn,
     .printBtn,
     .popupFormBoxHeader,
     .CommiteeMembersBox {
       display: none !important;
     }
+
     .registredViolationsLog,
     .pendingViolations {
       .CommiteeMembersBox {
         display: block !important;
       }
     }
+
     .popupHeader {
       padding: 0.75rem !important;
       margin-bottom: 0 !important;
+
       .violationsCode {
         p {
           color: #000 !important;
@@ -28,38 +33,48 @@
         }
       }
     }
+
     .violationDescription {
       height: 100px !important;
     }
+
     .popupBody {
       padding: 1rem;
       background: #f9f9f9 !important;
+
       .popupForm {
         .form-control {
           background-color: #efefef !important;
           color: #0c0c0c !important;
         }
+
         .formElements {
           .col-md-6 {
             flex: 0 0 auto;
             width: 50%;
           }
+
           .col-md-4 {
+
             // width: calc(100% / 3);
             &.violationDescription {
               width: 100%;
             }
+
             &.committeeMembersDataBox {
               width: calc(100% / 3);
             }
           }
+
           .col-md-8 {
             width: 65%;
           }
+
           .col-md-3 {
             width: 25%;
           }
         }
+
         .totalPriceBox,
         .rejectReasonBox,
         .addConfirmationAttchBox,
@@ -69,33 +84,41 @@
         .violationsAttachmentsBox {
           display: none !important;
         }
+
         .titleLink {
           i {
             display: none !important;
           }
+
           &::after {
             @include linksAfter;
           }
+
           &.showOnMapBtn {
             display: none !important;
           }
+
           &.downloadAllFiles {
             display: none !important;
           }
+
           &.showFormula {
             display: none !important;
           }
         }
       }
     }
+
     .inputIconBox {
       i {
         display: none;
       }
+
       span {
         color: #000;
       }
     }
+
     .tool {
       &.popupTool {
         label {
@@ -107,21 +130,26 @@
         }
       }
     }
+
     .noEquipments {
       background-color: #efefef !important;
       border: 2px solid #efefef !important;
     }
+
     table {
       background-color: #efefef !important;
       font-family: CairoSB;
+
       th {
         height: 37px !important;
       }
+
       input {
         background-color: transparent !important;
         height: 37px !important;
       }
     }
+
     .validatedViolations {
       .hiddenDetailsBox {
         .totalPriceBox {
@@ -129,15 +157,18 @@
         }
       }
     }
+
     .paymentFormBody,
     .showMoreDetails {
       display: none !important;
     }
+
     .detailsPopupForm {
       .showHiddenDetailsBox {
         display: block !important;
       }
     }
+
     .rejectedViolations {
       .hiddenDetailsBox {
         .rejectReasonBox {
@@ -145,6 +176,7 @@
         }
       }
     }
+
     .runningTasks {
       .hiddenDetailsBox {
         .totalPriceBox {
@@ -152,6 +184,7 @@
         }
       }
     }
+
     .confirmedTasks {
       .hiddenDetailsBox {
         .totalPriceBox {
@@ -159,12 +192,15 @@
         }
       }
     }
+
     .customFormGroup {
       margin-bottom: 1rem !important;
     }
   }
+
   .paymentFormPrintBox {
     direction: rtl;
+
     .popupBigWrapper {
       .popupSectionWrapper {
         position: relative !important;
@@ -172,26 +208,31 @@
         // padding:0.75rem !important;
         margin-bottom: 1rem !important;
         z-index: 1 !important;
+
         .WaterMark {
           z-index: -1 !important;
           position: absolute;
           top: 50%;
           right: 50%;
           transform: translate(50%, -50%);
+
           img {
             max-width: 100%;
           }
         }
+
         &:first-child {
           .WaterMark {
             width: 40%;
           }
         }
+
         &:last-child {
           .WaterMark {
             width: 50%;
           }
         }
+
         .formTitle {
           @include flexRow;
           justify-content: center !important;
@@ -199,8 +240,10 @@
           font-family: CairoB !important;
           margin-bottom: 0.5rem !important;
         }
+
         .popupHeader {
           margin-bottom: 1rem !important;
+
           .violationsMetaBox {
             padding: 0.3rem 0.5rem !important;
             background-color: $white !important;
@@ -211,45 +254,55 @@
             font-size: 14px !important;
             @include flexRow;
             justify-content: space-between !important;
+
             .violationCode {
               margin-bottom: 0 !important;
             }
+
             .violationPrintTime {
               display: block !important;
               margin-bottom: 0 !important;
             }
           }
         }
+
         .popupBody {
           .popupForm {
             .payRowData {
               margin-bottom: 0.5rem !important;
+
               .customFormGroup {
                 margin-bottom: 0 !important;
               }
+
               .headOfSection {
                 font-size: 14px !important;
                 font-family: CairoB !important;
                 padding: 0 8px !important;
+
                 .SectionTitle {
                   margin-bottom: 0 !important;
                 }
               }
+
               .hint {
                 font-size: 12px !important;
                 font-family: CairoSB !important;
                 font-style: italic !important;
                 margin-inline-start: 0.2rem !important;
               }
+
               .instructionsBox {
                 @include flexCol;
                 justify-content: flex-end !important;
                 height: 100% !important;
+
                 .paymentInstructions {
                   margin-bottom: 0 !important;
                   margin-top: 0.35rem !important;
                   font-family: CairoB !important;
                   font-size: 11px !important;
+
                   .payPeriod {
                     font-family: CairoB !important;
                     font-style: italic !important;
@@ -257,15 +310,19 @@
                 }
               }
             }
+
             .formElements {
               margin: 0 1rem !important;
             }
+
             .customFormGroup {
               margin-bottom: 0.5rem !important;
             }
+
             .customLabel {
               margin-bottom: 0.25rem !important;
             }
+
             .inputIconBox {
               .currency {
                 font-size: 10px !important;
@@ -273,68 +330,85 @@
                 font-family: CairoSB !important;
               }
             }
+
             .form-control {
               background-color: $white !important;
             }
+
             .customInput {
               height: 35px !important;
               font-size: 12px !important;
               padding: 0.25rem 0.25rem !important;
             }
+
             .col-md-2 {
               width: calc(100% / 6);
               padding: 0 5px !important;
             }
+
             .col-md-3 {
               width: calc(100% / 4);
               padding: 0 5px !important;
             }
+
             .col-md-4 {
               width: calc(100% / 3);
               padding: 0 5px !important;
             }
+
             .col-md-6 {
               width: calc(100% / 2);
               padding: 0 5px !important;
             }
+
             .col-md-8 {
               width: calc((100% / 3) * 2);
               padding: 0 5px !important;
             }
+
             .col-md-9 {
               width: calc((100% / 4) * 3);
               padding: 0 5px !important;
             }
+
             .col-md-12 {
               padding: 0 5px !important;
             }
+
             .toolsBox {
               background-color: #efefef !important;
+
               .tool {
                 position: relative;
                 width: calc((100% / 5) - 0.2rem) !important;
                 margin-inline-end: 0.2rem !important;
                 margin-bottom: 0.2rem !important;
+
                 label {
                   height: 30px !important;
                   padding: 0.25rem 0.5rem !important;
+
                   .checkmark {
                     background-color: $white !important;
                     border: 2px solid #efefef !important;
                     border-radius: 2px !important;
                   }
+
                   .checktext {
                     font-size: 11px !important;
                   }
                 }
+
                 &:nth-child(5n) {
                   width: calc(100% / 5) !important;
                   margin-inline-end: 0 !important;
                 }
               }
             }
+
             .coordinatesTable {
               background: $white !important;
+
               tr {
                 &:first-child {
                   th {
@@ -344,6 +418,7 @@
                     padding: 0.25rem !important;
                   }
                 }
+
                 th {
                   &:first-child {
                     width: 25px !important;
@@ -352,18 +427,22 @@
                     padding: 0.25rem !important;
                   }
                 }
+
                 td {
                   input {
                     height: 25px !important;
                     font-family: CairoSB !important;
                     background-color: transparent !important;
                     padding: 0.25rem !important;
+
                     &:nth-child(1) {
                       width: 25% !important;
                     }
+
                     &:nth-child(2) {
                       width: 25% !important;
                     }
+
                     &:nth-child(3) {
                       width: 45% !important;
                     }
@@ -371,27 +450,33 @@
                 }
               }
             }
+
             .coordinatesMap {
               height: 137px !important;
               min-height: 137px !important;
               max-height: 137px !important;
               background-color: $white !important;
             }
+
             .payFormCommentsBox {
               @include flexRow;
               padding: 0 !important;
               align-items: flex-start !important;
+
               label {
                 margin-inline-end: 0.5rem;
               }
+
               textarea {
                 width: 100%;
                 height: 65px;
                 background-color: $white !important;
               }
             }
+
             .managerSignatureBox {
               @include flexCol;
+
               p {
                 margin-bottom: 0 !important;
                 font-size: 13px !important;
@@ -401,10 +486,12 @@
           }
         }
       }
+
       .cutPaperBox {
         position: relative !important;
         margin-bottom: 1rem !important;
         border-bottom: 2px dashed #707070 !important;
+
         .cutLine {
           position: absolute !important;
           right: 0 !important;
@@ -413,19 +500,24 @@
         }
       }
     }
+
     .formButtonsBox {
       display: none !important;
     }
   }
+
   .caseDetialsPrintBox {
     direction: rtl;
+
     .popupHeader {
       .popupTitleBox {
         @include flexRow;
         justify-content: space-between !important;
       }
+
       .CaseNumberBox {
         @include flexRow;
+
         .caseNumber {
           margin-bottom: 0;
           margin-inline-end: 0 !important;
@@ -433,18 +525,23 @@
           font-family: CairoB !important;
           font-size: 18px !important;
         }
+
         .printBtn {
           display: none !important;
         }
       }
+
       .closeCaseDetailsPopup {
         display: none !important;
       }
     }
+
     .popupBody {
       padding: 2rem !important;
+
       .formBoxTitle {
         color: $customGreen !important;
+
         .formNumber {
           font-size: 14px !important;
           background: $customGreen !important;
@@ -452,30 +549,38 @@
           // color: $customGreen !important;
         }
       }
+
       .col-md-4 {
         width: calc(100% / 3);
       }
+
       .customInput {
         background-color: #efefef !important;
         color: #000 !important;
       }
+
       .formContent {
         margin-bottom: 1.5rem !important;
       }
+
       .closeDetailsPopup {
         display: none !important;
       }
     }
   }
+
   .petitionPopup {
     direction: rtl;
+
     .popupHeader {
       .popupTitleBox {
         @include flexRow;
         justify-content: space-between !important;
       }
+
       .PetitionNumberBox {
         @include flexRow;
+
         .PetitionNumber {
           margin-bottom: 0;
           margin-inline-end: 0 !important;
@@ -483,10 +588,12 @@
           font-family: CairoB !important;
           font-size: 18px !important;
         }
+
         .printBtn {
           display: none !important;
         }
       }
+
       .closePetitionDetailsPopup {
         display: none !important;
       }
@@ -494,8 +601,10 @@
 
     .popupBody {
       padding: 2rem !important;
+
       .formBoxTitle {
         color: $customGreen !important;
+
         .formNumber {
           font-size: 14px !important;
           background: $customGreen !important;
@@ -503,16 +612,20 @@
           // color: $customGreen !important;
         }
       }
+
       .col-md-4 {
         width: calc(100% / 3);
       }
+
       .customInput {
         background-color: #efefef !important;
         color: #000 !important;
       }
+
       .formContent {
         margin-bottom: 1.5rem !important;
       }
+
       .closeDetailsPopup {
         display: none !important;
       }

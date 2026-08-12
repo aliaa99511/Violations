@@ -41,6 +41,7 @@ pendingPayment.getPendingPayment = (
             ColName: "created",
             SortOrder: "desc",
             Status: "UnderPayment",
+            IsExternalRecord: false,
             Sector: 0,
             ViolationType: ViolationType,
             SectorConfigId: ViolationSector,
@@ -108,14 +109,6 @@ pendingPayment.filterPaymentsLog = () => {
     const trailerNumValue = $("#trailerNum").val();
     const violationCategoryValue = $("#violationCategory").val();
 
-    const violationCode = $("#violationCode").val();
-    const violationZone = $("#violationZone").val();
-    const violatorName = $("#violatorName").val();
-    const companyName = $("#companyName").val();
-    const createdFrom = $("#createdFrom").val();
-    const createdTo = $("#createdTo").val();
-
-    // Check if theCode has value but violationCategory is empty
     if (
         (theCodeValue?.trim() || trailerNumValue?.trim()) &&
         (!violationCategoryValue || violationCategoryValue === "")
@@ -129,40 +122,27 @@ pendingPayment.filterPaymentsLog = () => {
     let ViolationType;
     let ViolationSector;
 
-    // Check if all filters are empty
     if (
-        (ViolationTypeVal == "" || ViolationTypeVal == "0") &&
-        (ViolationSectorVal == "" || ViolationSectorVal == "0") &&
-        violationCode == "" &&
-        violationZone == "" &&
-        violatorName == "" &&
-        companyName == "" &&
-        theCodeValue == "" &&
-        createdFrom == "" &&
-        createdTo == ""
-    ) {
+        ViolationTypeVal == "" &&
+        ViolationSectorVal == "") {
         functions.warningAlert(
             "من فضلك قم بإدخال قيمة واحدة على الأقل من قيم البحث"
         );
-        return;
+    } else if (
+        ViolationSectorVal != "" ||
+        ViolationTypeVal != "0") {
+
+        $(".overlay").addClass("active");
+        ViolationSector = Number($("#violationSector").children("option:selected").val());
+        ViolationType = Number($("#TypeofViolation").children("option:selected").data("id"));
+
+        pendingPayment.getPendingPayment(
+            pageIndex,
+            true,
+            ViolationSector,
+            ViolationType
+        );
     }
-
-    $(".overlay").addClass("active");
-
-    ViolationSector = Number(
-        $("#violationSector").children("option:selected").val()
-    );
-
-    ViolationType = Number(
-        $("#TypeofViolation").children("option:selected").data("id")
-    );
-
-    pendingPayment.getPendingPayment(
-        pageIndex,
-        true,
-        ViolationSector,
-        ViolationType
-    );
 };
 
 pendingPayment.resetFilter = (e) => {
@@ -188,27 +168,36 @@ pendingPayment.resetFilter = (e) => {
 pendingPayment.handleViolationCategoryChange = () => {
     $("#violationCategory").on("change", function () {
         const selectedCategory = $(this).val();
+
         const $theCodeField = $("#theCode");
         const $typeOfViolationField = $("#TypeofViolation");
+        const $trailerNumField = $("#trailerNum");
 
-        // First, enable both fields
+        // Default: enable all
         $theCodeField.prop("disabled", false);
         $typeOfViolationField.prop("disabled", false);
+        $trailerNumField.prop("disabled", false);
 
-        // Handle "Equipment" selection
         if (selectedCategory === "Equipment") {
-            $theCodeField.prop("disabled", true).val(""); // Disable and clear the field
-            $typeOfViolationField.prop("disabled", true).val("0"); // Disable and set to default
+            $theCodeField.prop("disabled", true).val("");
+            $typeOfViolationField.prop("disabled", true).val("0");
+            $trailerNumField.prop("disabled", true).val("");
         }
-
-        // Handle "Vehicle" selection
         else if (selectedCategory === "Vehicle") {
-            $typeOfViolationField.prop("disabled", true).val("0"); // Disable and set to default
-            // theCode field remains enabled
+            // Vehicle allows trailer number
+            $typeOfViolationField.prop("disabled", true).val("0");
+            $trailerNumField.prop("disabled", false);
+        }
+        else if (selectedCategory === "Quarry") {
+            // Quarry doesn't allow trailer number
+            $trailerNumField.prop("disabled", true).val("");
+        }
+        else {
+            // No category selected
+            $trailerNumField.prop("disabled", true).val("");
         }
     });
 };
-
 const originalResetFilter = pendingPayment.resetFilter;
 pendingPayment.resetFilter = function (e) {
     // Call the original resetFilter function
@@ -217,6 +206,9 @@ pendingPayment.resetFilter = function (e) {
     // Re-enable both fields after reset
     $("#theCode").prop("disabled", false);
     $("#TypeofViolation").prop("disabled", false);
+
+    // No category selected after reset
+    $("#trailerNum").prop("disabled", true).val("");
 };
 
 pendingPayment.exportToExcel = () => {
@@ -288,37 +280,43 @@ pendingPayment.exportToExcel = () => {
             title: "رقم المحجر/العربة",
             render: (record) => {
                 const violation = record.Violation;
-                if (!violation) return "---";
+                if (!violation) return "-";
                 return violation.OffenderType === "Vehicle"
-                    ? (violation.CarNumber || "---")
-                    : (violation.QuarryCode || "---");
+                    ? (violation.CarNumber || "-")
+                    : (violation.QuarryCode || "-");
             },
+        },
+        {
+            title: "رقم المقطورة",
+            render: (record) =>
+                record.Violation?.TrailerNum || "-",
         },
         {
             title: "المنطقة",
             data: "Violation.ViolationsZone",
         },
         {
-            title: "تاريخ أخر قسط",
-            render: (record) => {
-                const installmentDate = record.Violation?.InstallmentDate;
-                return installmentDate ? functions.getFormatedDate(installmentDate) : "-";
-            },
+            title: "تاريخ أخر تسديد",
+            render: (record) => functions.getFormatedDate(record.Violation?.InstallmentDate),
         },
         {
             title: "المبلغ المسدد",
-            render: (record) => functions.splitBigNumbersByComma(record.Violation?.TotalInstallmentsPaidAmount || 0),
+            render: (record) => functions.getDisplayValue(record.Violation?.TotalInstallmentsPaidAmount, true),
         },
         {
             title: "المبلغ المتبقي",
-            render: (record) => functions.splitBigNumbersByComma(record.Violation?.RemainingAmount || 0),
+            render: (record) => functions.getDisplayValue(record.Violation?.RemainingAmount, true),
+        },
+        {
+            title: "إجمالي مبلغ المخالفة",
+            render: (record) => functions.getDisplayValue(record.Violation?.TotalPriceDue, true),
         },
         {
             title: "الإحداثيات",
             exportOnly: true,
             render: (record) => {
                 const violation = record.Violation;
-                if (!violation) return "---";
+                if (!violation) return "-";
 
                 // Try to get coordinates in degrees format first, fallback to regular format
                 const coordinatesDegrees = violation.CoordinatesDegrees;
@@ -349,7 +347,7 @@ pendingPayment.exportToExcel = () => {
                     }
                 }
 
-                return "---";
+                return "-";
             },
         },
     ];
@@ -374,9 +372,6 @@ pendingPayment.PendingPaymentTable = (PendingPaymentData, destroyTable) => {
     if (PendingPaymentData.length > 0) {
         PendingPaymentData.forEach((record) => {
             taskViolation = record.Violation;
-            let installmentDate = taskViolation?.InstallmentDate
-                ? functions.getFormatedDate(taskViolation.InstallmentDate)
-                : "-";
 
             if (taskViolation) {
                 data.push([
@@ -429,12 +424,14 @@ pendingPayment.PendingPaymentTable = (PendingPaymentData, destroyTable) => {
                         ? taskViolation.CarNumber
                         : taskViolation.QuarryCode != ""
                             ? taskViolation.QuarryCode
-                            : "---"
+                            : "-"
                     }</div>`,
-                    `<div class="violationZone">${taskViolation.ViolationsZone}</div>`,
-                    `${installmentDate || "-"}`,
-                    `${functions.splitBigNumbersByComma(taskViolation?.TotalInstallmentsPaidAmount || 0) || "-"}`,
-                    `${functions.splitBigNumbersByComma(taskViolation?.RemainingAmount || 0) || "-"}`,
+                    `<div class="trailerNum">${taskViolation?.TrailerNum || "-"}</div>`,
+                    `<div class="violationZone">${taskViolation.ViolationsZone || "-"}</div>`,
+                    `${functions.getFormatedDate(taskViolation?.InstallmentDate) || "-"}`,
+                    `${functions.getDisplayValue(taskViolation?.TotalInstallmentsPaidAmount, true)}`,
+                    `${functions.getDisplayValue(taskViolation?.RemainingAmount, true)}`,
+                    `${functions.getDisplayValue(taskViolation?.TotalPriceDue, true)}`,
                 ]);
             }
         });
@@ -455,10 +452,12 @@ pendingPayment.PendingPaymentTable = (PendingPaymentData, destroyTable) => {
             { title: "إسم المخالف" },
             { title: "إسم الشركة المخالفة" },
             { title: " رقم المحجر/العربة" },
+            { title: "رقم المقطورة" },
             { title: "المنطقة" },
             { title: "تاريخ أخر قسط" },
             { title: "المبلغ المسدد" },
             { title: "المبلغ المتبقي" },
+            { title: "إجمالي مبلغ المخالفة" },
         ],
         false,
         false,
@@ -675,19 +674,19 @@ pendingPayment.paymentFormHtml = (TaskData) => {
         <div class="col-md-4 violationPriceBox">
             <div class="form-group customFormGroup">
                 <label for="quarryPrice" class="customLabel">${labelText}</label>
-                <input class="form-control customInput quarryPrice disabledInput" id="quarryPrice" type="text" value="${functions.splitBigNumbersByComma(inputVal)}" disabled>
+                <input class="form-control customInput quarryPrice disabledInput" id="quarryPrice" type="text" value="${functions.getDisplayValue(inputVal, true)}" disabled>
             </div>
         </div>
         <div class="col-md-4 royaltyPriceBox">
             <div class="form-group customFormGroup">
                 <label for="royaltyPrice" class="customLabel">قيمة الإتاوة</label>
-                <input class="form-control customInput royaltyPrice disabledInput" id="royaltyPrice" type="text" value="${functions.splitBigNumbersByComma(violationData?.LawRoyalty)}" disabled>
+                <input class="form-control customInput royaltyPrice disabledInput" id="royaltyPrice" type="text" value="${functions.getDisplayValue(violationData?.LawRoyalty, true)}" disabled>
             </div>
         </div>
         <div class="col-md-4 equipmentsPriceBox">
             <div class="form-group customFormGroup">
                 <label for="equipmentsPrice" class="customLabel">غرامة المعدات</label>
-                <input class="form-control customInput equipmentsPrice disabledInput" id="equipmentsPrice" type="text" value="${functions.splitBigNumbersByComma(violationData?.TotalEquipmentsPrice)}" disabled>
+                <input class="form-control customInput equipmentsPrice disabledInput" id="equipmentsPrice" type="text" value="${functions.getDisplayValue(violationData?.TotalEquipmentsPrice, true)}" disabled>
             </div>
         </div>
     `;
@@ -696,13 +695,13 @@ pendingPayment.paymentFormHtml = (TaskData) => {
         <div class="col-md-6">
             <div class="form-group customFormGroup">
                 <label for="quarryPrice" class="customLabel">${labelText}</label>
-                <input class="form-control customInput quarryPrice disabledInput" id="quarryPrice" type="text" value="${functions.splitBigNumbersByComma(inputVal)}" disabled>
+                <input class="form-control customInput quarryPrice disabledInput" id="quarryPrice" type="text" value="${functions.getDisplayValue(inputVal, true)}" disabled>
             </div>
         </div>
         <div class="col-md-6">
             <div class="form-group customFormGroup">
                 <label for="royaltyPrice" class="customLabel">قيمة الإتاوة</label>
-                <input class="form-control customInput royaltyPrice disabledInput" id="royaltyPrice" type="text" value="${functions.splitBigNumbersByComma(violationData?.LawRoyalty)}" disabled>
+                <input class="form-control customInput royaltyPrice disabledInput" id="royaltyPrice" type="text" value="${functions.getDisplayValue(violationData?.LawRoyalty, true)}" disabled>
             </div>
         </div>
     `;
@@ -711,7 +710,7 @@ pendingPayment.paymentFormHtml = (TaskData) => {
         <div class="col-md-12 equipmentsPriceBox">
             <div class="form-group customFormGroup">
                 <label for="equipmentsPrice" class="customLabel">غرامة المعدات</label>
-                <input class="form-control customInput equipmentsPrice disabledInput" id="equipmentsPrice" type="text" value="${functions.splitBigNumbersByComma(violationData?.TotalEquipmentsPrice)}" disabled>
+                <input class="form-control customInput equipmentsPrice disabledInput" id="equipmentsPrice" type="text" value="${functions.getDisplayValue(violationData?.TotalEquipmentsPrice, true)}" disabled>
             </div>
         </div>
     `;
@@ -743,7 +742,7 @@ pendingPayment.paymentFormHtml = (TaskData) => {
                                     <div class="form-group customFormGroup">
                                         <label for="totalPrice" class="customLabel">إجمالي قيمة المخالفة</label>
                                         <input class="form-control customInput totalPrice disabledInput" id="totalPrice" type="text" 
-                                              value="${functions.splitBigNumbersByComma(violationData?.TotalPriceDue) || ""}" disabled>
+                                              value="${functions.getDisplayValue(violationData?.TotalPriceDue, true) || ""}" disabled>
                                     </div>
                                     
                                     <div class="form-group customFormGroup">
@@ -758,7 +757,7 @@ pendingPayment.paymentFormHtml = (TaskData) => {
                                     <div class="form-group customFormGroup actualRemainigPriceBox">
                                         <label class="customLabel">المبلغ المتبقي</label>
                                         <input class="form-control customInput disabledInput remainingAmount" type="text" 
-                                               value="${functions.splitBigNumbersByComma(violationData?.RemainingAmount) || ""}" disabled>
+                                               value="${functions.getDisplayValue(violationData?.RemainingAmount, true) || ""}" disabled>
                                     </div>
                                     
                                     <div class="form-group customFormGroup">
@@ -885,19 +884,19 @@ pendingPayment.showInstallmentPaymentPopup = (TaskData) => {
         <div class="col-md-4 violationPriceBox">
             <div class="form-group customFormGroup">
                 <label for="quarryPrice" class="customLabel">${labelText}</label>
-                <input class="form-control customInput quarryPrice disabledInput" id="quarryPrice" type="text" value="${functions.splitBigNumbersByComma(inputVal)}" disabled>
+                <input class="form-control customInput quarryPrice disabledInput" id="quarryPrice" type="text" value="${functions.getDisplayValue(inputVal, true)}" disabled>
             </div>
         </div>
         <div class="col-md-4 royaltyPriceBox">
             <div class="form-group customFormGroup">
                 <label for="royaltyPrice" class="customLabel">قيمة الإتاوة</label>
-                <input class="form-control customInput royaltyPrice disabledInput" id="royaltyPrice" type="text" value="${functions.splitBigNumbersByComma(violationData?.LawRoyalty)}" disabled>
+                <input class="form-control customInput royaltyPrice disabledInput" id="royaltyPrice" type="text" value="${functions.getDisplayValue(violationData?.LawRoyalty, true)}" disabled>
             </div>
         </div>
         <div class="col-md-4 equipmentsPriceBox">
             <div class="form-group customFormGroup">
                 <label for="equipmentsPrice" class="customLabel">غرامة المعدات</label>
-                <input class="form-control customInput equipmentsPrice disabledInput" id="equipmentsPrice" type="text" value="${functions.splitBigNumbersByComma(violationData?.TotalEquipmentsPrice)}" disabled>
+                <input class="form-control customInput equipmentsPrice disabledInput" id="equipmentsPrice" type="text" value="${functions.getDisplayValue(violationData?.TotalEquipmentsPrice, true)}" disabled>
             </div>
         </div>
     `;
@@ -906,13 +905,13 @@ pendingPayment.showInstallmentPaymentPopup = (TaskData) => {
         <div class="col-md-6">
             <div class="form-group customFormGroup">
                 <label for="quarryPrice" class="customLabel">${labelText}</label>
-                <input class="form-control customInput quarryPrice disabledInput" id="quarryPrice" type="text" value="${functions.splitBigNumbersByComma(inputVal)}" disabled>
+                <input class="form-control customInput quarryPrice disabledInput" id="quarryPrice" type="text" value="${functions.getDisplayValue(inputVal, true)}" disabled>
             </div>
         </div>
         <div class="col-md-6">
             <div class="form-group customFormGroup">
                 <label for="royaltyPrice" class="customLabel">قيمة الإتاوة</label>
-                <input class="form-control customInput royaltyPrice disabledInput" id="royaltyPrice" type="text" value="${functions.splitBigNumbersByComma(violationData?.LawRoyalty)}" disabled>
+                <input class="form-control customInput royaltyPrice disabledInput" id="royaltyPrice" type="text" value="${functions.getDisplayValue(violationData?.LawRoyalty, true)}" disabled>
             </div>
         </div>
     `;
@@ -921,7 +920,7 @@ pendingPayment.showInstallmentPaymentPopup = (TaskData) => {
         <div class="col-md-12 equipmentsPriceBox">
             <div class="form-group customFormGroup">
                 <label for="equipmentsPrice" class="customLabel">غرامة المعدات</label>
-                <input class="form-control customInput equipmentsPrice disabledInput" id="equipmentsPrice" type="text" value="${functions.splitBigNumbersByComma(violationData?.TotalEquipmentsPrice)}" disabled>
+                <input class="form-control customInput equipmentsPrice disabledInput" id="equipmentsPrice" type="text" value="${functions.getDisplayValue(violationData?.TotalEquipmentsPrice, true)}" disabled>
             </div>
         </div>
     `;
@@ -950,7 +949,7 @@ pendingPayment.showInstallmentPaymentPopup = (TaskData) => {
                                     <div class="form-group customFormGroup">
                                         <label for="totalPrice" class="customLabel">إجمالي قيمة المخالفة</label>
                                         <input class="form-control customInput totalPrice disabledInput" id="totalPrice" type="text" 
-                                              value="${functions.splitBigNumbersByComma(violationData?.TotalPriceDue) || ""}" disabled>
+                                              value="${functions.getDisplayValue(violationData?.TotalPriceDue, true)}" disabled>
                                     </div>
                                     
                                     <div class="form-group customFormGroup">
@@ -965,7 +964,7 @@ pendingPayment.showInstallmentPaymentPopup = (TaskData) => {
                                     <div class="form-group customFormGroup actualRemainigPriceBox">
                                         <label class="customLabel">المبلغ المتبقي</label>
                                         <input class="form-control customInput disabledInput remainingAmount" type="text" 
-                                               value="${functions.splitBigNumbersByComma(violationData?.RemainingAmount) || ""}" disabled>
+                                               value="${functions.getDisplayValue(violationData?.RemainingAmount, true) || ""}" disabled>
                                     </div>
                                     
                                     <div class="form-group customFormGroup">

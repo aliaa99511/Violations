@@ -2,6 +2,7 @@ import functions from "../../Shared/functions";
 import DetailsPopup from "../../Shared/detailsPopupContent";
 import confirmPopup from "../../Shared/confirmationPopup";
 import pagination from "../../Shared/Pagination";
+import ViolationHistoryLogs from "../../Shared/ViolationHistoryLogs";
 
 let validatedViolations = {};
 validatedViolations.pageIndex = 1;
@@ -57,6 +58,7 @@ validatedViolations.getValidatedViolations = (
       ColName: "created",
       SortOrder: "desc",
       Status: selectedStatus,
+      IsExternalRecord: false,
       MultipleStatus: multipleStatus, // Use dynamic multipleStatus
       ViolatorName: $("#violatorName").val(),
       NationalID: $("#nationalID").val(),
@@ -189,23 +191,33 @@ validatedViolations.setPaginations = (TotalPages, RowsPerPage) => {
 validatedViolations.handleViolationCategoryChange = () => {
   $("#violationCategory").on("change", function () {
     const selectedCategory = $(this).val();
+
     const $theCodeField = $("#theCode");
     const $typeOfViolationField = $("#TypeofViolation");
+    const $trailerNumField = $("#trailerNum");
 
-    // First, enable both fields
+    // Default: enable all
     $theCodeField.prop("disabled", false);
     $typeOfViolationField.prop("disabled", false);
+    $trailerNumField.prop("disabled", false);
 
-    // Handle "Equipment" selection
     if (selectedCategory === "Equipment") {
-      $theCodeField.prop("disabled", true).val(""); // Disable and clear the field
-      $typeOfViolationField.prop("disabled", true).val("0"); // Disable and set to default
+      $theCodeField.prop("disabled", true).val("");
+      $typeOfViolationField.prop("disabled", true).val("0");
+      $trailerNumField.prop("disabled", true).val("");
     }
-
-    // Handle "Vehicle" selection
     else if (selectedCategory === "Vehicle") {
-      $typeOfViolationField.prop("disabled", true).val("0"); // Disable and set to default
-      // theCode field remains enabled
+      // Vehicle allows trailer number
+      $typeOfViolationField.prop("disabled", true).val("0");
+      $trailerNumField.prop("disabled", false);
+    }
+    else if (selectedCategory === "Quarry") {
+      // Quarry doesn't allow trailer number
+      $trailerNumField.prop("disabled", true).val("");
+    }
+    else {
+      // No category selected
+      $trailerNumField.prop("disabled", true).val("");
     }
   });
 };
@@ -217,8 +229,10 @@ validatedViolations.resetFilter = function (e) {
   // Re-enable both fields after reset
   $("#theCode").prop("disabled", false);
   $("#TypeofViolation").prop("disabled", false);
-};
 
+  // No category selected after reset
+  $("#trailerNum").prop("disabled", true).val("");
+};
 
 /////////////////////////////////////////
 validatedViolations.exportToExcel = () => {
@@ -273,7 +287,7 @@ validatedViolations.exportToExcel = () => {
   const allColumns = [
     {
       title: "رقم المخالفة",
-      render: (record) => record.Violation?.ViolationCode || "----",
+      render: (record) => record.Violation?.ViolationCode || "-",
     },
     {
       title: "",
@@ -324,8 +338,8 @@ validatedViolations.exportToExcel = () => {
       title: "رقم المحجر / العربة",
       render: (record) => {
         const violation = record.Violation;
-        if (!violation) return "---";
-        return violation.OffenderType === "Vehicle" ? (violation.CarNumber || "---") : (violation.QuarryCode || "---");
+        if (!violation) return "-";
+        return violation.OffenderType === "Vehicle" ? (violation.CarNumber || "-") : (violation.QuarryCode || "-");
       },
     },
     {
@@ -336,37 +350,30 @@ validatedViolations.exportToExcel = () => {
     {
       title: "المنطقة",
       render: (record) =>
-        record.Violation?.ViolationsZone || "----",
+        record.Violation?.ViolationsZone || "-",
     },
     {
       title: "مبلغ المادة المحجرية",
       render: (record) => {
-        const value = record.Violation?.TotalPriceDue;
-
-        return value && value > 0 ? value : "-";
+        return functions.getDisplayValue(record.Violation?.TotalPriceDue, true);
       },
     },
     {
       title: "قيمة الإتاوة",
       render: (record) => {
-        const value = record.Violation?.LawRoyalty;
-
-        return value && value > 0 ? value : "-";
+        return functions.getDisplayValue(record.Violation?.LawRoyalty, true);
       },
     },
     {
       title: "قيمة المعدة",
       render: (record) => {
-        const value = record.Violation?.TotalEquipmentsPrice;
-
-        return value && value > 0 ? value : "-";
+        return functions.getDisplayValue(record.Violation?.TotalEquipmentsPrice, true);
       },
     },
     {
       title: "الكمية",
       render: (record) => {
-        const value = record.Violation?.TotalQuantity;
-        return value && value > 0 ? value : "-";
+        return functions.getDisplayValue(record.Violation?.TotalQuantity, true);
       },
     },
     {
@@ -411,14 +418,14 @@ validatedViolations.exportToExcel = () => {
     {
       title: "موقف الإحالة",
       render: (record) =>
-        record?.ReferralStatus || "----",
+        record?.ReferralStatus || "-",
     },
     {
       title: "الإحداثيات",
       exportOnly: true,
       render: (record) => {
         const violation = record.Violation;
-        if (!violation) return "---";
+        if (!violation) return "-";
 
         // Try to get coordinates in degrees format first, fallback to regular format
         const coordinatesDegrees = violation.CoordinatesDegrees;
@@ -449,7 +456,7 @@ validatedViolations.exportToExcel = () => {
           }
         }
 
-        return "---";
+        return "-";
       },
     },
   ];
@@ -527,6 +534,7 @@ validatedViolations.ValidatedViolationTable = (ValidatedViolation, destroyTable)
             data-totalinstallmentspaidamount="${taskViolation?.TotalInstallmentsPaidAmount}"
             data-remainingamount="${taskViolation?.RemainingAmount}"
             data-refundstatus="${record.RefundStatus || ''}"
+            data-isrefunded="${record.IsRefunded}"
             >
             ${taskViolation?.ViolationCode || "-"}
         </div>`,
@@ -601,21 +609,13 @@ validatedViolations.ValidatedViolationTable = (ValidatedViolation, destroyTable)
           ${taskViolation?.ViolationsZone || "-"}
         </div>`,
 
-        `${taskViolation?.TotalPriceDue > 0
-          ? taskViolation?.TotalPriceDue
-          : "-"}`,
+        `${functions.getDisplayValue(taskViolation?.TotalPriceDue, true)}`,
 
-        `${taskViolation?.LawRoyalty > 0
-          ? taskViolation?.LawRoyalty
-          : "-"}`,
+        `${functions.getDisplayValue(taskViolation?.LawRoyalty, true)}`,
 
-        `${taskViolation?.TotalEquipmentsPrice > 0
-          ? taskViolation?.TotalEquipmentsPrice
-          : "-"}`,
+        `${functions.getDisplayValue(taskViolation?.TotalEquipmentsPrice, true)}`,
 
-        `${taskViolation?.TotalQuantity > 0
-          ? taskViolation?.TotalQuantity
-          : "-"}`,
+        `${functions.getDisplayValue(taskViolation?.TotalQuantity, true)}`,
 
         `${validatedViolations.getViolationStatus(record.Status)}`,
 
@@ -626,9 +626,7 @@ validatedViolations.ValidatedViolationTable = (ValidatedViolation, destroyTable)
           : "-"
         }`,
 
-        `<div class="referralStatus">
-            ${functions.getCaseStatus(caseStatus)}
-        </div>`,
+        `<div class="referralStatus">${functions.getCaseStatus(caseStatus)}</div>`,
       ]);
     });
   }
@@ -711,11 +709,17 @@ validatedViolations.ValidatedViolationTable = (ValidatedViolation, destroyTable)
       let PetitionStatus = jQueryRecord.find(".violationId").data("petitionstatus");
       let TotalInstallmentsPaidAmount = jQueryRecord.find(".violationId").data("totalinstallmentspaidamount");
       let RemainingAmount = jQueryRecord.find(".violationId").data("remainingamount");
+      // let IsRefunded = jQueryRecord.find(".violationId").data("isrefunded");
 
-      let RemainingPrice = TotalInstallmentsPaidAmount - RemainingAmount;
+      const RemainingPrice =
+        TotalInstallmentsPaidAmount > TotalPrice
+          ? TotalInstallmentsPaidAmount - TotalPrice
+          : 0
+
+      const RemainingPriceCalculate = TotalInstallmentsPaidAmount - TotalPrice
 
       const canRefund =
-        RemainingPrice > 0 &&
+        RemainingPriceCalculate > 0 &&
         PetitionStatus === "قبول مع التعديل" &&
         (taskStatus === "UnderPayment" || taskStatus === "Paid")
 
@@ -777,7 +781,7 @@ validatedViolations.ValidatedViolationTable = (ValidatedViolation, destroyTable)
       }
 
       // Show request petition in all cases except Paid
-      if (taskStatus !== "Paid") {
+      if (PetitionStatus != "التماس قيد الإنتظار") {
         controlsList.append(`
           <li><a href="#" class="requestPetition">تقديم بيان التماس</a></li>
         `);
@@ -794,9 +798,10 @@ validatedViolations.ValidatedViolationTable = (ValidatedViolation, destroyTable)
       if (canRefund) {
         // Get RefundStatus from the data attribute
         const refundStatus = jQueryRecord.find(".violationId").data("refundstatus");
+        let IsRefunded = jQueryRecord.find(".violationId").data("isrefunded");
 
         // Only show refund button if not already refunded
-        if (refundStatus !== "Refunded") {
+        if (IsRefunded === false) {
           hiddenListBox.find(".controlsList").append(`
             <li><a href="#" class="refundViolation" data-remaining="${RemainingPrice}">استرداد المبلغ</a></li>
           `);
@@ -866,10 +871,6 @@ validatedViolations.ValidatedViolationTable = (ValidatedViolation, destroyTable)
 
       jQueryRecord.find(".controls").children(".hiddenListBox").find(".reffereViolationVehicle").on("click", (e) => {
         $(".overlay").addClass("active");
-        console.log(TotalPrice,
-          IsDublicated,
-          QuarryMaterialValue,
-          LawRoyalty)
         validatedViolations.reffereViolationToCase(
           violationTaskID,
           violationID,
@@ -1053,14 +1054,12 @@ validatedViolations.findViolationByID = (
         PrintedCount;
       if (data != null) {
         TaskData = data.d;
-
         violationData = TaskData.Violation;
-
         TaskId = TaskData.ID;
-
         ExDate = functions.getFormatedDate(TaskData.ReconciliationExpiredDate);
         violationOffenderType = violationData.OffenderType;
         PrintedCount = TaskData.PrintedCount;
+
         if (violationOffenderType == "Quarry") {
           if (popupType == "PaymentForm") {
             $(".overlay").removeClass("active");
@@ -1322,8 +1321,6 @@ validatedViolations.printPaymentFormOnly = (event, taskID) => {
     });
 };
 
-//////////////////////////////////////////////////
-
 validatedViolations.setExpirationDate = (
   TaskId,
   PrintedCount,
@@ -1414,8 +1411,6 @@ validatedViolations.popupPermissionShowTypes = (popupType, TaskId, ExDate) => {
   }
 };
 
-
-////////////////////////////////////////
 validatedViolations.paymentFormHtml = (TaskData) => {
   let offenderType = TaskData.Violation.OffenderType;
   let violationPriceType =
@@ -1451,25 +1446,19 @@ validatedViolations.paymentFormHtml = (TaskData) => {
         <div class="col-md-4 violationPriceBox">
             <div class="form-group customFormGroup">
                 <label for="quarryPrice" class="customLabel">${labelText}</label>
-                <input class="form-control customInput quarryPrice disabledInput" id="quarryPrice" type="text" value="${functions.splitBigNumbersByComma(
-    inputVal,
-  )}" disabled>
+                <input class="form-control customInput quarryPrice disabledInput" id="quarryPrice" type="text" value="${functions.getDisplayValue(inputVal, true)}" disabled>
             </div>
         </div>
         <div class="col-md-4 royaltyPriceBox">
             <div class="form-group customFormGroup">
                 <label for="royaltyPrice" class="customLabel">قيمة الإتاوة</label>
-                <input class="form-control customInput royaltyPrice disabledInput" id="royaltyPrice" type="text" value="${functions.splitBigNumbersByComma(
-    TaskData?.Violation?.LawRoyalty,
-  )}" disabled>
+                <input class="form-control customInput royaltyPrice disabledInput" id="royaltyPrice" type="text" value="${functions.getDisplayValue(TaskData?.Violation?.LawRoyalty, true)}" disabled>
             </div>
         </div>
         <div class="col-md-4 equipmentsPriceBox">
             <div class="form-group customFormGroup">
                 <label for="equipmentsPrice" class="customLabel">غرامة المعدات</label>
-                <input class="form-control customInput equipmentsPrice disabledInput" id="equipmentsPrice" type="text" value="${functions.splitBigNumbersByComma(
-    TaskData?.Violation?.TotalEquipmentsPrice,
-  )}" disabled>
+                <input class="form-control customInput equipmentsPrice disabledInput" id="equipmentsPrice" type="text" value="${functions.getDisplayValue(TaskData?.Violation?.TotalEquipmentsPrice, true)}" disabled>
             </div>
         </div>
     `;
@@ -1479,17 +1468,13 @@ validatedViolations.paymentFormHtml = (TaskData) => {
         <div class="col-md-6">
             <div class="form-group customFormGroup">
                 <label for="quarryPrice" class="customLabel">${labelText}</label>
-                <input class="form-control customInput quarryPrice disabledInput" id="quarryPrice" type="text" value="${functions.splitBigNumbersByComma(
-    inputVal,
-  )}" disabled>
+                <input class="form-control customInput quarryPrice disabledInput" id="quarryPrice" type="text" value="${functions.getDisplayValue(inputVal, true)}" disabled>
             </div>
         </div>
         <div class="col-md-6">
             <div class="form-group customFormGroup">
                 <label for="royaltyPrice" class="customLabel">قيمة الإتاوة</label>
-                <input class="form-control customInput royaltyPrice disabledInput" id="royaltyPrice" type="text" value="${functions.splitBigNumbersByComma(
-    TaskData?.Violation?.LawRoyalty,
-  )}" disabled>
+                <input class="form-control customInput royaltyPrice disabledInput" id="royaltyPrice" type="text" value="${functions.getDisplayValue(TaskData?.Violation?.LawRoyalty, true)}" disabled>
             </div>
     </div>
     `;
@@ -1503,9 +1488,7 @@ validatedViolations.paymentFormHtml = (TaskData) => {
                 class="form-control customInput equipmentsPrice disabledInput"
                 id="equipmentsPrice"
                 type="text"
-                value="${functions.splitBigNumbersByComma(
-    TaskData?.Violation?.TotalEquipmentsPrice
-  )}"
+                value="${functions.getDisplayValue(TaskData?.Violation?.TotalEquipmentsPrice, true)}"
                 disabled
             >
         </div>
@@ -1540,22 +1523,18 @@ validatedViolations.paymentFormHtml = (TaskData) => {
                                     <div class="form-group customFormGroup">
                                         <label for="totalPrice" class="customLabel">المبلغ المطلوب تسديده كامل</label>
                                         <input class="form-control customInput totalPrice disabledInput" id="totalPrice" type="text" 
-                                              value="${functions.splitBigNumbersByComma(
-      TaskData?.Violation?.TotalPriceDue,
-    )}" disabled>
+                                              value="${functions.getDisplayValue(TaskData?.Violation?.TotalPriceDue, true)}" disabled>
                                     </div>
                                     <div class="form-group customFormGroup">
                                         <label for="reconciliationPeriod" class="customLabel">تاريخ نهاية مدة التصالح</label>
                                         <div class="inputIconBox">
-                                            <input class="form-control customInput reconciliationPeriod disabledInput" id="reconciliationPeriod" type="text" 
-                                                    value="${functions.getFormatedDate(
-      TaskData?.ReconciliationExpiredDate,
-    ) == "01-01-2001"
-      ? "-"
-      : functions.getFormatedDate(
-        TaskData?.ReconciliationExpiredDate,
-      )
-    }" disabled>
+                                        <input
+                                          class="form-control customInput reconciliationPeriod disabledInput"
+                                          id="reconciliationPeriod"
+                                          type="text"
+                                          value="${functions.getFormatedDateInPayment(TaskData?.ReconciliationExpiredDate)}"
+                                          disabled
+                                        >
                                             <i class="fa-solid fa-calendar-days"></i>
                                         </div>
                                     </div>
@@ -1567,9 +1546,7 @@ validatedViolations.paymentFormHtml = (TaskData) => {
                                       <input
                                         class="form-control customInput disabledInput remainingAmount"
                                         type="text"
-                                        value="${functions.splitBigNumbersByComma(
-      TaskData?.Violation?.RemainingAmount
-    )}"
+                                        value="${functions.getDisplayValue(TaskData?.Violation?.RemainingAmount, true)}"
                                         disabled
                                       />
                                     </div>
@@ -1626,11 +1603,7 @@ validatedViolations.paymentFormHtml = (TaskData) => {
     }
                                     
                                     <div class="form-group customFormGroup payEquipmentsAttachBox" 
-                                          style="display:${offenderType == "Quarry" ||
-      offenderType == "Equipment"
-      ? "block !important"
-      : "none !important"
-    }">
+                                          style="display:${offenderType == "Quarry" || offenderType == "Equipment" ? "block !important" : "none !important"}">
                                         <label for="attachEquipmentsPaymentReceipt" class="customLabel">إرفاق إيصال غرامة المعدات * </label>
                                         <div class="fileBox" id="dropContainer">
                                             <div class="inputFileBox">
@@ -1679,95 +1652,54 @@ validatedViolations.paymentFormActions = () => {
   let taskId = $(".paymentForm").data("taskid");
   let violationId = $(".paymentForm").data("violationid");
   let TotalPrice = Number($(".paymentForm").data("totalprice"));
-  let remainingAmount = Number(
-    $(".remainingAmount").val()?.replace(/,/g, "") || 0
-  );
-  let totalInstallmentsPaidAmount = Number(
-    $(".paymentForm").data("totalinstallmentspaidamount") || 0
-  );
+  let remainingAmount = Number($(".remainingAmount").val()?.replace(/,/g, "") || 0);
+  let totalInstallmentsPaidAmount = Number($(".paymentForm").data("totalinstallmentspaidamount") || 0);
+
   let paymentDurationMonths = 2;
   let payedPrice = 0;
   let PositiveDecimalNumbers = /^[+]?([0-9]+(?:[\.][0-9]*)?|\.[0-9]+)$/;
 
   let filesExtension = [
-    "gif",
-    "svg",
-    "jpg",
-    "jpeg",
-    "png",
-    "doc",
-    "docx",
-    "pdf",
-    "xls",
-    "xlsx",
-    "pptx",
+    "gif", "svg", "jpg", "jpeg", "png",
+    "doc", "docx", "pdf", "xls", "xlsx", "pptx",
   ];
 
   $(".dropFilesArea").hide();
 
-  // =========================================
   // FILE STORAGE
-  // =========================================
-
   let paymentQuarryReceipt = null;
   let paymentRoyaltyReceipt = null;
   let paymentEquipmentsReceipt = null;
 
-  // =========================================
   // HELPERS
-  // =========================================
-
   function hasRoyaltyReceipt() {
-    return (
-      paymentRoyaltyReceipt &&
-      paymentRoyaltyReceipt.length > 0
-    );
+    return paymentRoyaltyReceipt && paymentRoyaltyReceipt.length > 0;
   }
 
   function hasQuarryReceipt() {
-    return (
-      paymentQuarryReceipt &&
-      paymentQuarryReceipt.length > 0
-    );
+    return paymentQuarryReceipt && paymentQuarryReceipt.length > 0;
   }
 
   function hasEquipmentsReceipt() {
-    return (
-      paymentEquipmentsReceipt &&
-      paymentEquipmentsReceipt.length > 0
-    );
+    return paymentEquipmentsReceipt && paymentEquipmentsReceipt.length > 0;
   }
 
-  // =========================================
   // VALIDATIONS
-  // =========================================
-
   function validateRoyaltyReceiptRequired() {
     let isVisible = $(".payRoyaltyAttachBox").is(":visible");
-    if (
-      isVisible &&
-      // lawRoyalty > 0 &&
-      !hasRoyaltyReceipt()
-    ) {
-      functions.warningAlert(
-        "من فضلك قم بإرفاق إيصال الإتاوة"
-      );
+    if (isVisible && !hasRoyaltyReceipt()) {
+      functions.warningAlert("من فضلك قم بإرفاق إيصال الإتاوة");
       return false;
     }
     return true;
   }
 
   function validateEquipmentReceiptRequired() {
-    // Check if equipment attachment is required based on offender type and price
     let isEquipmentVisible = $(".payEquipmentsAttachBox").is(":visible");
-
     if (isEquipmentVisible && !hasEquipmentsReceipt()) {
-      functions.warningAlert(
-        "من فضلك قم بإرفاق إيصال غرامة المعدات"
-      );
+      functions.warningAlert("من فضلك قم بإرفاق إيصال غرامة المعدات");
       return false;
     }
-
     return true;
   }
 
@@ -1783,30 +1715,16 @@ validatedViolations.paymentFormActions = () => {
 
   function validateAllAttachments() {
     if (offenderType === "Equipment") {
-      // For equipment, only validate equipment receipt
-      if (!validateEquipmentReceiptRequired()) {
-        return false;
-      }
+      if (!validateEquipmentReceiptRequired()) return false;
       return true;
     }
-
-    // For Quarry and Vehicle types
-    if (!validateQuarryReceiptRequired()) {
-      return false;
-    }
-    if (!validateRoyaltyReceiptRequired()) {
-      return false;
-    }
-    if (!validateEquipmentReceiptRequired()) {
-      return false;
-    }
+    if (!validateQuarryReceiptRequired()) return false;
+    if (!validateRoyaltyReceiptRequired()) return false;
+    if (!validateEquipmentReceiptRequired()) return false;
     return true;
   }
 
-  // =========================================
   // UI TOGGLE
-  // =========================================
-
   if ($(".installmentCheckbox").is(":checked")) {
     $(".payAllPrice").hide();
     $(".payInstallment").show();
@@ -1825,9 +1743,7 @@ validatedViolations.paymentFormActions = () => {
     }
   });
 
-  // =========================================
   // UI RULES
-  // =========================================
   if (offenderType === "Equipment") {
     // For equipment, show only equipment-related fields
     $(".payQuarryAttachBox").hide();
@@ -1852,10 +1768,8 @@ validatedViolations.paymentFormActions = () => {
       .removeClass("col-md-4")
       .addClass("col-md-7");
   }
-  // =========================================
-  // FILE UPLOAD HANDLER
-  // =========================================
 
+  // FILE UPLOAD HANDLER
   function handleFileUpload(selector, setFiles) {
     $(selector).on("change", (e) => {
       let files = e.currentTarget.files;
@@ -1864,16 +1778,8 @@ validatedViolations.paymentFormActions = () => {
         .siblings(".dropFilesArea");
       dropArea.empty();
 
-      // ============================
-      // EXTENSION VALIDATION
-      // ============================
-
       for (let i = 0; i < files.length; i++) {
-        let ext = files[i].name
-          .split(".")
-          .pop()
-          .toLowerCase();
-
+        let ext = files[i].name.split(".").pop().toLowerCase();
         if ($.inArray(ext, filesExtension) === -1) {
           functions.warningAlert(
             "من فضلك أدخل الملفات بالمرفقات المسموح بها فقط"
@@ -1885,15 +1791,7 @@ validatedViolations.paymentFormActions = () => {
         }
       }
 
-      // ============================
-      // SAVE FILES
-      // ============================
-
       setFiles(files);
-
-      // ============================
-      // SHOW FILES
-      // ============================
 
       if (files.length > 0) {
         dropArea.show();
@@ -1901,26 +1799,18 @@ validatedViolations.paymentFormActions = () => {
 
       for (let i = 0; i < files.length; i++) {
         dropArea.append(`
-          <div class="file">
-            <p class="fileName">${files[i].name}</p>
-            <span class="deleteFile" data-index="${i}">
-              <i class="fa-sharp fa-solid fa-x"></i>
-            </span>
-          </div>
+            <div class="file">
+                <p class="fileName">${files[i].name}</p>
+                <span class="deleteFile" data-index="${i}">
+                    <i class="fa-sharp fa-solid fa-x"></i>
+                </span>
+            </div>
         `);
       }
 
-      // ============================
-      // DELETE FILE
-      // ============================
-
       dropArea.find(".deleteFile").on("click", (event) => {
-        let index = $(event.currentTarget)
-          .closest(".file")
-          .index();
-        $(event.currentTarget)
-          .closest(".file")
-          .remove();
+        let index = $(event.currentTarget).closest(".file").index();
+        $(event.currentTarget).closest(".file").remove();
         let fileBuffer = new DataTransfer();
         for (let i = 0; i < files.length; i++) {
           if (index !== i) {
@@ -1936,35 +1826,20 @@ validatedViolations.paymentFormActions = () => {
     });
   }
 
-  // =========================================
   // REGISTER FILE HANDLERS
-  // =========================================
+  handleFileUpload("#attachQuarryPaymentReceipt", (files) => {
+    paymentQuarryReceipt = files;
+  });
 
-  handleFileUpload(
-    "#attachQuarryPaymentReceipt",
-    (files) => {
-      paymentQuarryReceipt = files;
-    }
-  );
+  handleFileUpload("#attachLawRoyaltyPaymentReceipt", (files) => {
+    paymentRoyaltyReceipt = files;
+  });
 
-  handleFileUpload(
-    "#attachLawRoyaltyPaymentReceipt",
-    (files) => {
-      paymentRoyaltyReceipt = files;
-    }
-  );
+  handleFileUpload("#attachEquipmentsPaymentReceipt", (files) => {
+    paymentEquipmentsReceipt = files;
+  });
 
-  handleFileUpload(
-    "#attachEquipmentsPaymentReceipt",
-    (files) => {
-      paymentEquipmentsReceipt = files;
-    }
-  );
-
-  // =========================================
   // INPUT FORMAT
-  // =========================================
-
   $(".payedPrice").on("keyup", (e) => {
     let val = $(e.currentTarget)
       .val()
@@ -1979,15 +1854,9 @@ validatedViolations.paymentFormActions = () => {
     return functions.isDecimalNumberKey(e);
   });
 
-  // =========================================
   // FULL PAYMENT
-  // =========================================
-
   $(".payAllPrice").on("click", () => {
-    if (
-      payedPrice === "" ||
-      !PositiveDecimalNumbers.test(payedPrice)
-    ) {
+    if (payedPrice === "" || !PositiveDecimalNumbers.test(payedPrice)) {
       functions.warningAlert(
         "من فضلك قم بإدخال المبلغ المراد تسديده وبشكل صحيح"
       );
@@ -2011,6 +1880,10 @@ validatedViolations.paymentFormActions = () => {
         ViolationId: violationId,
         ActualAmountPaid: Number(payedPrice),
         Status: "Paid",
+        Violation: {
+          RemainingAmount: 0,
+          TotalInstallmentsPaidAmount: totalInstallmentsPaidAmount + Number(payedPrice),
+        },
       },
     };
 
@@ -2024,21 +1897,15 @@ validatedViolations.paymentFormActions = () => {
     );
   });
 
-  // =========================================
   // INSTALLMENT PAYMENT
-  // =========================================
-
   $(".payInstallment").on("click", () => {
     if (!payedPrice || payedPrice <= 0) {
-      functions.warningAlert(
-        "من فضلك أدخل مبلغ صحيح"
-      );
+      functions.warningAlert("من فضلك أدخل مبلغ صحيح");
       return;
     }
+
     if (payedPrice > remainingAmount) {
-      functions.warningAlert(
-        "المبلغ المدخل أكبر من المبلغ المتبقي"
-      );
+      functions.warningAlert("المبلغ المدخل أكبر من المبلغ المتبقي");
       return;
     }
 
@@ -2046,6 +1913,8 @@ validatedViolations.paymentFormActions = () => {
       return;
     }
 
+    // Calculate actual remaining amount
+    let remainingAmount = TotalPrice - totalInstallmentsPaidAmount;
     let newRemainingAmount = remainingAmount - payedPrice;
     let isLastInstallment = newRemainingAmount === 0;
 
@@ -3125,6 +2994,7 @@ validatedViolations.refundViolation = (TaskId, ViolationId, RemainingPrice) => {
       ViolationId: ViolationId,
       Status: "Paid",
       RefundStatus: "Refunded",
+      IsRefunded: true,
       Comment: `تم تسديد المخالفة واسترداد المبلغ المستحق ${RemainingPrice}`
     }
   };
@@ -3150,160 +3020,11 @@ validatedViolations.refundViolation = (TaskId, ViolationId, RemainingPrice) => {
     });
 };
 ///////////////////////////////////////////////////
-const ViolationHistoryLogs = () => {
+// ===============================
+//  Violation History Tracking for External Violations
+// ===============================
+ViolationHistoryLogs.init(".contentContainer");
 
-  let selectedViolationId = null;
-  let selectedViolationCode = null;
-  let trackHistoryTable = null;
-
-  // ===============================
-  //  فتح المودال
-  // ===============================
-  $(".contentContainer").on("click", ".violationHistory", function (e) {
-    e.preventDefault();
-    e.stopPropagation();
-
-    selectedViolationId = $(this).data("violationid");
-    selectedViolationCode = $(this).data("violationcode");
-
-    $("#trackHistoryModal").modal("show");
-  });
-
-  // ===============================
-  //  إغلاق المودال - Close button handlers
-  // ===============================
-  const closeModal = () => {
-    $("#trackHistoryModal").modal("hide");
-
-    // Clear the modal content
-    $(".track-history-violation-code").text("");
-
-    if (trackHistoryTable) {
-      trackHistoryTable.clear().destroy();
-      trackHistoryTable = null;
-    }
-
-    $("#trackHistoryTable tbody").empty();
-  };
-
-  // Close button in header
-  $(document).on("click", "#closeViolationHistoryPopup", function (e) {
-    e.preventDefault();
-    e.stopPropagation();
-    closeModal();
-  });
-
-  // // Close button in footer
-  // $(document).on("click", "#closeViolationHistoryPopupFooter", function (e) {
-  //   e.preventDefault();
-  //   e.stopPropagation();
-  //   closeModal();
-  // });
-
-  // Bootstrap modal hide event
-  $("#trackHistoryModal").on("hidden.bs.modal", function () {
-    closeModal();
-  });
-
-  // ===============================
-  //  لما المودال يفتح
-  // ===============================
-  $(".track-history-modal").on("shown.bs.modal", function () {
-
-    $(".track-history-violation-code").text(selectedViolationCode);
-
-    const request = {
-      Request: {
-        ViolationId: selectedViolationId,
-      },
-    };
-
-    const tableElement = $("#trackHistoryTable");
-
-    // init
-    if (!trackHistoryTable) {
-
-      trackHistoryTable = tableElement.DataTable({
-        processing: true,
-        paging: false,
-        responsive: true,
-        destroy: true,
-        // ordering: false,
-        // searching: false,
-        // info: false,
-
-        ajax: {
-          url: "/_layouts/15/Uranium.Violations.SharePoint/ViolationHistoryLogs.aspx/Search",
-          type: "POST",
-          contentType: "application/json",
-          data: () => JSON.stringify(request),
-
-          dataSrc: (data) => {
-            return data?.d?.Result?.GridData || [];
-          }
-        },
-
-        columns: [
-          {
-            data: null,
-            render: (data, type, row, meta) => {
-              return meta.row;
-            }
-          },
-          {
-            data: "Status",
-            render: (data) => {
-              return data || "-";
-            }
-          },
-          {
-            data: "Created",
-            render: (data) =>
-              data ? functions.getFormatedDate(data) : "-"
-          },
-          {
-            data: "CreatedBy",
-            render: (data) => {
-              return data || "-";
-            }
-          },
-          {
-            data: "Comment",
-            render: (data) => {
-              return data || "-";
-            }
-          }
-        ],
-
-        language: {
-          emptyTable: "لا توجد بيانات",
-        }
-      });
-
-    } else {
-
-      // just Reload 
-      trackHistoryTable.ajax.reload();
-    }
-  });
-
-  // ===============================
-  //  لما المودال يقفل
-  // ===============================
-  $(".track-history-modal").on("hidden.bs.modal", function () {
-
-    $(".track-history-violation-code").text("");
-
-    if (trackHistoryTable) {
-      trackHistoryTable.clear().destroy();
-      trackHistoryTable = null;
-    }
-
-    $("#trackHistoryTable tbody").empty();
-  });
-
-};
-ViolationHistoryLogs();
 
 
 export default validatedViolations;

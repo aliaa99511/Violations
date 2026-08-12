@@ -690,6 +690,18 @@ functions.declarePopup = (styleClassName, Content) => {
     showclose: true,
   });
 };
+functions.declarePopupViolationHistory = (styleClassName, Content) => {
+  bootpopup({
+    content: [Content],
+    showclose: true,
+    before: function (popup) {
+      popup.modal.addClass(styleClassName);
+      popup.modal.attr("data-backdrop", "static");
+      popup.modal.attr("data-keyboard", "true");
+      popup.header.find(".modal-title").text("");
+    }
+  });
+};
 functions.showDropDownList = (e) => {
   $(e.currentTarget).find("p").toggleClass("rotateDDL");
   $(e.currentTarget).closest(".selectBox").find(".dropDownBox").slideToggle();
@@ -764,7 +776,6 @@ functions.inputDateFormat = (
   });
 };
 functions.getFormatedDate = (unFormattedDate, format = "DD-MM-YYYY") => {
-
   if (!unFormattedDate) return "-";
 
   let timestamp = null;
@@ -778,7 +789,6 @@ functions.getFormatedDate = (unFormattedDate, format = "DD-MM-YYYY") => {
       )
     );
   }
-
   // if regular Date
   else {
     timestamp = new Date(unFormattedDate).getTime();
@@ -786,11 +796,64 @@ functions.getFormatedDate = (unFormattedDate, format = "DD-MM-YYYY") => {
 
   if (!timestamp || isNaN(timestamp)) return "-";
 
-  const localDate = new Date(timestamp);
+  const formattedDate = moment(new Date(timestamp)).format(format);
 
-  return moment(localDate).format(format);
+  // Replace default/placeholder dates with a dash
+  if (["01-01-2001", "01-01-0001"].includes(formattedDate)) {
+    return "-";
+  }
+
+  return formattedDate;
 };
-// functions.getFormatedDate = (unForamttedDate, format = "DD-MM-YYYY") => {
+// functions.getFormatedDate = (unFormattedDate, format = "DD-MM-YYYY") => {
+
+//   if (!unFormattedDate) return "-";
+
+//   let timestamp = null;
+
+//   // if the Date is in the format /Date(1696230713000)/
+//   if (typeof unFormattedDate === "string" && unFormattedDate.includes("(")) {
+//     timestamp = Number(
+//       unFormattedDate.substring(
+//         unFormattedDate.indexOf("(") + 1,
+//         unFormattedDate.lastIndexOf(")")
+//       )
+//     );
+//   }
+
+//   // if regular Date
+//   else {
+//     timestamp = new Date(unFormattedDate).getTime();
+//   }
+
+//   if (!timestamp || isNaN(timestamp)) return "-";
+
+//   const localDate = new Date(timestamp);
+
+//   return moment(localDate).format(format);
+// };
+functions.getFormatedDateInPayment = (unForamttedDate, format = "DD-MM-YYYY") => {
+  if (!unForamttedDate) return "-";
+
+  const timestamp = Number(
+    unForamttedDate.substring(
+      unForamttedDate.indexOf("(") + 1,
+      unForamttedDate.lastIndexOf(")")
+    )
+  );
+
+  if (!timestamp || isNaN(timestamp)) return "-";
+
+  const formatedDate = moment(new Date(timestamp)).format(format);
+
+  // Replace default/placeholder dates with a dash
+  if (["01-01-2001", "01-01-0001"].includes(formatedDate)) {
+    return "-";
+  }
+
+  return formatedDate;
+};
+// functions.getFormatedDateInPayment = (unForamttedDate, format = "DD-MM-YYYY") => {
 //   // functions.getFormatedDate = (unForamttedDate, format = "MM-DD-YYYY") => {
 
 //   let localDate = new Date(
@@ -872,9 +935,7 @@ functions.redirectUser = () => {
     });
   });
 };
-functions.splitBigNumbersByComma = (budgetNumber) => {
-  return budgetNumber.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-};
+
 functions.PrintDetails = (e) => {
   e.preventDefault();
   printJS({
@@ -1662,7 +1723,7 @@ functions.getCaseStatus = (CaseStatus) => {
     // Default fallback for any unhandled status
     statusHtml = `<div class="statusBox pendingStatus">
             <i class="statusIcon fa-regular fa-question-circle"></i>
-            <span class="statusText">${CaseStatus || "---"}</span>
+            <span class="statusText">${CaseStatus || "-"}</span>
         </div>`;
   }
 
@@ -1767,7 +1828,7 @@ functions.getQuarryViolationStatus = (ViolationStatus) => {
     default: {
       statusHtml = `<div class="statusBox pendingStatus">
                 <i class="statusIcon fa-regular fa-question-circle"></i>
-                <span class="statusText">${ViolationStatus || "---"}</span>
+                <span class="statusText">${ViolationStatus || "-"}</span>
             </div>`;
       break;
     }
@@ -1873,7 +1934,7 @@ functions.getVehicleViolationStatus = (ViolationStatus) => {
     default: {
       statusHtml = `<div class="statusBox pendingStatus">
                 <i class="statusIcon fa-regular fa-question-circle"></i>
-                <span class="statusText">${ViolationStatus || "---"}</span>
+                <span class="statusText">${ViolationStatus || "-"}</span>
             </div>`;
       break;
     }
@@ -1899,7 +1960,7 @@ functions.getViolationStatusText = (status) => {
     "Cancelled": "ملغاه"
   };
 
-  return statusMap[status] || status || "----";
+  return statusMap[status] || status || "-";
 };
 functions.closePopup = () => {
   $(".popup").remove();
@@ -1916,4 +1977,19 @@ functions.debounce = (func, wait) => {
     timeout = setTimeout(later, wait);
   };
 };
+functions.splitBigNumbersByComma = (budgetNumber) => {
+  return budgetNumber.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+};
+// make -1 and null values display as - in the table 
+// and format numbers with commas if formatNumber is true
+functions.getDisplayValue = (value, formatNumber = false) => {
+  if (value == -1 || value === null || value === undefined) {
+    return "-";
+  }
+
+  return formatNumber
+    ? functions.splitBigNumbersByComma(value)
+    : value;
+};
+
 export default functions;

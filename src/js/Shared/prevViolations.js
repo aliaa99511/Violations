@@ -232,7 +232,7 @@ prevViolations.getViolationStatus = (ViolationStatus) => {
     default: {
       statusHtml = `<div class="statusBox pendingStatus">
                 <i class="statusIcon fa-regular fa-question-circle"></i>
-                <span class="statusText">${ViolationStatus || "---"}</span>
+                <span class="statusText">${ViolationStatus || "-"}</span>
             </div>`;
       break;
     }
@@ -290,7 +290,7 @@ prevViolations.exportToExcel = () => {
   const allColumns = [
     {
       title: "رقم المخالفة",
-      render: (record) => record.Violation?.ViolationCode || "----",
+      render: (record) => record.Violation?.ViolationCode || "-",
     },
     {
       title: "تصنيف المخالفة",
@@ -333,11 +333,11 @@ prevViolations.exportToExcel = () => {
       title: "رقم المحجر / العربة",
       render: (record) => {
         const violation = record.Violation;
-        if (!violation) return "---";
+        if (!violation) return "-";
 
         return violation.OffenderType === "Vehicle"
-          ? violation.CarNumber || "---"
-          : violation.QuarryCode || "---";
+          ? violation.CarNumber || "-"
+          : violation.QuarryCode || "-";
       },
     },
     {
@@ -346,34 +346,27 @@ prevViolations.exportToExcel = () => {
     },
     {
       title: "المنطقة",
-      render: (record) => record.Violation?.ViolationsZone || "----",
+      render: (record) => record.Violation?.ViolationsZone || "-",
     },
     {
       title: "مبلغ المادة المحجرية",
       render: (record) =>
-        record.Violation?.TotalPriceDue > 0
-          ? record.Violation?.TotalPriceDue
-          : "-",
+        functions.getDisplayValue(record.Violation?.TotalPriceDue, true),
     },
     {
       title: "قيمة الإتاوة",
       render: (record) =>
-        record.Violation?.LawRoyalty > 0
-          ? record.Violation?.LawRoyalty
-          : "-",
+        functions.getDisplayValue(record.Violation?.LawRoyalty, true)
     },
     {
       title: "قيمة المعدة",
       render: (record) =>
-        record.Violation?.TotalEquipmentsPrice > 0
-          ? record.Violation?.TotalEquipmentsPrice
-          : "-",
+        functions.getDisplayValue(record.Violation?.TotalEquipmentsPrice, true)
     },
     {
       title: "الكمية",
       render: (record) => {
-        const value = record.Violation?.TotalQuantity;
-        return value && value > 0 ? value : "-";
+        return functions.getDisplayValue(record.Violation?.TotalQuantity, true);
       },
     },
     {
@@ -415,14 +408,14 @@ prevViolations.exportToExcel = () => {
     },
     {
       title: "موقف الإحالة",
-      render: (record) => record?.ReferralStatus || "----",
+      render: (record) => record?.ReferralStatus || "-",
     },
     {
       title: "الإحداثيات",
       exportOnly: true,
       render: (record) => {
         const violation = record.Violation;
-        if (!violation) return "---";
+        if (!violation) return "-";
 
         // Try to get coordinates in degrees format first, fallback to regular format
         const coordinatesDegrees = violation.CoordinatesDegrees;
@@ -453,7 +446,7 @@ prevViolations.exportToExcel = () => {
           }
         }
 
-        return "---";
+        return "-";
       },
     },
   ];
@@ -508,13 +501,6 @@ prevViolations.dashBoardTable = (
                         المزيد من التفاصيل
                       </a>
                     </li>
-
-                    <li>
-                      <a href="#" class="printPaymentForm">
-                        طباعة نموذج التصديق
-                      </a>
-                    </li>
-
                     <li>
                       <a href="#" class="printPaymentFormOnly">
                         طباعة نموذج السداد
@@ -568,24 +554,13 @@ prevViolations.dashBoardTable = (
           ${taskViolation?.ViolationsZone || "-"}
         </div>`,
 
-        `${taskViolation?.TotalPriceDue > 0
-          ? taskViolation?.TotalPriceDue
-          : "-"
-        }`,
+        `${functions.getDisplayValue(taskViolation?.TotalPriceDue, true)}`,
 
-        `${taskViolation?.LawRoyalty > 0
-          ? taskViolation?.LawRoyalty
-          : "-"
-        }`,
+        `${functions.getDisplayValue(taskViolation?.LawRoyalty, true)}`,
 
-        `${taskViolation?.TotalEquipmentsPrice > 0
-          ? taskViolation?.TotalEquipmentsPrice
-          : "-"
-        }`,
+        `${functions.getDisplayValue(taskViolation?.TotalEquipmentsPrice, true)}`,
 
-        `${taskViolation?.TotalQuantity > 0
-          ? taskViolation?.TotalQuantity
-          : "-"}`,
+        `${functions.getDisplayValue(taskViolation?.TotalQuantity, true)}`,
 
         `${prevViolations.getViolationStatus(record.Status)}`,
 
@@ -690,18 +665,6 @@ prevViolations.dashBoardTable = (
     jQueryRecord
       .find(".controls")
       .children(".hiddenListBox")
-      .find(".printPaymentForm")
-      .off("click")
-      .on("click", (e) => {
-
-        $(".overlay").addClass("active");
-
-        prevViolations.printPaymentForm(e, taskID);
-      });
-
-    jQueryRecord
-      .find(".controls")
-      .children(".hiddenListBox")
       .find(".printPaymentFormOnly")
       .off("click")
       .on("click", (e) => {
@@ -771,63 +734,6 @@ prevViolations.findViolationByID = (event, taskID, print = false) => {
         $(".detailsPopupForm").find(".CommiteeMembersBox").show().find(".formElements").css("border-bottom", "none")
       } else {
         violationData = null;
-      }
-    })
-    .catch((err) => {
-      console.log(err);
-    });
-};
-prevViolations.printPaymentForm = (event, taskID, print = false) => {
-  let request = {
-    Id: taskID,
-  };
-
-  functions
-    .requester(
-      "/_layouts/15/Uranium.Violations.SharePoint/Tasks.aspx/FindbyId",
-      request
-    )
-    .then((response) => {
-      if (response.ok) {
-        return response.json();
-      }
-    })
-    .then((data) => {
-      let TaskData;
-      let violationData;
-      let violationOffenderType;
-      let Content;
-      let printBox;
-
-      if (data != null) {
-        TaskData = data.d;
-        violationData = TaskData.Violation;
-        violationOffenderType = violationData.OffenderType;
-
-        if (violationOffenderType == "Quarry") {
-          $(".overlay").removeClass("active");
-          Content = DetailsPopup.printPaymentForm(TaskData);
-          functions.declarePopup(["generalPopupStyle", "paymentFormDetailsPopup"], Content);
-        } else if (violationOffenderType == "Vehicle") {
-          $(".overlay").removeClass("active");
-          Content = DetailsPopup.printPaymentForm(TaskData);
-          functions.declarePopup(["generalPopupStyle", "paymentFormDetailsPopup"], Content);
-        } else if (violationOffenderType == "Equipment") {
-          $(".overlay").removeClass("active");
-          Content = DetailsPopup.printPaymentForm(TaskData);
-          functions.declarePopup(["generalPopupStyle", "paymentFormDetailsPopup"], Content);
-        }
-
-        // Remove previous handlers before adding new ones
-        $(".printBtn").off("click").on("click", (e) => {
-          functions.PrintDetails(e);
-        });
-
-        // Remove previous handler before adding new one
-        $(".printConfirmationForm").off("click").on("click", (e) => {
-          functions.PrintDetails(e);
-        });
-
       }
     })
     .catch((err) => {
@@ -969,15 +875,30 @@ prevViolations.handleViolationCategoryChange = () => {
 
     const $theCodeField = $("#theCode");
     const $typeOfViolationField = $("#TypeofViolation");
+    const $trailerNumField = $("#trailerNum");
 
+    // Default: enable all
     $theCodeField.prop("disabled", false);
     $typeOfViolationField.prop("disabled", false);
+    $trailerNumField.prop("disabled", false);
 
     if (selectedCategory === "Equipment") {
       $theCodeField.prop("disabled", true).val("");
       $typeOfViolationField.prop("disabled", true).val("0");
-    } else if (selectedCategory === "Vehicle") {
+      $trailerNumField.prop("disabled", true).val("");
+    }
+    else if (selectedCategory === "Vehicle") {
+      // Vehicle allows trailer number
       $typeOfViolationField.prop("disabled", true).val("0");
+      $trailerNumField.prop("disabled", false);
+    }
+    else if (selectedCategory === "Quarry") {
+      // Quarry doesn't allow trailer number
+      $trailerNumField.prop("disabled", true).val("");
+    }
+    else {
+      // No category selected
+      $trailerNumField.prop("disabled", true).val("");
     }
   });
 };

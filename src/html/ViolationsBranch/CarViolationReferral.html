@@ -52,6 +52,15 @@
                         </div>
                         <div class="col-6 col-md-4">
                             <div class="form-group customFormGroup">
+                                <label for="trailerNum" class="customLabel greenLabel">رقم المقطورة
+                                </label>
+                                <div class="selectBox smallSelectBox">
+                                    <input id="trailerNum" type="text" class="form-control" placeholder="ادخل الرقم" />
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-4">
+                            <div class="form-group customFormGroup">
                                 <label for="ViolationStatus" class="customLabel greenLabel">حالة المخالفة</label>
                                 <div class="selectBox smallSelectBox">
                                     <select class="form-control ViolationStatus greenSelect" id="ViolationStatus">
@@ -154,7 +163,6 @@
                     aria-labelledby="trackHistory" aria-hidden="true">
                     <div class="modal-dialog modal-lg">
                         <div class="modal-content">
-
                             <div class="modal-header"
                                 style="display: flex !important; justify-content: space-between !important;">
                                 <h5 class="modal-title-style">
@@ -166,7 +174,6 @@
                                     <i class="fa-solid fa-x"></i>
                                 </div>
                             </div>
-
                             <div class="modal-body">
                                 <div class="track-history-table-node">
                                     <table id="trackHistoryTable" class="track-history-table display"
@@ -183,10 +190,17 @@
                                     </table>
                                 </div>
                             </div>
-                            <!-- <div class="modal-footer">
-                                <button type="button" class="btn btn-secondary closeViolationHistoryPopupFooter"
-                                id="closeViolationHistoryPopupFooter" data-bs-dismiss="modal">إغلاق</button>
-                            </div> -->
+                            <!-- Add footer with print button -->
+                            <div class="modal-footer" style="display: flex; justify-content: center;">
+                                <button type="button" class="btn" id="printViolationHistoryFooter"
+                                    style="background-color: #015642; color: #fff;">
+                                    <i class="fa fa-print"></i> طباعة
+                                </button>
+                                <!-- <button type="button" class="btn btn-secondary" id="closeViolationHistoryPopupFooter"
+                  data-dismiss="modal">
+                  إغلاق
+                </button> -->
+                            </div>
                         </div>
                     </div>
                 </div>

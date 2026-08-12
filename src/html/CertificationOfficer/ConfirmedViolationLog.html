@@ -198,7 +198,6 @@
     aria-hidden="true">
     <div class="modal-dialog modal-lg">
       <div class="modal-content">
-
         <div class="modal-header" style="display: flex !important; justify-content: space-between !important;">
           <h5 class="modal-title-style">
             تتبع المخالفة رقم <span class="ms-3 track-history-violation-code"></span>
@@ -208,7 +207,6 @@
             <i class="fa-solid fa-x"></i>
           </div>
         </div>
-
         <div class="modal-body">
           <div class="track-history-table-node">
             <table id="trackHistoryTable" class="track-history-table display" style="width: 100%">
@@ -224,10 +222,17 @@
             </table>
           </div>
         </div>
-        <!-- <div class="modal-footer">
-                <button type="button" class="btn btn-secondary closeViolationHistoryPopupFooter"
-                  id="closeViolationHistoryPopupFooter" data-bs-dismiss="modal">إغلاق</button>
-              </div> -->
+        <!-- Add footer with print button -->
+        <div class="modal-footer" style="display: flex; justify-content: center;">
+          <button type="button" class="btn" id="printViolationHistoryFooter"
+            style="background-color: #015642; color: #fff;">
+            <i class="fa fa-print"></i> طباعة
+          </button>
+          <!-- <button type="button" class="btn btn-secondary" id="closeViolationHistoryPopupFooter"
+                  data-dismiss="modal">
+                  إغلاق
+                </button> -->
+        </div>
       </div>
     </div>
   </div>

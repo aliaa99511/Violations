@@ -61,6 +61,7 @@ $(window).on("load", () => {
     sideMenuFunctions.init();
 
     functions.handleArabicLetterSpacing("#theCode");
+    functions.handleArabicLetterSpacing("#trailerNum");
 
     if (functions.getSiteName() === "Home") {
       // $(".PreLoader").find("span").addClass("greenLoader");

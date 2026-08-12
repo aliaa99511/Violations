@@ -1031,3 +1031,36 @@
 .attachPopup .table tbody tr.odd {
   background-color: transparent !important;
 }
+
+
+
+////////////////////////////////////////////////
+.paymentFormPrintBoxHistoryLog {
+  .popupSectionWrapper {
+    position: relative !important;
+    background: transparent !important;
+    z-index: 1 !important;
+
+    .WaterMark {
+      position: absolute !important;
+      top: 50% !important;
+      right: 50% !important;
+      transform: translate(50%, -50%) !important;
+
+      width: 40% !important;
+      height: 100% !important;
+
+      background: url("/Style Library/MiningViolations/images/WaterMarkL.png") center / contain no-repeat !important;
+
+      pointer-events: none !important;
+      z-index: 0 !important;
+    }
+
+    .formTitle,
+    .popupHeader,
+    .popupBody {
+      position: relative;
+      z-index: 1;
+    }
+  }
+}

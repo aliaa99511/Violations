@@ -171,17 +171,33 @@ runningViolations.resetFilter = (e) => {
 runningViolations.handleViolationCategoryChange = () => {
   $("#violationCategory").on("change", function () {
     const selectedCategory = $(this).val();
+
     const $theCodeField = $("#theCode");
     const $typeOfViolationField = $("#TypeofViolation");
+    const $trailerNumField = $("#trailerNum");
 
+    // Default: enable all
     $theCodeField.prop("disabled", false);
     $typeOfViolationField.prop("disabled", false);
+    $trailerNumField.prop("disabled", false);
 
     if (selectedCategory === "Equipment") {
       $theCodeField.prop("disabled", true).val("");
       $typeOfViolationField.prop("disabled", true).val("0");
-    } else if (selectedCategory === "Vehicle") {
+      $trailerNumField.prop("disabled", true).val("");
+    }
+    else if (selectedCategory === "Vehicle") {
+      // Vehicle allows trailer number
       $typeOfViolationField.prop("disabled", true).val("0");
+      $trailerNumField.prop("disabled", false);
+    }
+    else if (selectedCategory === "Quarry") {
+      // Quarry doesn't allow trailer number
+      $trailerNumField.prop("disabled", true).val("");
+    }
+    else {
+      // No category selected
+      $trailerNumField.prop("disabled", true).val("");
     }
   });
 };
@@ -193,6 +209,9 @@ runningViolations.resetFilter = function (e) {
 
   $("#theCode").prop("disabled", false);
   $("#TypeofViolation").prop("disabled", false);
+
+  // No category selected after reset
+  $("#trailerNum").prop("disabled", true).val("");
 };
 
 runningViolations.exportToExcel = () => {
@@ -253,9 +272,14 @@ runningViolations.exportToExcel = () => {
       title: "رقم المحجر/العربة",
       render: (record) => {
         const violation = record.Violation;
-        if (!violation) return "---";
-        return violation.OffenderType === "Vehicle" ? (violation.CarNumber || "---") : (violation.QuarryCode || "---");
+        if (!violation) return "-";
+        return violation.OffenderType === "Vehicle" ? (violation.CarNumber || "-") : (violation.QuarryCode || "-");
       },
+    },
+    {
+      title: "رقم المقطورة",
+      render: (record) =>
+        record.Violation?.TrailerNum || "-",
     },
     {
       title: "المنطقة",
@@ -266,7 +290,7 @@ runningViolations.exportToExcel = () => {
       exportOnly: true,
       render: (record) => {
         const violation = record.Violation;
-        if (!violation) return "---";
+        if (!violation) return "-";
 
         // Try to get coordinates in degrees format first, fallback to regular format
         const coordinatesDegrees = violation.CoordinatesDegrees;
@@ -297,7 +321,7 @@ runningViolations.exportToExcel = () => {
           }
         }
 
-        return "---";
+        return "-";
       },
     },
   ];
@@ -352,9 +376,15 @@ runningViolations.RunningViolationTable = (RunningViolation, destroyTable) => {
             ? taskViolation.CarNumber
             : taskViolation.QuarryCode != ""
               ? taskViolation.QuarryCode
-              : "---"
+              : "-"
           }</div>`,
+          `<div class="trailerNum">${taskViolation?.TrailerNum || "-"}</div>`,
           `<div class="violationZone">${taskViolation.ViolationsZone}</div>`,
+
+          `${functions.getDisplayValue(taskViolation?.TotalPriceDue, true)}`,
+          `${functions.getDisplayValue(taskViolation?.LawRoyalty, true)}`,
+          `${functions.getDisplayValue(taskViolation?.TotalEquipmentsPrice, true)}`,
+          `${functions.getDisplayValue(taskViolation?.TotalQuantity, true)}`,
         ]);
       }
     });
@@ -375,7 +405,12 @@ runningViolations.RunningViolationTable = (RunningViolation, destroyTable) => {
       { title: "تاريخ الضبط" },
       { title: "إسم الشركة المخالفة" },
       { title: "رقم المحجر/العربة" },
+      { title: "رقم المقطورة" },
       { title: "المنطقة" },
+      { title: "مبلغ المادة المحجرية" },
+      { title: "قيمة الإتاوة" },
+      { title: "قيمة المعدة" },
+      { title: "الكمية" },
     ],
     false,
     false,

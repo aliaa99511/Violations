@@ -76,6 +76,35 @@
                         </div>
                         <div class="col-6 col-md-3">
                             <div class="form-group customFormGroup">
+                                <label for="violatorCompany" class="customLabel greenLabel">إسم الشركة المخالفة</label>
+                                <div class="selectBox smallSelectBox">
+                                    <input id="violatorCompany" type="text" class="form-control"
+                                        placeholder="إسم الشركة المخالفة" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-6 col-md-3">
+                            <div class="form-group customFormGroup">
+                                <label for="assignedProsecution" class="customLabel greenLabel">النيابة المختصة</label>
+                                <div class="selectBox smallSelectBox">
+                                    <input id="assignedProsecution" type="text" class="form-control"
+                                        placeholder="النيابة المختصة" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-6 col-md-3">
+                            <div class="form-group customFormGroup">
+                                <label for="violationZone" class="customLabel greenLabel">جهة الضبط</label>
+                                <div class="selectBox smallSelectBox">
+                                    <input id="violationZone" type="text" class="form-control"
+                                        placeholder="جهة الضبط" />
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="form-group customFormGroup">
                                 <label for="createdFrom" class="customLabel greenLabel">من</label>
                                 <div class="inputIconBox">
                                     <input class="form-control customInput inputDate createdFrom" id="createdFrom"
@@ -141,24 +170,22 @@
     </div>
 
     <!-- Tracking Modal -->
-    <div class="modal track-history-modal fade" id="trackHistoryModalExternal" tabindex="-1"
-        aria-labelledby="trackHistoryExternal" aria-hidden="true">
+    <div class="modal track-history-modal fade" id="trackHistoryModal" tabindex="-1" aria-labelledby="trackHistory"
+        aria-hidden="true">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
-
                 <div class="modal-header" style="display: flex !important; justify-content: space-between !important;">
                     <h5 class="modal-title-style">
                         تتبع المخالفة رقم <span class="ms-3 track-history-violation-code"></span>
                     </h5>
-                    <div class="btnStyle cancelBtn closeViolationHistoryPopup" id="closeViolationHistoryPopupExternal"
+                    <div class="btnStyle cancelBtn closeViolationHistoryPopup" id="closeViolationHistoryPopup"
                         style="color: #fff; cursor: pointer;" data-dismiss="modal" aria-label="Close">
                         <i class="fa-solid fa-x"></i>
                     </div>
                 </div>
-
                 <div class="modal-body">
                     <div class="track-history-table-node">
-                        <table id="trackHistoryTableExternal" class="track-history-table display" style="width: 100%">
+                        <table id="trackHistoryTable" class="track-history-table display" style="width: 100%">
                             <thead>
                                 <tr class="data-header">
                                     <th>م</th>
@@ -171,10 +198,20 @@
                         </table>
                     </div>
                 </div>
+                <!-- Add footer with print button -->
+                <div class="modal-footer" style="display: flex; justify-content: center;">
+                    <button type="button" class="btn" id="printViolationHistoryFooter"
+                        style="background-color: #015642; color: #fff;">
+                        <i class="fa fa-print"></i> طباعة
+                    </button>
+                    <!-- <button type="button" class="btn btn-secondary" id="closeViolationHistoryPopupFooter"
+                  data-dismiss="modal">
+                  إغلاق
+                </button> -->
+                </div>
             </div>
         </div>
     </div>
-
 
 </body>
 

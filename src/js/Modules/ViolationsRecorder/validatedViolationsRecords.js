@@ -1,6 +1,7 @@
 import functions from "../../Shared/functions";
 import DetailsPopup from "../../Shared/detailsPopupContent";
 import pagination from "../../Shared/Pagination";
+import ViolationHistoryLogs from "../../Shared/ViolationHistoryLogs";
 
 let validatedViolationsRecords = {};
 validatedViolationsRecords.pageIndex = 1;
@@ -66,6 +67,7 @@ validatedViolationsRecords.getViolations = (
       ColName: "created",
       SortOrder: "desc",
       Status: selectedStatus, // Keep this for reference
+      IsExternalRecord: false,
       MultipleStatus: multipleStatus, // Use dynamic multipleStatus
       ViolatorName: $("#violatorName").val(),
       NationalID: $("#nationalID").val(),
@@ -198,23 +200,33 @@ validatedViolationsRecords.resetFilter = (e) => {
 validatedViolationsRecords.handleViolationCategoryChange = () => {
   $("#violationCategory").on("change", function () {
     const selectedCategory = $(this).val();
+
     const $theCodeField = $("#theCode");
     const $typeOfViolationField = $("#TypeofViolation");
+    const $trailerNumField = $("#trailerNum");
 
-    // First, enable both fields
+    // Default: enable all
     $theCodeField.prop("disabled", false);
     $typeOfViolationField.prop("disabled", false);
+    $trailerNumField.prop("disabled", false);
 
-    // Handle "Equipment" selection
     if (selectedCategory === "Equipment") {
-      $theCodeField.prop("disabled", true).val(""); // Disable and clear the field
-      $typeOfViolationField.prop("disabled", true).val("0"); // Disable and set to default
+      $theCodeField.prop("disabled", true).val("");
+      $typeOfViolationField.prop("disabled", true).val("0");
+      $trailerNumField.prop("disabled", true).val("");
     }
-
-    // Handle "Vehicle" selection
     else if (selectedCategory === "Vehicle") {
-      $typeOfViolationField.prop("disabled", true).val("0"); // Disable and set to default
-      // theCode field remains enabled
+      // Vehicle allows trailer number
+      $typeOfViolationField.prop("disabled", true).val("0");
+      $trailerNumField.prop("disabled", false);
+    }
+    else if (selectedCategory === "Quarry") {
+      // Quarry doesn't allow trailer number
+      $trailerNumField.prop("disabled", true).val("");
+    }
+    else {
+      // No category selected
+      $trailerNumField.prop("disabled", true).val("");
     }
   });
 };
@@ -227,7 +239,11 @@ validatedViolationsRecords.resetFilter = function (e) {
   // Re-enable both fields after reset
   $("#theCode").prop("disabled", false);
   $("#TypeofViolation").prop("disabled", false);
+
+  // No category selected after reset
+  $("#trailerNum").prop("disabled", true).val("");
 };
+
 
 validatedViolationsRecords.exportToExcel = () => {
   let UserId = _spPageContextInfo.userId;
@@ -288,7 +304,7 @@ validatedViolationsRecords.exportToExcel = () => {
   const allColumns = [
     {
       title: "رقم المخالفة",
-      render: (record) => record.Violation?.ViolationCode || "----",
+      render: (record) => record.Violation?.ViolationCode || "-",
     },
     {
       title: "",
@@ -339,8 +355,8 @@ validatedViolationsRecords.exportToExcel = () => {
       title: "رقم المحجر / العربة",
       render: (record) => {
         const violation = record.Violation;
-        if (!violation) return "---";
-        return violation.OffenderType === "Vehicle" ? (violation.CarNumber || "---") : (violation.QuarryCode || "---");
+        if (!violation) return "-";
+        return violation.OffenderType === "Vehicle" ? (violation.CarNumber || "-") : (violation.QuarryCode || "-");
       },
     },
     {
@@ -351,37 +367,30 @@ validatedViolationsRecords.exportToExcel = () => {
     {
       title: "المنطقة",
       render: (record) =>
-        record.Violation?.ViolationsZone || "----",
+        record.Violation?.ViolationsZone || "-",
     },
     {
       title: "مبلغ المادة المحجرية",
       render: (record) => {
-        const value = record.Violation?.TotalPriceDue;
-
-        return value && value > 0 ? value : "-";
+        functions.getDisplayValue(record.Violation?.TotalPriceDue, true);
       },
     },
     {
       title: "قيمة الإتاوة",
       render: (record) => {
-        const value = record.Violation?.LawRoyalty;
-
-        return value && value > 0 ? value : "-";
+        return functions.getDisplayValue(record.Violation?.LawRoyalty, true);
       },
     },
     {
       title: "قيمة المعدة",
       render: (record) => {
-        const value = record.Violation?.TotalEquipmentsPrice;
-
-        return value && value > 0 ? value : "-";
+        return functions.getDisplayValue(record.Violation?.TotalEquipmentsPrice, true);
       },
     },
     {
       title: "الكمية",
       render: (record) => {
-        const value = record.Violation?.TotalQuantity;
-        return value && value > 0 ? value : "-";
+        return functions.getDisplayValue(record.Violation?.TotalQuantity, true);
       },
     },
     {
@@ -426,14 +435,14 @@ validatedViolationsRecords.exportToExcel = () => {
     {
       title: "موقف الإحالة",
       render: (record) =>
-        record?.ReferralStatus || "----",
+        record?.ReferralStatus || "-",
     },
     {
       title: "الإحداثيات",
       exportOnly: true,
       render: (record) => {
         const violation = record.Violation;
-        if (!violation) return "---";
+        if (!violation) return "-";
 
         // Try to get coordinates in degrees format first, fallback to regular format
         const coordinatesDegrees = violation.CoordinatesDegrees;
@@ -464,7 +473,7 @@ validatedViolationsRecords.exportToExcel = () => {
           }
         }
 
-        return "---";
+        return "-";
       },
     },
   ];
@@ -578,21 +587,13 @@ validatedViolationsRecords.dashBoardTable = (violationsData, destroyTable) => {
            ${taskViolation?.ViolationsZone || "-"}
          </div>`,
 
-        `${taskViolation?.TotalPriceDue > 0
-          ? taskViolation?.TotalPriceDue
-          : "-"}`,
+        `${functions.getDisplayValue(taskViolation?.TotalPriceDue, true)}`,
 
-        `${taskViolation?.LawRoyalty > 0
-          ? taskViolation?.LawRoyalty
-          : "-"}`,
+        `${functions.getDisplayValue(taskViolation?.LawRoyalty, true)}`,
 
-        `${taskViolation?.TotalEquipmentsPrice > 0
-          ? taskViolation?.TotalEquipmentsPrice
-          : "-"}`,
+        `${functions.getDisplayValue(taskViolation?.TotalEquipmentsPrice, true)}`,
 
-        `${taskViolation?.TotalQuantity > 0
-          ? taskViolation?.TotalQuantity
-          : "-"}`,
+        `${functions.getDisplayValue(taskViolation?.TotalQuantity, true)}`,
 
         `${validatedViolationsRecords.getViolationStatus(record.Status)}`,
 
@@ -859,6 +860,9 @@ validatedViolationsRecords.findViolationByID = (
             .attr("style", "display: none !important");
         }, 50);
 
+        // Hide edit button (extra safety)
+        $("#editMaterialMinPrice").hide();
+
         // Vehicle extra logic
         if (violationOffenderType == "Vehicle") {
           let vehicleType = violationData.VehicleType;
@@ -896,115 +900,11 @@ validatedViolationsRecords.findViolationByID = (
     });
 };
 
-// ========== Tracking History Functions =========
-const ViolationHistoryLogs = () => {
-  let selectedViolationId = null;
-  let selectedViolationCode = null;
-  let trackHistoryTable = null;
+// ===============================
+//  Violation History Tracking for External Violations
+// ===============================
+ViolationHistoryLogs.init(".contentContainer");
 
-  // ===============================
-  //  فتح المودال
-  // ===============================
-  $(".contentContainer").on("click", ".violationHistory", function (e) {
-    e.preventDefault();
-    e.stopPropagation();
-
-    selectedViolationId = $(this).data("violationid");
-    selectedViolationCode = $(this).data("violationcode");
-
-    $("#trackHistoryModal").modal("show");
-  });
-
-  // ===============================
-  //  إغلاق المودال - Close button handlers
-  // ===============================
-  const closeModal = () => {
-    $("#trackHistoryModal").modal("hide");
-
-    // Clear the modal content
-    $(".track-history-violation-code").text("");
-    if (trackHistoryTable) {
-      trackHistoryTable.clear().destroy();
-      trackHistoryTable = null;
-    }
-    $("#trackHistoryTable tbody").empty();
-  };
-
-  $(document).on("click", "#closeViolationHistoryPopup", function (e) {
-    e.preventDefault();
-    e.stopPropagation();
-    closeModal();
-  });
-
-  // // Close button in footer
-  // $(document).on("click", "#closeViolationHistoryPopupFooter", function (e) {
-  //   e.preventDefault();
-  //   e.stopPropagation();
-  //   closeModal();
-  // });
-
-  // Bootstrap modal hide event
-  $("#trackHistoryModal").on("hidden.bs.modal", function () {
-    closeModal();
-  });
-
-  // ===============================
-  //  لما المودال يفتح
-  // ===============================
-  $(".track-history-modal").on("shown.bs.modal", function () {
-    $(".track-history-violation-code").text(selectedViolationCode);
-
-    const request = {
-      Request: {
-        ViolationId: selectedViolationId,
-      },
-    };
-
-    const tableElement = $("#trackHistoryTable");
-
-    if (!trackHistoryTable) {
-      trackHistoryTable = tableElement.DataTable({
-        processing: true,
-        paging: false,
-        responsive: true,
-        destroy: true,
-        ajax: {
-          url: "/_layouts/15/Uranium.Violations.SharePoint/ViolationHistoryLogs.aspx/Search",
-          type: "POST",
-          contentType: "application/json",
-          data: () => JSON.stringify(request),
-          dataSrc: (data) => {
-            return data?.d?.Result?.GridData || [];
-          }
-        },
-        columns: [
-          { data: null, render: (data, type, row, meta) => meta.row },
-          { data: "Status", render: (data) => data || "-" },
-          { data: "Created", render: (data) => data ? functions.getFormatedDate(data) : "-" },
-          { data: "CreatedBy", render: (data) => data || "-" },
-          { data: "Comment", render: (data) => data || "-" }
-        ],
-        language: { emptyTable: "لا توجد بيانات" }
-      });
-    } else {
-      trackHistoryTable.ajax.reload();
-    }
-  });
-
-  // ===============================
-  //  لما المودال يقفل
-  // ===============================
-  $(".track-history-modal").on("hidden.bs.modal", function () {
-    $(".track-history-violation-code").text("");
-    if (trackHistoryTable) {
-      trackHistoryTable.clear().destroy();
-      trackHistoryTable = null;
-    }
-    $("#trackHistoryTable tbody").empty();
-  });
-};
-
-ViolationHistoryLogs();
 
 
 

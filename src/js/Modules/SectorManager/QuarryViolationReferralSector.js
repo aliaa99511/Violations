@@ -1,5 +1,6 @@
 import functions from "../../Shared/functions";
 import pagination from "../../Shared/Pagination";
+import ViolationHistoryLogs from "../../Shared/ViolationHistoryLogs";
 
 let quarryViolationReferralSector = {};
 quarryViolationReferralSector.pageIndex = 1;
@@ -127,7 +128,7 @@ quarryViolationReferralSector.exportToExcel = () => {
     const columns = [
         {
             title: "رقم المخالفة",
-            render: (record) => record.ViolationCode || "-----",
+            render: (record) => record.ViolationCode || "-",
         },
         {
             title: "",
@@ -144,16 +145,16 @@ quarryViolationReferralSector.exportToExcel = () => {
         {
             title: "حالة المخالفة",
             render: (record) =>
-                functions.getQuarryViolationStatus(record.ViolationStatus) || "-----",
+                functions.getQuarryViolationStatus(record.ViolationStatus) || "-",
         },
         {
             title: "المبلغ المستحق",
-            render: (record) => record.TotalPriceDue || 0,
+            render: (record) => functions.getDisplayValue(record.TotalPriceDue, true),
         },
         {
             title: "موقف الإحالة",
             render: (record) =>
-                functions.getCaseStatus(record.Status) || "-----",
+                functions.getCaseStatus(record.Status) || "-",
         },
         {
             title: "الإحداثيات",
@@ -161,7 +162,7 @@ quarryViolationReferralSector.exportToExcel = () => {
             render: (record) => {
                 const coordinates = record.Coordinates;
 
-                if (!coordinates) return "---";
+                if (!coordinates) return "-";
 
                 try {
                     const coordsArray = JSON.parse(coordinates);
@@ -244,7 +245,7 @@ quarryViolationReferralSector.QuarryViolationReferralSectorTable = (Referrals, d
 
             data.push([
                 `<div class="violationCode noWrapContent" ${dataAttributes}>
-                    ${referral.ViolationCode || "-----"}
+                    ${referral.ViolationCode || "-"}
                 </div>`,
                 `<div class='controls'>
                     <div class='ellipsisButton'>
@@ -255,25 +256,14 @@ quarryViolationReferralSector.QuarryViolationReferralSectorTable = (Referrals, d
                         ${actionsMenuHTML}
                     </div>
                 </div>`,
-                `<div class="refferedDate noWrapContent">${refferedDate || "-----"}</div>`,
-                `<div class="referralNumber">${referralNumber || "-----"}</div>`,
-                `<div class="violationStatus">${displayViolationStatus || "-----"}</div>`,
-                `<div class="totalPriceDue">${functions.splitBigNumbersByComma(referral.TotalPriceDue || 0) || "-----"}</div>`,
+                `<div class="refferedDate noWrapContent">${refferedDate || "-"}</div>`,
+                `<div class="referralNumber">${referralNumber || "-"}</div>`,
+                `<div class="violationStatus">${displayViolationStatus || "-"}</div>`,
+                `<div class="totalPriceDue">${functions.getDisplayValue(referral.TotalPriceDue, true)}</div>`,
                 `<div class="referralStatus">${functions.getCaseStatus(caseStatus)}</div>`,
                 `<div class="referralAttachments caseAttachments"><a href="#!" style="color: black;">المرفقات</a></div>`,
             ]);
         });
-    } else {
-        data.push([
-            `<div class="no-data">لا توجد بيانات متاحة</div>`,
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            ""
-        ]);
     }
 
     let Table = functions.tableDeclare(
@@ -402,7 +392,7 @@ quarryViolationReferralSector.referralAttachmentsDetailsPopup = (
     let popupHtml = `
         <div class="popupHeader attachPopup">
             <div class="violationsCode"> 
-                <p>مرفقات الإحالة رقم (${referralNumber || "-----"})</p>
+                <p>مرفقات الإحالة رقم (${referralNumber || "-"})</p>
             </div>
             <div class="btnStyle cancelBtn popupBtn closeReferralAttachPopup" id="closeReferralAttachPopup" style="color: #fff;cursor: pointer;" data-dismiss="modal" aria-label="Close">
                 <i class="fa-solid fa-x"></i>
@@ -415,7 +405,7 @@ quarryViolationReferralSector.referralAttachmentsDetailsPopup = (
         </div>`;
 
     functions.declarePopup(
-        ["generalPopupStyle", "bluePopup", "editPopup", "attachPopup"],
+        ["generalPopupStyle", "greenPopup", "editPopup", "attachPopup"],
         popupHtml
     );
 
@@ -453,7 +443,7 @@ quarryViolationReferralSector.drawReferralAttachmentsPopupTable = (
                 )}</div>`,
                 `<div class="attachComments">${attchRecord.Comments != ""
                     ? attchRecord.Comments
-                    : "----"
+                    : "-"
                 }</div>`,
             ]);
             counter++;
@@ -555,7 +545,7 @@ quarryViolationReferralSector.FindReferralById = (ReferralID, popupType = "") =>
                 Content = quarryViolationReferralSector.getReferralDetails(referralData);
 
                 functions.declarePopup(
-                    ["generalPopupStyle", "bluePopup", "caseDetailsPopup"],
+                    ["generalPopupStyle", "greenPopup", "caseDetailsPopup"],
                     Content
                 );
 
@@ -616,7 +606,7 @@ quarryViolationReferralSector.getReferralDetails = (referralData) => {
                                 <div class="col-md-4">
                                     <div class="form-group customFormGroup">
                                         <label for="referralNumber" class="customLabel">رقم الإحالة</label>
-                                        <input class="form-control customInput referralNumber" id="referralNumber" type="text" value="${referralData.ReferralNumber || "----"}" disabled>
+                                        <input class="form-control customInput referralNumber" id="referralNumber" type="text" value="${referralData.ReferralNumber || "-"}" disabled>
                                     </div>
                                 </div>
                                 <div class="col-md-4">
@@ -628,7 +618,7 @@ quarryViolationReferralSector.getReferralDetails = (referralData) => {
                                 <div class="col-md-4">
                                     <div class="form-group customFormGroup">
                                         <label for="referralStatus" class="customLabel">حالة الإحالة</label>
-                                        <input class="form-control customInput referralStatus" id="referralStatus" type="text" value="${referralData.Status || "----"}" disabled>
+                                        <input class="form-control customInput referralStatus" id="referralStatus" type="text" value="${referralData.Status || "-"}" disabled>
                                     </div>
                                 </div>
                                 <div class="col-md-4">
@@ -640,19 +630,19 @@ quarryViolationReferralSector.getReferralDetails = (referralData) => {
                                 <div class="col-md-4">
                                     <div class="form-group customFormGroup">
                                         <label for="caseNumber" class="customLabel">رقم القضية</label>
-                                        <input class="form-control customInput caseNumber" id="caseNumber" type="text" value="${referralData.CaseNumber || "----"}" disabled>
+                                        <input class="form-control customInput caseNumber" id="caseNumber" type="text" value="${referralData.CaseNumber || "-"}" disabled>
                                     </div>
                                 </div>
                                 <div class="col-md-4">
                                     <div class="form-group customFormGroup">
                                         <label for="taskId" class="customLabel">رقم المهمة</label>
-                                        <input class="form-control customInput taskId" id="taskId" type="text" value="${referralData.TaskId || "----"}" disabled>
+                                        <input class="form-control customInput taskId" id="taskId" type="text" value="${referralData.TaskId || "-"}" disabled>
                                     </div>
                                 </div>
                                 <div class="col-md-12">
                                     <div class="form-group customFormGroup">
                                         <label for="comments" class="customLabel">ملاحظات</label>
-                                        <textarea class="form-control customTextArea comments" id="comments" disabled>${referralData.Comments || "----"}</textarea>
+                                        <textarea class="form-control customTextArea comments" id="comments" disabled>${referralData.Comments || "-"}</textarea>
                                     </div>
                                 </div>
                             </div>
@@ -700,43 +690,43 @@ quarryViolationReferralSector.referralQuarryDetails = (violationData) => {
         <div class="col-md-4">
             <div class="form-group customFormGroup">
                 <label for="violationCode" class="customLabel">رقم المخالفة</label>
-                <input class="form-control customInput violationCode" id="violationCode" type="text" value="${violationData.ViolationCode || "----"}" disabled>
+                <input class="form-control customInput violationCode" id="violationCode" type="text" value="${violationData.ViolationCode || "-"}" disabled>
             </div>
         </div>
         <div class="col-md-4">
             <div class="form-group customFormGroup">
                 <label for="violatorName" class="customLabel">اسم المخالف</label>
-                <input class="form-control customInput violatorName" id="violatorName" type="text" value="${violationData.ViolatorName || "----"}" disabled>
+                <input class="form-control customInput violatorName" id="violatorName" type="text" value="${violationData.ViolatorName || "-"}" disabled>
             </div>
         </div>
         <div class="col-md-4">
             <div class="form-group customFormGroup">
                 <label for="violatorCompany" class="customLabel">الشركة المخالفة التابع لها</label>
-                <input class="form-control customInput violatorCompany" id="violatorCompany" type="text" value="${violationData.ViolatorCompany || "----"}" disabled>
+                <input class="form-control customInput violatorCompany" id="violatorCompany" type="text" value="${violationData.ViolatorCompany || "-"}" disabled>
             </div>
         </div>
         <div class="col-md-4">
             <div class="form-group customFormGroup">
                 <label for="violationType" class="customLabel">نوع المخالفة</label>
-                <input class="form-control customInput violationType" id="violationType" type="text" value="${violationData.ViolationTypes?.Title || "----"}" disabled>
+                <input class="form-control customInput violationType" id="violationType" type="text" value="${violationData.ViolationTypes?.Title || "-"}" disabled>
             </div>
         </div>
         <div class="col-md-4">
             <div class="form-group customFormGroup">
                 <label for="materialType" class="customLabel">نوع الخام</label>
-                <input class="form-control customInput materialType" id="materialType" type="text" value="${violationData.Material?.Title || "----"}" disabled>
+                <input class="form-control customInput materialType" id="materialType" type="text" value="${violationData.Material?.Title || "-"}" disabled>
             </div>
         </div>
         <div class="col-md-4">
             <div class="form-group customFormGroup">
                 <label for="violationGov" class="customLabel">المحافظة</label>
-                <input class="form-control customInput violationGov" id="violationGov" type="text" value="${violationData.Governrates?.Title || "----"}" disabled>
+                <input class="form-control customInput violationGov" id="violationGov" type="text" value="${violationData.Governrates?.Title || "-"}" disabled>
             </div>
         </div>
         <div class="col-md-4">
             <div class="form-group customFormGroup">
                 <label for="violationZone" class="customLabel">منطقة الضبط</label>
-                <input class="form-control customInput violationZone" id="violationZone" type="text" value="${violationData.ViolationsZone || "----"}" disabled>
+                <input class="form-control customInput violationZone" id="violationZone" type="text" value="${violationData.ViolationsZone || "-"}" disabled>
             </div>
         </div>
         <div class="col-md-4">
@@ -754,25 +744,25 @@ quarryViolationReferralSector.referralQuarryDetails = (violationData) => {
         <div class="col-md-4">
             <div class="form-group customFormGroup">
                 <label for="totalOldPrice" class="customLabel">مبلغ النموذج</label>
-                <input class="form-control customInput totalOldPrice" id="totalOldPrice" type="text" value="${functions.splitBigNumbersByComma(violationData.TotalOldPrice || 0)}" disabled>
+                <input class="form-control customInput totalOldPrice" id="totalOldPrice" type="text" value="${functions.getDisplayValue(violationData.TotalOldPrice, true)}" disabled>
             </div>
         </div>
         <div class="col-md-4">
             <div class="form-group customFormGroup">
                 <label for="totalPriceDue" class="customLabel">المبلغ المستحق</label>
-                <input class="form-control customInput totalPriceDue" id="totalPriceDue" type="text" value="${functions.splitBigNumbersByComma(violationData.TotalPriceDue || 0)}" disabled>
+                <input class="form-control customInput totalPriceDue" id="totalPriceDue" type="text" value="${functions.getDisplayValue(violationData.TotalPriceDue, true)}" disabled>
             </div>
         </div>
         <div class="col-md-4">
             <div class="form-group customFormGroup">
                 <label for="quarryCode" class="customLabel">رقم المحجر</label>
-                <input class="form-control customInput quarryCode" id="quarryCode" type="text" value="${violationData.QuarryCode || "----"}" disabled>
+                <input class="form-control customInput quarryCode" id="quarryCode" type="text" value="${violationData.QuarryCode || "-"}" disabled>
             </div>
         </div>
         <div class="col-md-4">
             <div class="form-group customFormGroup">
                 <label for="quarryType" class="customLabel">نوع المحجر</label>
-                <input class="form-control customInput quarryType" id="quarryType" type="text" value="${violationData.QuarryType || "----"}" disabled>
+                <input class="form-control customInput quarryType" id="quarryType" type="text" value="${violationData.QuarryType || "-"}" disabled>
             </div>
         </div>
     `;
@@ -784,43 +774,43 @@ quarryViolationReferralSector.referralVehicleDetails = (violationData) => {
         <div class="col-md-4">
             <div class="form-group customFormGroup">
                 <label for="violationCode" class="customLabel">رقم المخالفة</label>
-                <input class="form-control customInput violationCode" id="violationCode" type="text" value="${violationData.ViolationCode || "----"}" disabled>
+                <input class="form-control customInput violationCode" id="violationCode" type="text" value="${violationData.ViolationCode || "-"}" disabled>
             </div>
         </div>
         <div class="col-md-4">
             <div class="form-group customFormGroup">
                 <label for="violatorName" class="customLabel">اسم المخالف</label>
-                <input class="form-control customInput violatorName" id="violatorName" type="text" value="${violationData.ViolatorName || "----"}" disabled>
+                <input class="form-control customInput violatorName" id="violatorName" type="text" value="${violationData.ViolatorName || "-"}" disabled>
             </div>
         </div>
         <div class="col-md-4">
             <div class="form-group customFormGroup">
                 <label for="violatorCompany" class="customLabel">الشركة المخالفة التابع لها</label>
-                <input class="form-control customInput violatorCompany" id="violatorCompany" type="text" value="${violationData.ViolatorCompany || "----"}" disabled>
+                <input class="form-control customInput violatorCompany" id="violatorCompany" type="text" value="${violationData.ViolatorCompany || "-"}" disabled>
             </div>
         </div>
         <div class="col-md-4">
             <div class="form-group customFormGroup">
                 <label for="violationType" class="customLabel">نوع المخالفة</label>
-                <input class="form-control customInput violationType" id="violationType" type="text" value="${violationData.ViolationTypes?.Title || "----"}" disabled>
+                <input class="form-control customInput violationType" id="violationType" type="text" value="${violationData.ViolationTypes?.Title || "-"}" disabled>
             </div>
         </div>
         <div class="col-md-4">
             <div class="form-group customFormGroup">
                 <label for="materialType" class="customLabel">نوع الخام</label>
-                <input class="form-control customInput materialType" id="materialType" type="text" value="${violationData.Material?.Title || "----"}" disabled>
+                <input class="form-control customInput materialType" id="materialType" type="text" value="${violationData.Material?.Title || "-"}" disabled>
             </div>
         </div>
         <div class="col-md-4">
             <div class="form-group customFormGroup">
                 <label for="violationGov" class="customLabel">المحافظة</label>
-                <input class="form-control customInput violationGov" id="violationGov" type="text" value="${violationData.Governrates?.Title || "----"}" disabled>
+                <input class="form-control customInput violationGov" id="violationGov" type="text" value="${violationData.Governrates?.Title || "-"}" disabled>
             </div>
         </div>
         <div class="col-md-4">
             <div class="form-group customFormGroup">
                 <label for="violationZone" class="customLabel">منطقة الضبط</label>
-                <input class="form-control customInput violationZone" id="violationZone" type="text" value="${violationData.ViolationsZone || "----"}" disabled>
+                <input class="form-control customInput violationZone" id="violationZone" type="text" value="${violationData.ViolationsZone || "-"}" disabled>
             </div>
         </div>
         <div class="col-md-4">
@@ -838,25 +828,25 @@ quarryViolationReferralSector.referralVehicleDetails = (violationData) => {
         <div class="col-md-4">
             <div class="form-group customFormGroup">
                 <label for="totalOldPrice" class="customLabel">مبلغ النموذج</label>
-                <input class="form-control customInput totalOldPrice" id="totalOldPrice" type="text" value="${functions.splitBigNumbersByComma(violationData.TotalOldPrice || 0)}" disabled>
+                <input class="form-control customInput totalOldPrice" id="totalOldPrice" type="text" value="${functions.getDisplayValue(violationData.TotalOldPrice, true)}" disabled>
             </div>
         </div>
         <div class="col-md-4">
             <div class="form-group customFormGroup">
                 <label for="totalPriceDue" class="customLabel">المبلغ المستحق</label>
-                <input class="form-control customInput totalPriceDue" id="totalPriceDue" type="text" value="${functions.splitBigNumbersByComma(violationData.TotalPriceDue || 0)}" disabled>
+                <input class="form-control customInput totalPriceDue" id="totalPriceDue" type="text" value="${functions.getDisplayValue(violationData.TotalPriceDue, true)}" disabled>
             </div>
         </div>
         <div class="col-md-4">
             <div class="form-group customFormGroup">
                 <label for="carNumber" class="customLabel">رقم العربة</label>
-                <input class="form-control customInput carNumber" id="carNumber" type="text" value="${violationData.CarNumber || "----"}" disabled>
+                <input class="form-control customInput carNumber" id="carNumber" type="text" value="${violationData.CarNumber || "-"}" disabled>
             </div>
         </div>
         <div class="col-md-4">
             <div class="form-group customFormGroup">
                 <label for="vehicleType" class="customLabel">نوع العربة</label>
-                <input class="form-control customInput vehicleType" id="vehicleType" type="text" value="${violationData.VehicleType || "----"}" disabled>
+                <input class="form-control customInput vehicleType" id="vehicleType" type="text" value="${violationData.VehicleType || "-"}" disabled>
             </div>
         </div>
     `;
@@ -868,43 +858,43 @@ quarryViolationReferralSector.referralEquipmentDetails = (violationData) => {
         <div class="col-md-4">
             <div class="form-group customFormGroup">
                 <label for="violationCode" class="customLabel">رقم المخالفة</label>
-                <input class="form-control customInput violationCode" id="violationCode" type="text" value="${violationData.ViolationCode || "----"}" disabled>
+                <input class="form-control customInput violationCode" id="violationCode" type="text" value="${violationData.ViolationCode || "-"}" disabled>
             </div>
         </div>
         <div class="col-md-4">
             <div class="form-group customFormGroup">
                 <label for="violatorName" class="customLabel">اسم المخالف</label>
-                <input class="form-control customInput violatorName" id="violatorName" type="text" value="${violationData.ViolatorName || "----"}" disabled>
+                <input class="form-control customInput violatorName" id="violatorName" type="text" value="${violationData.ViolatorName || "-"}" disabled>
             </div>
         </div>
         <div class="col-md-4">
             <div class="form-group customFormGroup">
                 <label for="violatorCompany" class="customLabel">الشركة المخالفة التابع لها</label>
-                <input class="form-control customInput violatorCompany" id="violatorCompany" type="text" value="${violationData.ViolatorCompany || "----"}" disabled>
+                <input class="form-control customInput violatorCompany" id="violatorCompany" type="text" value="${violationData.ViolatorCompany || "-"}" disabled>
             </div>
         </div>
         <div class="col-md-4">
             <div class="form-group customFormGroup">
                 <label for="violationType" class="customLabel">نوع المخالفة</label>
-                <input class="form-control customInput violationType" id="violationType" type="text" value="${violationData.ViolationTypes?.Title || "----"}" disabled>
+                <input class="form-control customInput violationType" id="violationType" type="text" value="${violationData.ViolationTypes?.Title || "-"}" disabled>
             </div>
         </div>
         <div class="col-md-4">
             <div class="form-group customFormGroup">
                 <label for="materialType" class="customLabel">نوع الخام</label>
-                <input class="form-control customInput materialType" id="materialType" type="text" value="${violationData.Material?.Title || "----"}" disabled>
+                <input class="form-control customInput materialType" id="materialType" type="text" value="${violationData.Material?.Title || "-"}" disabled>
             </div>
         </div>
         <div class="col-md-4">
             <div class="form-group customFormGroup">
                 <label for="violationGov" class="customLabel">المحافظة</label>
-                <input class="form-control customInput violationGov" id="violationGov" type="text" value="${violationData.Governrates?.Title || "----"}" disabled>
+                <input class="form-control customInput violationGov" id="violationGov" type="text" value="${violationData.Governrates?.Title || "-"}" disabled>
             </div>
         </div>
         <div class="col-md-4">
             <div class="form-group customFormGroup">
                 <label for="violationZone" class="customLabel">منطقة الضبط</label>
-                <input class="form-control customInput violationZone" id="violationZone" type="text" value="${violationData.ViolationsZone || "----"}" disabled>
+                <input class="form-control customInput violationZone" id="violationZone" type="text" value="${violationData.ViolationsZone || "-"}" disabled>
             </div>
         </div>
         <div class="col-md-4">
@@ -922,19 +912,19 @@ quarryViolationReferralSector.referralEquipmentDetails = (violationData) => {
         <div class="col-md-4">
             <div class="form-group customFormGroup">
                 <label for="totalOldPrice" class="customLabel">مبلغ النموذج</label>
-                <input class="form-control customInput totalOldPrice" id="totalOldPrice" type="text" value="${functions.splitBigNumbersByComma(violationData.TotalOldPrice || 0)}" disabled>
+                <input class="form-control customInput totalOldPrice" id="totalOldPrice" type="text" value="${functions.getDisplayValue(violationData.TotalOldPrice, true)}" disabled>
             </div>
         </div>
         <div class="col-md-4">
             <div class="form-group customFormGroup">
                 <label for="totalPriceDue" class="customLabel">المبلغ المستحق</label>
-                <input class="form-control customInput totalPriceDue" id="totalPriceDue" type="text" value="${functions.splitBigNumbersByComma(violationData.TotalPriceDue || 0)}" disabled>
+                <input class="form-control customInput totalPriceDue" id="totalPriceDue" type="text" value="${functions.getDisplayValue(violationData.TotalPriceDue, true)}" disabled>
             </div>
         </div>
         <div class="col-md-4">
             <div class="form-group customFormGroup">
                 <label for="equipmentType" class="customLabel">نوع المعدة</label>
-                <input class="form-control customInput equipmentType" id="equipmentType" type="text" value="${violationData.EquipmentType || "----"}" disabled>
+                <input class="form-control customInput equipmentType" id="equipmentType" type="text" value="${violationData.EquipmentType || "-"}" disabled>
             </div>
         </div>
     `;
@@ -942,115 +932,11 @@ quarryViolationReferralSector.referralEquipmentDetails = (violationData) => {
 };
 
 
-// ========== Tracking History Functions =========
-const ViolationHistoryLogs = () => {
-    let selectedViolationId = null;
-    let selectedViolationCode = null;
-    let trackHistoryTable = null;
+// ===============================
+//  Violation History Tracking for External Violations
+// ===============================
+ViolationHistoryLogs.init(".contentContainer");
 
-    // ===============================
-    //  فتح المودال
-    // ===============================
-    $(".contentContainer").on("click", ".violationHistory", function (e) {
-        e.preventDefault();
-        e.stopPropagation();
-
-        selectedViolationId = $(this).data("violationid");
-        selectedViolationCode = $(this).data("violationcode");
-
-        $("#trackHistoryModal").modal("show");
-    });
-
-    // ===============================
-    //  إغلاق المودال - Close button handlers
-    // ===============================
-    const closeModal = () => {
-        $("#trackHistoryModal").modal("hide");
-
-        // Clear the modal content
-        $(".track-history-violation-code").text("");
-        if (trackHistoryTable) {
-            trackHistoryTable.clear().destroy();
-            trackHistoryTable = null;
-        }
-        $("#trackHistoryTable tbody").empty();
-    };
-
-    $(document).on("click", "#closeViolationHistoryPopup", function (e) {
-        e.preventDefault();
-        e.stopPropagation();
-        closeModal();
-    });
-
-    // // Close button in footer
-    // $(document).on("click", "#closeViolationHistoryPopupFooter", function (e) {
-    //   e.preventDefault();
-    //   e.stopPropagation();
-    //   closeModal();
-    // });
-
-    // Bootstrap modal hide event
-    $("#trackHistoryModal").on("hidden.bs.modal", function () {
-        closeModal();
-    });
-
-    // ===============================
-    //  لما المودال يفتح
-    // ===============================
-    $(".track-history-modal").on("shown.bs.modal", function () {
-        $(".track-history-violation-code").text(selectedViolationCode);
-
-        const request = {
-            Request: {
-                ViolationId: selectedViolationId,
-            },
-        };
-
-        const tableElement = $("#trackHistoryTable");
-
-        if (!trackHistoryTable) {
-            trackHistoryTable = tableElement.DataTable({
-                processing: true,
-                paging: false,
-                responsive: true,
-                destroy: true,
-                ajax: {
-                    url: "/_layouts/15/Uranium.Violations.SharePoint/ViolationHistoryLogs.aspx/Search",
-                    type: "POST",
-                    contentType: "application/json",
-                    data: () => JSON.stringify(request),
-                    dataSrc: (data) => {
-                        return data?.d?.Result?.GridData || [];
-                    }
-                },
-                columns: [
-                    { data: null, render: (data, type, row, meta) => meta.row },
-                    { data: "Status", render: (data) => data || "-" },
-                    { data: "Created", render: (data) => data ? functions.getFormatedDate(data) : "-" },
-                    { data: "CreatedBy", render: (data) => data || "-" },
-                    { data: "Comment", render: (data) => data || "-" }
-                ],
-                language: { emptyTable: "لا توجد بيانات" }
-            });
-        } else {
-            trackHistoryTable.ajax.reload();
-        }
-    });
-
-    // ===============================
-    //  لما المودال يقفل
-    // ===============================
-    $(".track-history-modal").on("hidden.bs.modal", function () {
-        $(".track-history-violation-code").text("");
-        if (trackHistoryTable) {
-            trackHistoryTable.clear().destroy();
-            trackHistoryTable = null;
-        }
-        $("#trackHistoryTable tbody").empty();
-    });
-};
-
-ViolationHistoryLogs();
 
 
 export default quarryViolationReferralSector;

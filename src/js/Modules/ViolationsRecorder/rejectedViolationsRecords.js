@@ -137,9 +137,14 @@ rejectedViolationsRecords.exportToExcel = () => {
       title: "رقم المحجر/العربة",
       render: (record) => {
         const violation = record.Violation;
-        if (!violation) return "---";
-        return violation.OffenderType === "Vehicle" ? (violation.CarNumber || "---") : (violation.QuarryCode || "---");
+        if (!violation) return "-";
+        return violation.OffenderType === "Vehicle" ? (violation.CarNumber || "-") : (violation.QuarryCode || "-");
       },
+    },
+    {
+      title: "رقم المقطورة",
+      render: (record) =>
+        record.Violation?.TrailerNum || "-",
     },
     {
       title: "المنطقة",
@@ -150,7 +155,7 @@ rejectedViolationsRecords.exportToExcel = () => {
       exportOnly: true,
       render: (record) => {
         const violation = record.Violation;
-        if (!violation) return "---";
+        if (!violation) return "-";
 
         // Try to get coordinates in degrees format first, fallback to regular format
         const coordinatesDegrees = violation.CoordinatesDegrees;
@@ -181,7 +186,7 @@ rejectedViolationsRecords.exportToExcel = () => {
           }
         }
 
-        return "---";
+        return "-";
       },
     },
   ];
@@ -237,8 +242,9 @@ rejectedViolationsRecords.dashBoardTable = (violationsData, destroyTable) => {
         `${createdDate}`,
         `${functions.getFormatedDate(taskViolation.ViolationDate)}`,
         `<div class="companyName">${taskViolation.ViolatorCompany != "" ? taskViolation.ViolatorCompany : "-"}</div>`,
-        `<div class="violationCode">${taskViolation.OffenderType == "Vehicle" ? taskViolation.CarNumber : taskViolation.QuarryCode != "" ? taskViolation.QuarryCode : "---"}</div>`,
-        `<div class="violationZone">${taskViolation.ViolationsZone}</div>`,
+        `<div class="violationCode">${taskViolation.OffenderType == "Vehicle" ? taskViolation.CarNumber : taskViolation.QuarryCode != "" ? taskViolation.QuarryCode : "-"}</div>`,
+        `<div class="trailerNum">${taskViolation?.TrailerNum || "-"}</div>`,
+        `<div class="violationZone">${taskViolation.ViolationsZone || "-"}</div>`,
       ]);
     });
   }
@@ -259,6 +265,7 @@ rejectedViolationsRecords.dashBoardTable = (violationsData, destroyTable) => {
       { title: "تاريخ الضبط", class: "sort" },
       { title: "إسم الشركة المخالفة", class: "no-sort" },
       { title: " رقم المحجر/العربة", class: "no-sort" },
+      { title: "رقم المقطورة" },
       { title: "المنطقة", class: "no-sort" },
     ],
     false,
@@ -348,6 +355,19 @@ rejectedViolationsRecords.findViolationByID = (event, taskID, print = false) => 
           Content = DetailsPopup.equipmentDetailsPopupContent(violationData, "المرفوضة");
           printBox = `<div class="printBox" id="printJS-form">${Content}</div>`;
         }
+
+        // FIX: Hide buttons AFTER rendering
+        setTimeout(() => {
+          const popup = $(".detailsPopupForm");
+
+          popup.find("#editMaterialMinPrice, #payAllPrice")
+            .css("display", "none")
+            .attr("style", "display: none !important");
+        }, 50);
+
+        // Hide edit button (extra safety)
+        $("#editMaterialMinPrice").hide();
+
         functions.declarePopup(["generalPopupStyle", "detailsPopup", "blueHeaderPopup"], printBox);
         $(".printBtn").on("click", (e) => {
           functions.PrintDetails(e)
@@ -355,14 +375,6 @@ rejectedViolationsRecords.findViolationByID = (event, taskID, print = false) => 
         if (print) {
           functions.PrintDetails(event)
         }
-
-        // FIX: Hide buttons AFTER rendering
-        setTimeout(() => {
-          const popup = $(".detailsPopupForm");
-          popup.find("#editMaterialMinPrice, #payAllPrice")
-            .css("display", "none")
-            .attr("style", "display: none !important");
-        }, 50);
 
         $(".detailsPopupForm").addClass("rejectedViolationsRecordsLog")
         $(".detailsPopupForm").find(".CommiteeMembersBox").show().find(".formElements").css("border-bottom", "none")
@@ -458,17 +470,33 @@ rejectedViolationsRecords.resetFilter = (e) => {
 rejectedViolationsRecords.handleViolationCategoryChange = () => {
   $("#violationCategory").on("change", function () {
     const selectedCategory = $(this).val();
+
     const $theCodeField = $("#theCode");
     const $typeOfViolationField = $("#TypeofViolation");
+    const $trailerNumField = $("#trailerNum");
 
+    // Default: enable all
     $theCodeField.prop("disabled", false);
     $typeOfViolationField.prop("disabled", false);
+    $trailerNumField.prop("disabled", false);
 
     if (selectedCategory === "Equipment") {
       $theCodeField.prop("disabled", true).val("");
       $typeOfViolationField.prop("disabled", true).val("0");
-    } else if (selectedCategory === "Vehicle") {
+      $trailerNumField.prop("disabled", true).val("");
+    }
+    else if (selectedCategory === "Vehicle") {
+      // Vehicle allows trailer number
       $typeOfViolationField.prop("disabled", true).val("0");
+      $trailerNumField.prop("disabled", false);
+    }
+    else if (selectedCategory === "Quarry") {
+      // Quarry doesn't allow trailer number
+      $trailerNumField.prop("disabled", true).val("");
+    }
+    else {
+      // No category selected
+      $trailerNumField.prop("disabled", true).val("");
     }
   });
 };

@@ -5,6 +5,7 @@ import sharedApis from "../../Shared/sharedApiCall";
 let carViolation = {}
 var urlParams = new URLSearchParams(window.location.search);
 var editViolationId;
+
 carViolation.violatorDetails = () => {
     let vaildViolator = false;
     let violatorDetails = {}
@@ -15,6 +16,8 @@ carViolation.violatorDetails = () => {
 
     // Get the previous violations count from the display span instead of input
     let violationPrevCount = $(".previous-violations-count-value").text();
+    // Get the trailer previous violations count from the display span
+    let violationPrevCountTrailer = $(".trailer-previous-violations-count-value").text();
 
     let violationGov = $("#violationGov").children("option:selected").val();
     let violationGovId = $("#violationGov").children("option:selected").data("id");
@@ -31,7 +34,7 @@ carViolation.violatorDetails = () => {
                     if (violatorMobileNumber && violatorMobileNumber.trim() !== "") {
 
                         if (carType != "" && carType == "عربة فردي") {
-                            //  Check National ID if provided
+                            // Check National ID if provided
                             if (violatorNationalId !== "") {
                                 // Check if exactly 14 digits
                                 if (!/^\d{14}$/.test(violatorNationalId)) {
@@ -64,6 +67,15 @@ carViolation.violatorDetails = () => {
 
                                 if ((TractorNumbers.length > 0 && TractorNumbers.length > 0) || $("#unmarkedCheckbox:checked").length != 0) {
 
+                                    // Check if trailer previous violations count is not empty and is a valid number
+                                    if (violationPrevCountTrailer === "" || isNaN(violationPrevCountTrailer)) {
+                                        functions.warningAlert(
+                                            "من فضلك قم بالتأكد من ظهور عدد المخالفات السابقة للمقطورة",
+                                            ".trailer-previous-violations-display"
+                                        );
+                                        return false;
+                                    }
+
                                     // Validate trailer number is different from car number
                                     let carLicenseLetters = $("#carLicenseLetters").val().trim();
                                     let carLicenseNumbers = $("#carLicenseNumbres").val().trim();
@@ -80,14 +92,11 @@ carViolation.violatorDetails = () => {
 
                                     // Check National ID if provided
                                     if (violatorNationalId !== "") {
-
                                         if (!/^\d{14}$/.test(violatorNationalId)) {
-
                                             functions.warningAlert(
                                                 "الرقم القومي يجب أن يتكون من 14 رقمًا بالضبط",
                                                 "#violatorNationalId"
                                             );
-
                                             return false;
                                         }
                                     }
@@ -96,12 +105,14 @@ carViolation.violatorDetails = () => {
                                         violatorName: violatorName,
                                         violatorNationalId: violatorNationalId != "" ? violatorNationalId : "",
                                         violationPrevCount: Number(violationPrevCount),
+                                        violatorMobileNumber: violatorMobileNumber.trim(),
                                         violationGov: violationGovId,
                                         violationAreaName: violationArea,
                                         companyName: companyName != "" ? companyName : "",
                                         commercialRegister: commercialRegister != "" ? commercialRegister : "",
                                         carType: carType,
                                         TractorNumber: TractorFullNumber,
+                                        NumOfPreviousViolationsTrailer: Number(violationPrevCountTrailer),
                                     }
 
                                     vaildViolator = true;
@@ -916,6 +927,7 @@ carViolation.validateForm = (e) => {
                 if (dimensionsOtherDetails != false) {
                     if (otherViolationDetails != false) {
                         functions.disableButton(e)
+
                         carViolationData = {
                             // Edit violation 
                             ID: urlParams.get("taskId") !== null ? editViolationId : "",
@@ -959,6 +971,11 @@ carViolation.validateForm = (e) => {
                             CommiteeMember: otherViolationDetails.membersNamesText != "" ? otherViolationDetails.membersNamesText : "-",
                             SectorMembers: SectorMembers,
                             Sector: 0,
+                        }
+
+                        // Add NumOfPreviousViolationsTrailer if trailer exists
+                        if (violatorDetails.carType == "عربة بمقطورة" && violatorDetails.NumOfPreviousViolationsTrailer) {
+                            carViolationData.NumOfPreviousViolationsTrailer = violatorDetails.NumOfPreviousViolationsTrailer;
                         }
 
                         // Add MaterialUnit property if calculate by ton is checked
@@ -1201,6 +1218,12 @@ carViolation.editViolation = () => {
                 $("#quarryType").val(violationData.QuarryType).trigger("change");
                 $("#quarryCode").val(violationData.QuarryCode);
 
+                // Set trailer previous violations count if it exists
+                if (violationData.NumOfPreviousViolationsTrailer) {
+                    $(".trailer-previous-violations-count-value").text(violationData.NumOfPreviousViolationsTrailer);
+                    $(".trailer-previous-violations-display").show();
+                }
+
                 violationData.Equipments.forEach((equipment, index) => {
                     let selectedInput = $(`label[for="${equipment.Name}"]`);
                     selectedInput.trigger("click");
@@ -1220,7 +1243,6 @@ carViolation.editViolation = () => {
             });
     }
 };
-
 carViolation.getPreviousViolationsCount = () => {
     // Get car number - combine letters and numbers if they exist
     let carLicenseLetters = $("#carLicenseLetters").val();

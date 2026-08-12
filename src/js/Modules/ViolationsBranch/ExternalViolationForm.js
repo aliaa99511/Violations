@@ -17,54 +17,18 @@ externalViolationForm.violatorDetails = () => {
     let violationsZone = $("#violationsZone").val();
     let assignedProsecution = $("#assignedProsecution").val(); // Changed from dropdown to text input
 
-    if (violatorName && violatorName.trim() !== "") {
-        if (violationGov && violationGov !== "") {
-            if (violatorMobileNumber && violatorMobileNumber.trim() !== "") {
-                // Validate assigned prosecution as text field
-                if (assignedProsecution && assignedProsecution.trim() !== "") {
+    violatorDetails = {
+        violatorName: violatorName.trim(),
+        violatorNationalId: violatorNationalId && violatorNationalId.trim() !== "" ? violatorNationalId.trim() : "",
+        violatorMobileNumber: violatorMobileNumber.trim(),
+        companyName: companyName && companyName.trim() !== "" ? companyName.trim() : "",
+        violationGov: violationGovId,
+        violationGovText: violationGov,
+        violationsZone: violationsZone && violationsZone.trim() !== "" ? violationsZone.trim() : "",
+        assignedProsecution: assignedProsecution.trim(),
+    };
 
-                    // Check National ID if provided
-                    if (violatorNationalId !== "") {
-                        // Check if exactly 14 digits
-                        if (!/^\d{14}$/.test(violatorNationalId)) {
-                            functions.warningAlert(
-                                "الرقم القومي يجب أن يتكون من 14 رقمًا بالضبط",
-                                "#violatorNationalId"
-                            );
-                            return false;
-                        }
-                    }
-
-                    violatorDetails = {
-                        violatorName: violatorName.trim(),
-                        violatorNationalId: violatorNationalId && violatorNationalId.trim() !== "" ? violatorNationalId.trim() : "",
-                        violatorMobileNumber: violatorMobileNumber.trim(),
-                        companyName: companyName && companyName.trim() !== "" ? companyName.trim() : "",
-                        violationGov: violationGovId,
-                        violationGovText: violationGov,
-                        violationsZone: violationsZone && violationsZone.trim() !== "" ? violationsZone.trim() : "",
-                        assignedProsecution: assignedProsecution.trim(),
-                    };
-                    vaildViolator = true;
-                } else {
-                    functions.warningAlert("من فضلك قم بادخال اسم النيابة المختصة", "#assignedProsecution");
-                }
-            } else {
-                functions.warningAlert("من فضلك قم بادخال رقم الهاتف المحمول", "#violatorMobileNumber");
-            }
-
-        } else {
-            functions.warningAlert("من فضلك قم باختيار المحافظة", "#violationGov");
-        }
-    } else {
-        functions.warningAlert("من فضلك قم بادخال اسم المخالف", "#violatorName");
-    }
-
-    if (vaildViolator) {
-        return violatorDetails;
-    } else {
-        return vaildViolator;
-    }
+    return violatorDetails;
 };
 
 // ==================== VIOLATION DETAILS ====================
@@ -72,89 +36,36 @@ externalViolationForm.violationDetails = () => {
     let violationsData = {};
     let validViolation = false;
     let offenderType = $("#offenderType").children("option:selected").val();
-    let offenderTypeId = $("#offenderType").children("option:selected").data("id");
+    let offenderTypeId = $("#offenderType").children("option:selected").data("id") || 1;
     let violationType = $("#violationType").children("option:selected").val();
     let violationTypeId = $("#violationType").children("option:selected").data("id");
     let violationTypeText = $("#violationType").children("option:selected").text();
     let violationDate = $("#violationDate").val();
     let caseNumber = $("#caseNumber").val();
     let bonesCount = $("#BonesCount").val();
+    let quarryType = $("#quarryType").children("option:selected").val();
 
-    // Check if this is a bones-related violation
+    let violationMaterial = $("#quarryViolationRawType").children("option:selected").val();
+    let violationMaterialId = $("#quarryViolationRawType").children("option:selected").data("id");
+
     let isBonesViolation = violationTypeText.includes("بون") || violationTypeText.includes("بونات");
 
-    if (offenderType && offenderType !== "") {
+    violationsData = {
+        offenderType: offenderType,
+        offenderTypeText: "محجر مخالف",
+        offenderTypeId: offenderTypeId,
+        violationType: violationTypeId,
+        violationTypeText: violationType,
+        violationMaterial: violationMaterialId,
+        violationDate: violationDate,
+        caseNumber: caseNumber.trim(),
+        rawViolationDate: violationDate,
+        quarryType: quarryType,
+        bonesCount: isBonesViolation && $(".BonesBox").is(":visible") ? Number(bonesCount) : 0,
+        isBonesViolation: isBonesViolation
+    };
 
-        // For Vehicle and Equipment, skip violation type validation (it's disabled)
-        if (offenderType === "Vehicle" || offenderType === "Equipment") {
-            // Skip violation type validation for Vehicle and Equipment
-            if (violationDate && violationDate !== "") {
-                if (caseNumber && caseNumber.trim() !== "") {
-                    violationsData = {
-                        offenderType: offenderType,
-                        offenderTypeText: offenderType,
-                        offenderTypeId: offenderTypeId,
-                        violationType: 0, // Set to 0 or null for Vehicle/Equipment
-                        violationTypeText: "", // Empty string for Vehicle/Equipment
-                        violationDate: violationDate,
-                        caseNumber: caseNumber.trim(),
-                        rawViolationDate: violationDate,
-                        bonesCount: 0,
-                        isBonesViolation: false
-                    };
-                    validViolation = true;
-                } else {
-                    functions.warningAlert("من فضلك قم بادخال رقم القضية", "#caseNumber");
-                }
-            } else {
-                functions.warningAlert("من فضلك قم بتحديد تاريخ الضبط", "#violationDate");
-            }
-        } else {
-            // Original validation for other types (Quarry, etc.)
-            if (violationType && violationType !== "") {
-                if (violationDate && violationDate !== "") {
-                    if (caseNumber && caseNumber.trim() !== "") {
-
-                        // Validate bones count if it's a bones violation and the box is visible
-                        if (isBonesViolation && $(".BonesBox").is(":visible")) {
-                            if (!bonesCount || bonesCount.trim() === "" || isNaN(bonesCount) || Number(bonesCount) <= 0) {
-                                functions.warningAlert("من فضلك قم بادخال عدد البونات بشكل صحيح", "#BonesCount");
-                                return false;
-                            }
-                        }
-
-                        violationsData = {
-                            offenderType: offenderType,
-                            offenderTypeText: offenderType,
-                            offenderTypeId: offenderTypeId,
-                            violationType: violationTypeId,
-                            violationTypeText: violationType,
-                            violationDate: violationDate,
-                            caseNumber: caseNumber.trim(),
-                            rawViolationDate: violationDate,
-                            bonesCount: isBonesViolation && $(".BonesBox").is(":visible") ? Number(bonesCount) : 0,
-                            isBonesViolation: isBonesViolation
-                        };
-                        validViolation = true;
-                    } else {
-                        functions.warningAlert("من فضلك قم بادخال رقم القضية", "#caseNumber");
-                    }
-                } else {
-                    functions.warningAlert("من فضلك قم بتحديد تاريخ الضبط", "#violationDate");
-                }
-            } else {
-                functions.warningAlert("من فضلك قم باختيار نوع المخالفة", "#violationType");
-            }
-        }
-    } else {
-        functions.warningAlert("من فضلك قم باختيار تصنيف المخالفة", "#offenderType");
-    }
-
-    if (validViolation) {
-        return violationsData;
-    } else {
-        return validViolation;
-    }
+    return violationsData;
 };
 
 // ==================== DIMENSIONS AND COORDINATES ====================
@@ -168,54 +79,22 @@ externalViolationForm.violationDimensionsCoordsDetails = () => {
     let NearestQuarryCode = $("#NearestQuarryNumber").val();
     let coordsResponse = externalViolationForm.GetCoordinates();
 
-    if (coordsResponse != false) {
-        let coordinates = coordsResponse.Decimal;
-        let coordinatesDegrees = coordsResponse.Degree;
+    let coordinates = coordsResponse.Decimal;
+    let coordinatesDegrees = coordsResponse.Degree;
 
-        if (violationDepth != "" && violationDepth != 0) {
-            if (violationAreaSpace != "" && violationAreaSpace != 0) {
-                if (NearestQuarryCode != "") {
-                    violationDimensionsData = {
-                        violationDepth: Number(violationDepth),
-                        violationAreaSpace: Number(violationAreaSpace),
-                        violationQuantity: Number(violationQuantity),
-                        distanceToNearQuarry: Number(distanceToNearQuarry),
-                        NearestQuarryCode: NearestQuarryCode,
-                        coordinates: coordinates,
-                        coordinatesDegrees: coordinatesDegrees,
-                    };
-                    validDimensions = true;
-                } else {
-                    functions.warningAlert(
-                        "من فضلك قم بإدخال رقم المحجر الأقرب للمخالفة",
-                        "#NearestQuarryNumber"
-                    );
-                }
-            } else {
-                functions.warningAlert(
-                    "من فضلك قم بادخال مساحة منطقة المخالفة بشكل صحيح",
-                    "#AreaSpace"
-                );
-            }
-        } else {
-            functions.warningAlert(
-                "من فضلك قم بادخال عمق/ارتفاع المحجر الخاص بالمخالفة بشكل صحيح",
-                "#violationDepth"
-            );
-        }
-    } else {
-        functions.warningAlert(
-            "من فضلك قم بإدخال جميع الاحداثيات وبشكل صحيح (يجب إدخال 3 نقاط على الأقل)",
-            "#coordinatesTable"
-        );
-    }
+    violationDimensionsData = {
+        violationDepth: Number(violationDepth),
+        violationAreaSpace: Number(violationAreaSpace),
+        violationQuantity: Number(violationQuantity),
+        distanceToNearQuarry: Number(distanceToNearQuarry),
+        NearestQuarryCode: NearestQuarryCode,
+        coordinates: coordinates,
+        coordinatesDegrees: coordinatesDegrees,
+    };
 
-    if (validDimensions) {
-        return violationDimensionsData;
-    } else {
-        return validDimensions;
-    }
+    return violationDimensionsData;
 };
+
 
 // ==================== COORDINATES FUNCTIONS ====================
 externalViolationForm.GetCoordinates = () => {
@@ -275,20 +154,24 @@ externalViolationForm.GetCoordinates = () => {
                     let CurrentField = $(Field);
                     let Value = CurrentField.val().trim();
 
-                    // Validate all rows
-                    if (Value === "" || !pattern.test(Value) ||
+                    // Make validation optional - only validate if value is provided
+                    if (Value === "") {
+                        // Allow empty values
+                        Temp.push("");
+                    } else if (!pattern.test(Value) ||
                         (fieldIndex === 0 && (firstEastInputVal > 37 || firstEastInputVal < 24)) ||
                         (fieldIndex === 0 && (firstNorthInputVal > 32 || firstNorthInputVal < 22)) ||
                         (fieldIndex === 1 && (secondEastInputVal > 60 || secondNorthInputVal > 60)) ||
                         (fieldIndex === 2 && (thirdEastInputVal > 60 || thirdNorthInputVal > 60))) {
                         rowValid = false;
                         return false;
+                    } else {
+                        Temp.push(Value);
                     }
-                    Temp.push(Value);
                 });
 
                 // Only add to arrays if we have all three values for this cell
-                if (Temp.length === 3) {
+                if (Temp.length === 3 && Temp.every(val => val !== "")) {
                     PointArr.push(Temp[0] + "° " + Temp[1] + "' " + Temp[2] + '"');
                     NumberArr.push(Temp[0] + " " + Temp[1] + " " + Temp[2] + " ");
                     DecimalArr.push(
@@ -321,7 +204,7 @@ externalViolationForm.GetCoordinates = () => {
     NumbersArr += "]";
     DecimalsArr += "]";
 
-    // NEW: Require at least 1 valid point instead of exactly 3
+    // Return empty arrays if no valid points exist
     if (IsValid && hasAnyValidPoint) {
         return {
             Degree: PointsArr,
@@ -329,7 +212,12 @@ externalViolationForm.GetCoordinates = () => {
             Numbers: NumbersArr,
         };
     } else {
-        return false;
+        // Return empty arrays instead of false when no coordinates are provided
+        return {
+            Degree: "[]",
+            Decimal: "[]",
+            Numbers: "[]"
+        };
     }
 };
 
@@ -404,47 +292,6 @@ externalViolationForm.OrderTableRow = () => {
         CurrentRow.find("th").html(CurrentIndex);
     });
 };
-
-// Function to attach coordinate validation
-// externalViolationForm.attachCoordinateValidation = () => {
-//     // East coordinates validation (first column)
-//     $(document).off("keyup", ".coordinatesTable td:nth-child(2) input:nth-child(1)");
-//     $(document).on("keyup", ".coordinatesTable td:nth-child(2) input:nth-child(1)", function (e) {
-//         if (Number($(e.currentTarget).val()) == 37) {
-//             $(e.currentTarget).closest("td").find("input:nth-child(2)").val(0);
-//             $(e.currentTarget).closest("td").find("input:nth-child(2)").attr("disabled", "disabled");
-//             $(e.currentTarget).closest("td").find("input:nth-child(3)").val(0);
-//             $(e.currentTarget).closest("td").find("input:nth-child(3)").attr("disabled", "disabled");
-//         } else if (
-//             $(e.currentTarget).val() == "" ||
-//             Number($(e.currentTarget).val()) != 37
-//         ) {
-//             $(e.currentTarget).closest("td").find("input:nth-child(2)").val("");
-//             $(e.currentTarget).closest("td").find("input:nth-child(2)").removeAttr("disabled");
-//             $(e.currentTarget).closest("td").find("input:nth-child(3)").val("");
-//             $(e.currentTarget).closest("td").find("input:nth-child(3)").removeAttr("disabled");
-//         }
-//     });
-
-//     // North coordinates validation (second column)
-//     $(document).off("keyup", ".coordinatesTable td:nth-child(3) input:nth-child(1)");
-//     $(document).on("keyup", ".coordinatesTable td:nth-child(3) input:nth-child(1)", function (e) {
-//         if (Number($(e.currentTarget).val()) == 32) {
-//             $(e.currentTarget).closest("td").find("input:nth-child(2)").val(0);
-//             $(e.currentTarget).closest("td").find("input:nth-child(2)").attr("disabled", "disabled");
-//             $(e.currentTarget).closest("td").find("input:nth-child(3)").val(0);
-//             $(e.currentTarget).closest("td").find("input:nth-child(3)").attr("disabled", "disabled");
-//         } else if (
-//             $(e.currentTarget).val() == "" ||
-//             Number($(e.currentTarget).val()) != 32
-//         ) {
-//             $(e.currentTarget).closest("td").find("input:nth-child(2)").val("");
-//             $(e.currentTarget).closest("td").find("input:nth-child(2)").removeAttr("disabled");
-//             $(e.currentTarget).closest("td").find("input:nth-child(3)").val("");
-//             $(e.currentTarget).closest("td").find("input:nth-child(3)").removeAttr("disabled");
-//         }
-//     });
-// };
 
 // ==================== FORM ACTIONS ====================
 externalViolationForm.formActions = () => {
@@ -801,121 +648,92 @@ externalViolationForm.validateForm = (e) => {
     let violationDetails = externalViolationForm.violationDetails();
     let violationsDimensions = externalViolationForm.violationDimensionsCoordsDetails();
 
-    // If any of the main sections validation fails, stop form submission
-    if (!violatorDetails || !violationDetails || !violationsDimensions) {
-        return;
-    }
-
     // Get dynamic sections data with validation
     let dynamicSectionsData = externalViolationForm.collectDynamicSectionsData();
-
-    // If dynamic sections validation fails, stop form submission
-    if (dynamicSectionsData === false) {
-        return;
-    }
 
     // ==================== REQUIRED ATTACHMENTS VALIDATION ====================
     const attachedFiles = $("#attachViolationFiles")[0].files;
 
-    if (!attachedFiles || attachedFiles.length === 0) {
-        functions.warningAlert(
-            "من فضلك قم بإرفاق المستندات المطلوبة",
-            "#attachViolationFiles"
-        );
-        return;
-    }
-
-    // Format the date to match quarryViolation (MM-DD-YYYY)
     const violationDateInput = $("#violationDate").val();
-    // Split by either '/' or '-'
-    const dateParts = violationDateInput.split(/[\/\-]/);
 
-    if (dateParts.length === 3) {
-        // Assuming the input is DD-MM-YYYY
+    let apiDate = "";
+
+    if (violationDateInput) {
+        const dateParts = violationDateInput.split(/[\/\-]/);
+
         const day = dateParts[0].padStart(2, '0');
         const month = dateParts[1].padStart(2, '0');
         const year = dateParts[2];
-        // Format as MM-DD-YYYY for API 
-        const apiDate = `${month}-${day}-${year}`;
 
-        let offenderType = $("#offenderType").children("option:selected").val();
-        let offenderTypeId = $("#offenderType").children("option:selected").data("id");
-
-        // Construct the complete ViolationData object
-        const ViolationData = {
-            // Basic violation information
-            Title: "New External Violation",
-            OffenderType: offenderTypeId || offenderType,
-            IsExternalRecord: true,
-
-            // Violator details
-            ViolatorName: violatorDetails.violatorName,
-            NationalID: violatorDetails.violatorNationalId || "",
-            MobileNumber: violatorDetails.violatorMobileNumber,
-            ViolatorCompany: violatorDetails.companyName || "",
-            Governrate: violatorDetails.violationGov,
-            ViolationsZone: violatorDetails.violationsZone || "",
-            AssignedProsecution: violatorDetails.assignedProsecution,
-
-            // Violation details
-            ViolationType: violationDetails.violationType,
-            CaseNumber: violationDetails.caseNumber,
-            ViolationDate: apiDate,
-            BonsNumber: violationDetails.isBonesViolation ? violationDetails.bonesCount : 0,
-
-            // Dimensions data
-            Depth: violationsDimensions.violationDepth,
-            Area: violationsDimensions.violationAreaSpace,
-            TotalQuantity: violationsDimensions.violationQuantity,
-            DistanceToNearestQuarry: violationsDimensions.distanceToNearQuarry || 0,
-            NearestQuarryCode: violationsDimensions.NearestQuarryCode,
-            Coordinates: violationsDimensions.coordinates,
-            CoordinatesDegrees: violationsDimensions.coordinatesDegrees,
-
-            // Committee members (if applicable - add if your form has this)
-            // CommiteeMember: "",
-            // SectorMembers: "",
-            // Sector: 0,
-        };
-
-        // Add dynamic car section data if it exists
-        if (dynamicSectionsData.carData) {
-            Object.assign(ViolationData, {
-                NumOfPreviousViolations: dynamicSectionsData.carData.violationPrevCount || 0,
-                CarNumber: dynamicSectionsData.carData.carNumber,
-                CarColor: dynamicSectionsData.carData.carColor,
-                VehicleBrand: dynamicSectionsData.carData.vehicleBrand,
-                TrafficName: dynamicSectionsData.carData.carLicenseTraffic || "",
-                DrivingLicense: dynamicSectionsData.carData.driverLicenseNumber || "",
-                TrafficLicense: dynamicSectionsData.carData.driverLicenseTraffic || "",
-                VehicleType: dynamicSectionsData.carData.vehicleType,
-                TrailerNum: dynamicSectionsData.carData.trailerNum || "",
-                // MaterialType: dynamicSectionsData.carData.materialType // Uncomment if you have material type
-            });
-        }
-
-        // Add dynamic equipment data if it exists
-        if (dynamicSectionsData.equipmentData && dynamicSectionsData.equipmentData.Equipments.length > 0) {
-            Object.assign(ViolationData, {
-                Equipments: dynamicSectionsData.equipmentData.Equipments,
-                EquipmentsCount: dynamicSectionsData.equipmentData.EquipmentsCount
-            });
-        }
-
-        // Optional: Add MaterialUnit if needed (like in quarryViolation with calculate by ton)
-        // if ($("#calculateByTon").is(":checked")) {
-        //     ViolationData.MaterialUnit = "طن";
-        // }
-
-        // Disable the submit button to prevent double submission
-        functions.disableButton(e);
-
-        // Submit the violation
-        externalViolationForm.submitNewViolation(e, ViolationData);
-
-    } else {
-        functions.warningAlert("تاريخ غير صحيح. استخدم الصيغة DD/MM/YYYY", "#violationDate");
+        apiDate = `${month}-${day}-${year}`;
     }
+
+    let offenderType = $("#offenderType").children("option:selected").val();
+    let offenderTypeId = $("#offenderType").children("option:selected").data("id");
+
+    // Construct the complete ViolationData object
+    const ViolationData = {
+        // Basic violation information
+        Title: "New External Violation",
+        OffenderType: offenderTypeId || offenderType,
+        IsExternalRecord: true,
+
+        // Violator details
+        ViolatorName: violatorDetails.violatorName,
+        NationalID: violatorDetails.violatorNationalId || "",
+        MobileNumber: violatorDetails.violatorMobileNumber,
+        ViolatorCompany: violatorDetails.companyName || "",
+        Governrate: violatorDetails.violationGov,
+        ViolationsZone: violatorDetails.violationsZone || "",
+        AssignedProsecution: violatorDetails.assignedProsecution,
+
+        // Violation details
+        ViolationType: violationDetails.violationType,
+        MaterialType: violationDetails.violationMaterial,
+        CaseNumber: violationDetails.caseNumber,
+        ViolationDate: apiDate,
+        BonsNumber: violationDetails.isBonesViolation ? violationDetails.bonesCount : 0,
+        QuarryType: violationDetails.quarryType,
+
+        // Dimensions data
+        Depth: violationsDimensions.violationDepth,
+        Area: violationsDimensions.violationAreaSpace,
+        TotalQuantity: violationsDimensions.violationQuantity,
+        DistanceToNearestQuarry: violationsDimensions.distanceToNearQuarry || 0,
+        NearestQuarryCode: violationsDimensions.NearestQuarryCode,
+        Coordinates: violationsDimensions.coordinates,
+        CoordinatesDegrees: violationsDimensions.coordinatesDegrees,
+    };
+
+    // Add dynamic car section data if it exists
+    if (dynamicSectionsData.carData) {
+        Object.assign(ViolationData, {
+            NumOfPreviousViolations: dynamicSectionsData.carData.violationPrevCount || 0,
+            CarNumber: dynamicSectionsData.carData.carNumber,
+            CarColor: dynamicSectionsData.carData.carColor,
+            VehicleBrand: dynamicSectionsData.carData.vehicleBrand,
+            TrafficName: dynamicSectionsData.carData.carLicenseTraffic || "",
+            DrivingLicense: dynamicSectionsData.carData.driverLicenseNumber || "",
+            TrafficLicense: dynamicSectionsData.carData.driverLicenseTraffic || "",
+            VehicleType: dynamicSectionsData.carData.vehicleType,
+            TrailerNum: dynamicSectionsData.carData.trailerNum || "",
+            // MaterialType: dynamicSectionsData.carData.materialType // Uncomment if you have material type
+        });
+    }
+
+    // Add dynamic equipment data if it exists
+    if (dynamicSectionsData.equipmentData && dynamicSectionsData.equipmentData.Equipments.length > 0) {
+        Object.assign(ViolationData, {
+            Equipments: dynamicSectionsData.equipmentData.Equipments,
+            EquipmentsCount: dynamicSectionsData.equipmentData.EquipmentsCount
+        });
+    }
+
+    // Disable the submit button to prevent double submission
+    functions.disableButton(e);
+
+    // Submit the violation
+    externalViolationForm.submitNewViolation(e, ViolationData);
 };
 
 // ==================== SUBMIT VIOLATION ====================
@@ -934,7 +752,7 @@ externalViolationForm.submitNewViolation = (e, ViolationData) => {
         request
     )
         .then(response => {
-            if (!response.ok) throw new Error("Network response was not ok");
+            // if (!response.ok) throw new Error("Network response was not ok");
             return response.json();
         })
         .then(data => {
@@ -1008,25 +826,60 @@ externalViolationForm.init = () => {
         externalViolationForm.formActions();
         $(".overlay").addClass("active");
 
-        // Add the offender type change handler
         externalViolationForm.handleOffenderTypeChange();
 
         Promise.all([
             sharedApis.getGovernrates("#violationGov"),
             sharedApis.getOffenderType("#offenderType"),
             externalViolationForm.getViolationTypes(),
-            // externalViolationForm.getProsecutions()
+            sharedApis.getQuarryType("#quarryType"),
+            sharedApis.getViolationMaterails("#quarryViolationRawType"),
         ])
             .then(() => {
                 $(".overlay").removeClass("active");
-                // Ensure violation type stays disabled
                 $("#violationType").prop("disabled", true);
+                externalViolationForm.filterOffenderTypes();
             })
             .catch((error) => {
                 $(".overlay").removeClass("active");
                 console.error("Error loading dropdowns:", error);
             });
     });
+};
+// Filter offender types to only show "Quarry" option and disable it
+externalViolationForm.filterOffenderTypes = () => {
+    const $offenderType = $("#offenderType");
+    const $options = $offenderType.find("option");
+    let foundTargetOption = false;
+    let targetValue = "";
+
+    // Find the "Quarry" option
+    $options.each(function () {
+        const value = $(this).val();
+        if (value === "Quarry") {
+            targetValue = value;
+            foundTargetOption = true;
+            return false; // break the loop
+        }
+    });
+
+    // Remove all options except the first placeholder
+    $offenderType.find("option:not(:first)").remove();
+
+    if (foundTargetOption) {
+        // Add back only the "Quarry" option with Arabic name
+        $offenderType.append(`
+            <option value="${targetValue}" selected>محجر مخالف</option>
+        `);
+    } else {
+        // If not found, add it manually
+        $offenderType.append(`
+            <option value="Quarry" selected>محجر مخالف</option>
+        `);
+    }
+
+    // Disable the dropdown
+    $offenderType.prop("disabled", true);
 };
 // ==================== DYNAMIC SECTIONS ====================
 externalViolationForm.carSectionExists = false;
@@ -1192,52 +1045,23 @@ externalViolationForm.validateCarSection = () => {
 
     let tractorLetters = $("#tractorLetters_dynamic").val();
     let tractorNumbers = $("#tractorNumbers_dynamic").val();
+
     // Validate based on car type
     if (carType === "عربة بمقطورة") {
-
         if (!unmarkedChecked) {
-            if (!tractorLetters || tractorLetters.trim() === "") {
-                functions.warningAlert("من فضلك قم بادخال حروف المقطورة");
-                return false;
-            }
-            if (!tractorNumbers || tractorNumbers.trim() === "") {
-                functions.warningAlert("من فضلك قم بادخال أرقام المقطورة");
-                return false;
-            }
+            // if (!tractorLetters || tractorLetters.trim() === "") {
+            //     functions.warningAlert("من فضلك قم بادخال حروف المقطورة");
+            //     return false;
+            // }
+            // if (!tractorNumbers || tractorNumbers.trim() === "") {
+            //     functions.warningAlert("من فضلك قم بادخال أرقام المقطورة");
+            //     return false;
+            // }
             carData.trailerNum = (tractorLetters + " " + tractorNumbers).trim();
         } else {
             carData.trailerNum = "بدون لوحات";
         }
     }
-
-    // Validate common fields
-    if (!unmarkedChecked) {
-        if (!carLicenseLetters || carLicenseLetters.trim() === "") {
-            functions.warningAlert("من فضلك قم بادخال حروف العربة");
-            return false;
-        }
-        if (!carLicenseNumbers || carLicenseNumbers.trim() === "") {
-            functions.warningAlert("من فضلك قم بادخال أرقام العربة");
-            return false;
-        }
-    }
-
-    if (!carLicenceColor || carLicenceColor.trim() === "") {
-        functions.warningAlert("من فضلك قم بادخال لون العربة");
-        return false;
-    }
-    if (!carBrand || carBrand.trim() === "") {
-        functions.warningAlert("من فضلك قم بادخال نوع العربة");
-        return false;
-    }
-    if (!carType) {
-        functions.warningAlert("من فضلك قم باختيار نوع العربة");
-        return false;
-    }
-    // if (!violationPrevCount || violationPrevCount === "0") {
-    //     functions.warningAlert("من فضلك قم بالتأكد من ظهور عدد المخالفات السابقة");
-    //     return false;
-    // }
 
     // Build car data object
     carData = {
@@ -1441,10 +1265,10 @@ externalViolationForm.handleOffenderTypeChange = () => {
         $violationTypeField.prop("disabled", true);
     });
 
-    // Set initial state - ensure violation type is disabled on page load
+    // Set initial state - ensure dropdowns are disabled on page load
     setTimeout(() => {
         $("#violationType").prop("disabled", true);
+        $("#offenderType").prop("disabled", true);
     }, 100);
 };
-
 export default externalViolationForm;

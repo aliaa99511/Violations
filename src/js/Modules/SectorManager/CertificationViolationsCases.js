@@ -95,11 +95,11 @@ certificationCases.ViolationsCasesTable = (Cases) => {
         `<div class="violationReffereDate noWrapContent">${functions.getFormatedDate(
           caseRecord.RefferedDate
         )}</div>`,
-        `<div class="caseNumber">${caseRecord.CaseNumber != "" ? caseRecord.CaseNumber : "-----"
+        `<div class="caseNumber">${caseRecord.CaseNumber != "" ? caseRecord.CaseNumber : "-"
         }</div>`,
         `<div class="caseStatus">${caseRecord.Status}</div>`,
         `<div class="caseAttachments"><a href="#!">المرفقات</a></div>`,
-        // `<div class="caseComments">${caseRecord.Comments != ""?caseRecord.Comments:"-----"}</div>`,
+        // `<div class="caseComments">${caseRecord.Comments != ""?caseRecord.Comments:"-"}</div>`,
 
       ]);
     });
@@ -308,7 +308,7 @@ certificationCases.drawCaseAttachmentsPopupTable = (
         )}</div>`,
         `<div class="attachComments">${attchRecord.Comments != ""
           ? attchRecord.Comments /*+" <a href='#!'>عرض المزيد</a>"*/
-          : "----"
+          : "-"
         }</div>`,
       ]);
       counter++;
@@ -503,7 +503,7 @@ certificationCases.getCaseDetails = (caseData) => {
                                         <label for="caseNumber" class="customLabel">رقم القضية</label>
                                         <input class="form-control customInput caseNumber" id="caseNumber" type="text" value="${caseData.CaseNumber != ""
       ? caseData.CaseNumber
-      : "----"
+      : "-"
     }" disabled>
                                     </div>
                                 </div>
@@ -584,7 +584,7 @@ certificationCases.caseQuarryDetails = (violationData) => {
                 <label for="violatorCompany" class="customLabel">الشركة المخالفة التابع لها</label>
                 <input class="form-control customInput violatorCompany" id="violatorCompany" type="text" value="${violationData.ViolatorCompany != ""
       ? violationData.ViolatorCompany
-      : "----"
+      : "-"
     }" disabled>
             </div>
         </div>
@@ -600,7 +600,7 @@ certificationCases.caseQuarryDetails = (violationData) => {
                 <label for="materialType" class="customLabel">نوع الخام</label>
                 <input class="form-control customInput materialType" id="materialType" type="text" value="${violationData.Material != null
       ? violationData.Material.Title
-      : "----"
+      : "-"
     }" disabled>
             </div>
         </div>
@@ -609,7 +609,7 @@ certificationCases.caseQuarryDetails = (violationData) => {
                 <label for="violationGov" class="customLabel">المحافظة</label>
                 <input class="form-control customInput violationGov" id="violationGov" type="text" value="${violationData.Governrates != null
       ? violationData.Governrates.Title
-      : "----"
+      : "-"
     }" disabled>
             </div>
         </div>
@@ -668,7 +668,7 @@ certificationCases.caseVehicleDetails = (violationData) => {
                 <label for="violatorCompany" class="customLabel">الشركة المخالفة التابع لها</label>
                 <input class="form-control customInput violatorCompany" id="violatorCompany" type="text" value="${violationData.ViolatorCompany != ""
       ? violationData.ViolatorCompany
-      : "----"
+      : "-"
     }" disabled>
             </div>
         </div>
@@ -691,7 +691,7 @@ certificationCases.caseVehicleDetails = (violationData) => {
                 <label for="materialType" class="customLabel">نوع الخام</label>
                 <input class="form-control customInput materialType" id="materialType" type="text" value="${violationData.Material != null
       ? violationData.Material.Title
-      : "----"
+      : "-"
     }" disabled>
             </div>
         </div>
@@ -700,7 +700,7 @@ certificationCases.caseVehicleDetails = (violationData) => {
                 <label for="violationGov" class="customLabel">المحافظة</label>
                 <input class="form-control customInput violationGov" id="violationGov" type="text" value="${violationData.Governrates != null
       ? violationData.Governrates.Title
-      : "----"
+      : "-"
     }" disabled>
             </div>
         </div>

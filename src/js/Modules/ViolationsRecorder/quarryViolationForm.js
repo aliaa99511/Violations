@@ -1089,24 +1089,36 @@ quarryViolation.GetCoordinates = () => {
     let Cells = CurrentRow.find("td");
     let EastTds = CurrentRow.find("td:nth-child(2)");
     let NorthTds = CurrentRow.find("td:nth-child(3)");
+
     let PointArr = [];
     let DecimalArr = [];
     let NumberArr = [];
 
-    // Check if this row has any non-empty inputs
+    // First 3 rows are mandatory
+    const isMandatoryRow = index < 3;
+
+    // Check whether this row has any entered data
     let hasData = false;
     Cells.each((cellIndex, Cell) => {
       if (cellIndex != 3) {
-        $(Cell).find("input").each((index, Field) => {
-          if ($(Field).val().trim() !== "") {
-            hasData = true;
-          }
-        });
+        $(Cell)
+          .find("input")
+          .each((_, Field) => {
+            if ($(Field).val().trim() !== "") {
+              hasData = true;
+            }
+          });
       }
     });
 
-    // Skip if row is empty
-    if (!hasData) {
+    // If one of the first 3 rows is empty -> invalid
+    if (isMandatoryRow && !hasData) {
+      IsValid = false;
+      return false;
+    }
+
+    // Ignore empty optional rows
+    if (!isMandatoryRow && !hasData) {
       return;
     }
 
@@ -1130,17 +1142,33 @@ quarryViolation.GetCoordinates = () => {
           let CurrentField = $(Field);
           let Value = CurrentField.val().trim();
 
-          // Validate all rows - skip validation if field is empty (optional fields)
-          if (Value !== "") {
-            if (!pattern.test(Value) ||
-              (fieldIndex === 0 && (firstEastInputVal > 37 || firstEastInputVal < 24)) ||
-              (fieldIndex === 0 && (firstNorthInputVal > 32 || firstNorthInputVal < 22)) ||
-              (fieldIndex === 1 && (secondEastInputVal > 60 || secondNorthInputVal > 60)) ||
-              (fieldIndex === 2 && (thirdEastInputVal > 60 || thirdNorthInputVal > 60))) {
-              rowValid = false;
-              return false;
-            }
+          // Mandatory rows: every field is required
+          if (isMandatoryRow && Value === "") {
+            rowValid = false;
+            return false;
           }
+
+          // Optional rows: skip empty fields
+          if (!isMandatoryRow && Value === "") {
+            Temp.push("");
+            return;
+          }
+
+          if (
+            !pattern.test(Value) ||
+            (fieldIndex === 0 &&
+              (firstEastInputVal > 37 || firstEastInputVal < 24)) ||
+            (fieldIndex === 0 &&
+              (firstNorthInputVal > 32 || firstNorthInputVal < 22)) ||
+            (fieldIndex === 1 &&
+              (secondEastInputVal > 60 || secondNorthInputVal > 60)) ||
+            (fieldIndex === 2 &&
+              (thirdEastInputVal > 60 || thirdNorthInputVal > 60))
+          ) {
+            rowValid = false;
+            return false;
+          }
+
           Temp.push(Value);
         });
 
@@ -1177,8 +1205,8 @@ quarryViolation.GetCoordinates = () => {
   NumbersArr += "]";
   DecimalsArr += "]";
 
-  // Require at least 1 valid point (changed from exactly 3)
-  if (IsValid && validPointsCount >= 1) {
+  // Require at least 3 valid points
+  if (IsValid && validPointsCount >= 3) {
     return {
       Degree: PointsArr,
       Decimal: DecimalsArr,

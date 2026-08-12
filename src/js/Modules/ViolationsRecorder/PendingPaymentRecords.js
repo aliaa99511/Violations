@@ -43,6 +43,7 @@ pendingPaymentRecords.getPendingPayment = (
             ColName: "created",
             SortOrder: "desc",
             Status: "UnderPayment",
+            IsExternalRecord: false,
             Sector: UserId,
             ViolationType: ViolationType,
             GlobalSearch: $("#violationSearch").val(),
@@ -188,27 +189,36 @@ pendingPaymentRecords.resetFilter = (e) => {
 pendingPaymentRecords.handleViolationCategoryChange = () => {
     $("#violationCategory").on("change", function () {
         const selectedCategory = $(this).val();
+
         const $theCodeField = $("#theCode");
         const $typeOfViolationField = $("#TypeofViolation");
+        const $trailerNumField = $("#trailerNum");
 
-        // First, enable both fields
+        // Default: enable all
         $theCodeField.prop("disabled", false);
         $typeOfViolationField.prop("disabled", false);
+        $trailerNumField.prop("disabled", false);
 
-        // Handle "Equipment" selection
         if (selectedCategory === "Equipment") {
-            $theCodeField.prop("disabled", true).val(""); // Disable and clear the field
-            $typeOfViolationField.prop("disabled", true).val("0"); // Disable and set to default
+            $theCodeField.prop("disabled", true).val("");
+            $typeOfViolationField.prop("disabled", true).val("0");
+            $trailerNumField.prop("disabled", true).val("");
         }
-
-        // Handle "Vehicle" selection
         else if (selectedCategory === "Vehicle") {
-            $typeOfViolationField.prop("disabled", true).val("0"); // Disable and set to default
-            // theCode field remains enabled
+            // Vehicle allows trailer number
+            $typeOfViolationField.prop("disabled", true).val("0");
+            $trailerNumField.prop("disabled", false);
+        }
+        else if (selectedCategory === "Quarry") {
+            // Quarry doesn't allow trailer number
+            $trailerNumField.prop("disabled", true).val("");
+        }
+        else {
+            // No category selected
+            $trailerNumField.prop("disabled", true).val("");
         }
     });
 };
-
 const originalResetFilter = pendingPaymentRecords.resetFilter;
 pendingPaymentRecords.resetFilter = function (e) {
     // Call the original resetFilter function
@@ -217,6 +227,9 @@ pendingPaymentRecords.resetFilter = function (e) {
     // Re-enable fields after reset
     $("#theCode").prop("disabled", false);
     $("#TypeofViolation").prop("disabled", false);
+
+    // No category selected after reset
+    $("#trailerNum").prop("disabled", true).val("");
 };
 
 pendingPaymentRecords.PendingPaymentTable = (PendingPaymentData, destroyTable) => {
@@ -226,9 +239,6 @@ pendingPaymentRecords.PendingPaymentTable = (PendingPaymentData, destroyTable) =
     if (PendingPaymentData.length > 0) {
         PendingPaymentData.forEach((record) => {
             taskViolation = record.Violation;
-            let installmentDate = taskViolation?.InstallmentDate
-                ? functions.getFormatedDate(taskViolation.InstallmentDate)
-                : "-";
 
             if (taskViolation) {
                 data.push([
@@ -269,8 +279,9 @@ pendingPaymentRecords.PendingPaymentTable = (PendingPaymentData, destroyTable) =
                         ? taskViolation.CarNumber
                         : taskViolation.QuarryCode != ""
                             ? taskViolation.QuarryCode
-                            : "---"
+                            : "-"
                     }</div>`,
+                    `<div class="trailerNum">${taskViolation?.TrailerNum || "-"}</div>`,
                     `<div class="companyName">${taskViolation.ViolatorCompany != ""
                         ? taskViolation.ViolatorCompany
                         : "-"
@@ -283,9 +294,10 @@ pendingPaymentRecords.PendingPaymentTable = (PendingPaymentData, destroyTable) =
                         taskViolation?.ViolationTypes?.Title
                     )}</div>`,
                     `<div class="violationZone">${taskViolation.ViolationsZone}</div>`,
-                    `${installmentDate || "-"}`,
-                    `${functions.splitBigNumbersByComma(taskViolation?.TotalInstallmentsPaidAmount || 0) || "-"}`,
-                    `${functions.splitBigNumbersByComma(taskViolation?.RemainingAmount || 0) || "-"}`,
+                    `${functions.getFormatedDate(taskViolation?.InstallmentDate) || "-"}`,
+                    `${functions.getDisplayValue(taskViolation?.TotalInstallmentsPaidAmount, true)}`,
+                    `${functions.getDisplayValue(taskViolation?.RemainingAmount, true)}`,
+                    `${functions.getDisplayValue(taskViolation?.TotalPriceDue, true)}`,
                 ]);
             }
         });
@@ -304,12 +316,14 @@ pendingPaymentRecords.PendingPaymentTable = (PendingPaymentData, destroyTable) =
             { title: "تصنيف المخالفة" },
             { title: "إسم المخالف" },
             { title: " رقم المحجر/العربة" },
+            { title: "رقم المقطورة" },
             { title: "إسم الشركة المخالفة" },
             { title: "نوع المخالفة " },
             { title: "المنطقة" },
             { title: "تاريخ أخر قسط" },
             { title: "المبلغ المسدد" },
             { title: "المبلغ المتبقي" },
+            { title: "إجمالي مبلغ المخالفة" },
         ],
         false,
         false,
@@ -433,9 +447,14 @@ pendingPaymentRecords.exportToExcel = () => {
             title: "رقم المحجر/العربة",
             render: (record) => {
                 const violation = record.Violation;
-                if (!violation) return "---";
-                return violation.OffenderType === "Vehicle" ? (violation.CarNumber || "---") : (violation.QuarryCode || "---");
+                if (!violation) return "-";
+                return violation.OffenderType === "Vehicle" ? (violation.CarNumber || "-") : (violation.QuarryCode || "-");
             },
+        },
+        {
+            title: "رقم المقطورة",
+            render: (record) =>
+                record.Violation?.TrailerNum || "-",
         },
         {
             title: "إسم الشركة المخالفة",
@@ -450,23 +469,27 @@ pendingPaymentRecords.exportToExcel = () => {
             data: "Violation.ViolationsZone",
         },
         {
-            title: "تاريخ أخر قسط",
-            render: (record) => record.Violation?.InstallmentDate ? functions.getFormatedDate(record.Violation.InstallmentDate) : "-",
+            title: "تاريخ أخر تسديد",
+            render: (record) => functions.getFormatedDate(record.Violation?.InstallmentDate),
         },
         {
             title: "المبلغ المسدد",
-            render: (record) => functions.splitBigNumbersByComma(record.Violation?.TotalInstallmentsPaidAmount || 0),
+            render: (record) => functions.getDisplayValue(record.Violation?.TotalInstallmentsPaidAmount, true),
         },
         {
             title: "المبلغ المتبقي",
-            render: (record) => functions.splitBigNumbersByComma(record.Violation?.RemainingAmount || 0),
+            render: (record) => functions.getDisplayValue(record.Violation?.RemainingAmount, true),
+        },
+        {
+            title: "إجمالي مبلغ المخالفة",
+            render: (record) => functions.getDisplayValue(record.Violation?.TotalPriceDue, true),
         },
         {
             title: "الإحداثيات",
             exportOnly: true,
             render: (record) => {
                 const violation = record.Violation;
-                if (!violation) return "---";
+                if (!violation) return "-";
 
                 // Try to get coordinates in degrees format first, fallback to regular format
                 const coordinatesDegrees = violation.CoordinatesDegrees;
@@ -497,7 +520,7 @@ pendingPaymentRecords.exportToExcel = () => {
                     }
                 }
 
-                return "---";
+                return "-";
             },
         },
     ];
@@ -570,6 +593,18 @@ pendingPaymentRecords.findViolationByID = (event, taskID, print = false) => {
                     printBox = `<div class="printBox" id="printJS-form">${Content}</div>`;
                     functions.declarePopup(["generalPopupStyle", "detailsPopup"], printBox);
                 }
+
+                // FIX: Hide buttons AFTER rendering
+                setTimeout(() => {
+                    const popup = $(".detailsPopupForm");
+
+                    popup.find("#editMaterialMinPrice, #payAllPrice")
+                        .css("display", "none")
+                        .attr("style", "display: none !important");
+                }, 50);
+
+                // Hide edit button (extra safety)
+                $("#editMaterialMinPrice").hide();
 
                 $(".printBtn").on("click", (e) => {
                     functions.PrintDetails(e);

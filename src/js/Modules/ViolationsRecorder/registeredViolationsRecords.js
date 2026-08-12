@@ -1,6 +1,7 @@
 import functions from "../../Shared/functions";
 import DetailsPopup from "../../Shared/detailsPopupContent";
 import pagination from "../../Shared/Pagination";
+import ViolationHistoryLogs from "../../Shared/ViolationHistoryLogs";
 
 let registeredViolationsRecords = {};
 registeredViolationsRecords.pageIndex = 1;
@@ -173,26 +174,44 @@ registeredViolationsRecords.resetFilter = (e) => {
 registeredViolationsRecords.handleViolationCategoryChange = () => {
   $("#violationCategory").on("change", function () {
     const selectedCategory = $(this).val();
+
     const $theCodeField = $("#theCode");
     const $typeOfViolationField = $("#TypeofViolation");
+    const $trailerNumField = $("#trailerNum");
 
+    // Default: enable all
     $theCodeField.prop("disabled", false);
     $typeOfViolationField.prop("disabled", false);
+    $trailerNumField.prop("disabled", false);
 
     if (selectedCategory === "Equipment") {
       $theCodeField.prop("disabled", true).val("");
       $typeOfViolationField.prop("disabled", true).val("0");
-    } else if (selectedCategory === "Vehicle") {
+      $trailerNumField.prop("disabled", true).val("");
+    }
+    else if (selectedCategory === "Vehicle") {
+      // Vehicle allows trailer number
       $typeOfViolationField.prop("disabled", true).val("0");
+      $trailerNumField.prop("disabled", false);
+    }
+    else if (selectedCategory === "Quarry") {
+      // Quarry doesn't allow trailer number
+      $trailerNumField.prop("disabled", true).val("");
+    }
+    else {
+      // No category selected
+      $trailerNumField.prop("disabled", true).val("");
     }
   });
 };
-
 const originalResetFilter = registeredViolationsRecords.resetFilter;
 registeredViolationsRecords.resetFilter = function (e) {
   originalResetFilter.call(this, e);
   $("#theCode").prop("disabled", false);
   $("#TypeofViolation").prop("disabled", false);
+
+  // No category selected after reset
+  $("#trailerNum").prop("disabled", true).val("");
 };
 
 // ================= EXPORT FUNCTION =================
@@ -260,9 +279,14 @@ registeredViolationsRecords.exportToExcel = () => {
       title: "رقم المحجر/العربة",
       render: (record) => {
         const violation = record.Violation;
-        if (!violation) return "---";
-        return violation.OffenderType === "Vehicle" ? (violation.CarNumber || "---") : (violation.QuarryCode || "---");
+        if (!violation) return "-";
+        return violation.OffenderType === "Vehicle" ? (violation.CarNumber || "-") : (violation.QuarryCode || "-");
       },
+    },
+    {
+      title: "رقم المقطورة",
+      render: (record) =>
+        record.Violation?.TrailerNum || "-",
     },
     {
       title: "المنطقة",
@@ -273,7 +297,7 @@ registeredViolationsRecords.exportToExcel = () => {
       exportOnly: true,
       render: (record) => {
         const violation = record.Violation;
-        if (!violation) return "---";
+        if (!violation) return "-";
 
         // Try to get coordinates in degrees format first, fallback to regular format
         const coordinatesDegrees = violation.CoordinatesDegrees;
@@ -304,7 +328,7 @@ registeredViolationsRecords.exportToExcel = () => {
           }
         }
 
-        return "---";
+        return "-";
       },
     },
   ];
@@ -367,9 +391,10 @@ registeredViolationsRecords.dashBoardTable = (violationsData, destroyTable) => {
           ? taskViolation.CarNumber
           : taskViolation.QuarryCode != ""
             ? taskViolation.QuarryCode
-            : "---"
+            : "-"
         }</div>`,
-        `<div class="violationZone">${taskViolation.ViolationsZone}</div>`,
+        `<div class="trailerNum">${taskViolation?.TrailerNum || "-"}</div>`,
+        `<div class="violationZone">${taskViolation.ViolationsZone || "-"}</div>`,
         `<div class="violationAttachments" data-violationid="${taskViolation?.ID}" data-violationcode="${taskViolation?.ViolationCode}"><a href="#!" style="color: black;">المرفقات</a></div>`,
       ]);
     });
@@ -386,6 +411,7 @@ registeredViolationsRecords.dashBoardTable = (violationsData, destroyTable) => {
       { title: "تاريخ الضبط", class: "sort" },
       { title: "إسم الشركة المخالفة", class: "no-sort" },
       { title: " رقم المحجر/العربة", class: "no-sort" },
+      { title: "رقم المقطورة", class: "no-sort" },
       { title: "المنطقة", class: "no-sort" },
       { title: "المرفقات", class: "no-sort" },
     ],
@@ -472,6 +498,7 @@ registeredViolationsRecords.findViolationByID = (event, taskID, print = false) =
       if (data != null) {
         violationData = data.d.Violation;
         violationOffenderType = violationData.OffenderType;
+
         if (violationOffenderType == "Quarry") {
           Content = DetailsPopup.quarryDetailsPopupContent(
             violationData,
@@ -494,6 +521,7 @@ registeredViolationsRecords.findViolationByID = (event, taskID, print = false) =
           );
           let vehicleType = violationData.VehicleType;
           $(".TrailerNumberBox").addClass("hello");
+
           if (vehicleType == "عربة بمقطورة") {
             $(".TrailerNumberBox").addClass("hello");
             $(".TrailerNumberBox")
@@ -522,6 +550,9 @@ registeredViolationsRecords.findViolationByID = (event, taskID, print = false) =
             .css("display", "none")
             .attr("style", "display: none !important");
         }, 50);
+
+        // Hide edit button (extra safety)
+        $("#editMaterialMinPrice").hide();
 
         $(".printBtn").on("click", (e) => {
           functions.PrintDetails(e);
@@ -605,7 +636,7 @@ registeredViolationsRecords.violationAttachmentsDetailsPopup = (
   let popupHtml = `
     <div class="popupHeader attachPopup" style="display: flex; justify-content: space-between;">
         <div class="violationsCode"> 
-            <p>مرفقات المخالفة رقم (${violationCode || "-----"})</p>
+            <p>مرفقات المخالفة رقم (${violationCode || "-"})</p>
         </div>
         <div class="btnStyle cancelBtn popupBtn closeViolationAttachPopup" id="closeViolationAttachPopup" style="color: #fff;cursor: pointer;" data-dismiss="modal" aria-label="Close">
             <i class="fa-solid fa-x"></i>
@@ -658,14 +689,14 @@ registeredViolationsRecords.drawViolationAttachmentsPopupTable = (
         `<div class="attachFiles" data-fileslength="${attachedFilesData.length}">
             ${registeredViolationsRecords.drawAttachmentsInTable(attachedFilesData)}
         </div>`,
-        `<div class="attachUploadPhase">${attchRecord.UploadPhase || "----"}</div>`,
+        `<div class="attachUploadPhase">${attchRecord.UploadPhase || "-"}</div>`,
         `<div class="attachUploadDate">${functions.getFormatedDate(
           attchRecord.Created,
           "DD-MM-YYYY hh:mm A"
         )}</div>`,
         `<div class="attachComments">${attchRecord.Comments != ""
           ? attchRecord.Comments
-          : "----"
+          : "-"
         }</div>`,
       ]);
       counter++;
@@ -743,115 +774,10 @@ registeredViolationsRecords.drawAttachmentsInTable = (Attachments) => {
 };
 ////////////////////////////////////////////
 
-const ViolationHistoryLogs = () => {
-  let selectedViolationId = null;
-  let selectedViolationCode = null;
-  let trackHistoryTable = null;
+// ===============================
+//  Violation History Tracking for External Violations
+// ===============================
+ViolationHistoryLogs.init(".contentContainer");
 
-  $(".contentContainer").on("click", ".violationHistory", function (e) {
-    e.preventDefault();
-    e.stopPropagation();
-    selectedViolationId = $(this).data("violationid");
-    selectedViolationCode = $(this).data("violationcode");
-    $("#trackHistoryModal").modal("show");
-  });
-
-  const closeModal = () => {
-    $("#trackHistoryModal").modal("hide");
-    $(".track-history-violation-code").text("");
-    if (trackHistoryTable) {
-      trackHistoryTable.clear().destroy();
-      trackHistoryTable = null;
-    }
-    $("#trackHistoryTable tbody").empty();
-  };
-
-  $(document).on("click", "#closeViolationHistoryPopup", function (e) {
-    e.preventDefault();
-    e.stopPropagation();
-    closeModal();
-  });
-
-  $("#trackHistoryModal").on("hidden.bs.modal", function () {
-    closeModal();
-  });
-
-  $(".track-history-modal").on("shown.bs.modal", function () {
-    $(".track-history-violation-code").text(selectedViolationCode);
-
-    const request = {
-      Request: {
-        ViolationId: selectedViolationId,
-      },
-    };
-
-    const tableElement = $("#trackHistoryTable");
-
-    if (!trackHistoryTable) {
-      trackHistoryTable = tableElement.DataTable({
-        processing: true,
-        paging: false,
-        responsive: true,
-        destroy: true,
-        ajax: {
-          url: "/_layouts/15/Uranium.Violations.SharePoint/ViolationHistoryLogs.aspx/Search",
-          type: "POST",
-          contentType: "application/json",
-          data: () => JSON.stringify(request),
-          dataSrc: (data) => {
-            return data?.d?.Result?.GridData || [];
-          }
-        },
-        columns: [
-          {
-            data: null,
-            render: (data, type, row, meta) => {
-              return meta.row;
-            }
-          },
-          {
-            data: "Status",
-            render: (data) => {
-              return data || "-";
-            }
-          },
-          {
-            data: "Created",
-            render: (data) =>
-              data ? functions.getFormatedDate(data) : "-"
-          },
-          {
-            data: "CreatedBy",
-            render: (data) => {
-              return data || "-";
-            }
-          },
-          {
-            data: "Comment",
-            render: (data) => {
-              return data || "-";
-            }
-          }
-        ],
-        language: {
-          emptyTable: "لا توجد بيانات",
-        }
-      });
-    } else {
-      trackHistoryTable.ajax.reload();
-    }
-  });
-
-  $(".track-history-modal").on("hidden.bs.modal", function () {
-    $(".track-history-violation-code").text("");
-    if (trackHistoryTable) {
-      trackHistoryTable.clear().destroy();
-      trackHistoryTable = null;
-    }
-    $("#trackHistoryTable tbody").empty();
-  });
-};
-
-ViolationHistoryLogs();
 
 export default registeredViolationsRecords;
