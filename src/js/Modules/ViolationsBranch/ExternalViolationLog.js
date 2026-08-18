@@ -152,8 +152,12 @@ ExternalViolationLog.ExternalViolationTable = (ExternalViolationDate, destroyTab
 
                 if (violationStatus !== "Paid") {
                     actionButtons += `
-                        <li><a href="#" class="payViolation">تسديد المخالفة</a></li>
                         <li><a href="#" class="saveExternalCaseAction">حفظ وإلغاء قرار النيابة</a></li>
+                    `;
+                }
+                if (violationStatus !== "Paid" && violationStatus !== "UnderPayment") {
+                    actionButtons += `
+                        <li><a href="#" class="payViolation">تسديد المخالفة</a></li>
                     `;
                 }
 

@@ -250,7 +250,7 @@ quarryViolationReferral.QuarryViolationReferralTable = (Referrals, destroyTable)
             let hasPayCaseAfterEditAction = false;
             let hasSaveCaseAction = false;
             let canShowDetailsOnly = false;
-            let hasEditViolationAmountAction = false;
+            // let hasEditViolationAmountAction = false;
             let hasEditReferralAmountAction = false;
 
             // Business Rule 1: Add Referral Number
@@ -293,13 +293,18 @@ quarryViolationReferral.QuarryViolationReferralTable = (Referrals, destroyTable)
             }
 
             // Business Rule 7: Edit Amount Actions (تعديل مبلغ النموذج / تعديل مبلغ الإحالة)
+            // if (caseStatus !== "محفوظة" && violationStatus !== "Cancelled") {
+            //     if (caseStatus === "تم التسليم للتحريات") {
+            //         hasEditReferralAmountAction = true;
+            //     } else {
+            //         hasEditViolationAmountAction = true;
+            //     }
+            // }
+
             if (caseStatus !== "محفوظة" && violationStatus !== "Cancelled") {
-                if (caseStatus === "تم التسليم للتحريات") {
-                    hasEditReferralAmountAction = true;
-                } else {
-                    hasEditViolationAmountAction = true;
-                }
+                hasEditReferralAmountAction = true;
             }
+
 
             // Build actions menu HTML without data attributes
             let actionsMenuHTML = '';
@@ -331,10 +336,10 @@ quarryViolationReferral.QuarryViolationReferralTable = (Referrals, destroyTable)
                 }
 
                 // Edit Amount actions
-                if (hasEditViolationAmountAction) {
-                    actionsMenuHTML += `
-                    <li><a href="#" class="editViolationAmountAction">تعديل مبلغ المخالفة</a></li>`;
-                }
+                // if (hasEditViolationAmountAction) {
+                //     actionsMenuHTML += `
+                //     <li><a href="#" class="editViolationAmountAction">تعديل مبلغ المخالفة</a></li>`;
+                // }
 
                 if (hasEditReferralAmountAction) {
                     actionsMenuHTML += `
