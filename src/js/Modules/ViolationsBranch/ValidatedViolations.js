@@ -1259,14 +1259,35 @@ validatedViolations.printPaymentForm = (event, taskID, print = false) => {
         const violationID = violationData.ID;
         const violationCode = violationData.ViolationCode;
 
-        Promise.all([
-          validatedViolations.getViolationVersions(violationID),
-          functions.callSharePointListApi("Configurations"),
-          functions.callSharePointListApi("Governrates"),
-        ])
-          .then(([versions, configurationsData, governratesData]) => {
-            const configurations = configurationsData?.value || [];
-            const governrates = governratesData?.value || [];
+        validatedViolations.getViolationVersions(violationID)
+          .then(async (versions) => {
+
+            const versionsWithConfigurations = await Promise.all(
+              versions.map(async (version) => {
+
+                const configurationsResponse =
+                  await validatedViolations.callSharePointListApi(
+                    "Configurations",
+                    version.ModifiedBy
+                  );
+
+                return {
+                  ...version,
+                  Configuration:
+                    configurationsResponse?.value?.[0] || null,
+                };
+              })
+            );
+
+            const governratesData =
+              await functions.callSharePointListApi("Governrates");
+
+            return {
+              versions: versionsWithConfigurations,
+              governrates: governratesData?.value || [],
+            };
+          })
+          .then(({ versions, governrates }) => {
 
             const versionsButton = $(".violationVersionsButton");
 
@@ -1283,7 +1304,6 @@ validatedViolations.printPaymentForm = (event, taskID, print = false) => {
 
                 validatedViolations.violationVersionsPopup(
                   versions,
-                  configurations,
                   violationCode,
                   governrates
                 );
@@ -1356,14 +1376,35 @@ validatedViolations.printPaymentFormOnly = (event, taskID) => {
         const violationID = violationData.ID;
         const violationCode = violationData.ViolationCode;
 
-        Promise.all([
-          validatedViolations.getViolationVersions(violationID),
-          functions.callSharePointListApi("Configurations"),
-          functions.callSharePointListApi("Governrates"),
-        ])
-          .then(([versions, configurationsData, governratesData]) => {
-            const configurations = configurationsData?.value || [];
-            const governrates = governratesData?.value || [];
+        validatedViolations.getViolationVersions(violationID)
+          .then(async (versions) => {
+
+            const versionsWithConfigurations = await Promise.all(
+              versions.map(async (version) => {
+
+                const configurationsResponse =
+                  await validatedViolations.callSharePointListApi(
+                    "Configurations",
+                    version.ModifiedBy
+                  );
+
+                return {
+                  ...version,
+                  Configuration:
+                    configurationsResponse?.value?.[0] || null,
+                };
+              })
+            );
+
+            const governratesData =
+              await functions.callSharePointListApi("Governrates");
+
+            return {
+              versions: versionsWithConfigurations,
+              governrates: governratesData?.value || [],
+            };
+          })
+          .then(({ versions, governrates }) => {
 
             const versionsButton = $(".violationVersionsButton");
 
@@ -1380,7 +1421,6 @@ validatedViolations.printPaymentFormOnly = (event, taskID) => {
 
                 validatedViolations.violationVersionsPopup(
                   versions,
-                  configurations,
                   violationCode,
                   governrates
                 );
@@ -1454,78 +1494,113 @@ validatedViolations.getViolationVersions = (violationID) => {
 };
 validatedViolations.violationVersionsPopup = (
   versions,
-  configurations = [],
   violationCode,
   governrates = []
 ) => {
-  let UserId = _spPageContextInfo.userId;
 
   if (!Array.isArray(versions)) {
-    console.error("violationVersionsPopup expected an array:", versions);
     versions = [];
   }
 
   const Content = `
-  <div class="violationVersionsPopup" id="printJS-versionsForm">
-    <div class="modal-header" style="display: flex !important; justify-content: space-between !important;">
+    <div class="violationVersionsPopup" id="printJS-versionsForm">
 
-      <h5 class="modal-title-style">
-        سجل التعديلات على نموذج التقييم (${violationCode})
-      </h5>
+      <div class="modal-header"
+           style="display: flex !important; justify-content: space-between !important;">
 
-      <div class="btnStyle cancelBtn closeViolationVersionsPopup"
-           style="color: #fff; cursor: pointer;"
-           data-dismiss="modal"
-           aria-label="Close">
+        <h5 class="modal-title-style">
+          سجل التعديلات على نموذج التقييم (${violationCode})
+        </h5>
 
-        <i class="fa-solid fa-x"></i>
+        <div class="btnStyle cancelBtn closeViolationVersionsPopup"
+             style="color: #fff; cursor: pointer;"
+             data-dismiss="modal"
+             aria-label="Close">
+
+          <i class="fa-solid fa-x"></i>
+        </div>
       </div>
-    </div>
 
-    <div class="modal-body">
-      <div class="violationVersionsBody">
-        ${versions?.map((version) => `
-          <div class="violationVersionItem">
-            <div class="violationVersionInfo">
-              <div class="versionModifiedDate">
-                تعديل بتاريخ ${formatDate(version.Modified)}
+      <div class="modal-body">
+        <div class="violationVersionsBody">
+
+          ${versions.map((version) => {
+
+    const configuration = version.Configuration;
+
+    const modifiedByDisplay = configuration
+      ? `${configuration.Title || "-"} (${configuration.JobTitle1 || "-"})`
+      : version.ModifiedBy || "-";
+
+    return `
+              <div class="violationVersionItem">
+
+                <div class="violationVersionInfo">
+
+                  <div class="versionModifiedDate">
+                    تعديل بتاريخ ${formatDate(version.Modified)}
+                  </div>
+
+                  <div class="versionModifiedBy">
+                    تمت بواسطة:
+                    <strong>
+                      ${escapeHtml(modifiedByDisplay)}
+                    </strong>
+                  </div>
+
+                </div>
+
+                <div class="violationVersionChanges">
+                  ${getChanges(version.Changes, governrates)}
+                </div>
+
               </div>
+            `;
 
-              <div class="versionModifiedBy">
-                تمت بواسطة:
-                <strong>
-                  ${escapeHtml(validatedViolations.getUserJobTitle(UserId, configurations))}
-                </strong>
-              </div>
-            </div>
+  }).join("")}
 
-            <div class="violationVersionChanges">
-              ${getChanges(version.Changes, governrates)}
-            </div>
-          </div>
-        `).join("")}
+        </div>
       </div>
+
+      <div class="modal-footer"
+           style="display: flex !important; justify-content: center !important;">
+
+        <button
+          type="button"
+          class="btn printViolationVersions"
+          id="printViolationVersionsFooter">
+
+          <i class="fa fa-print"></i>
+          طباعة
+
+        </button>
+
+      </div>
+
     </div>
+  `;
 
-    <div class="modal-footer" style="display: flex !important; justify-content: center !important;">
+  functions.declarePopup(
+    ["generalPopupStyle", "violationVersionsPopupStyle"],
+    Content
+  );
 
-      <button type="button" class="btn printViolationVersions" id="printViolationVersionsFooter">
-        <i class="fa fa-print"></i>
-        طباعة
-      </button>
-    </div>
-  </div>
-`;
+  $(".closeViolationVersionsPopup")
+    .off("click")
+    .on("click", function () {
+      $(".violationVersionsPopup")
+        .closest(".modal")
+        .modal("hide");
+    });
 
-  functions.declarePopup(["generalPopupStyle", "violationVersionsPopupStyle"], Content);
-
-  $(".closeViolationVersionsPopup").off("click").on("click", function () {
-    $(".violationVersionsPopup").closest(".modal").modal("hide");
-  });
-
-  $("#printViolationVersionsFooter").off("click").on("click", function (e) {
-    validatedViolations.PrintDetails(e, "printJS-versionsForm");
-  });
+  $("#printViolationVersionsFooter")
+    .off("click")
+    .on("click", function (e) {
+      validatedViolations.PrintDetails(
+        e,
+        "printJS-versionsForm"
+      );
+    });
 };
 validatedViolations.PrintDetails = (e, printableId = "printJS-form") => {
   e.preventDefault();
@@ -1574,17 +1649,19 @@ validatedViolations.declarePopup = (styleClassName, Content) => {
     showclose: true,
   });
 };
-validatedViolations.getUserJobTitle = (userId, configurations) => {
-  if (!userId || !Array.isArray(configurations)) {
+validatedViolations.getUserJobTitle = (modifiedBy, configurations) => {
+  if (!modifiedBy || !Array.isArray(configurations)) {
     return "-";
   }
 
+  const modifiedByName = String(modifiedBy).trim().toLowerCase();
+
   const userConfiguration = configurations.find((config) => {
+    const userTitle = config.UserId?.Title;
+
     return (
-      Array.isArray(config.UserIdId) &&
-      config.UserIdId.some(
-        (id) => Number(id) === Number(userId)
-      )
+      userTitle &&
+      String(userTitle).trim().toLowerCase() === modifiedByName
     );
   });
 
@@ -1592,7 +1669,42 @@ validatedViolations.getUserJobTitle = (userId, configurations) => {
     return "-";
   }
 
-  return `${userConfiguration.Title || "-"} (${userConfiguration.JobTitle1 || "-"})`;
+  return `${userConfiguration.Title || "-"}`;
+  // return `${userConfiguration.Title || "-"} (${userConfiguration.JobTitle1 || "-"})`;
+};
+validatedViolations.callSharePointListApi = (ListName, modifiedBy = null) => {
+  return new Promise(function (resolve, reject) {
+    let url =
+      _spPageContextInfo.siteAbsoluteUrl + "/_api/web/lists/getbytitle('" + ListName + "')/items?$top=1000";
+
+    if (ListName === "Configurations") {
+      url += "&$select=*,UserId/Id,UserId/Title" + "&$expand=UserId";
+
+      if (modifiedBy) {
+        const escapedModifiedBy = String(modifiedBy).replace(/'/g, "''");
+
+        url += "&$filter=UserId/Title eq '" + escapedModifiedBy + "'";
+      }
+    }
+
+    console.log("Configurations API:", url);
+
+    $.ajax({
+      type: "GET",
+      url: url,
+      contentType: "application/json; charset=utf-8",
+      dataType: "json",
+
+      success: (data) => {
+        resolve(data || { value: [] });
+      },
+
+      error: (xhr) => {
+        console.error("LIST ERROR:", ListName, xhr);
+        reject(xhr);
+      },
+    });
+  });
 };
 const getChanges = (changes, governrates = []) => {
   if (!changes || Object.keys(changes).length === 0) {
@@ -1937,6 +2049,7 @@ const changeLabels = {
   VehicleFine: "غرامة العربة",
   VehicleFineId: "معرف غرامة العربة"
 };
+
 ////////////////////////////////////////////////
 
 validatedViolations.setExpirationDate = (
