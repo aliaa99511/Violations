@@ -6,8 +6,33 @@ import sharedApis from "../../Shared/sharedApiCall";
 // import MapView from "@arcgis/core/views/MapView.js";
 
 let quarryViolation = {};
+let isPresidencyUser = false;
 var urlParams = new URLSearchParams(window.location.search);
 var editViolationId;
+
+quarryViolation.getCurrentUserConfiguration = () => {
+  let UserId = _spPageContextInfo.userId;
+
+  return functions.callSharePointListApi("Configurations")
+    .then((Users) => {
+      let UsersData = Users.value || [];
+
+      isPresidencyUser = UsersData.some((User) => {
+        return (
+          User.UserIdId &&
+          User.UserIdId.some((id) => Number(id) === Number(UserId)) &&
+          User.Type === "PresidencyUser"
+        );
+      });
+
+      return isPresidencyUser;
+    })
+    .catch((err) => {
+      console.error(err);
+      isPresidencyUser = false;
+      return false;
+    });
+};
 
 quarryViolation.violatorDetails = () => {
   let vaildViolator = false;
@@ -149,7 +174,7 @@ quarryViolation.violationDetails = () => {
                 violationDate: violationDate + " " + violationTime,
                 violationTime: violationDate + " " + violationTime,
                 quarryType: quarryType,
-                quarryCode: quarryCode,
+                quarryCode: quarryCode.trim() === "0" ? "" : quarryCode.trim(), // ← lowercase 'q'
                 isBonesViolation: isBonesViolation,
                 selectedEquipmentsData: selectedEquipmentsData,
                 selectedEquipementsIds: selectedEquipementsIds,
@@ -207,7 +232,7 @@ quarryViolation.violationDetails = () => {
                   violationDate: violationDate + " " + violationTime,
                   violationTime: violationDate + " " + violationTime,
                   quarryType: quarryType,
-                  quarryCode: quarryCode,
+                  quarryCode: quarryCode.trim() === "0" ? "" : quarryCode.trim(), // ← lowercase 'q'
                   BonsNumber: BonesCount,
                   isBonesViolation: isBonesViolation,
                   selectedEquipmentsData: selectedEquipmentsData,
@@ -451,7 +476,14 @@ quarryViolation.otherViolationDetails = () => {
 };
 
 quarryViolation.formActions = () => {
+  quarryViolation.getCurrentUserConfiguration();
+
   let numberOfDaysBefore = functions.getViolationStartDate(3);
+
+  if (urlParams.get("taskId") !== null) {
+    $("#oldFilesBox").show();
+  }
+
   functions.inputDateFormat(
     ".inputDate",
     numberOfDaysBefore,
@@ -459,32 +491,38 @@ quarryViolation.formActions = () => {
     "dd/mm/yyyy"
   );
 
-  // Clear previous violations display when quarry code is cleared
+  $(".violatorMobileNumber").on("keypress", (e) => {
+    return functions.isNumberKey(e);
+  });
+
+  // Clear previous violations display when quarry code is cleared or is "0"
   $("#quarryCode").on("input", function () {
     let val = $(this).val();
-    if (!val || val.trim() === "") {
+    if (!val || val.trim() === "" || val.trim() === "0") {
       $(".previous-violations-display").fadeOut();
       $(".previous-violations-count-value").text("0");
     }
   });
 
-  $(".violatorMobileNumber").on("keypress", (e) => {
-    return functions.isNumberKey(e);
-  });
-
   // Trigger API call on quarry code change
   $("#quarryCode").on("change keyup", functions.debounce(function () {
     let val = $(this).val();
-    if (val && val.trim() !== "") {
+    if (val && val.trim() !== "" && val.trim() !== "0") {
       quarryViolation.getPreviousViolationsCount();
+    } else {
+      $(".previous-violations-display").fadeOut();
+      $(".previous-violations-count-value").text("0");
     }
   }, 500));
 
   // Also trigger when user leaves the field
   $("#quarryCode").on("blur", function () {
     let val = $(this).val();
-    if (val && val.trim() !== "") {
+    if (val && val.trim() !== "" && val.trim() !== "0") {
       quarryViolation.getPreviousViolationsCount();
+    } else {
+      $(".previous-violations-display").fadeOut();
+      $(".previous-violations-count-value").text("0");
     }
   });
 
@@ -785,6 +823,64 @@ quarryViolation.formActions = () => {
     }
   });
 
+  let violationOldFiles;
+  let countOfOldFilesFiles;
+  $(".attachOldFiles").on("change", (e) => {
+    violationOldFiles = $(e.currentTarget)[0].files;
+    if (violationOldFiles.length > 0) {
+      $(e.currentTarget)
+        .parents(".fileBox")
+        .siblings(".dropFilesArea")
+        .show()
+        .empty();
+    }
+
+    for (let i = 0; i < violationOldFiles.length; i++) {
+      $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").append(`
+                <div class="file">
+                    <p class="fileName">${violationOldFiles[i].name}</p>
+                    <span class="deleteFile" data-index="${i}"><i class="fa-sharp fa-solid fa-x"></i></span>
+                </div>
+            `);
+    }
+    $(".deleteFile").on("click", (event) => {
+      $(event.currentTarget).val("");
+      let index = $(event.currentTarget).closest(".file").index();
+      $(event.currentTarget).closest(".file").remove();
+      let fileBuffer = new DataTransfer();
+      for (let i = 0; i < violationOldFiles.length; i++) {
+        if (index !== i) {
+          fileBuffer.items.add(violationOldFiles[i]);
+        }
+      }
+      violationOldFiles = fileBuffer.files;
+      countOfOldFilesFiles = violationOldFiles.length;
+
+      if (countOfOldFilesFiles == 0) {
+        // $(e.currentTarget).closest(".dropFilesArea").hide()
+        $(e.currentTarget)
+          .parents(".fileBox")
+          .siblings(".dropFilesArea")
+          .hide();
+      }
+    });
+    for (let i = 0; i < violationOldFiles.length; i++) {
+      let fileSplited = violationOldFiles[i].name.split(".");
+      let fileExt = fileSplited[fileSplited.length - 1].toLowerCase();
+      if ($.inArray(fileExt, filesExtension) == -1) {
+        functions.warningAlert(
+          "من فضلك أدخل الملفات بالمرفقات المسموح بها فقط"
+        );
+        $(e.currentTarget)
+          .parents(".fileBox")
+          .siblings(".dropFilesArea")
+          .hide();
+        $(e.currentTarget).val("");
+      }
+    }
+  });
+
+
   // let tableRows = $("#coordinatesTable tr:not(:first-child)");
   // tableRows.each((index, row) => {
   //   let currentRow = $(row);
@@ -854,7 +950,7 @@ quarryViolation.formActions = () => {
 
   sharedApis.getGovernrates("#violationGov");
   // sharedApis.getViolationZones("#violationArea")
-  sharedApis.getViolationType("#violationType");
+  sharedApis.getViolationType("#violationType", "Quarry");
   sharedApis.getViolationMaterails("#quarryViolationRawType");
   sharedApis.getQuarryType("#quarryType");
   sharedApis.getEquipments(".quarryToolsBox");
@@ -898,10 +994,10 @@ quarryViolation.getCommitteeMember = () => {
   });
 };
 quarryViolation.validateForm = (e) => {
-  let UserId = _spPageContextInfo.userId;
   let ViolationData = {};
   let attachecdFiles = $("#attachViolationFiles")[0].files;
   let attachecdReportFiles = $("#attachViolationReportFile")[0].files;
+
   let otherViolationDetails = quarryViolation.otherViolationDetails();
   let violationsDimensions = quarryViolation.violationDimensionsCoordsDetails();
   let violationDetails = quarryViolation.violationDetails();
@@ -926,13 +1022,23 @@ quarryViolation.validateForm = (e) => {
               attachecdReportFiles.length > 0
             ) {
               if (otherViolationDetails != false) {
-                ViolationData = {
-                  // Edit violation 
-                  ID: urlParams.get("taskId") !== null ? editViolationId : "",
-                  IsEdit: urlParams.get("taskId") !== null ? true : false,
-                  IsRejectedBefore: urlParams.get("taskId") !== null ? true : false,
+                let isOldFilesRequired = $("#oldFilesBox").is(":visible");
+                let attachedOldFiles = $("#attachOldFiles")[0]?.files || [];
 
-                  // End edit violation
+                if (isOldFilesRequired && attachedOldFiles.length === 0) {
+                  functions.warningAlert(
+                    "من فضلك قم بإرفاق الملفات القديمة",
+                    "#attachOldFiles"
+                  );
+                  return;
+                }
+
+                ViolationData = {
+                  ID: urlParams.get("taskId") !== null ? editViolationId : "",
+                  IsEdit: urlParams.get("isRejectedBefore") === "true",
+                  IsRejectedBefore: urlParams.get("isRejectedBefore") === "true",
+                  IsViolationEdit: urlParams.get("isViolationEdit") === "true",
+
                   Title: "New Quarry Violation",
                   OffenderType: "Quarry",
                   ViolatorName: violatorDetails.violatorName,
@@ -943,7 +1049,6 @@ quarryViolation.validateForm = (e) => {
                   CommercialRegister: violatorDetails.commercialRegister,
                   Governrate: violatorDetails.violationGov,
                   ViolationsZone: violatorDetails.violationAreaName,
-
                   ViolationType: violationDetails.violationType,
                   BonsNumber: violationDetails.isBonesViolation
                     ? violationDetails.BonsNumber
@@ -955,16 +1060,16 @@ quarryViolation.validateForm = (e) => {
                   QuarryCode: violationDetails.quarryCode,
                   Equipments: violationDetails.selectedEquipementsIds,
                   EquipmentsCount: violationDetails.selectedEquipmentsData,
-
+                  SkipCalculation: isPresidencyUser ? true : false,
                   Depth: violationsDimensions.violationDepth,
                   Area: violationsDimensions.violationAreaSpace,
-                  TotalQuantity: violationsDimensions.violationQuantity,
-                  DistanceToNearestQuarry:
-                    violationsDimensions.distanceToNearQuarry,
+                  TotalQuantity: isPresidencyUser
+                    ? 0
+                    : violationsDimensions.violationQuantity,
+                  DistanceToNearestQuarry: violationsDimensions.distanceToNearQuarry,
                   NearestQuarryCode: violationsDimensions.NearestQuarryCode,
                   Coordinates: violationsDimensions.coordinates,
                   CoordinatesDegrees: violationsDimensions.coordinatesDegrees,
-
                   Description: otherViolationDetails?.violationDescription,
                   LeaderOpinion: otherViolationDetails?.violationLeaderOpinion,
                   CommiteeMember:
@@ -1036,39 +1141,69 @@ quarryViolation.submitNewViolation = (e, ViolationData) => {
 };
 quarryViolation.uploadAttachment = (NewViolationID, ListName) => {
   $(".overlay").addClass("active");
+
   let Data = new FormData();
+
   Data.append("itemId", NewViolationID);
   Data.append("listName", ListName);
-  Data.append("Method", urlParams.get("taskId") !== null ? "Edit" : "",)
-  let count = 0;
-  let i;
-  for (i = 0; i < $("#attachViolationFiles")[0].files.length; i++) {
-    Data.append("file" + i, $("#attachViolationFiles")[0].files[i]);
+  Data.append("Method", urlParams.get("taskId") !== null ? "Edit" : "");
+
+  let fileIndex = 0;
+
+  // Original violation files
+  const violationFiles = $("#attachViolationFiles")[0]?.files || [];
+  for (let i = 0; i < violationFiles.length; i++) {
+    Data.append(`file${fileIndex}`, violationFiles[i]);
+    fileIndex++;
   }
-  for (
-    let j = i;
-    count < $("#attachViolationReportFile")[0].files.length;
-    j++
-  ) {
-    Data.append("file" + j, $("#attachViolationReportFile")[0].files[count]);
-    count++;
+
+  // Violation report files
+  const reportFiles = $("#attachViolationReportFile")[0]?.files || [];
+  for (let i = 0; i < reportFiles.length; i++) {
+    Data.append(`file${fileIndex}`, reportFiles[i]);
+    fileIndex++;
   }
+
+  // Old files - only available during edit
+  if (urlParams.get("taskId") !== null) {
+    const oldFiles = $("#attachOldFiles")[0]?.files || [];
+    for (let i = 0; i < oldFiles.length; i++) {
+      Data.append(`file${fileIndex}`, oldFiles[i]);
+      fileIndex++;
+    }
+  }
+
   $.ajax({
     type: "POST",
     url: "/_layouts/15/Uranium.Violations.SharePoint/Attachments.aspx/Upload",
     processData: false,
     contentType: false,
     data: Data,
+
     success: (data) => {
       $(".overlay").removeClass("active");
+
+      let redirectUrl =
+        urlParams.get("isViolationEdit") === "true"
+          ? "/ViolationsBranch/Pages/ValidatedViolations.aspx"
+          : urlParams.get("isRejectedBefore") === "true"
+            ? "/ViolationsRecorder/Pages/Registered-Violations.aspx"
+            : "/ViolationsRecorder/Pages/Registered-Violations.aspx";
+
       functions.sucessAlert(
-        urlParams.get("taskId") ? "تم تعديل مخالفة محجر بنجاح" : "تم إضافة مخالفة محجر جديدة بنجاح",
+        urlParams.get("taskId")
+          ? "تم تعديل مخالفة محجر بنجاح"
+          : "تم إضافة مخالفة محجر جديدة بنجاح",
         false,
-        "/ViolationsRecorder/Pages/Registered-Violations.aspx"
+        redirectUrl
       );
     },
+
     error: (err) => {
-      functions.warningAlert("خطأ في إرسال البيانات لقاعدة البيانات");
+      functions.warningAlert(
+        "خطأ في إرسال البيانات لقاعدة البيانات"
+      );
+
       $(".overlay").removeClass("active");
       console.log(err.responseText);
     },
@@ -1356,39 +1491,48 @@ quarryViolation.editViolation = () => {
       })
       .then((data) => {
         let violationData = data.d.Violation;
-        editViolationId = data.d.ViolationId
-        functions.commonEditData(violationData, data.d.ViolationId, 4);
+        editViolationId = data.d.ViolationId;
 
-        $("#violatorMobileNumber").val(violationData.MobileNumber || "");
+        // 🔹 chain on the returned promise instead of firing-and-forgetting
+        return functions
+          .commonEditData(violationData, data.d.ViolationId, 4)
+          .then(() => {
+            $("#violatorMobileNumber").val(violationData.MobileNumber || "");
 
-        $("#BonesCount").val(violationData.BonsNumber).trigger("change");
-        $("#quarryType").val(violationData.QuarryType).trigger("change");
-        $("#quarryCode").val(violationData.QuarryCode);
-        violationData.Equipments.forEach((equipment, index) => {
-          let selectedInput = $(`label[for="${equipment.Name}"]`);
-          selectedInput.trigger("click");
-          selectedInput
-            .siblings("#toolCount")
-            .val(violationData.Equipments_Count[index].count);
-        });
-        $("#violationDepth").val(violationData.Depth);
-        $("#AreaSpace").val(violationData.Area);
-        $(".totalAreaSpace").val(
-          ($("#violationDepth").val() * $("#AreaSpace").val()).toFixed(3)
-        );
-        $("#distanceToNearQuarry").val(violationData.DistanceToNearestQuarry);
-        $("#NearestQuarryNumber").val(violationData.NearestQuarryCode);
-        $("#s4-workspace").scrollTop(0, 0);
+            $("#BonesCount").val(violationData.BonsNumber).trigger("change");
+            $("#quarryType").val(violationData.QuarryType).trigger("change");
+            $("#quarryCode").val(violationData.QuarryCode);
+            violationData.Equipments.forEach((equipment, index) => {
+              let selectedInput = $(`label[for="${equipment.Name}"]`);
+              selectedInput.trigger("click");
+              selectedInput
+                .siblings("#toolCount")
+                .val(violationData.Equipments_Count[index].count);
+            });
+            $("#violationDepth").val(violationData.Depth);
+            $("#AreaSpace").val(violationData.Area);
+            $(".totalAreaSpace").val(
+              ($("#violationDepth").val() * $("#AreaSpace").val()).toFixed(3)
+            );
+            $("#distanceToNearQuarry").val(violationData.DistanceToNearestQuarry);
+            $("#NearestQuarryNumber").val(violationData.NearestQuarryCode);
+            $("#s4-workspace").scrollTop(0, 0);
+          });
+      })
+      .catch((err) => {
+        console.error("Error loading violation for edit:", err);
+      })
+      .finally(() => {
+        // 🔹 overlay is removed only after everything (including attachments) is done
         $(".overlay").removeClass("active");
       });
   }
 };
-
 quarryViolation.getPreviousViolationsCount = () => {
   let quarryCode = $("#quarryCode").val();
 
   // Check if quarryCode exists and is not undefined/null before calling trim
-  if (!quarryCode || quarryCode.trim() === "") {
+  if (!quarryCode || quarryCode.trim() === "" || quarryCode.trim() === "0") {
     $(".previous-violations-display").fadeOut();
     $(".previous-violations-count-value").text("0");
     return;
@@ -1398,7 +1542,7 @@ quarryViolation.getPreviousViolationsCount = () => {
     request: {
       Data: {
         OffenderType: "Quarry",
-        QuarryCode: quarryCode.trim() // Trim the value here
+        QuarryCode: quarryCode.trim() === "0" ? "" : quarryCode.trim() // Send empty string if "0"
       }
     }
   };

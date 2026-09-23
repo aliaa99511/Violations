@@ -74,7 +74,7 @@ quarryViolationReferralRecords.getQuarryViolationReferralsRecords = (
         })
         .catch((err) => {
             $(".overlay").removeClass("active");
-            console.log(err);
+            console.error(err);
         });
 };
 
@@ -285,7 +285,10 @@ quarryViolationReferralRecords.QuarryViolationReferralRecordsTable = (Referrals,
                 'totalendorsementscount': referral.TotalEndorsementsCount || 0,
                 'isfinalendorsementuploaded': referral.IsFinalEndorsementUploaded || false,
                 'totalpricedue': referral?.TotalPriceDue || 0,
-                'referredamount': referral?.ReferredAmount || 0
+                'referredamount': referral?.ReferredAmount || 0,
+                'quarrymaterialvalue': referral?.QuarryMaterialValue || 0,
+                'lawroyalty': referral?.LawRoyalty || 0,
+                'totalequipmentsprice': referral?.TotalEquipmentsPrice || 0
             };
 
             // Convert data object to data-attributes string
@@ -411,6 +414,9 @@ quarryViolationReferralRecords.QuarryViolationReferralRecordsTable = (Referrals,
         let isFinalEndorsementUploaded = $violationCode.data('isfinalendorsementuploaded');
         let TotalPriceDue = $violationCode.data('totalpricedue');
         let ReferredAmount = $violationCode.data('referredamount');
+        let QuarryMaterialValue = $violationCode.data('quarrymaterialvalue');
+        let LawRoyalty = $violationCode.data('lawroyalty');
+        let TotalEquipmentsPrice = $violationCode.data('totalequipmentsprice');
 
         // Show popup for attaching endorsements
         quarryViolationReferralRecords.attachEndorsementPopup(
@@ -422,23 +428,29 @@ quarryViolationReferralRecords.QuarryViolationReferralRecordsTable = (Referrals,
             totalEndorsementsCount,
             isFinalEndorsementUploaded,
             TotalPriceDue,
-            ReferredAmount
+            ReferredAmount,
+            QuarryMaterialValue,
+            LawRoyalty,
+            TotalEquipmentsPrice
         );
     });
 
     functions.hideTargetElement(".controls", ".hiddenListBox");
 };
-
+/////////////////////////////////////
 quarryViolationReferralRecords.attachEndorsementPopup = (
     ReferralID,
     ViolationID,
     TaskID,
     ReferralNumber,
     ViolationCode,
-    TotalEndorsementsCount = 0,
+    TotalEndorsementsCount,
     IsFinalEndorsementUploaded = false,
     TotalPriceDue,
-    ReferredAmount
+    ReferredAmount,
+    QuarryMaterialValue,
+    LawRoyalty,
+    TotalEquipmentsPrice
 ) => {
     // Store current violation context for later use
     quarryViolationReferralRecords.currentViolationId = ViolationID;
@@ -465,12 +477,6 @@ quarryViolationReferralRecords.attachEndorsementPopup = (
                     <div class="formBox">
                         <div class="formElements">
                             <div class="row">
-                                <div class="col-md-6">
-                                    <div class="form-group customFormGroup">
-                                        <label for="endorsementNumber" class="customLabel">رقم التأشيرة</label>
-                                        <input class="form-control customInput endorsementNumber" id="endorsementNumber" type="text" value="التأشيرة ${nextEndorsementNumber}" disabled>
-                                    </div>
-                                </div>
                                 <div class="col-md-6">
                                     <div class="form-group customFormGroup">
                                         <label for="endorsementComments" class="customLabel">ملاحظات</label>
@@ -649,8 +655,8 @@ quarryViolationReferralRecords.attachEndorsementPopup = (
                     "إرفاق تأشيرة النيابة",
                     "#endorsementAttach",
                     "تم إرفاق تأشيرة النيابة بنجاح",
-                    ViolationID,  // Pass ViolationID
-                    TaskID        // Pass TaskID
+                    ViolationID,
+                    TaskID
                 );
             } else {
                 functions.warningAlert("من فضلك قم بإرفاق مستند التأشيرة");
@@ -675,7 +681,7 @@ quarryViolationReferralRecords.attachEndorsementPopup = (
                         IsFinalEndorsementUploaded: true,
                         TotalEndorsementsCount: nextEndorsementNumber,
                         TotalOldPrice: TotalPriceDue,
-                        TotalPriceDue: ReferredAmount
+                        TotalPriceDue: ReferredAmount,
                     }
                 };
 
@@ -686,8 +692,12 @@ quarryViolationReferralRecords.attachEndorsementPopup = (
                     "التسليم للتحريات",
                     "#endorsementAttach",
                     "تم تسليم الإحالة للتحريات بنجاح",
-                    ViolationID,  // Pass ViolationID
-                    TaskID        // Pass TaskID
+                    ViolationID,
+                    TaskID,
+                    QuarryMaterialValue,
+                    LawRoyalty,
+                    TotalEquipmentsPrice
+
                 );
             } else {
                 functions.warningAlert("من فضلك قم بإرفاق مستند التأشيرة الأخيرة");
@@ -705,7 +715,10 @@ quarryViolationReferralRecords.saveEndorsementAPI = (
     attachInput,
     Message = "",
     ViolationID = null,
-    TaskID = null
+    TaskID = null,
+    QuarryMaterialValue,
+    LawRoyalty,
+    TotalEquipmentsPrice
 ) => {
     functions
         .requester(
@@ -719,21 +732,22 @@ quarryViolationReferralRecords.saveEndorsementAPI = (
         })
         .then((data) => {
             if (data.d.Status) {
-                // Update violation ReferralStatus with the new case status
-                if (request.Request.Status) {
-                    quarryViolationReferralRecords.updateViolationReferralStatus(
-                        request.Request.Status,
-                        ViolationID,
-                        TaskID
-                    );
-                }
-
-                quarryViolationReferralRecords.addNewReferralAttachmentRecord(
-                    ReferralId,
-                    uploadPhase,
-                    attachInput,
-                    Message,
-                );
+                quarryViolationReferralRecords.updateViolationReferralStatus(
+                    request.Request.Status,
+                    ViolationID,
+                    TaskID,
+                    QuarryMaterialValue,
+                    LawRoyalty,
+                    TotalEquipmentsPrice
+                )
+                    .then(() => {
+                        quarryViolationReferralRecords.addNewReferralAttachmentRecord(
+                            ReferralId,
+                            uploadPhase,
+                            attachInput,
+                            Message,
+                        );
+                    })
             } else {
                 functions.warningAlert("هناك خطأ في إرسال بيانات الطلب");
             }
@@ -812,11 +826,6 @@ quarryViolationReferralRecords.uploadReferralAttachments = (
             $(".overlay").removeClass("active");
             functions.sucessAlert(Message);
             functions.closePopup();
-            // Refresh the table
-            quarryViolationReferralRecords.getQuarryViolationReferralsRecords(
-                quarryViolationReferralRecords.pageIndex,
-                true
-            );
         },
         error: (err) => {
             functions.warningAlert("خطأ في إرسال البيانات لقاعدة البيانات");
@@ -824,7 +833,7 @@ quarryViolationReferralRecords.uploadReferralAttachments = (
         },
     });
 };
-
+////////////////////////////////////
 quarryViolationReferralRecords.getReferralAttachmentsByReferralId = (ReferralId, referralNumber) => {
     let request = {
         Request: {
@@ -1424,7 +1433,10 @@ quarryViolationReferralRecords.referralEquipmentDetails = (violationData) => {
 quarryViolationReferralRecords.updateViolationReferralStatus = (
     ReferralStatus,
     ViolationID = null,
-    TaskID = null
+    TaskID = null,
+    QuarryMaterialValue,
+    LawRoyalty,
+    TotalEquipmentsPrice
 ) => {
     let request = {
         request: {
@@ -1434,11 +1446,16 @@ quarryViolationReferralRecords.updateViolationReferralStatus = (
                 Title: "Update Referral Status",
                 ReferralStatus: ReferralStatus,
                 Status: "تعديل حالات القضية",
+                Violation: {
+                    QuarryMaterialValue: QuarryMaterialValue,
+                    LawRoyalty: LawRoyalty,
+                    TotalEquipmentsPrice: TotalEquipmentsPrice
+                },
             }
         }
     };
 
-    functions
+    return functions
         .requester(
             "/_layouts/15/Uranium.Violations.SharePoint/Tasks.aspx/Save",
             request
@@ -1447,16 +1464,19 @@ quarryViolationReferralRecords.updateViolationReferralStatus = (
             if (response.ok) {
                 return response.json();
             }
+
+            throw new Error("Failed to update referral status");
         })
         .then((data) => {
             if (data?.d?.Status) {
-                console.log('Violation ReferralStatus updated successfully to:', ReferralStatus);
-            } else {
-                console.warn('Failed to update violation ReferralStatus');
+                return data;
             }
+
+            throw new Error("Failed to update violation ReferralStatus");
         })
         .catch((err) => {
-            console.error('Error updating violation ReferralStatus:', err);
+            console.error("Error updating violation ReferralStatus:", err);
+            throw err;
         });
 };
 

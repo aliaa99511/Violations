@@ -496,11 +496,11 @@ prevViolations.dashBoardTable = (
                 <div class='arrow'></div>
 
                 <ul class='list-unstyled controlsList'>
-                    <li>
+                    <!--<li>
                       <a href="#" class="itemDetails">
                         المزيد من التفاصيل
                       </a>
-                    </li>
+                    </li>-->
                     <li>
                       <a href="#" class="printPaymentFormOnly">
                         طباعة نموذج السداد
@@ -651,16 +651,16 @@ prevViolations.dashBoardTable = (
       currentBox.stop(true, true).toggle(300);
     });
 
-    jQueryRecord
-      .find(".controls")
-      .children(".hiddenListBox")
-      .find(".itemDetails")
-      .on("click", (e) => {
+    // jQueryRecord
+    //   .find(".controls")
+    //   .children(".hiddenListBox")
+    //   .find(".itemDetails")
+    //   .on("click", (e) => {
 
-        $(".overlay").addClass("active");
+    //     $(".overlay").addClass("active");
 
-        prevViolations.findViolationByID(e, taskID);
-      });
+    //     prevViolations.findViolationByID(e, taskID);
+    //   });
 
     jQueryRecord
       .find(".controls")

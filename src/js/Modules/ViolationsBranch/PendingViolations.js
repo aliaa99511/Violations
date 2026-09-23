@@ -579,6 +579,7 @@ PendingViolations.findViolationByID = (
       let violationTypeId;
       let materialMinPrice;
       let materialTitle;
+      let skipCalculation;
 
       if (data != null) {
         violationData = data.d.Violation;
@@ -588,6 +589,7 @@ PendingViolations.findViolationByID = (
         violationTypeId = violationData?.ViolationTypes?.ID;
         materialMinPrice = violationData?.Material?.MinPrice;
         materialTitle = violationData?.Material?.Title;
+        skipCalculation = violationData?.SkipCalculation;
 
         if (violationOffenderType == "Quarry") {
           Content = DetailsPopup.quarryDetailsPopupContent(
@@ -660,7 +662,8 @@ PendingViolations.findViolationByID = (
             PendingViolations.approveTaskPopup(
               taskID,
               violationCode,
-              violationId
+              violationId,
+              skipCalculation
             );
           });
 
@@ -686,7 +689,8 @@ PendingViolations.findViolationByID = (
 PendingViolations.approveTaskPopup = (
   violationTaskID,
   violationCode,
-  violationId
+  violationId,
+  skipCalculation
 ) => {
   $(".overlay").removeClass("active");
   let popupHtml = `
@@ -729,7 +733,7 @@ PendingViolations.approveTaskPopup = (
   $(".approveVioltionTaskBtn").on("click", (e) => {
     e.preventDefault();
     $(".overlay").addClass("active");
-    PendingViolations.approveTaskAction(violationTaskID, violationId);
+    PendingViolations.approveTaskAction(violationTaskID, violationId, skipCalculation);
   });
 };
 
@@ -879,7 +883,7 @@ PendingViolations.approveEditMaterialMinPrice = (
     });
 };
 
-PendingViolations.approveTaskAction = (violationTaskID, violationId) => {
+PendingViolations.approveTaskAction = (violationTaskID, violationId, skipCalculation) => {
   let request = {
     Data: {
       ID: violationTaskID,
@@ -887,6 +891,7 @@ PendingViolations.approveTaskAction = (violationTaskID, violationId) => {
       Status: "Approved",
       ViolationId: violationId,
       PaymentStatus: "قيد الإنتظار",
+      SkipCalculation: skipCalculation ? true : false
     },
   };
   functions

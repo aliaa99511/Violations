@@ -5,7 +5,31 @@ import sharedApis from "../../Shared/sharedApiCall";
 let carViolation = {}
 var urlParams = new URLSearchParams(window.location.search);
 var editViolationId;
+let isPresidencyUser = false;
 
+carViolation.getCurrentUserConfiguration = () => {
+    let UserId = _spPageContextInfo.userId;
+
+    return functions.callSharePointListApi("Configurations")
+        .then((Users) => {
+            let UsersData = Users.value || [];
+
+            isPresidencyUser = UsersData.some((User) => {
+                return (
+                    User.UserIdId &&
+                    User.UserIdId.some((id) => Number(id) === Number(UserId)) &&
+                    User.Type === "PresidencyUser"
+                );
+            });
+
+            return isPresidencyUser;
+        })
+        .catch((err) => {
+            console.log("Error loading current user configuration:", err);
+            isPresidencyUser = false;
+            return false;
+        });
+};
 carViolation.violatorDetails = () => {
     let vaildViolator = false;
     let violatorDetails = {}
@@ -460,6 +484,11 @@ carViolation.otherViolationDetails = () => {
     }
 }
 carViolation.formActions = () => {
+    carViolation.getCurrentUserConfiguration();
+
+    if (urlParams.get("taskId") !== null) {
+        $("#oldFilesBox").show();
+    }
 
     let unmarkedCheckbox = document.querySelector("#unmarkedCheckbox");
     let carLicenseLetters = document.querySelector("#carLicenseLetters");
@@ -739,6 +768,8 @@ carViolation.formActions = () => {
     $(".dropFilesArea").hide()
     let violationFiles;
     let countOfFiles;
+    let oldFiles;
+    let countOfOldFiles;
     let filesExtension = ["gif", "svg", "jpg", "jpeg", "png", "doc", "docx", "pdf", "xls", "xlsx", "pptx"]
     $(".attachViolationFiles").on("change", (e) => {
         violationFiles = $(e.currentTarget)[0].files
@@ -831,6 +862,64 @@ carViolation.formActions = () => {
         }
     })
 
+    let violationOldFiles;
+    let countOfOldFilesFiles;
+    $(".attachOldFiles").on("change", (e) => {
+        violationOldFiles = $(e.currentTarget)[0].files;
+        if (violationOldFiles.length > 0) {
+            $(e.currentTarget)
+                .parents(".fileBox")
+                .siblings(".dropFilesArea")
+                .show()
+                .empty();
+        }
+
+        for (let i = 0; i < violationOldFiles.length; i++) {
+            $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").append(`
+                    <div class="file">
+                        <p class="fileName">${violationOldFiles[i].name}</p>
+                        <span class="deleteFile" data-index="${i}"><i class="fa-sharp fa-solid fa-x"></i></span>
+                    </div>
+                `);
+        }
+        $(".deleteFile").on("click", (event) => {
+            $(event.currentTarget).val("");
+            let index = $(event.currentTarget).closest(".file").index();
+            $(event.currentTarget).closest(".file").remove();
+            let fileBuffer = new DataTransfer();
+            for (let i = 0; i < violationOldFiles.length; i++) {
+                if (index !== i) {
+                    fileBuffer.items.add(violationOldFiles[i]);
+                }
+            }
+            violationOldFiles = fileBuffer.files;
+            countOfOldFilesFiles = violationOldFiles.length;
+
+            if (countOfOldFilesFiles == 0) {
+                // $(e.currentTarget).closest(".dropFilesArea").hide()
+                $(e.currentTarget)
+                    .parents(".fileBox")
+                    .siblings(".dropFilesArea")
+                    .hide();
+            }
+        });
+        for (let i = 0; i < violationOldFiles.length; i++) {
+            let fileSplited = violationOldFiles[i].name.split(".");
+            let fileExt = fileSplited[fileSplited.length - 1].toLowerCase();
+            if ($.inArray(fileExt, filesExtension) == -1) {
+                functions.warningAlert(
+                    "من فضلك أدخل الملفات بالمرفقات المسموح بها فقط"
+                );
+                $(e.currentTarget)
+                    .parents(".fileBox")
+                    .siblings(".dropFilesArea")
+                    .hide();
+                $(e.currentTarget).val("");
+            }
+        }
+    });
+
+
     // let tableRows = $("#coordinatesTable tr:not(:first-child)")
     // tableRows.each((index, row) => {
     //     let currentRow = $(row)
@@ -867,7 +956,7 @@ carViolation.formActions = () => {
     sharedApis.getGovernrates("#carLicenseTraffic")
     sharedApis.getGovernrates("#driverLicenseTraffic")
     sharedApis.getCarType("#violationCarType")
-    sharedApis.getViolationType("#violationType")
+    sharedApis.getViolationType("#violationType", "Vehicle")
     sharedApis.getViolationMaterails("#carViolationRawType")
     sharedApis.getMaterialAmmount("#RawQuantity")
     sharedApis.getEquipments(".carToolsBox")
@@ -926,13 +1015,24 @@ carViolation.validateForm = (e) => {
             if (violationDetails != false) {
                 if (dimensionsOtherDetails != false) {
                     if (otherViolationDetails != false) {
+                        let isOldFilesRequired = $("#oldFilesBox").is(":visible");
+                        let attachedOldFiles = $("#attachOldFiles")[0]?.files || [];
+
+                        if (isOldFilesRequired && attachedOldFiles.length === 0) {
+                            functions.warningAlert(
+                                "من فضلك قم بإرفاق الملفات القديمة",
+                                "#attachOldFiles"
+                            );
+                            return;
+                        }
                         functions.disableButton(e)
 
                         carViolationData = {
                             // Edit violation 
                             ID: urlParams.get("taskId") !== null ? editViolationId : "",
-                            IsEdit: urlParams.get("taskId") !== null ? true : false,
-                            IsRejectedBefore: urlParams.get("taskId") !== null ? true : false,
+                            IsEdit: urlParams.get("isRejectedBefore") === "true",
+                            IsRejectedBefore: urlParams.get("isRejectedBefore") === "true",
+                            IsViolationEdit: urlParams.get("isViolationEdit") === "true",
 
                             // End edit violation
                             Title: "New Car Violation",
@@ -962,6 +1062,8 @@ carViolation.validateForm = (e) => {
                             MaterialAmount: violationDetails.violationMaterailQuantity,
                             ViolationDate: violationDate,
                             ViolationTime: violationTime,
+
+                            SkipCalculation: isPresidencyUser ? true : false,
 
                             Coordinates: dimensionsOtherDetails.coordinates,
                             CoordinatesDegrees: dimensionsOtherDetails.coordinatesDegrees,
@@ -1091,55 +1193,75 @@ carViolation.GetCoordinates = () => {
     }
 }
 carViolation.uploadAttachment = (NewCarViolationID, ListName) => {
+    $(".overlay").addClass("active");
+
     let Data = new FormData();
+
     Data.append("itemId", NewCarViolationID);
     Data.append("listName", ListName);
-    Data.append("Method", urlParams.get("taskId") !== null ? "Edit" : "",)
-    let count = 0
-    let i;
+    Data.append("Method", urlParams.get("taskId") !== null ? "Edit" : "");
 
-    // let files = document.querySelectorAll("input[type='file']")[0].files;
-    // console.log(files)
-    // for (let file of files) {
-    //     Data.append("file", file);
-    // }
+    let fileIndex = 0;
 
-    // let filesInputs = document.querySelectorAll(".attachFilesInput");
-    // filesInputs.forEach(input=>{
-    //     input.addEventListener("change",(e)=>{
-    //         let files = input.currentTarget.files
-    //         for (const file of files) {
-    //             // formData.append("file", file);
-    //             Data.append("file", file);
-    //         }
-    //     })
-    // })
-
-    for (i = 0; i < $('#attachViolationFiles')[0].files.length; i++) {
-        Data.append("file" + i, $('#attachViolationFiles')[0].files[i]);
+    // Original violation files
+    const violationFiles = $("#attachViolationFiles")[0]?.files || [];
+    for (let i = 0; i < violationFiles.length; i++) {
+        Data.append(`file${fileIndex}`, violationFiles[i]);
+        fileIndex++;
     }
-    for (let j = i; count < $('#attachViolationReportFile')[0].files.length; j++) {
-        Data.append("file" + j, $('#attachViolationReportFile')[0].files[count]);
-        count++;
+
+    // Violation report files
+    const reportFiles = $("#attachViolationReportFile")[0]?.files || [];
+    for (let i = 0; i < reportFiles.length; i++) {
+        Data.append(`file${fileIndex}`, reportFiles[i]);
+        fileIndex++;
     }
+
+    // Old files - only available during edit
+    if (urlParams.get("taskId") !== null) {
+        const oldFiles = $("#attachOldFiles")[0]?.files || [];
+        for (let i = 0; i < oldFiles.length; i++) {
+            Data.append(`file${fileIndex}`, oldFiles[i]);
+            fileIndex++;
+        }
+    }
+
     $.ajax({
         type: "POST",
         url: "/_layouts/15/Uranium.Violations.SharePoint/Attachments.aspx/Upload",
         processData: false,
         contentType: false,
         data: Data,
-        success: (data) => {
-            $(".overlay").removeClass("active")
 
-            functions.sucessAlert(urlParams.get("taskId") ? "تم تعديل مخالفة عربة بنجاح" : "تم إضافة مخالفة عربة جديدة بنجاح", false, "/ViolationsRecorder/Pages/Registered-Violations.aspx")
+        success: (data) => {
+            $(".overlay").removeClass("active");
+
+            let redirectUrl =
+                urlParams.get("isViolationEdit") === "true"
+                    ? "/ViolationsBranch/Pages/ValidatedViolations.aspx"
+                    : urlParams.get("isRejectedBefore") === "true"
+                        ? "/ViolationsRecorder/Pages/Registered-Violations.aspx"
+                        : "/ViolationsRecorder/Pages/Registered-Violations.aspx";
+
+            functions.sucessAlert(
+                urlParams.get("taskId")
+                    ? "تم تعديل مخالفة محجر بنجاح"
+                    : "تم إضافة مخالفة محجر جديدة بنجاح",
+                false,
+                redirectUrl
+            );
         },
+
         error: (err) => {
-            functions.warningAlert("خطأ في إرسال البيانات لقاعدة البيانات")
-            $(".overlay").removeClass("active")
+            functions.warningAlert(
+                "خطأ في إرسال البيانات لقاعدة البيانات"
+            );
+
+            $(".overlay").removeClass("active");
             console.log(err.responseText);
-        }
+        },
     });
-}
+};
 carViolation.drawCoordinates = (Coords) => {
     let pointLat;
     let pointLng;
@@ -1442,4 +1564,4 @@ carViolation.OrderTableRow = () => {
     });
 };
 
-export default carViolation; 
+export default carViolation;

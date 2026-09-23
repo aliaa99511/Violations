@@ -391,7 +391,7 @@
             </div>
             <div class="formElements">
               <div class="row">
-                <div class="col-md-3">
+                <div class="col-md-4">
                   <div class="form-group customFormGroup">
                     <label for="attachViolationFiles" class="customLabel">إرفاق أصل المحضر<span
                         class="redAstric">*</span></label>
@@ -408,10 +408,10 @@
                           multiple />
                       </div>
                     </div>
-                    <div class="dropFilesArea" id="dropFilesArea"></div>
+                    <div class="dropFilesArea"></div>
                   </div>
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-4">
                   <div class="form-group customFormGroup">
                     <label for="attachViolationReportFile" class="customLabel">إرفاق تقرير مصور<span
                         class="redAstric">*</span></label>
@@ -428,7 +428,28 @@
                           multiple />
                       </div>
                     </div>
-                    <div class="dropFilesArea" id="dropFilesArea"></div>
+                    <div class="dropFilesArea"></div>
+                  </div>
+                </div>
+                <div class="col-md-4 oldFilesBox" id="oldFilesBox" style="display: none;">
+                  <div class="form-group customFormGroup">
+                    <label for="attachOldFiles" class="customLabel">
+                      إرفاق الملفات القديمة <span class="redAstric">*</span>
+                    </label>
+                    <div class="fileBox" id="dropContainer">
+                      <div class="inputFileBox">
+                        <img src="/Style Library/MiningViolations/images/fileIcon.svg" alt="File Icon" />
+                        <p class="dragDropFilesLabel">
+                          قم بالسحب والإفلات لرفع الملف , أو
+                          <a href="#!" class="attachFileLink">استعراض ملفاتي</a>
+                        </p>
+                        <input type="file" class="customInput attachFilesInput attachOldFiles form-control"
+                          id="attachOldFiles"
+                          accept="image/gif,image/svg,image/jpg,image/jpeg,image/png,.doc,.docx,.pdf,.xls,.xlsx,.pptx"
+                          multiple />
+                      </div>
+                    </div>
+                    <div class="dropFilesArea"></div>
                   </div>
                 </div>
                 <div class="col-md-6">

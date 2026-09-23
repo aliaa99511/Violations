@@ -628,13 +628,10 @@ functions.callSharePointListApi = (ListName) => {
   return new Promise(function (resolve, reject) {
     $.ajax({
       type: "GET",
-      url:
-        _spPageContextInfo.siteAbsoluteUrl +
-        "/_api/web/lists/getbytitle('" +
-        ListName +
-        "')/items?$top=1000",
+      url: _spPageContextInfo.siteAbsoluteUrl + "/_api/web/lists/getbytitle('" + ListName + "')/items?$top=1000",
       contentType: "application/json; charset=utf-8",
       dataType: "json",
+
       success: (data) => {
         if (data != null) {
           resolve(data);
@@ -642,7 +639,11 @@ functions.callSharePointListApi = (ListName) => {
           resolve([]);
         }
       },
-      error: (xhr) => { },
+
+      error: (xhr) => {
+        console.error("LIST ERROR:", ListName, xhr);
+        reject(xhr);
+      },
     });
   });
 };
@@ -896,46 +897,44 @@ functions.getViolationPaymentArabicName = (OffenderType) => {
 };
 functions.redirectUser = () => {
   let UserId = _spPageContextInfo.userId;
+
   functions.callSharePointListApi("Configurations").then((Users) => {
     let UsersData = Users.value;
+
     UsersData.forEach((User) => {
       if (User.UserIdId.find((id) => id == UserId)) {
-        switch (User.JobTitle1) {
-          case "القائم بالضبط": {
-            window.location.href =
-              _spPageContextInfo.siteAbsoluteUrl + "/ViolationsRecorder";
-            // $(".PreLoader").removeClass("active");
-            break;
-          }
-          case "فرع المخالفات":
-          case "مسئول مالي":
-          case "مسئول قضايا":
-          case "مسئول احالة":
-          case "مسؤل الإلتماسات":
-          case "الأرشيف": {
-            window.location.href =
-              _spPageContextInfo.siteAbsoluteUrl + "/ViolationsBranch";
-            // $(".PreLoader").removeClass("active");
-            break;
-          }
-          case "مسؤول التصديقات": {
-            window.location.href =
-              _spPageContextInfo.siteAbsoluteUrl + "/CertificationOfficer";
-            // $(".PreLoader").removeClass("active");
-            break;
-          }
-          case "الشركة المصرية للتعدين": {
-            window.location.href =
-              _spPageContextInfo.siteAbsoluteUrl + "/CertificationOfficer";
-            // $(".PreLoader").removeClass("active");
-            break;
+        if (User.Type === "PresidencyUser") {
+          window.location.href = _spPageContextInfo.siteAbsoluteUrl + "/ViolationsRecorder/Pages/ValidatedViolationsRecords.aspx";
+        } else if (User.Type === "AdminAccount") {
+          window.location.href = _spPageContextInfo.siteAbsoluteUrl + "/ViolationsRecorder/Pages/quarryViolationForm.aspx";
+        } else {
+          switch (User.JobTitle1) {
+            case "القائم بالضبط": {
+              window.location.href = _spPageContextInfo.siteAbsoluteUrl + "/ViolationsRecorder";
+              break;
+            }
+
+            case "فرع المخالفات":
+            case "مسئول مالي":
+            case "مسئول قضايا":
+            case "مسئول احالة":
+            case "مسؤل الإلتماسات":
+            case "الأرشيف": {
+              window.location.href = _spPageContextInfo.siteAbsoluteUrl + "/ViolationsBranch";
+              break;
+            }
+
+            case "مسؤول التصديقات":
+            case "الشركة المصرية للتعدين": {
+              window.location.href = _spPageContextInfo.siteAbsoluteUrl + "/CertificationOfficer";
+              break;
+            }
           }
         }
       }
     });
   });
 };
-
 functions.PrintDetails = (e) => {
   e.preventDefault();
   printJS({
@@ -1478,6 +1477,7 @@ functions.commonEditData = (
   $("#violationTime")
     .val(functions.getFormatedDate(violationData?.ViolationTime, "HH:mm"))
     .trigger("change");
+
   function getViolationCoords(Coordinates, defaultCoordinatesDots) {
     let splitedCoords = Coordinates.split("],");
     let filteredCoords;
@@ -1527,67 +1527,64 @@ functions.commonEditData = (
     });
     $(".submitSelectedMembersBtn").trigger("click");
     $("#sectorManegrOpinion").val(violationData.LeaderOpinion);
-    $.ajax({
-      type: "POST",
-      url: "/_layouts/15/Uranium.Violations.SharePoint/Attachments.aspx/Get",
-      contentType: "application/json; charset=utf-8",
-      dataType: "json",
-      data: JSON.stringify({
-        id: ViolationId,
-        listName: "Violations",
-      }),
-      success: (data) => {
-        async function fetchAndAssignFileOnClick(fileObj, fileInput) {
-          try {
-            // Fetch the file content
-            const response = await fetch(fileObj.Url);
-            const blob = await response.blob();
 
-            // Create a File object from the Blob
-            const fileName = fileObj.Name; // You can set the desired file name
-            const file = new File([blob], fileName, { type: blob.type });
+    // 🔹 Return a Promise that resolves once attachments are fetched & wired up
+    return new Promise((resolve, reject) => {
+      $.ajax({
+        type: "POST",
+        url: "/_layouts/15/Uranium.Violations.SharePoint/Attachments.aspx/Get",
+        contentType: "application/json; charset=utf-8",
+        dataType: "json",
+        data: JSON.stringify({
+          id: ViolationId,
+          listName: "Violations",
+        }),
+        success: (data) => {
+          async function fetchAndAssignFileOnClick(fileObj, fileInput) {
+            try {
+              const response = await fetch(fileObj.Url);
+              const blob = await response.blob();
 
-            // Attach event listener to a button click
-            button.addEventListener("click", () => {
-              // Create a new FileList with our File object
-              const fileList = new DataTransfer();
-              fileList.items.add(file);
+              const fileName = fileObj.Name;
+              const file = new File([blob], fileName, { type: blob.type });
 
-              // Assign the FileList to the file input element
-
-              fileInput.files = fileList.files;
-
-              $(fileInput).trigger("change");
-            });
-            $("#fetchAttachmentsBtn").trigger("click");
-          } catch (error) {
-            console.error("Error fetching file:", error);
+              button.addEventListener("click", () => {
+                const fileList = new DataTransfer();
+                fileList.items.add(file);
+                fileInput.files = fileList.files;
+                $(fileInput).trigger("change");
+              });
+              $("#fetchAttachmentsBtn").trigger("click");
+            } catch (error) {
+              console.error("Error fetching file:", error);
+            }
           }
-        }
 
-        // Usage: Call fetchAndAssignFileOnClick with your URL and file input element
-        const fileInputs = [
-          document.getElementById("attachViolationFiles"),
-          document.getElementById("attachViolationReportFile"),
-        ]; // Replace with your file input element ID
+          const fileInputs = [
+            document.getElementById("attachViolationFiles"),
+            document.getElementById("attachViolationReportFile"),
+            document.getElementById("attachOldFiles"),
+          ];
 
-        const button = document.getElementById("fetchAttachmentsBtn"); // Replace with your button element ID
-        // Function to fetch the file and assign it to a file input on button click
+          const button = document.getElementById("fetchAttachmentsBtn");
 
-        data.d.forEach((element, index) => {
-          let file = data.d[index];
+          data.d.forEach((element, index) => {
+            let file = data.d[index];
+            fetchAndAssignFileOnClick(file, fileInputs[index]);
+          });
 
-          fetchAndAssignFileOnClick(file, fileInputs[index]);
-        });
-
-        // URL of the file you want to fetch
-      },
-      error: (xhr) => {
-        console.log(xhr.responseText);
-      },
+          resolve(data); // ✅ signal that attachments are done
+        },
+        error: (xhr) => {
+          console.log(xhr.responseText);
+          reject(xhr); // ✅ signal failure too, so caller's .catch/.finally can react
+        },
+      });
     });
   }
-  getViolationCoords(violationData.CoordinatesDegrees, defaultCoordinatesDots);
+
+  // 🔹 propagate the promise up out of commonEditData
+  return getViolationCoords(violationData.CoordinatesDegrees, defaultCoordinatesDots);
 };
 functions.getPetitionsStatus = (petitionStatus) => {
   let statusHtml = ``;

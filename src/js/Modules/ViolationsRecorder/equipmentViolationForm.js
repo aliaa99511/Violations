@@ -6,6 +6,31 @@ let equipmentViolation = {};
 var urlParams = new URLSearchParams(window.location.search);
 
 var editViolationId;
+let isPresidencyUser = false;
+
+equipmentViolation.getCurrentUserConfiguration = () => {
+  let UserId = _spPageContextInfo.userId;
+
+  return functions.callSharePointListApi("Configurations")
+    .then((Users) => {
+      let UsersData = Users.value || [];
+
+      isPresidencyUser = UsersData.some((User) => {
+        return (
+          User.UserIdId &&
+          User.UserIdId.some((id) => Number(id) === Number(UserId)) &&
+          User.Type === "PresidencyUser"
+        );
+      });
+
+      return isPresidencyUser;
+    })
+    .catch((err) => {
+      console.log("Error loading current user configuration:", err);
+      isPresidencyUser = false;
+      return false;
+    });
+};
 
 equipmentViolation.violatorDetails = () => {
   let vaildViolator = false;
@@ -320,6 +345,12 @@ equipmentViolation.otherViolationDetails = () => {
   }
 };
 equipmentViolation.formActions = () => {
+  equipmentViolation.getCurrentUserConfiguration();
+
+  if (urlParams.get("taskId") !== null) {
+    $("#oldFilesBox").show();
+  }
+
   let numberOfDaysBefore = functions.getViolationStartDate(3);
   functions.inputDateFormat(
     ".inputDate",
@@ -624,6 +655,64 @@ equipmentViolation.formActions = () => {
     }
   });
 
+
+  let violationOldFiles;
+  let countOfOldFilesFiles;
+  $(".attachOldFiles").on("change", (e) => {
+    violationOldFiles = $(e.currentTarget)[0].files;
+    if (violationOldFiles.length > 0) {
+      $(e.currentTarget)
+        .parents(".fileBox")
+        .siblings(".dropFilesArea")
+        .show()
+        .empty();
+    }
+
+    for (let i = 0; i < violationOldFiles.length; i++) {
+      $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").append(`
+                      <div class="file">
+                          <p class="fileName">${violationOldFiles[i].name}</p>
+                          <span class="deleteFile" data-index="${i}"><i class="fa-sharp fa-solid fa-x"></i></span>
+                      </div>
+                  `);
+    }
+    $(".deleteFile").on("click", (event) => {
+      $(event.currentTarget).val("");
+      let index = $(event.currentTarget).closest(".file").index();
+      $(event.currentTarget).closest(".file").remove();
+      let fileBuffer = new DataTransfer();
+      for (let i = 0; i < violationOldFiles.length; i++) {
+        if (index !== i) {
+          fileBuffer.items.add(violationOldFiles[i]);
+        }
+      }
+      violationOldFiles = fileBuffer.files;
+      countOfOldFilesFiles = violationOldFiles.length;
+
+      if (countOfOldFilesFiles == 0) {
+        // $(e.currentTarget).closest(".dropFilesArea").hide()
+        $(e.currentTarget)
+          .parents(".fileBox")
+          .siblings(".dropFilesArea")
+          .hide();
+      }
+    });
+    for (let i = 0; i < violationOldFiles.length; i++) {
+      let fileSplited = violationOldFiles[i].name.split(".");
+      let fileExt = fileSplited[fileSplited.length - 1].toLowerCase();
+      if ($.inArray(fileExt, filesExtension) == -1) {
+        functions.warningAlert(
+          "من فضلك أدخل الملفات بالمرفقات المسموح بها فقط"
+        );
+        $(e.currentTarget)
+          .parents(".fileBox")
+          .siblings(".dropFilesArea")
+          .hide();
+        $(e.currentTarget).val("");
+      }
+    }
+  });
+
   // let tableRows = $("#coordinatesTable tr:not(:first-child)");
   // tableRows.each((index, row) => {
   //   let currentRow = $(row);
@@ -693,7 +782,7 @@ equipmentViolation.formActions = () => {
 
   sharedApis.getGovernrates("#violationGov");
   // sharedApis.getViolationZones("#violationArea")
-  sharedApis.getViolationType("#violationType");
+  sharedApis.getViolationType("#violationType", "Equipment");
   sharedApis.getViolationMaterails("#quarryViolationRawType");
   sharedApis.getQuarryType("#quarryType");
   sharedApis.getEquipments(".quarryToolsBox");
@@ -761,12 +850,23 @@ equipmentViolation.validateForm = (e) => {
           if (attachecdFiles != null && attachecdFiles.length > 0) {
             if (attachecdReportFiles != null && attachecdReportFiles.length > 0) {
               if (otherViolationDetails != false) {
-                ViolationData = {
-                  // Edit violation
-                  ID: urlParams.get("taskId") !== null ? editViolationId : "",
-                  IsEdit: urlParams.get("taskId") !== null ? true : false,
+                let isOldFilesRequired = $("#oldFilesBox").is(":visible");
+                let attachedOldFiles = $("#attachOldFiles")[0]?.files || [];
 
-                  IsRejectedBefore: urlParams.get("taskId") !== null ? true : false,
+                if (isOldFilesRequired && attachedOldFiles.length === 0) {
+                  functions.warningAlert(
+                    "من فضلك قم بإرفاق الملفات القديمة",
+                    "#attachOldFiles"
+                  );
+                  return;
+                }
+
+                ViolationData = {
+                  // Edit violation 
+                  ID: urlParams.get("taskId") !== null ? editViolationId : "",
+                  IsEdit: urlParams.get("isRejectedBefore") === "true",
+                  IsRejectedBefore: urlParams.get("isRejectedBefore") === "true",
+                  IsViolationEdit: urlParams.get("isViolationEdit") === "true",
 
                   Title: "New Equipment Violation",
                   OffenderType: "Equipment",
@@ -792,9 +892,10 @@ equipmentViolation.validateForm = (e) => {
                   Equipments: violationDetails.selectedEquipementsIds,
                   EquipmentsCount: violationDetails.selectedEquipmentsData,
 
+                  SkipCalculation: isPresidencyUser ? true : false,
                   Depth: violationsDimensions.violationDepth,
                   Area: violationsDimensions.violationAreaSpace,
-                  TotalQuantity: violationsDimensions.violationQuantity,
+                  TotalQuantity: isPresidencyUser ? 0 : violationsDimensions.violationQuantity,
                   DistanceToNearestQuarry: violationsDimensions.distanceToNearQuarry,
                   NearestQuarryCode: violationsDimensions.NearestQuarryCode,
                   Coordinates: violationsDimensions.coordinates,
@@ -863,41 +964,69 @@ equipmentViolation.submitNewViolation = (e, ViolationData) => {
 };
 equipmentViolation.uploadAttachment = (NewViolationID, ListName) => {
   $(".overlay").addClass("active");
+
   let Data = new FormData();
+
   Data.append("itemId", NewViolationID);
   Data.append("listName", ListName);
   Data.append("Method", urlParams.get("taskId") !== null ? "Edit" : "");
-  let count = 0;
-  let i;
-  for (i = 0; i < $("#attachViolationFiles")[0].files.length; i++) {
-    Data.append("file" + i, $("#attachViolationFiles")[0].files[i]);
+
+  let fileIndex = 0;
+
+  // Original violation files
+  const violationFiles = $("#attachViolationFiles")[0]?.files || [];
+  for (let i = 0; i < violationFiles.length; i++) {
+    Data.append(`file${fileIndex}`, violationFiles[i]);
+    fileIndex++;
   }
-  for (
-    let j = i;
-    count < $("#attachViolationReportFile")[0].files.length;
-    j++
-  ) {
-    Data.append("file" + j, $("#attachViolationReportFile")[0].files[count]);
-    count++;
+
+  // Violation report files
+  const reportFiles = $("#attachViolationReportFile")[0]?.files || [];
+  for (let i = 0; i < reportFiles.length; i++) {
+    Data.append(`file${fileIndex}`, reportFiles[i]);
+    fileIndex++;
   }
+
+  // Old files - only available during edit
+  if (urlParams.get("taskId") !== null) {
+    const oldFiles = $("#attachOldFiles")[0]?.files || [];
+    for (let i = 0; i < oldFiles.length; i++) {
+      Data.append(`file${fileIndex}`, oldFiles[i]);
+      fileIndex++;
+    }
+  }
+
   $.ajax({
     type: "POST",
     url: "/_layouts/15/Uranium.Violations.SharePoint/Attachments.aspx/Upload",
     processData: false,
     contentType: false,
     data: Data,
+
     success: (data) => {
       $(".overlay").removeClass("active");
+
+      let redirectUrl =
+        urlParams.get("isViolationEdit") === "true"
+          ? "/ViolationsBranch/Pages/ValidatedViolations.aspx"
+          : urlParams.get("isRejectedBefore") === "true"
+            ? "/ViolationsRecorder/Pages/Registered-Violations.aspx"
+            : "/ViolationsRecorder/Pages/Registered-Violations.aspx";
+
       functions.sucessAlert(
         urlParams.get("taskId")
-          ? "تم تعديل مخالفة معدة بنجاح"
-          : "تم إضافة مخالفة معدة جديدة بنجاح",
+          ? "تم تعديل مخالفة محجر بنجاح"
+          : "تم إضافة مخالفة محجر جديدة بنجاح",
         false,
-        "/ViolationsRecorder/Pages/Registered-Violations.aspx"
+        redirectUrl
       );
     },
+
     error: (err) => {
-      functions.warningAlert("خطأ في إرسال البيانات لقاعدة البيانات");
+      functions.warningAlert(
+        "خطأ في إرسال البيانات لقاعدة البيانات"
+      );
+
       $(".overlay").removeClass("active");
       console.log(err.responseText);
     },

@@ -1,31 +1,229 @@
-.track-history-modal{
-    .modal-content{
-
+.track-history-modal {
+    .modal-content {
         border-radius: 3px 3px 0px 0px;
         box-shadow: 0px 3px 6px #00000029;
     }
+
     border: 0;
-    .modal-header{
+
+    .modal-header {
         background-color: $customGreen;
         font-size: 16px;
         font-weight: 600;
         padding: 20px 34px;
-        display: block!important;
+        display: block !important;
         box-shadow: 0px 3px 6px #00000029;
         border-radius: 3px 3px 0px 0px;
-        .modal-title-style{
+
+        .modal-title-style {
             text-align: right;
-            color:#fff;
+            color: #fff;
             margin: unset !important;
-            display: block!important;
-        }        
+            display: block !important;
+        }
     }
-    .modal-body{
+
+    .modal-body {
         padding: 27px 0px;
     }
-    @media (min-width: 1000px){
+
+    @media (min-width: 1000px) {
         .modal-dialog {
-            max-width: 860px !important;        
+            max-width: 860px !important;
         }
     }
 }
+
+
+////////////////// violationVersions  //////////////////////////
+.violationVersionsPopupStyle {
+    .modal-content {
+        padding: 0px !important;
+
+        .modal-body {
+            padding: 0px !important;
+        }
+    }
+}
+
+.violationVersionsPopup {
+    direction: rtl;
+    background-color: #fff;
+    width: 100%;
+
+    .modal-content {}
+
+    .modal-header {
+        background-color: #015642;
+        color: #fff;
+        border-bottom: 0;
+        padding: 22px 30px;
+        border-top-left-radius: 0 !important;
+        border-top-right-radius: 0 !important;
+    }
+
+    .modal-title-style {
+        color: #fff;
+        font-size: 18px;
+        font-weight: 500;
+    }
+
+    .modal-body {
+        // max-height: 65vh;
+        overflow-y: auto;
+    }
+
+    .modal-footer {
+        padding: 16px;
+        border-top: 1px solid #e5e5e5;
+    }
+
+    .printViolationVersions {
+        background-color: #015642 !important;
+        color: #fff !important;
+        border: 0;
+        border-radius: 6px;
+        padding: 9px 20px;
+        font-size: 16px;
+        cursor: pointer;
+        display: inline-flex !important;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+
+        &:hover {
+            background-color: #014735 !important;
+        }
+    }
+
+    .violationVersionsBody {
+        direction: rtl;
+        padding: 0 5px;
+    }
+
+    .violationVersionItem {
+        padding: 22px 30px;
+        border-bottom: 1px solid #e5e5e5;
+
+        &:last-child {
+            border-bottom: 0;
+        }
+    }
+
+    .violationVersionInfo {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 25px;
+        direction: rtl;
+    }
+
+    .versionModifiedDate {
+        font-size: 15px;
+        font-weight: 600;
+        color: #111;
+    }
+
+    .versionModifiedBy {
+        font-size: 14px;
+        color: #111;
+        direction: rtl;
+
+        strong {
+            font-weight: 600;
+        }
+    }
+
+    .violationVersionChanges {
+        width: 100%;
+    }
+
+    .versionChangesContainer {
+        width: 100%;
+    }
+
+    .versionChangesRow {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 40px;
+        margin-bottom: 40px;
+
+        &:last-child {
+            margin-bottom: 0;
+        }
+    }
+
+    .versionChange {
+        min-width: 0;
+    }
+
+    .versionChangeLabel {
+        color: #006653;
+        font-size: 14px;
+        font-weight: 500;
+        margin-bottom: 8px;
+    }
+
+    .versionChangeValue {
+        color: #222;
+        font-size: 14px;
+        line-height: 1.8;
+        word-break: break-word;
+        overflow-wrap: anywhere;
+    }
+
+    .versionNoChanges {
+        color: #777;
+        font-size: 14px;
+    }
+
+    // .violationVersionsButton {
+    //     background: none;
+    //     border: none;
+    //     padding: 0;
+    //     margin: 0;
+    //     cursor: pointer;
+    //     font-family: inherit;
+    //     color: inherit;
+    // }
+
+    @media print {
+
+        .modal-footer,
+        .closeViolationVersionsPopup,
+        .violationVersionsButtonBox {
+            display: none !important;
+        }
+    }
+
+    @media (max-width: 992px) {
+        .versionChangesRow {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+    }
+
+    @media (max-width: 768px) {
+        .violationVersionItem {
+            padding: 20px 15px;
+        }
+
+        .violationVersionInfo {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 10px;
+        }
+
+        .versionChangesRow {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 15px;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .versionChangesRow {
+            grid-template-columns: 1fr;
+        }
+    }
+}
+
+///////////////////////////////////////////////

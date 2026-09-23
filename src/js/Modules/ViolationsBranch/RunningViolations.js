@@ -349,7 +349,7 @@ runningViolations.RunningViolationTable = (RunningViolation, destroyTable) => {
       if (taskViolation != null) {
         let createdDate = functions.getFormatedDate(record.Created);
         data.push([
-          `<div class="violationId" data-taskid="${record.ID}" data-violationid="${record.ViolationId}" data-offendertype="${taskViolation.OffenderType}">${taskViolation.ViolationCode}</div>`,
+          `<div class="violationId" data-taskid="${record.ID}" data-violationid="${record.ViolationId}" data-offendertype="${taskViolation?.OffenderType}">${taskViolation?.ViolationCode}</div>`,
           `<div class='controls'>
               <div class='ellipsisButton'>
                   <i class='fa-solid fa-ellipsis-vertical'></i>
@@ -362,20 +362,20 @@ runningViolations.RunningViolationTable = (RunningViolation, destroyTable) => {
                   </ul>
               </div>
           </div>`,
-          `<div class="violationArName">${functions.getViolationArabicName(taskViolation.OffenderType)}</div>`,
-          `<div class="violatorName">${taskViolation.ViolatorName || "-"}</div>`,
+          `<div class="violationArName">${functions.getViolationArabicName(taskViolation?.OffenderType)}</div>`,
+          `<div class="violatorName">${taskViolation?.ViolatorName || "-"}</div>`,
           `<div class="violationType" 
-                data-typeid="${taskViolation.OffenderType == "Quarry"
-            ? taskViolation.ViolationTypes.ID
+                data-typeid="${taskViolation?.OffenderType == "Quarry"
+            ? taskViolation?.ViolationTypes?.ID
             : 0
-          }">${functions.getViolationArabicName(taskViolation.OffenderType, taskViolation?.ViolationTypes?.Title)}</div>`,
+          }">${functions.getViolationArabicName(taskViolation?.OffenderType, taskViolation?.ViolationTypes?.Title)}</div>`,
           `${createdDate}`,
-          `${functions.getFormatedDate(taskViolation.ViolationDate)}`,
-          `<div class="companyName">${taskViolation.ViolatorCompany != "" ? taskViolation.ViolatorCompany : "-"}</div>`,
-          `<div class="violationCode">${taskViolation.OffenderType == "Vehicle"
-            ? taskViolation.CarNumber
-            : taskViolation.QuarryCode != ""
-              ? taskViolation.QuarryCode
+          `${functions.getFormatedDate(taskViolation?.ViolationDate)}`,
+          `<div class="companyName">${taskViolation?.ViolatorCompany != "" ? taskViolation?.ViolatorCompany : "-"}</div>`,
+          `<div class="violationCode">${taskViolation?.OffenderType == "Vehicle"
+            ? taskViolation?.CarNumber
+            : taskViolation?.QuarryCode != ""
+              ? taskViolation?.QuarryCode
               : "-"
           }</div>`,
           `<div class="trailerNum">${taskViolation?.TrailerNum || "-"}</div>`,

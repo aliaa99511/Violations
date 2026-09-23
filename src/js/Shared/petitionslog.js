@@ -1057,6 +1057,7 @@ petitionsLog.approvePetition = (
   // Initialize variables
   let state = {
     allAttachments: undefined,
+    oldFilesAttachments: undefined,
     newPriceInput: "",
     newDateInput: "",
     oldPriceInput: Number($("#priceBeforePetition").val().replace(/\,/g, "")),
@@ -1159,7 +1160,7 @@ petitionsLog.approvePetition = (
                       </div>
                     </div>
                   </div>
-
+                  <div class="col-md-1"></div>
                   <div class="col-md-6">
                     <div class="form-group customFormGroup">
                       <label for="approvePetitionAttach" class="customLabel">إرفاق المؤيدات <span class="required-star">*</span></label>
@@ -1173,6 +1174,20 @@ petitionsLog.approvePetition = (
                       <div class="dropFilesArea" id="dropFilesArea"></div>
                     </div>
                   </div>
+                  <div class="col-md-6">
+                    <div class="form-group customFormGroup">
+                      <label for="approvePetitionOldFiles" class="customLabel">إرفاق الملفات القديمة <span class="required-star">*</span></label>
+                      <div class="fileBox" id="dropContainer">
+                        <div class="inputFileBox">
+                          <img src="/Style Library/MiningViolations/images/fileIcon.svg" alt="File Icon">
+                          <p class="dragDropFilesLabel">قم بالسحب والإفلات لرفع الملف , أو <a href="#!" class="attachFileLink">استعراض ملفاتي</a></p>
+                          <input type="file" class="customInput attachFilesInput approvePetitionOldFiles form-control" id="approvePetitionOldFiles" accept="image/gif,image/svg,image/jpg,image/jpeg,image/png,.doc,.docx,.pdf,.xls,.xlsx,.pptx" multiple>
+                        </div>
+                      </div>
+                      <div class="dropFilesArea" id="dropFilesAreaOldFiles"></div>
+                    </div>
+                  </div>
+                  
                 </div>
               </div>
             </div>
@@ -1200,6 +1215,8 @@ petitionsLog.approvePetition = (
 
   function setupFileUploadHandlers() {
     $("#approvePetitionAttach").on("change", handleFileUpload);
+
+    $("#approvePetitionOldFiles").on("change", handleOldFilesUpload);
   }
 
   function handleFileUpload(e) {
@@ -1222,6 +1239,86 @@ petitionsLog.approvePetition = (
       setupDeleteHandlers(e);
     }
   }
+
+  ///////////////////// old files ////////////////////////
+  function handleOldFilesUpload(e) {
+    const files = $(e.currentTarget)[0].files;
+
+    state.oldFilesAttachments = files;
+
+    const dropArea = $(e.currentTarget)
+      .parents(".fileBox")
+      .siblings("#dropFilesAreaOldFiles");
+
+    if (files.length > 0) {
+      dropArea.show().empty();
+
+      Array.from(files).forEach((file, index) => {
+        dropArea.append(`
+          <div class="file">
+            <p class="fileName">${file.name}</p>
+            <span class="deleteFile deleteOldFile" data-index="${index}"><i class="fa-sharp fa-solid fa-x"></i></span>
+          </div>
+      `);
+      });
+
+      validateOldFilesExtensions(files, e);
+      setupOldFilesDeleteHandlers(e);
+    }
+  }
+  function validateOldFilesExtensions(files, e) {
+    const invalidFiles = Array.from(files).filter(file => {
+      const fileExt = file.name.split(".").pop().toLowerCase();
+
+      return !filesExtension.includes(fileExt);
+    });
+
+    if (invalidFiles.length > 0) {
+      functions.warningAlert(
+        "من فضلك أدخل الملفات بالمرفقات المسموح بها فقط"
+      );
+
+      $(e.currentTarget).parents(".fileBox")
+        .siblings("#dropFilesAreaOldFiles")
+        .hide();
+
+      $(e.currentTarget).val("");
+
+      state.oldFilesAttachments = undefined;
+    }
+  }
+  function setupOldFilesDeleteHandlers(e) {
+    $(".deleteOldFile")
+      .off("click")
+      .on("click", (event) => {
+
+        const index = Number(
+          $(event.currentTarget).attr("data-index")
+        );
+
+        $(event.currentTarget)
+          .closest(".file")
+          .remove();
+
+        const fileBuffer = new DataTransfer();
+
+        Array.from(state.oldFilesAttachments).forEach((file, i) => {
+          if (index !== i) {
+            fileBuffer.items.add(file);
+          }
+        });
+
+        state.oldFilesAttachments = fileBuffer.files;
+
+        if (state.oldFilesAttachments.length === 0) {
+          $(e.currentTarget)
+            .parents(".fileBox")
+            .siblings("#dropFilesAreaOldFiles")
+            .hide();
+        }
+      });
+  }
+  ////////////////////////////////////////////////////////
 
   function createFileElement(fileName, index) {
     return `
@@ -1341,49 +1438,45 @@ petitionsLog.approvePetition = (
   function handleSubmission(state, e, petitionID, violationID, petitionComments) {
     const hasPrice = state.newPriceInput && state.newPriceInput !== "";
     const hasDate = state.newDateInput && state.newDateInput !== "";
-    const hasAttachments = state.allAttachments?.length > 0;
 
+    const hasAttachments = state.allAttachments?.length > 0;
+    const hasOldFilesAttachments = state.oldFilesAttachments?.length > 0;
+
+    // Required: approve petition attachments
     if (!hasAttachments) {
       showWarning("من فضلك قم بإرفاق المستند الخاص بقبول الالتماس");
       return;
     }
 
-    // Validate price
-    // if (hasPrice && Number(state.newPriceInput) > state.oldPriceInput) {
-    //   showWarning("من فضلك قم بإدخال المبلغ الجديد لا يتجاوز المبلغ المحدد في المخالفة");
-    //   return;
-    // }
+    // Required: old files
+    if (!hasOldFilesAttachments) {
+      showWarning("من فضلك قم بإرفاق الملفات القديمة");
+      return;
+    }
 
     // Validate date
     if (hasDate && state.oldDateInput !== "-") {
-
       const oldDateMoment = moment(state.oldDateInput, "DD-MM-YYYY");
       const newDateMoment = moment(state.newDateInput, "DD-MM-YYYY");
 
       if (newDateMoment.isBefore(oldDateMoment)) {
-        showWarning("من فضلك قم بتحديد التاريخ الجديد للمصالحة لا يقل عن التاريخ المحدد في المخالفة");
+        showWarning(
+          "من فضلك قم بتحديد التاريخ الجديد للمصالحة لا يقل عن التاريخ المحدد في المخالفة"
+        );
         return;
       }
     }
 
-    // if (hasDate && state.oldDateInput !== "-") {
-
-    //   const oldDateParts = state.oldDateInput.split("-");
-    //   const newDateParts = state.newDateInput.split("/");
-
-    //   const oldDate = new Date(oldDateParts[2], oldDateParts[1] - 1, oldDateParts[0]);
-    //   const newDate = new Date(newDateParts[2], newDateParts[0] - 1, newDateParts[1]);
-
-    //   if (newDate < oldDate) {
-    //     showWarning("من فضلك قم بتحديد التاريخ الجديد للمصالحة لا يقل عن التاريخ المحدد في المخالفة");
-    //     return;
-    //   }
-    // }
-
     const getSuccessMessage = () => {
-      if (hasPrice && hasDate) return "تم قبول الالتماس مع تعديل المبلغ والمدة الجديدة";
-      if (hasPrice) return "تم قبول الالتماس مع تعديل المبلغ الجديد";
-      if (hasDate) return "تم قبول الالتماس مع تعديل المدة الجديدة";
+      if (hasPrice && hasDate)
+        return "تم قبول الالتماس مع تعديل المبلغ والمدة الجديدة";
+
+      if (hasPrice)
+        return "تم قبول الالتماس مع تعديل المبلغ الجديد";
+
+      if (hasDate)
+        return "تم قبول الالتماس مع تعديل المدة الجديدة";
+
       return "";
     };
 
@@ -1394,7 +1487,9 @@ petitionsLog.approvePetition = (
       state.request,
       petitionComments,
       "قبول مع التعديل",
-      getSuccessMessage()
+      getSuccessMessage(),
+      state.allAttachments,
+      state.oldFilesAttachments
     );
   }
 
@@ -1584,7 +1679,8 @@ petitionsLog.changePetitionStatus = (
   petitionComments,
   Status,
   successMessage,
-  attachments = null // Add attachments parameter
+  petitionAttachments = null,
+  oldFilesAttachments = null
 ) => {
   functions
     .requester(
@@ -1607,7 +1703,15 @@ petitionsLog.changePetitionStatus = (
     .then((data) => {
       if (data.d.Status) {
         // First API call successful, now make second API call
-        petitionsLog.editPetition(e, petitionID, violationID, requestData, successMessage, attachments);
+        petitionsLog.editPetition(
+          e,
+          petitionID,
+          violationID,
+          requestData,
+          successMessage,
+          petitionAttachments,
+          oldFilesAttachments
+        );
       } else {
         $(".overlay").removeClass("active");
         functions.warningAlert("حدث خطأ ما, لم يتم تحديث حالة الالتماس");
@@ -1618,7 +1722,15 @@ petitionsLog.changePetitionStatus = (
       functions.warningAlert("خطأ في إرسال البيانات لقاعدة البيانات");
     });
 };
-petitionsLog.editPetition = (e, petitionID, violationID, requestData, successMessage, attachments = null) => {
+petitionsLog.editPetition = (
+  e,
+  petitionID,
+  violationID,
+  requestData,
+  successMessage,
+  petitionAttachments = null,
+  oldFilesAttachments = null
+) => {
   functions
     .requester(
       "/_layouts/15/Uranium.Violations.SharePoint/Tasks.aspx/Save",
@@ -1632,48 +1744,237 @@ petitionsLog.editPetition = (e, petitionID, violationID, requestData, successMes
     .then((data) => {
       if (requestData?.request?.Data?.Status == "Cancelled") {
         // Upload attachments for cancelled petitions if they exist
-        if (attachments && attachments.length > 0) {
-          petitionsLog.uploadPetitionAttachmentDirect(
-            petitionID,
-            "Petitions",
-            attachments,
-            successMessage
-          );
-        } else {
-          $(".overlay").removeClass("active");
-          functions.sucessAlert(successMessage);
-        }
+        petitionsLog.uploadApprovePetitionAttachments(
+          petitionID,
+          violationID,
+          petitionAttachments,
+          oldFilesAttachments,
+          successMessage
+        );
       } else if (data.d.Status) {
         // Upload attachments for approved petitions if they exist
-        if (attachments && attachments.length > 0) {
-          petitionsLog.uploadPetitionAttachmentDirect(
-            petitionID,
-            "Petitions",
-            attachments,
-            successMessage
-          );
-        } else {
-          // No attachments to upload, just show success
-          $(".overlay").removeClass("active");
-          functions.sucessAlert(successMessage);
-
-          //petitionsLog.addNewPetitionAttachment(
-          //   petitionID,
-          //   "Petitions",
-          //   successMessage,
-          // );
-        }
+        petitionsLog.uploadApprovePetitionAttachments(
+          petitionID,
+          violationID,
+          petitionAttachments,
+          oldFilesAttachments,
+          successMessage
+        );
       } else {
         $(".overlay").removeClass("active");
         functions.warningAlert("هناك خطأ في إرسال بيانات تعديل المهمة");
       }
     })
     .catch((err) => {
-      console.log("editPetition err", err);
+      console.error(err);
       $(".overlay").removeClass("active");
       functions.warningAlert("حدث خطأ في تعديل المهمة");
     });
 };
+petitionsLog.uploadApprovePetitionAttachments = (
+  petitionID,
+  violationID,
+  petitionAttachments,
+  oldFilesAttachments,
+  successMessage
+) => {
+
+  // =========================
+  // Upload files to a list
+  // =========================
+  const uploadFiles = (itemId, listName, files) => {
+    if (!files || files.length === 0) {
+      return Promise.resolve();
+    }
+
+    return new Promise((resolve, reject) => {
+      let Data = new FormData();
+
+      Data.append("itemId", itemId);
+      Data.append("listName", listName);
+
+      for (let i = 0; i < files.length; i++) {
+        Data.append(`file${i}`, files[i]);
+      }
+
+      $.ajax({
+        type: "POST",
+        url: "/_layouts/15/Uranium.Violations.SharePoint/Attachments.aspx/Upload",
+        processData: false,
+        contentType: false,
+        data: Data,
+
+        success: (data) => {
+          resolve(data);
+        },
+
+        error: (xhr) => {
+          reject(xhr);
+        }
+      });
+    });
+  };
+
+
+  // ==========================================
+  // 1. Upload approval attachments to Petitions
+  // ==========================================
+  const uploadPetitionFiles = () => {
+    return uploadFiles(
+      petitionID,
+      "Petitions",
+      petitionAttachments
+    );
+  };
+
+
+  // ==================================================
+  // 2. Upload old files to Petitions
+  // ==================================================
+  const uploadOldFilesToPetition = () => {
+    return uploadFiles(
+      petitionID,
+      "Petitions",
+      oldFilesAttachments
+    );
+  };
+
+
+  // ==================================================
+  // 3. Upload old files to Violations
+  // ==================================================
+  const uploadOldFilesToViolation = () => {
+    return uploadFiles(
+      violationID,
+      "Violations",
+      oldFilesAttachments
+    );
+  };
+
+
+  // ==========================================
+  // Execute uploads sequentially
+  // ==========================================
+  uploadPetitionFiles()
+
+    // Approval attachments → Petitions
+    .then(() => uploadOldFilesToPetition())
+
+    // Old files → Petitions
+    .then(() => uploadOldFilesToViolation())
+
+    // Old files → Violations
+    .then(() => {
+
+      $(".overlay").removeClass("active");
+
+      functions.sucessAlert(successMessage);
+
+    })
+
+    .catch((error) => {
+
+      console.error("Attachment upload error:", error);
+
+      $(".overlay").removeClass("active");
+
+      functions.warningAlert(
+        "تم تحديث الالتماس ولكن حدث خطأ أثناء إرفاق الملفات"
+      );
+
+    });
+};
+// petitionsLog.uploadApprovePetitionAttachments = (
+//   petitionID,
+//   violationID,
+//   petitionAttachments,
+//   oldFilesAttachments,
+//   successMessage
+// ) => {
+
+//   const uploadPetitionFiles = () => {
+//     if (!petitionAttachments || petitionAttachments.length === 0) {
+//       return Promise.resolve();
+//     }
+
+//     return new Promise((resolve, reject) => {
+//       let Data = new FormData();
+
+//       Data.append("itemId", petitionID);
+//       Data.append("listName", "Petitions");
+
+//       for (let i = 0; i < petitionAttachments.length; i++) {
+//         Data.append(`file${i}`, petitionAttachments[i]);
+//       }
+
+//       $.ajax({
+//         type: "POST",
+//         url: "/_layouts/15/Uranium.Violations.SharePoint/Attachments.aspx/Upload",
+//         processData: false,
+//         contentType: false,
+//         data: Data,
+//         success: (data) => {
+//           resolve(data);
+//         },
+//         error: (xhr) => {
+//           reject(xhr);
+//         }
+//       });
+//     });
+//   };
+
+
+//   const uploadOldFiles = () => {
+//     if (!oldFilesAttachments || oldFilesAttachments.length === 0) {
+//       return Promise.resolve();
+//     }
+
+//     return new Promise((resolve, reject) => {
+//       let Data = new FormData();
+
+//       // IMPORTANT:
+//       // Old files belong to the Violation
+//       Data.append("itemId", violationID);
+//       Data.append("listName", "Violations");
+
+//       for (let i = 0; i < oldFilesAttachments.length; i++) {
+//         Data.append(`file${i}`, oldFilesAttachments[i]);
+//       }
+
+//       $.ajax({
+//         type: "POST",
+//         url: "/_layouts/15/Uranium.Violations.SharePoint/Attachments.aspx/Upload",
+//         processData: false,
+//         contentType: false,
+//         data: Data,
+//         success: (data) => {
+//           resolve(data);
+//         },
+//         error: (xhr) => {
+//           reject(xhr);
+//         }
+//       });
+//     });
+//   };
+
+
+//   // Upload both types sequentially
+//   uploadPetitionFiles()
+//     .then(() => uploadOldFiles())
+//     .then(() => {
+//       $(".overlay").removeClass("active");
+//       functions.sucessAlert(successMessage);
+//     })
+//     .catch((error) => {
+//       console.error("Attachment upload error:", error);
+
+//       $(".overlay").removeClass("active");
+
+//       functions.warningAlert(
+//         "تم تحديث الالتماس ولكن حدث خطأ أثناء إرفاق الملفات"
+//       );
+//     });
+// };
 petitionsLog.rejectPetition = (petitionId, violationID, violationCode) => {
   $(".overlay").removeClass("active");
   let popupHtml = `

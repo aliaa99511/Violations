@@ -1583,12 +1583,15 @@ DetailsPopup.printPaymentForm = (TaskData) => {
                 </div>
                 <div class="formTitle">مطالبة مالية (${functions.getViolationArabicName(offenderType)})</div>
                 <div class="popupHeader">
-                    <div class="violationsMetaBox">
+                    <div class="violationsMetaBox"> 
                         <p class="violationCode">${functions.getViolationPaymentArabicName(offenderType)} (${violationData.ViolationCode})</p>
-                        <p class="violationPrintTime">${PrintedCount == 0
-            ? "تاريخ وتوقيت الطباعة :" + ExpirationDate
-            : "تاريخ انتهاء فترة التصالح :" + ExpirationDate
-        }</p>
+                        <p class="violationPrintTime">${PrintedCount == 0 ? "تاريخ وتوقيت الطباعة :" + ExpirationDate : "تاريخ انتهاء فترة التصالح :" + ExpirationDate}</p>
+                        <div class="violationVersionsButtonBox">
+                            <a href="#" class="violationVersionsButton">
+                                سجل التعديلات 
+                                <i class="fa-solid fa-arrow-left-long"></i>
+                            </a>
+                        </div>
                     </div>
                 </div>
 
@@ -1798,7 +1801,6 @@ DetailsPopup.printPaymentForm = (TaskData) => {
 
     return printPaymentFormHtml;
 };
-
 DetailsPopup.printConfirmationFormOnly = (TaskData) => {
     let violationData = TaskData.Violation != null ? TaskData.Violation : "-";
     let PrintedCount = TaskData.PrintedCount;
@@ -1851,10 +1853,13 @@ DetailsPopup.printConfirmationFormOnly = (TaskData) => {
                 <div class="popupHeader">
                     <div class="violationsMetaBox">
                         <p class="violationCode">${functions.getViolationPaymentArabicName(offenderType)} (${violationData.ViolationCode})</p>
-                        <p class="violationPrintTime">${PrintedCount == 0
-            ? "تاريخ وتوقيت الطباعة :" + ExpirationDate
-            : "تاريخ انتهاء فترة التصالح :" + ExpirationDate
-        }</p>
+                        <p class="violationPrintTime">${PrintedCount == 0 ? "تاريخ وتوقيت الطباعة :" + ExpirationDate : "تاريخ انتهاء فترة التصالح :" + ExpirationDate}</p>
+                        <div class="violationVersionsButtonBox">
+                            <a href="#" class="violationVersionsButton">
+                                سجل التعديلات 
+                                <i class="fa-solid fa-arrow-left-long"></i>
+                            </a>
+                        </div>
                     </div>
                 </div>
 

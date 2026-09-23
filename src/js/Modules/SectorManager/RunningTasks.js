@@ -242,8 +242,8 @@ runningSectorTask.runningSectorTaskTable = (runningTasks) => {
         '';
 
       data.push([
-        `<div class="violationId" style="display: flex;align-items: center;" data-violationid="${taskViolation.ID}" data-taskid="${record.ID}" data-violationcode="${taskViolation.ViolationCode}" data-offendertype="${taskViolation.OffenderType}">
-          ${rejectedIndicator}${taskViolation.ViolationCode}
+        `<div class="violationId" style="display: flex;align-items: center;" data-violationid="${taskViolation?.ID}" data-taskid="${record.ID}" data-violationcode="${taskViolation?.ViolationCode}" data-offendertype="${taskViolation?.OffenderType}">
+          ${rejectedIndicator}${taskViolation?.ViolationCode}
         </div>`,
         `<div class='controls'>
               <div class='ellipsisButton'>
@@ -256,18 +256,18 @@ runningSectorTask.runningSectorTaskTable = (runningTasks) => {
                   </ul>
               </div>
           </div>`,
-        `<div class="violationArName">${functions.getViolationArabicName(taskViolation.OffenderType)}</div>`,
-        `<div class="violatorName">${taskViolation.ViolatorName || "-"}</div>`,
-        `<div class="violationType" data-typeid="${taskViolation.OffenderType == "Quarry" ? taskViolation.ViolationTypes.ID : 0}">${functions.getViolationArabicName(taskViolation.OffenderType, taskViolation?.ViolationTypes?.Title)}</div>`,
+        `<div class="violationArName">${functions.getViolationArabicName(taskViolation?.OffenderType)}</div>`,
+        `<div class="violatorName">${taskViolation?.ViolatorName || "-"}</div>`,
+        `<div class="violationType" data-typeid="${taskViolation?.OffenderType == "Quarry" ? taskViolation?.ViolationTypes?.ID : 0}">${functions.getViolationArabicName(taskViolation?.OffenderType, taskViolation?.ViolationTypes?.Title)}</div>`,
         `${createdDate}`,
-        `${functions.getFormatedDate(taskViolation.ViolationDate)}`,
-        `<div class="companyName">${taskViolation.ViolatorCompany != "" ? taskViolation.ViolatorCompany : "-"}</div>`,
-        `<div class="violationCode" >${taskViolation.OffenderType == "Quarry"
-          ? taskViolation.QuarryCode
-          : taskViolation.CarNumber
+        `${functions.getFormatedDate(taskViolation?.ViolationDate)}`,
+        `<div class="companyName">${taskViolation?.ViolatorCompany != "" ? taskViolation?.ViolatorCompany : "-"}</div>`,
+        `<div class="violationCode" >${taskViolation?.OffenderType == "Quarry"
+          ? taskViolation?.QuarryCode
+          : taskViolation?.CarNumber
         }</div>`,
         `<div class="trailerNumber">${taskViolation?.TrailerNumber || "-"}</div>`,
-        `<div class="violationZone">${taskViolation.ViolationsZone || "-"}</div>`,
+        `<div class="violationZone">${taskViolation?.ViolationsZone || "-"}</div>`,
 
         `${functions.getDisplayValue(taskViolation?.TotalPriceDue, true)}`,
         `${functions.getDisplayValue(taskViolation?.LawRoyalty, true)}`,

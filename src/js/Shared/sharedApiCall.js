@@ -2,26 +2,6 @@ import functions from "./functions";
 
 let sharedApis = {};
 
-// sharedApis.getGovernrates = (Selector) => {
-//   functions.callSharePointListApi("Governrates").then((Govs) => {
-//     console.log('Govs', Govs);
-//     let GovsData = Govs.value;
-
-//     // Clear the select first
-//     $(Selector).empty();
-//     $(Selector).append(`<option value="" disabled selected hidden>المحافظة</option>`);
-
-//     // Append all govern rates
-//     GovsData.forEach((Gov) => {
-//       $(Selector).append(`
-//         <option value="${Gov.Code}" data-id="${Gov.ID}">${Gov.Title}</option>
-//       `);
-//     });
-//   });
-// };
-
-
-// test
 sharedApis.getGovernrates = (Selector) => {
   return new Promise((resolve, reject) => {
     let UserId = _spPageContextInfo.userId;
@@ -46,7 +26,6 @@ sharedApis.getGovernrates = (Selector) => {
       })
       .then((Govs) => {
         let GovsData = Govs.value;
-
         GovsData.forEach((Gov) => {
           $(Selector).append(`
             <option value="${Gov.Code}" data-id="${Gov.ID}">${Gov.Title}</option>
@@ -62,126 +41,6 @@ sharedApis.getGovernrates = (Selector) => {
   });
 };
 
-// that found in release
-// sharedApis.getGovernrates = (Selector) => {
-//   let UserId = _spPageContextInfo.userId;
-//   functions.callSharePointListApi("Configurations").then((Users) => {
-//     let UsersData = Users.value;
-//     UsersData.forEach((User) => {
-//       console.log("User.UserIdId", User.UserIdId);
-
-//       if (User.UserIdId.find((id) => id == UserId)) {
-//         let UserConfigId = User.ID;
-//         functions.callSharePointListApi("Governrates").then((Govs) => {
-//           console.log('Govs', Govs)
-//           let GovsData = Govs.value;
-
-//           GovsData.forEach((Gov) => {
-//             $(Selector).append(`
-//                             <option value="${Gov.Code}" data-id="${Gov.ID}">${Gov.Title}</option>
-//                         `);
-//             // if (User.JobTitle1 == "الشركة المصرية للتعدين") {
-//             //     $(Selector).append(`
-//             //         <option value="${Gov.Code}" data-id="${Gov.ID}">${Gov.Title}</option>
-//             //     `)
-//             //     return;
-//             // }
-//             // if (Gov.SectorConfigIdId == UserConfigId) {
-//             //     $(Selector).append(`
-//             //         <option value="${Gov.Code}" data-id="${Gov.ID}">${Gov.Title}</option>
-//             //     `)
-//             // }
-//           });
-//         });
-//       }
-//     });
-//   });
-// };
-
-
-// works in 3030
-// sharedApis.getGovernrates = (Selector) => {
-//   let UserId = _spPageContextInfo.userId;
-
-//   functions.callSharePointListApi("Configurations").then((Users) => {
-//     let UsersData = Users.value;
-//     let UserConfigId = null;
-
-//     // Find the current user's configuration
-//     UsersData.forEach((User) => {
-//       // Check if User.UserIdId exists and is an array
-//       if (User.UserIdId && Array.isArray(User.UserIdId)) {
-//         if (User.UserIdId.find((id) => Number(id) === UserId)) {
-//           UserConfigId = User.ID;
-//         }
-//       }
-//     });
-
-//     // Now get all govern rates
-//     functions.callSharePointListApi("Governrates").then((Govs) => {
-//       let GovsData = Govs.value;
-
-//       // Clear the select first (optional)
-//       $(Selector).empty();
-//       $(Selector).append(`<option value="" disabled selected hidden>المحافظة</option>`);
-
-//       // If we found a user configuration, filter govern rates
-//       if (UserConfigId) {
-//         GovsData.forEach((Gov) => {
-//           // Check if this govern rate belongs to the user's sector
-//           if (Gov.SectorConfigIdId == UserConfigId) {
-//             $(Selector).append(`
-//               <option value="${Gov.Code}" data-id="${Gov.ID}">${Gov.Title}</option>
-//             `);
-//           }
-//         });
-//       } else {
-//         // If no user config found, show all govern rates
-//         GovsData.forEach((Gov) => {
-//           $(Selector).append(`
-//             <option value="${Gov.Code}" data-id="${Gov.ID}">${Gov.Title}</option>
-//           `);
-//         });
-//       }
-
-//       // Special case for specific company
-//       // Uncomment if needed
-//       /*
-//       if (userJobTitle === "الشركة المصرية للتعدين") {
-//         // Show all govern rates for this company
-//         $(Selector).empty();
-//         $(Selector).append(`<option value="" disabled selected hidden>المحافظة</option>`);
-//         GovsData.forEach((Gov) => {
-//           $(Selector).append(`
-//             <option value="${Gov.Code}" data-id="${Gov.ID}">${Gov.Title}</option>
-//           `);
-//         });
-//       }
-//       */
-//     });
-//   });
-// };
-//////////
-// sharedApis.getViolationZones = (Selector) => {
-//     functions.callSharePointListApi("ViolationZones").then(Zones=>{
-//         let unsortedZonesData = Zones.value
-//         let sortedZonesData = unsortedZonesData.sort((a,b)=>{
-//             if(a.Title < b.Title){
-//                 return -1
-//             }
-//             if(a.Title > b.Title){
-//                 return 1
-//             }
-//             return 0;
-//         })
-//         sortedZonesData.forEach(Zone => {
-//             $(Selector).append(`
-//                 <option value="${Zone.Title}" data-areaname="${Zone.Title}" data-id="${Zone.ID}" data-govcode="${Zone.ZoneCode}" data-sectorcode="${Zone.SectorCode}">${Zone.Title}</option>
-//             `)
-//         });
-//     })
-// }
-
 sharedApis.getViolationSectors = (Selector) => {
   functions.callSharePointListApi("Sectors").then((SectorsData) => {
     let Sectors = SectorsData.value;
@@ -192,7 +51,7 @@ sharedApis.getViolationSectors = (Selector) => {
     });
   });
 };
-sharedApis.getViolationType = (Selector) => {
+sharedApis.getViolationType = (Selector, OffenderType) => {
   return new Promise((resolve, reject) => {
     functions.callSharePointListApi("ViolationsTypes").then((Types) => {
       let unsortedViolationsTypes = Types.value;
@@ -206,9 +65,17 @@ sharedApis.getViolationType = (Selector) => {
         return 0;
       });
       sortedViolationsType.forEach((Type) => {
-        $(Selector).append(`
+        if (!OffenderType) {
+          $(Selector).append(`
           <option value="${Type.Title}" data-id="${Type.ID}" data-category="${Type.OffenderType}">${Type.Title}</option>
         `);
+        }
+
+        if (OffenderType && Type.OffenderType === OffenderType) {
+          $(Selector).append(`
+            <option value="${Type.Title}" data-id="${Type.ID}" data-category="${Type.OffenderType}">${Type.Title}</option>
+          `);
+        }
       });
       resolve(sortedViolationsType);
     }).catch((error) => {

@@ -213,14 +213,17 @@ rejectedViolationsRecords.dashBoardTable = (violationsData, destroyTable) => {
     violationsData.forEach(record => {
       taskViolation = record.Violation;
       let createdDate = functions.getFormatedDate(record.Created);
+
       let editLink;
+
       if (taskViolation.OffenderType == "Quarry") {
-        editLink = "/ViolationsRecorder/Pages/quarryViolationForm.aspx?taskId=" + record.ID
+        editLink = "/ViolationsRecorder/Pages/quarryViolationForm.aspx?taskId=" + record.ID + "&isRejectedBefore=true";
       } else if (taskViolation.OffenderType == "Vehicle") {
-        editLink = "/ViolationsRecorder/Pages/CarViolationForm.aspx?taskId=" + record.ID
+        editLink = "/ViolationsRecorder/Pages/CarViolationForm.aspx?taskId=" + record.ID + "&isRejectedBefore=true";
       } else {
-        editLink = "/ViolationsRecorder/Pages/EquipmentViolationForm.aspx?taskId=" + record.ID
+        editLink = "/ViolationsRecorder/Pages/EquipmentViolationForm.aspx?taskId=" + record.ID + "&isRejectedBefore=true";
       }
+
       data.push([
         `<div class="violationId" data-violationid="${record.ViolationId}" data-taskid="${record.ID}" data-offendertype="${taskViolation.OffenderType}">${taskViolation.ViolationCode}</div>`,
         `<div class='controls'>

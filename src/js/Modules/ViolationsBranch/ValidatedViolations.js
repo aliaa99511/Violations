@@ -3,6 +3,9 @@ import DetailsPopup from "../../Shared/detailsPopupContent";
 import confirmPopup from "../../Shared/confirmationPopup";
 import pagination from "../../Shared/Pagination";
 import ViolationHistoryLogs from "../../Shared/ViolationHistoryLogs";
+import bootpopup from "../../Libraries/bootpopup";
+import printJS from "print-js";
+
 
 let validatedViolations = {};
 validatedViolations.pageIndex = 1;
@@ -353,7 +356,7 @@ validatedViolations.exportToExcel = () => {
         record.Violation?.ViolationsZone || "-",
     },
     {
-      title: "مبلغ المادة المحجرية",
+      title: "المبلغ الإجمالي",
       render: (record) => {
         return functions.getDisplayValue(record.Violation?.TotalPriceDue, true);
       },
@@ -515,6 +518,16 @@ validatedViolations.ValidatedViolationTable = (ValidatedViolation, destroyTable)
         ExpiredDate = "-";
       }
 
+      let editLink;
+
+      if (taskViolation?.OffenderType === "Quarry") {
+        editLink = "/ViolationsRecorder/Pages/quarryViolationForm.aspx?taskId=" + record.ID + "&isViolationEdit=true";
+      } else if (taskViolation?.OffenderType === "Vehicle") {
+        editLink = "/ViolationsRecorder/Pages/CarViolationForm.aspx?taskId=" + record.ID + "&isViolationEdit=true";
+      } else if (taskViolation?.OffenderType === "Equipment") {
+        editLink = "/ViolationsRecorder/Pages/EquipmentViolationForm.aspx?taskId=" + record.ID + "&isViolationEdit=true";
+      }
+
       data.push([
         `<div class="violationId"
             data-taskid="${record.ID}"
@@ -650,7 +663,7 @@ validatedViolations.ValidatedViolationTable = (ValidatedViolation, destroyTable)
       { title: "رقم المحجر / العربة" },
       { title: "رقم المقطورة" },
       { title: "المنطقة" },
-      { title: "مبلغ المادة المحجرية" },
+      { title: "المبلغ الإجمالي" },
       { title: "قيمة الإتاوة" },
       { title: "قيمة المعدة" },
       { title: "الكمية" },
@@ -720,7 +733,6 @@ validatedViolations.ValidatedViolationTable = (ValidatedViolation, destroyTable)
 
       const canRefund =
         RemainingPriceCalculate > 0 &&
-        PetitionStatus === "قبول مع التعديل" &&
         (taskStatus === "UnderPayment" || taskStatus === "Paid")
 
       let Equipments_Count = [];
@@ -1200,6 +1212,24 @@ validatedViolations.findViolationByID = (
     })
     .catch((err) => { });
 };
+// versionsButton
+//   .off("click.violationVersions")
+//   .on("click.violationVersions", function (e) {
+//     e.stopPropagation();
+
+//     validatedViolations.violationVersionsPopup(
+//       versions,
+//       configurations,
+//       violationCode
+//     );
+//   });
+// <div class="violationVersionsButtonBox">
+//     <a href="#" class="violationVersionsButton">
+//         سجل التعديلات 
+//         <i class="fa-solid fa-arrow-left-long"></i>
+//     </a>
+// </div>
+///////////////// print payment ////////////////////
 validatedViolations.printPaymentForm = (event, taskID, print = false) => {
   let request = {
     Id: taskID,
@@ -1220,33 +1250,63 @@ validatedViolations.printPaymentForm = (event, taskID, print = false) => {
       let violationData;
       let violationOffenderType;
       let Content;
-      let printBox;
 
       if (data != null) {
         TaskData = data.d;
         violationData = TaskData.Violation;
         violationOffenderType = violationData.OffenderType;
 
-        if (violationOffenderType == "Quarry") {
+        const violationID = violationData.ID;
+        const violationCode = violationData.ViolationCode;
+
+        Promise.all([
+          validatedViolations.getViolationVersions(violationID),
+          functions.callSharePointListApi("Configurations"),
+          functions.callSharePointListApi("Governrates"),
+        ])
+          .then(([versions, configurationsData, governratesData]) => {
+            const configurations = configurationsData?.value || [];
+            const governrates = governratesData?.value || [];
+
+            const versionsButton = $(".violationVersionsButton");
+
+            if (!versionsButton.length) {
+              console.warn("Violation versions button was not found");
+              return;
+            }
+
+            versionsButton
+              .off("click.violationVersions")
+              .on("click.violationVersions", function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+
+                validatedViolations.violationVersionsPopup(
+                  versions,
+                  configurations,
+                  violationCode,
+                  governrates
+                );
+              });
+          })
+          .catch((error) => {
+            console.error(
+              "Error loading violation versions/configurations/governrates:",
+              error
+            );
+          });
+
+        if (
+          violationOffenderType == "Quarry" ||
+          violationOffenderType == "Vehicle" ||
+          violationOffenderType == "Equipment"
+        ) {
           $(".overlay").removeClass("active");
           Content = DetailsPopup.printPaymentForm(TaskData);
-          functions.declarePopup(["generalPopupStyle", "paymentFormDetailsPopup"], Content);
-        } else if (violationOffenderType == "Vehicle") {
-          $(".overlay").removeClass("active");
-          Content = DetailsPopup.printPaymentForm(TaskData);
-          functions.declarePopup(["generalPopupStyle", "paymentFormDetailsPopup"], Content);
-        } else if (violationOffenderType == "Equipment") {
-          $(".overlay").removeClass("active");
-          Content = DetailsPopup.printPaymentForm(TaskData);
-          functions.declarePopup(["generalPopupStyle", "paymentFormDetailsPopup"], Content);
+
+          validatedViolations.declarePopup(["generalPopupStyle", "paymentFormDetailsPopup"], Content);
         }
 
-        // Remove previous handlers before adding new ones
-        $(".printBtn").off("click").on("click", (e) => {
-          functions.PrintDetails(e);
-        });
-
-        // FIX: Hide buttons AFTER rendering
         setTimeout(() => {
           const popup = $(".detailsPopupForm");
           popup.find("#editMaterialMinPrice, #payAllPrice")
@@ -1254,14 +1314,15 @@ validatedViolations.printPaymentForm = (event, taskID, print = false) => {
             .attr("style", "display: none !important");
         }, 50);
 
-        // $(".printPaymentForm").hide();
-        $(".printConfirmationForm").css("display", "flex !important");
-
-        // Remove previous handler before adding new one
-        $(".printConfirmationForm").off("click").on("click", (e) => {
-          functions.PrintDetails(e);
+        $(".paymentFormDetailsPopup .printBtn").off("click").on("click", (e) => {
+          validatedViolations.PrintDetails(e, "printJS-form");
         });
 
+        $(".printConfirmationForm").css("display", "flex !important");
+
+        $(".paymentFormDetailsPopup .printConfirmationForm").off("click").on("click", (e) => {
+          validatedViolations.PrintDetails(e, "printJS-form");
+        });
       }
     })
     .catch((err) => {
@@ -1285,10 +1346,52 @@ validatedViolations.printPaymentFormOnly = (event, taskID) => {
     })
     .then((data) => {
       let TaskData;
+      let violationData;
       let Content;
 
       if (data != null) {
         TaskData = data.d;
+        violationData = TaskData.Violation;
+
+        const violationID = violationData.ID;
+        const violationCode = violationData.ViolationCode;
+
+        Promise.all([
+          validatedViolations.getViolationVersions(violationID),
+          functions.callSharePointListApi("Configurations"),
+          functions.callSharePointListApi("Governrates"),
+        ])
+          .then(([versions, configurationsData, governratesData]) => {
+            const configurations = configurationsData?.value || [];
+            const governrates = governratesData?.value || [];
+
+            const versionsButton = $(".violationVersionsButton");
+
+            if (!versionsButton.length) {
+              console.warn("Violation versions button was not found");
+              return;
+            }
+
+            versionsButton
+              .off("click.violationVersions")
+              .on("click.violationVersions", function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+
+                validatedViolations.violationVersionsPopup(
+                  versions,
+                  configurations,
+                  violationCode,
+                  governrates
+                );
+              });
+          })
+          .catch((error) => {
+            console.error(
+              "Error loading violation versions/configurations/governrates:",
+              error
+            );
+          });
 
         $(".overlay").removeClass("active");
         Content = DetailsPopup.printConfirmationFormOnly(TaskData);
@@ -1297,18 +1400,22 @@ validatedViolations.printPaymentFormOnly = (event, taskID) => {
         // Add print and close button handlers
         setTimeout(() => {
           // Remove previous handlers before adding new ones
-          $(".printPaymentFormBtn").off("click").on("click", (e) => {
-            const lowerSection = $(".violationDetailsBody").closest(".popupSectionWrapper");
-            if (lowerSection.length) {
-              lowerSection.hide();
-            }
-            functions.PrintDetails(e);
-            setTimeout(() => {
-              if (lowerSection.length) {
-                lowerSection.show();
-              }
-            }, 1000);
+          $(".paymentFormDetailsPopup .printPaymentFormBtn").off("click").on("click", (e) => {
+            validatedViolations.PrintDetails(e, "printJS-form");
           });
+
+          // $(".printPaymentFormBtn").off("click").on("click", (e) => {
+          //   const lowerSection = $(".violationDetailsBody").closest(".popupSectionWrapper");
+          //   if (lowerSection.length) {
+          //     lowerSection.hide();
+          //   }
+          //   functions.PrintDetails(e);
+          //   setTimeout(() => {
+          //     if (lowerSection.length) {
+          //       lowerSection.show();
+          //     }
+          //   }, 1000);
+          // });
 
           $(".closePrintPaymentDetailsPopup").off("click").on("click", () => {
             functions.closePopup();
@@ -1320,6 +1427,517 @@ validatedViolations.printPaymentFormOnly = (event, taskID) => {
       console.log(err);
     });
 };
+validatedViolations.getViolationVersions = (violationID) => {
+  let request = {
+    Id: violationID,
+  };
+
+  return functions
+    .requester(
+      "/_layouts/15/Uranium.Violations.SharePoint/Violations.aspx/GetViolationVersions",
+      request
+    )
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error("Failed to get violation versions");
+      }
+
+      return response.json();
+    })
+    .then((data) => {
+      return data?.d?.Result || [];
+    })
+    .catch((error) => {
+      console.error("GetViolationVersions error:", error);
+      return [];
+    });
+};
+validatedViolations.violationVersionsPopup = (
+  versions,
+  configurations = [],
+  violationCode,
+  governrates = []
+) => {
+  let UserId = _spPageContextInfo.userId;
+
+  if (!Array.isArray(versions)) {
+    console.error("violationVersionsPopup expected an array:", versions);
+    versions = [];
+  }
+
+  const Content = `
+  <div class="violationVersionsPopup" id="printJS-versionsForm">
+    <div class="modal-header" style="display: flex !important; justify-content: space-between !important;">
+
+      <h5 class="modal-title-style">
+        سجل التعديلات على نموذج التقييم (${violationCode})
+      </h5>
+
+      <div class="btnStyle cancelBtn closeViolationVersionsPopup"
+           style="color: #fff; cursor: pointer;"
+           data-dismiss="modal"
+           aria-label="Close">
+
+        <i class="fa-solid fa-x"></i>
+      </div>
+    </div>
+
+    <div class="modal-body">
+      <div class="violationVersionsBody">
+        ${versions?.map((version) => `
+          <div class="violationVersionItem">
+            <div class="violationVersionInfo">
+              <div class="versionModifiedDate">
+                تعديل بتاريخ ${formatDate(version.Modified)}
+              </div>
+
+              <div class="versionModifiedBy">
+                تمت بواسطة:
+                <strong>
+                  ${escapeHtml(validatedViolations.getUserJobTitle(UserId, configurations))}
+                </strong>
+              </div>
+            </div>
+
+            <div class="violationVersionChanges">
+              ${getChanges(version.Changes, governrates)}
+            </div>
+          </div>
+        `).join("")}
+      </div>
+    </div>
+
+    <div class="modal-footer" style="display: flex !important; justify-content: center !important;">
+
+      <button type="button" class="btn printViolationVersions" id="printViolationVersionsFooter">
+        <i class="fa fa-print"></i>
+        طباعة
+      </button>
+    </div>
+  </div>
+`;
+
+  functions.declarePopup(["generalPopupStyle", "violationVersionsPopupStyle"], Content);
+
+  $(".closeViolationVersionsPopup").off("click").on("click", function () {
+    $(".violationVersionsPopup").closest(".modal").modal("hide");
+  });
+
+  $("#printViolationVersionsFooter").off("click").on("click", function (e) {
+    validatedViolations.PrintDetails(e, "printJS-versionsForm");
+  });
+};
+validatedViolations.PrintDetails = (e, printableId = "printJS-form") => {
+  e.preventDefault();
+
+  printJS({
+    documentTitle: "Shipment Order Details",
+    printable: printableId,
+    type: "html",
+    css: ["/Style Library/MiningViolations/CSS/style.css"],
+    style: `
+      @media print {
+        #printViolationVersionsFooter,
+        .violationVersionsPopup .modal-footer,
+        .violationVersionsPopup .closeViolationVersionsPopup,
+        .violationVersionsPopup .violationVersionsButtonBox,
+        .paymentFormPrintBox .violationVersionsButtonBox {
+          display: none !important;
+        }
+      }
+    `,
+    scanStyles: false,
+    onLoadingStart: function () {
+      $(".overlay").addClass("active");
+    },
+    onLoadingEnd: function () {
+      $(".overlay").removeClass("active");
+    },
+  });
+};
+validatedViolations.declarePopup = (styleClassName, Content) => {
+  // Remove any leftover modal DOM/backdrops from a previous popup
+  // before stacking a new one, so ids like #printJS-form or
+  // #printViolationVersionsFooter never exist twice at once.
+  $(".modal").modal("hide");
+  $(".modal").remove();
+  $(".modal-backdrop").remove();
+
+  bootpopup({
+    content: [`${Content}`],
+    before: () => {
+      $(".modal:last-child .modal-title").text("");
+      $(".modal:last-child").attr("data-backdrop", "static");
+      $(".modal:last-child").attr("data-keyboard", "true");
+      $(".modal:last-child").addClass(styleClassName);
+    },
+    showclose: true,
+  });
+};
+validatedViolations.getUserJobTitle = (userId, configurations) => {
+  if (!userId || !Array.isArray(configurations)) {
+    return "-";
+  }
+
+  const userConfiguration = configurations.find((config) => {
+    return (
+      Array.isArray(config.UserIdId) &&
+      config.UserIdId.some(
+        (id) => Number(id) === Number(userId)
+      )
+    );
+  });
+
+  if (!userConfiguration) {
+    return "-";
+  }
+
+  return `${userConfiguration.Title || "-"} (${userConfiguration.JobTitle1 || "-"})`;
+};
+const getChanges = (changes, governrates = []) => {
+  if (!changes || Object.keys(changes).length === 0) {
+    return `
+      <div class="versionNoChanges">
+        لا توجد تعديلات
+      </div>
+    `;
+  }
+
+  const entries = Object.entries(changes).filter(([key, value]) => {
+    // Don't show lookup IDs when the API also returned the full object
+    if (key === "ViolationType" && changes.ViolationTypes) {
+      return false;
+    }
+
+    if (key === "MaterialType" && changes.Material) {
+      return false;
+    }
+
+    if (key === "Governrate" && changes.Governrates) {
+      return false;
+    }
+
+    return (
+      key !== "NormalizedViolatorName" &&
+      key !== "NormalizedViolatorCompany" &&
+      key !== "FileLeafRef" &&
+      key !== "Order" &&
+      value !== true &&
+      value !== false &&
+      value !== "True" &&
+      value !== "False"
+    );
+  });
+
+  if (entries.length === 0) {
+    return `
+      <div class="versionNoChanges">
+        لا توجد تعديلات
+      </div>
+    `;
+  }
+
+  let changesContent = "";
+
+  for (let i = 0; i < entries.length; i += 5) {
+    const rowEntries = entries.slice(i, i + 5);
+
+    changesContent += `
+      <div class="versionChangesRow">
+        ${rowEntries
+        .map(([key, value]) => `
+            <div class="versionChange">
+              <div class="versionChangeLabel">
+                ${changeLabels[key] || key}
+              </div>
+              <div class="versionChangeValue">
+                ${formatObjectValue(value, key, governrates)}
+              </div>
+            </div>
+          `)
+        .join("")}
+      </div>
+    `;
+  }
+
+  return `
+    <div class="versionChangesContainer">
+      ${changesContent}
+    </div>
+  `;
+};
+const formatObjectValue = (value, key = "", governrates = []) => {
+  if (value === null || value === undefined || value === "") {
+    return "-";
+  }
+
+  // Boolean
+  if (typeof value === "boolean") {
+    return value ? "نعم" : "لا";
+  }
+
+  // Primitive
+  if (typeof value !== "object") {
+
+    // Governrate is returned as an ID
+    if (key === "Governrate") {
+      const governrate = governrates.find(
+        (item) => Number(item.Id) === Number(value)
+      );
+
+      return escapeHtml(governrate?.Title || value);
+    }
+
+    return escapeHtml(value);
+  }
+
+  // Array
+  if (Array.isArray(value)) {
+    if (value.length === 0) {
+      return "-";
+    }
+
+    if (
+      value.every(
+        (item) =>
+          item &&
+          typeof item === "object" &&
+          (item.Title || item.Name)
+      )
+    ) {
+      return value
+        .map((item) => item.Title || item.Name)
+        .filter(Boolean)
+        .map((item) => escapeHtml(item))
+        .join("، ");
+    }
+
+    if (value.every((item) => typeof item !== "object")) {
+      return value
+        .map((item) => escapeHtml(item))
+        .join("، ");
+    }
+
+    return value
+      .map((item) => formatObjectValue(item, "", governrates))
+      .join("<br>");
+  }
+
+  // Violation Type
+  if (key === "ViolationTypes") {
+    return escapeHtml(
+      value.Title ||
+      value.Name ||
+      value.ID ||
+      "-"
+    );
+  }
+
+  // Material
+  if (key === "Material") {
+    return escapeHtml(
+      value.Title ||
+      value.Name ||
+      value.Code ||
+      value.ID ||
+      "-"
+    );
+  }
+
+  // Governorate object
+  if (key === "Governrates") {
+    return escapeHtml(
+      value.Title ||
+      value.Sector ||
+      value.Name ||
+      value.ID ||
+      "-"
+    );
+  }
+
+  // Equipment object
+  if (key === "Equipment" || key === "Equipments") {
+    return escapeHtml(
+      value.Title ||
+      value.Name ||
+      value.ID ||
+      "-"
+    );
+  }
+
+  // Generic object
+  if (value.Title) {
+    return escapeHtml(value.Title);
+  }
+
+  if (value.Name) {
+    return escapeHtml(value.Name);
+  }
+
+  return Object.entries(value)
+    .filter(([objectKey, objectValue]) => {
+      return (
+        objectValue !== null &&
+        objectValue !== undefined &&
+        objectValue !== "" &&
+        objectKey !== "CreatedBy" &&
+        objectKey !== "Created"
+      );
+    })
+    .map(([objectKey, objectValue]) => {
+      return `
+        ${escapeHtml(changeLabels[objectKey] || objectKey)}:
+        ${formatObjectValue(objectValue, objectKey, governrates)}
+      `;
+    })
+    .join("<br>");
+};
+const escapeHtml = (value) => {
+  if (value === null || value === undefined || value === "") {
+    return "-";
+  }
+
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;")
+    .replace(/\n/g, "<br>");
+};
+const formatDate = (date) => {
+  if (!date) return "-";
+
+  const timestamp = date.match(/\/Date\((\d+)\)\//);
+
+  if (timestamp) {
+    return moment(Number(timestamp[1])).format("YYYY/MM/DD");
+  }
+
+  return moment(date).format("YYYY/MM/DD");
+};
+const changeLabels = {
+  // Basic information
+  Title: "العنوان",
+  ViolatorName: "اسم المخالف",
+  ViolatorCompany: "اسم الشركة",
+  MobileNumber: "رقم الهاتف",
+  NationalID: "الرقم القومي",
+  CommercialRegister: "السجل التجاري",
+
+  // Violation information
+  ViolationsZone: "منطقة المخالفة",
+  QuarryType: "نوع المحجر",
+  QuarryCode: "كود المحجر",
+  ViolationType: "نوع المخالفة",
+  ViolationTypes: "نوع المخالفة",
+  ViolationDate: "تاريخ المخالفة",
+  ViolationTime: "وقت المخالفة",
+  ViolationCode: "كود المخالفة",
+  Description: "وصف المخالفة",
+  Description1: "وصف المخالفة",
+
+  // Violator
+  OffenderType: "تصنيف المخالفة",
+  OffenderTypeText: "تصنيف المخالفة",
+
+  // Material
+  MaterialType: "المادة المحجرية",
+  Material: "المادة المحجرية",
+  MaterialUnit: "وحدة القياس",
+  MaterialAmount: "كمية المادة",
+  TotalQuantity: "الكمية",
+
+  // Location
+  Governrate: "المحافظة",
+  Governrates: "المحافظة",
+  Sector: "القطاع",
+  ViolationsZone: "منطقة المخالفة",
+  Coordinates: "الإحداثيات",
+  CoordinatesDegrees: "الإحداثيات بالدرجات",
+  DecimalCoordinates: "الإحداثيات",
+
+  // Measurements
+  Depth: "العمق",
+  Area: "المساحة",
+  DistanceToNearestQuarry: "المسافة لأقرب محجر",
+  NearestQuarryCode: "كود أقرب محجر",
+
+  // Committee / sector
+  LeaderOpinion: "رأي القطاع",
+  SectorMembers: "أعضاء القطاع",
+  CommiteeMember: "أعضاء اللجنة",
+
+  // Equipment
+  Equipment: "المعدات",
+  Equipments: "المعدات",
+  EquipmentsIDs: "معرفات المعدات",
+  EquipmentsCount: "عدد المعدات",
+  Equipments_Count: "أعداد المعدات",
+
+  // Vehicle
+  VehicleType: "نوع المركبة",
+  VehicleBrand: "ماركة المركبة",
+  VehicleIdentificationNumber: "رقم تعريف المركبة",
+  CarNumber: "رقم السيارة",
+  CarColor: "لون السيارة",
+  DrivingLicense: "رخصة القيادة",
+  DriverLicense: "رخصة السائق",
+  TrafficLicense: "رخصة السيارة",
+  TrafficName: "اسم السائق",
+  TrailerNum: "رقم المقطورة",
+
+  // Legal / case information
+  CaseNumber: "رقم القضية",
+  PublicProsecution: "النيابة العامة",
+  AssignedProsecution: "النيابة المختصة",
+  NumOfPreviousViolations: "عدد المخالفات السابقة",
+  NumOfPreviousViolationsTrailer: "عدد المخالفات السابقة للمقطورة",
+
+  // Attachments
+  Attachments: "المرفقات",
+
+  // Calculations
+  TotalPriceDue: "إجمالي المبلغ المستحق",
+  TotalOldPrice: "إجمالي المبلغ القديم",
+  TotalEquipmentsPrice: "إجمالي قيمة المعدات",
+  QuarryMaterialValue: "قيمة المواد المحجرية",
+  LawRoyalty: "إجمالي قيمة الإتاوة",
+  RemainingAmount: "المبلغ المتبقي",
+
+  // Fees
+  EetawaaAmount: "قيمة الإتاوة",
+  EetawaaUnitAmount: "قيمة الإتاوة للوحدة الواحدة للمادة المحجرية ",
+  MaterialUnitAmount: "قيمة الوحدة الواحدة للمادة المحجرية",
+
+  // Payment
+  ActualAmountPaid: "المبلغ المدفوع فعليًا",
+  BonsNumber: "رقم الإيصال",
+  PaymentDurationMonths: "مدة السداد بالشهور",
+  InstallmentDate: "تاريخ التقسيط",
+  InstallmentAmount: "قيمة القسط",
+  TotalInstallmentsPaidAmount: "إجمالي الأقساط المدفوعة",
+  ReferredAmount: "مبلغ الإحالة",
+  PaymentStatus: "حالة السداد",
+
+  // Boolean / status
+  IsPetition: "يوجد تظلم",
+  IsEdit: "تم تعديل البيانات",
+  IsViolationEdit: "تم تعديل المخالفة",
+  IsExternalRecord: "سجل خارجي",
+  IsInstallment: "تقسيط",
+  IsLastInstallment: "آخر قسط",
+  IsRejectedBefore: "تم الرفض سابقًا",
+  IsDublicated: "مكرر",
+  IsRefunded: "تم رد المبلغ",
+  SkipCalculation: "تخطي الحساب",
+
+  // Other
+  PrintedCount: "عدد مرات الطباعة",
+  VehicleFine: "غرامة العربة",
+  VehicleFineId: "معرف غرامة العربة"
+};
+////////////////////////////////////////////////
 
 validatedViolations.setExpirationDate = (
   TaskId,
@@ -1882,7 +2500,7 @@ validatedViolations.paymentFormActions = () => {
         Status: "Paid",
         Violation: {
           RemainingAmount: 0,
-          TotalInstallmentsPaidAmount: totalInstallmentsPaidAmount + Number(payedPrice),
+          TotalInstallmentsPaidAmount: Number(payedPrice),
         },
       },
     };
@@ -3028,4 +3646,3 @@ ViolationHistoryLogs.init(".contentContainer");
 
 
 export default validatedViolations;
-

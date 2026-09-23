@@ -7,14 +7,29 @@ let validatedViolationsRecords = {};
 validatedViolationsRecords.pageIndex = 1;
 validatedViolationsRecords.destroyTable = false;
 
-validatedViolationsRecords.getViolations = (
+validatedViolationsRecords.getViolations = async (
   pageIndex = 1,
   destroyTable = false,
   ViolationType = Number($("#TypeofViolation").children("option:selected").data("id")),
   ViolationGeneralSearch = $("#violationSearch").val()
 ) => {
   let UserId = _spPageContextInfo.userId;
+  let Sector = UserId;
 
+  let Users = await functions.callSharePointListApi("Configurations");
+
+  let UserDetails;
+  let UsersData = Users.value;
+  UsersData.forEach((User) => {
+    if (User.UserIdId.find((id) => id == UserId)) {
+      UserDetails = User;
+    }
+  });
+  const isAdminAccount = UserDetails?.Type === "AdminAccount";
+
+  if (isAdminAccount) {
+    Sector = 0;
+  }
   // Check if theCode field has a value but violationCategory is empty
   const theCodeValue = $("#theCode").val();
   const trailerNumValue = $("#trailerNum").val();
@@ -74,7 +89,7 @@ validatedViolationsRecords.getViolations = (
       ViolationCode: $("#violationCode").val(),
       ViolationType: ViolationType,
       GlobalSearch: ViolationGeneralSearch,
-      Sector: UserId,
+      Sector: Sector,
       OffenderType: $("#violationCategory").val(),
       ViolationsZone: $("#violationZone").val(),
       TrailerNum: $("#trailerNum").val(),
@@ -496,196 +511,230 @@ validatedViolationsRecords.dashBoardTable = (violationsData, destroyTable) => {
   let data = [];
   let taskViolation;
 
-  if (validatedViolationsRecords.destroyTable || destroyTable) {
-    $("#validatedViolationsRecords").DataTable().destroy();
-  }
+  let UserId = _spPageContextInfo.userId;
 
-  if (violationsData.length > 0) {
-    violationsData.forEach((record) => {
-      taskViolation = record.Violation;
-      let createdDate = functions.getFormatedDate(record.Created);
-      let caseStatus = record?.ReferralStatus || "";
+  functions.callSharePointListApi("Configurations").then((Users) => {
+    let UserDetails;
+    let UsersData = Users.value;
 
-      data.push([
-        `<div class="violationId"
-             data-taskid="${record.ID}"
-             data-violationid="${record.ViolationId}"
-             data-taskstatus="${record.Status}"
-             data-paymentstatus="${record.PaymentStatus}"
-             data-violationcode="${taskViolation?.ViolationCode}"
-             data-totalprice="${taskViolation?.TotalPriceDue}"
-             data-enddate="${record.ReconciliationExpiredDate}"
-             data-offendertype="${taskViolation?.OffenderType}">
-             ${taskViolation?.ViolationCode || "-"}
-         </div>`,
+    UsersData.forEach((User) => {
+      if (User.UserIdId.find((id) => id == UserId)) {
+        UserDetails = User;
+      }
+    });
 
-        `<div class='controls'>
-           <div class='ellipsisButton'>
-               <i class='fa-solid fa-ellipsis-vertical'></i>
-           </div>
-           <div class="hiddenListBox">
-               <div class='arrow'></div>
-               <ul class='list-unstyled controlsList'>
-                   <li><a href="#" class="itemDetails">المزيد من التفاصيل</a></li>
+    const isAdminAccount = UserDetails?.Type === "AdminAccount";
+
+    if (validatedViolationsRecords.destroyTable || destroyTable) {
+      $("#validatedViolationsRecords").DataTable().destroy();
+    }
+
+    if (violationsData.length > 0) {
+      violationsData.forEach((record) => {
+        taskViolation = record.Violation;
+
+        let createdDate = functions.getFormatedDate(record.Created);
+        let caseStatus = record?.ReferralStatus || "";
+
+        let editLink = "";
+
+        if (taskViolation?.OffenderType === "Quarry") {
+          editLink = "/ViolationsRecorder/Pages/quarryViolationForm.aspx?taskId=" + record.ID + "&isViolationEdit=true";
+        } else if (taskViolation?.OffenderType === "Vehicle") {
+          editLink = "/ViolationsRecorder/Pages/CarViolationForm.aspx?taskId=" + record.ID + "&isViolationEdit=true";
+        } else if (taskViolation?.OffenderType === "Equipment") {
+          editLink = "/ViolationsRecorder/Pages/EquipmentViolationForm.aspx?taskId=" + record.ID + "&isViolationEdit=true";
+        }
+
+        data.push([
+          `<div class="violationId"
+              data-taskid="${record.ID}"
+              data-violationid="${record.ViolationId}"
+              data-taskstatus="${record.Status}"
+              data-paymentstatus="${record.PaymentStatus}"
+              data-violationcode="${taskViolation?.ViolationCode}"
+              data-totalprice="${taskViolation?.TotalPriceDue}"
+              data-enddate="${record.ReconciliationExpiredDate}"
+              data-offendertype="${taskViolation?.OffenderType}">
+              ${taskViolation?.ViolationCode || "-"}
+          </div>`,
+
+          `<div class='controls'>
+            <div class='ellipsisButton'>
+                <i class='fa-solid fa-ellipsis-vertical'></i>
+            </div>
+            <div class="hiddenListBox">
+                <div class='arrow'></div>
+                <ul class='list-unstyled controlsList'>
+                    <li><a href="#" class="itemDetails">المزيد من التفاصيل</a></li>
+
+                    ${isAdminAccount ? `
+                      <li>
+                        <a href="${editLink}" class="editValidatedViolation">
+                          تعديل المخالفة
+                        </a>
+                      </li>
+                    ` : ""}
+
                     <li>
-                    <a href="#"
-                      data-violationid="${taskViolation?.ID}"
-                      data-violationcode="${taskViolation?.ViolationCode}"
-                      class="violationHistory"
-                      data-toggle="modal"
-                      data-target="#trackHistoryModal">
-                      تتبع مرحلة المخالفة
-                    </a>
-                  </li>
-               </ul>
-           </div>
-         </div>`,
+                      <a href="#"
+                        data-violationid="${taskViolation?.ID}"
+                        data-violationcode="${taskViolation?.ViolationCode}"
+                        class="violationHistory"
+                        data-toggle="modal"
+                        data-target="#trackHistoryModal">
+                        تتبع مرحلة المخالفة
+                      </a>
+                    </li>
+                </ul>
+            </div>
+          </div>`,
 
-        `<div class="violationArName">
-           ${functions.getViolationArabicName(taskViolation?.OffenderType)}
-         </div>`,
+          `<div class="violationArName">
+            ${functions.getViolationArabicName(taskViolation?.OffenderType)}
+          </div>`,
 
-        `<div class="violationType"
-             data-typeid="${taskViolation?.OffenderType == "Quarry"
-          ? taskViolation?.ViolationTypes.ID
-          : 0}">
-             ${functions.getViolationArabicName(
-            taskViolation?.OffenderType,
-            taskViolation?.ViolationTypes?.Title
-          )}
-         </div>`,
+          `<div class="violationType"
+              data-typeid="${taskViolation?.OffenderType == "Quarry"
+            ? taskViolation?.ViolationTypes.ID
+            : 0}">
+              ${functions.getViolationArabicName(
+              taskViolation?.OffenderType,
+              taskViolation?.ViolationTypes?.Title
+            )}
+          </div>`,
 
-        record.Created
-          ? moment(record.Created).format("DD-MM-YYYY hh:mm A")
-          : "-",
+          record.Created
+            ? moment(record.Created).format("DD-MM-YYYY hh:mm A")
+            : "-",
 
-        taskViolation?.ViolationDate
-          ? moment(taskViolation?.ViolationDate).format("DD-MM-YYYY hh:mm A")
-          : "-",
+          taskViolation?.ViolationDate
+            ? moment(taskViolation?.ViolationDate).format("DD-MM-YYYY hh:mm A")
+            : "-",
 
-        `<div class="ViolatorName">
-         ${taskViolation?.ViolatorName || "-"}
-         </div>`,
+          `<div class="ViolatorName">
+            ${taskViolation?.ViolatorName || "-"}
+          </div>`,
 
-        `<div class="ViolatorCompany">
-         ${taskViolation?.ViolatorCompany || "-"}
-         </div>`,
+          `<div class="ViolatorCompany">
+            ${taskViolation?.ViolatorCompany || "-"}
+          </div>`,
 
-        `<div class="violationCode">
-           ${taskViolation?.OffenderType == "Vehicle"
-          ? taskViolation?.CarNumber
-          : taskViolation?.QuarryCode != undefined
-            ? taskViolation?.QuarryCode
-            : "-"}
-         </div>`,
+          `<div class="violationCode">
+              ${taskViolation?.OffenderType == "Vehicle"
+            ? taskViolation?.CarNumber
+            : taskViolation?.QuarryCode != undefined
+              ? taskViolation?.QuarryCode
+              : "-"}
+            </div>`,
 
-        `<div class="trailerNum">
-           ${taskViolation?.TrailerNum || "-"}
-         </div>`,
+          `<div class="trailerNum">
+            ${taskViolation?.TrailerNum || "-"}
+          </div>`,
 
-        `<div class="violationZone">
-           ${taskViolation?.ViolationsZone || "-"}
-         </div>`,
+          `<div class="violationZone">
+            ${taskViolation?.ViolationsZone || "-"}
+          </div>`,
 
-        `${functions.getDisplayValue(taskViolation?.TotalPriceDue, true)}`,
+          `${functions.getDisplayValue(taskViolation?.TotalPriceDue, true)}`,
 
-        `${functions.getDisplayValue(taskViolation?.LawRoyalty, true)}`,
+          `${functions.getDisplayValue(taskViolation?.LawRoyalty, true)}`,
 
-        `${functions.getDisplayValue(taskViolation?.TotalEquipmentsPrice, true)}`,
+          `${functions.getDisplayValue(taskViolation?.TotalEquipmentsPrice, true)}`,
 
-        `${functions.getDisplayValue(taskViolation?.TotalQuantity, true)}`,
+          `${functions.getDisplayValue(taskViolation?.TotalQuantity, true)}`,
 
-        `${validatedViolationsRecords.getViolationStatus(record.Status)}`,
+          `${validatedViolationsRecords.getViolationStatus(record.Status)}`,
 
-        `${taskViolation?.IsPetition
-          ? functions.getPetitionsStatus(
-            taskViolation?.Petition?.GridData?.[0]?.Status
-          ) || "-"
-          : "-"
-        }`,
+          `${taskViolation?.IsPetition
+            ? functions.getPetitionsStatus(
+              taskViolation?.Petition?.GridData?.[0]?.Status
+            ) || "-"
+            : "-"
+          }`,
 
-        `<div class="referralStatus">
-             ${functions.getCaseStatus(caseStatus)}
-         </div>`,
-      ]);
-    });
-  }
+          `<div class="referralStatus">
+              ${functions.getCaseStatus(caseStatus)}
+          </div>`,
+        ]);
+      });
+    }
 
-  let Table = functions.tableDeclare(
-    "#validatedViolationsRecords",
-    data,
-    [
-      { title: "رقم المخالفة" },
-      { title: "", class: "all" },
-      { title: "تصنيف المخالفة" },
-      { title: "نوع المخالفة" },
-      { title: "تاريخ الإنشاء" },
-      { title: "تاريخ المحضر" },
-      { title: "اسم المخالف" },
-      { title: "اسم الشركة" },
-      { title: "رقم المحجر / العربة" },
-      { title: "رقم المقطورة" },
-      { title: "المنطقة" },
-      { title: "مبلغ المادة المحجرية" },
-      { title: "قيمة الإتاوة" },
-      { title: "قيمة المعدة" },
-      { title: "الكمية" },
-      { title: "حالة المخالفة" },
-      { title: "حالة الالتماس" },
-      { title: "موقف الإحالة" },
-    ],
-    false,
-    false,
-    "سجل المحاضر المصدق عليها.xlsx",
-    "سجل المحاضر المصدق عليها"
-  );
+    let Table = functions.tableDeclare(
+      "#validatedViolationsRecords",
+      data,
+      [
+        { title: "رقم المخالفة" },
+        { title: "", class: "all" },
+        { title: "تصنيف المخالفة" },
+        { title: "نوع المخالفة" },
+        { title: "تاريخ الإنشاء" },
+        { title: "تاريخ المحضر" },
+        { title: "اسم المخالف" },
+        { title: "اسم الشركة" },
+        { title: "رقم المحجر / العربة" },
+        { title: "رقم المقطورة" },
+        { title: "المنطقة" },
+        { title: "مبلغ المادة المحجرية" },
+        { title: "قيمة الإتاوة" },
+        { title: "قيمة المعدة" },
+        { title: "الكمية" },
+        { title: "حالة المخالفة" },
+        { title: "حالة الالتماس" },
+        { title: "موقف الإحالة" },
+      ],
+      false,
+      false,
+      "سجل المحاضر المصدق عليها.xlsx",
+      "سجل المحاضر المصدق عليها"
+    );
 
-  // 🔹 create column selector
-  functions.createColumnSelector(Table, "#columnSelector", 'blue');
+    functions.createColumnSelector(Table, "#columnSelector", 'blue');
 
-  validatedViolationsRecords.destroyTable = true;
+    validatedViolationsRecords.destroyTable = true;
 
-  // Update export button handler
-  $("#exportBtn").off("click").on("click", () => {
-    validatedViolationsRecords.exportToExcel();
-  });
-
-  // $(".ellipsisButton").on("click", (e) => {
-  //   $(".hiddenListBox").hide(300);
-  //   $(e.currentTarget).siblings(".hiddenListBox").toggle(300);
-  // });
-
-  let violationlog = Table.rows().nodes().to$();
-  $.each(violationlog, (index, record) => {
-    let jQueryRecord = $(record);
-    let taskID = jQueryRecord.find(".violationId").data("taskid");
-
-    // Toggle menu
-    jQueryRecord.find(".controls").children(".ellipsisButton").on("click", (e) => {
-      e.stopPropagation();
-      const currentBox = $(e.currentTarget).siblings(".hiddenListBox");
-      $(".hiddenListBox").not(currentBox).stop(true, true).hide(300);
-      currentBox.stop(true, true).toggle(300);
+    $("#exportBtn").off("click").on("click", () => {
+      validatedViolationsRecords.exportToExcel();
     });
 
-    jQueryRecord
-      .find(".controls")
-      .children(".hiddenListBox")
-      .find(".itemDetails")
-      .on("click", (e) => {
-        $(".overlay").addClass("active");
-        validatedViolationsRecords.findViolationByID(e, taskID);
+    let violationlog = Table.rows().nodes().to$();
+
+    $.each(violationlog, (index, record) => {
+      let jQueryRecord = $(record);
+
+      let taskID = jQueryRecord.find(".violationId").data("taskid");
+
+      jQueryRecord.find(".controls").children(".ellipsisButton").on("click", (e) => {
+        e.stopPropagation();
+        const currentBox = $(e.currentTarget).siblings(".hiddenListBox");
+        $(".hiddenListBox").not(currentBox).stop(true, true).hide(300);
+        currentBox.stop(true, true).toggle(300);
       });
-    jQueryRecord
-      .find(".controls")
-      .children(".hiddenListBox")
-      .find(".printViolationDetails")
-      .on("click", (e) => {
-        $(".overlay").addClass("active");
-        validatedViolationsRecords.findViolationByID(e, taskID, true);
-      });
+
+      jQueryRecord
+        .find(".controls")
+        .children(".hiddenListBox")
+        .find(".itemDetails")
+        .on("click", (e) => {
+          $(".overlay").addClass("active");
+
+          validatedViolationsRecords.findViolationByID(e, taskID);
+        });
+
+      jQueryRecord
+        .find(".controls")
+        .children(".hiddenListBox")
+        .find(".printViolationDetails")
+        .on("click", (e) => {
+          $(".overlay").addClass("active");
+
+          validatedViolationsRecords.findViolationByID(e, taskID, true);
+        });
+    });
+
+    functions.hideTargetElement(".controls", ".hiddenListBox");
+
   });
-  functions.hideTargetElement(".controls", ".hiddenListBox");
 };
 
 validatedViolationsRecords.getViolationStatus = (ViolationStatus) => {

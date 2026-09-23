@@ -809,7 +809,7 @@ vehicleViolationReferral.addRegistrationNumberPopup = (ReferralID, ViolationID, 
     });
 };
 
-
+///////////////////////////////////////////////
 // Add Court Case Number Popup
 // vehicleViolationReferral.addCourtCaseNumberPopup = (ReferralID, ViolationID, ViolationCode, TaskID) => {
 //     $(".overlay").removeClass("active");
@@ -1115,6 +1115,7 @@ vehicleViolationReferral.addRegistrationNumberPopup = (ReferralID, ViolationID, 
 
 
 // Pay Case Popup (تسديد القضية)
+///////////////////////////////////////
 vehicleViolationReferral.payCasePopup = (
     ReferralID,
     ViolationID,
@@ -1255,14 +1256,33 @@ vehicleViolationReferral.payCasePopup = (
             // Calculate actual amount paid (remove commas for calculation)
             let actualAmountPaid = totalPrice.toString().replace(/\,/g, "");
 
-            // Call changeTaskStatusAfterPayCase with the correct parameters
-            vehicleViolationReferral.changeTaskStatusAfterPayCase(
-                TaskID,
+            let caseStatus = "محفوظة"
+
+            vehicleViolationReferral.updateReferralCaseStatus(
+                ReferralID,
                 ViolationID,
-                "#payCaseAttachment",
-                parseFloat(actualAmountPaid),
-                ReferralID  // Add ReferralID
-            );
+                TaskID,
+                caseStatus
+            )
+                .then((caseUpdated) => {
+                    if (caseUpdated) {
+                        // After Cases API succeeds, update Tasks API
+                        vehicleViolationReferral.changeTaskStatusAfterPayCase(
+                            TaskID,
+                            ViolationID,
+                            "#payCaseAttachment",
+                            parseFloat(actualAmountPaid),
+                            ReferralID,
+                            caseStatus
+                        );
+                    } else {
+                        functions.warningAlert(
+                            "حدث خطأ أثناء تحديث حالة الإحالة"
+                        );
+
+                        $(".overlay").removeClass("active");
+                    }
+                });
 
         } else {
             functions.warningAlert("من فضلك قم بإرفاق إيصال السداد");
@@ -1316,6 +1336,7 @@ vehicleViolationReferral.payCaseAfterEditPopup = (
                         <div class="formBox">
                             <div class="formElements">
                                 <div class="row">
+
                                     <div class="col-md-4">
                                         <div class="form-group customFormGroup">
                                             <label for="violationOldPrice" class="customLabel">مبلغ النموذج</label>
@@ -1532,13 +1553,12 @@ vehicleViolationReferral.payCaseAfterEditPopup = (
     function updateCaseWithCourtNumber() {
         const request = {
             Request: {
-                Title: "تم الإحالة إلى المدعي العام العسكري",
                 Comments: popupState.courtCaseComments || "",
                 ViolationId: popupState.violationID,
                 TaskId: popupState.taskID,
                 CourtCaseNumber: popupState.courtCaseNumber,
                 ID: popupState.referralID,
-                Status: "تم الإحالة إلى المدعي العام العسكري"
+                Status: "مسددة"
             }
         };
 
@@ -1563,8 +1583,12 @@ vehicleViolationReferral.payCaseAfterEditPopup = (
                 Data: {
                     ID: popupState.taskID,
                     ViolationId: popupState.violationID,
-                    ActualAmountPaid: actualAmountPaid,
-                    Status: "Paid"
+                    ActualAmountPaid: Number(actualAmountPaid),
+                    Status: "Paid",
+                    Violation: {
+                        RemainingAmount: 0,
+                        TotalInstallmentsPaidAmount: Number(actualAmountPaid),
+                    },
                 }
             }
         };
@@ -1589,7 +1613,7 @@ vehicleViolationReferral.payCaseAfterEditPopup = (
             Request: {
                 Title: "New Attachment Record",
                 CaseId: popupState.referralID,
-                UploadPhase: "تم الإحالة إلى المدعي العام العسكري",
+                UploadPhase: "تم تسديد القضية على الحظر",
                 Comments: popupState.courtCaseComments || "",
             }
         };
@@ -1650,15 +1674,25 @@ vehicleViolationReferral.payCaseAfterEditPopup = (
         });
     }
 };
-vehicleViolationReferral.changeTaskStatusAfterPayCase = (TaskID, ViolationID, attachInput, ActualAmountPaid, ReferralID, Comments = "") => {
+vehicleViolationReferral.changeTaskStatusAfterPayCase = (TaskID, ViolationID, attachInput, ActualAmountPaid, ReferralID, caseStatus) => {
+    // Ensure caseStatus is not undefined or null
+    if (!caseStatus) {
+        console.warn("Case status is undefined, using default");
+        caseStatus = "Paid";
+    }
+
     let request = {
         request: {
             Data: {
                 ID: TaskID,
                 ViolationId: ViolationID,
-                ActualAmountPaid: ActualAmountPaid,
+                ActualAmountPaid: Number(ActualAmountPaid),
                 Status: "Paid",
-                ReferralStatus: "مسددة"
+                ReferralStatus: caseStatus,
+                Violation: {
+                    RemainingAmount: 0,
+                    TotalInstallmentsPaidAmount: Number(ActualAmountPaid),
+                },
             }
         }
     };
@@ -1685,13 +1719,54 @@ vehicleViolationReferral.changeTaskStatusAfterPayCase = (TaskID, ViolationID, at
             functions.warningAlert("حدث خطأ أثناء عملية السداد");
         });
 };
+vehicleViolationReferral.updateReferralCaseStatus = (
+    ReferralID,
+    ViolationID,
+    TaskID,
+    CaseStatus
+) => {
+    let request = {
+        Request: {
+            ViolationId: ViolationID,
+            ID: ReferralID,
+            TaskId: TaskID,
+            Status: CaseStatus
+        }
+    };
 
+    return functions
+        .requester(
+            "/_layouts/15/Uranium.Violations.SharePoint/Cases.aspx/Save",
+            request
+        )
+        .then((response) => {
+            if (response.ok) {
+                return response.json();
+            }
+
+            throw new Error("Failed to update referral case status");
+        })
+        .then((data) => {
+            if (data.d && data.d.Status) {
+                return true;
+            }
+
+            return false;
+        })
+        .catch((err) => {
+            console.error(
+                "Error updating referral case status:",
+                err
+            );
+
+            return false;
+        });
+};
 vehicleViolationReferral.uploadTaskAttachment = (TaskId, attachInput, ListName = "ViolationsCycle") => {
     let Data = new FormData();
     Data.append("itemId", TaskId);
     Data.append("listName", ListName);
 
-    // Use the exact same pattern as quarryViolationReferral
     let filesInput = $(attachInput)[0];
     for (let i = 0; i <= filesInput.files.length; i++) {
         Data.append("file" + i, filesInput.files[i]);
@@ -1707,12 +1782,6 @@ vehicleViolationReferral.uploadTaskAttachment = (TaskId, attachInput, ListName =
             $(".overlay").removeClass("active");
             functions.sucessAlert("تم السداد بنجاح");
             functions.closePopup();
-
-            // Refresh the table
-            vehicleViolationReferral.getVehicleViolationReferrals(
-                vehicleViolationReferral.pageIndex,
-                true
-            );
         },
         error: (err) => {
             functions.warningAlert("خطأ في إرسال البيانات لقاعدة البيانات");
@@ -1721,6 +1790,8 @@ vehicleViolationReferral.uploadTaskAttachment = (TaskId, attachInput, ListName =
         },
     });
 };
+
+///////////////////////////////////////////
 
 vehicleViolationReferral.editReferralAPIResponse = (
     request,
@@ -2061,7 +2132,6 @@ vehicleViolationReferral.FindReferralById = (ReferralID, popupType = "") => {
                 // Create a popup with both violation details and referral/case details
                 $(".overlay").removeClass("active");
 
-                // Build the popup HTML similar to quarryViolationReferral.getReferralDetails
                 Content = vehicleViolationReferral.getReferralDetails(referralData);
 
                 functions.declarePopup(

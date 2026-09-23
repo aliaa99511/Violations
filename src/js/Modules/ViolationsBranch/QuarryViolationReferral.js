@@ -664,24 +664,83 @@ quarryViolationReferral.addReferralNumberPopup = (ReferralID, ViolationID, Viola
                                 <div class="col-md-6">
                                     <div class="form-group customFormGroup">
                                         <label for="referralNumber" class="customLabel">رقم الإحالة</label>
-                                        <input class="form-control customInput referralNumber" id="referralNumber" type="text" placeholder="أدخل رقم الإحالة">
-                                    </div>
-                                </div>
-                                <div class="col-md-4">
-                                    <div class="form-group customFormGroup">
-                                        <label for="referredAmount" class="customLabel">مبلغ الإحالة</label>
-                                        <input class="form-control customInput referredAmount" id="referredAmount" type="text" placeholder="أدخل مبلغ الإحالة">
+                                        <input 
+                                            class="form-control customInput referralNumber" 
+                                            id="referralNumber" 
+                                            type="text" 
+                                            placeholder="أدخل رقم الإحالة"
+                                            >
                                     </div>
                                 </div>
                                 <div class="col-md-6">
                                     <div class="form-group customFormGroup">
-                                        <label for="referralComments" class="customLabel">ملاحظات</label>
-                                        <textarea class="form-control customTextArea referralComments" id="referralComments" rows="3" placeholder="أدخل الملاحظات"></textarea>
+                                        <label for="QuarryMaterialValue" class="customLabel">
+                                            قيمة المادة المحجرية
+                                        </label>
+                                        <input
+                                            class="form-control customInput QuarryMaterialValue"
+                                            id="QuarryMaterialValue"
+                                            type="text"
+                                            placeholder="أدخل قيمة المادة المحجرية"
+                                        >
                                     </div>
                                 </div>
-                                <div class="col-12">
+
+                                <div class="col-md-6">
                                     <div class="form-group customFormGroup">
-                                        <label for="referralNumberAttach" class="customLabel">إرفاق مستند رقم الإحالة</label>
+                                        <label for="LawRoyalty" class="customLabel">
+                                            قيمة الإتاوة
+                                        </label>
+                                        <input
+                                            class="form-control customInput LawRoyalty"
+                                            id="LawRoyalty"
+                                            type="text"
+                                            placeholder="أدخل قيمة الإتاوة"
+                                        >
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <div class="form-group customFormGroup">
+                                        <label for="TotalEquipmentsPrice" class="customLabel">
+                                            قيمة المعدات
+                                        </label>
+                                        <input
+                                            class="form-control customInput TotalEquipmentsPrice"
+                                            id="TotalEquipmentsPrice"
+                                            type="text"
+                                            placeholder="أدخل قيمة المعدات"
+                                        >
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group customFormGroup">
+                                        <label for="referredAmount" class="customLabel">
+                                            مبلغ الإحالة
+                                        </label>
+                                        <input class="form-control customInput referredAmount"
+                                            id="referredAmount"
+                                            type="text"
+                                            placeholder="مبلغ الإحالة"
+                                            disabled
+                                        >
+                                    </div>
+                                </div>
+                                <div class="col-md-12"></div>
+                                <div class="col-md-6">
+                                    <div class="form-group customFormGroup">
+                                        <label for="referralComments" class="customLabel">ملاحظات</label>
+                                        <textarea 
+                                            class="form-control customTextArea referralComments" 
+                                            id="referralComments" 
+                                            rows="4" 
+                                            placeholder="أدخل الملاحظات"
+                                        ></textarea>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group customFormGroup">
+                                        <label for="referralNumberAttach" class="customLabel">إرفاق مستند رقم الإحالة * </label>
                                         <div class="fileBox" id="dropContainer">
                                             <div class="inputFileBox">
                                                 <img src="/Style Library/MiningViolations/images/fileIcon.svg" alt="File Icon">
@@ -692,7 +751,6 @@ quarryViolationReferral.addReferralNumberPopup = (ReferralID, ViolationID, Viola
                                         <div class="dropFilesArea" id="dropFilesArea"></div>
                                     </div>
                                 </div>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -722,8 +780,12 @@ quarryViolationReferral.addReferralNumberPopup = (ReferralID, ViolationID, Viola
     });
 
     let ReferralNumberInput = "";
+    let QuarryMaterialValueInput = "";
+    let LawRoyaltyInput = "";
+    let TotalEquipmentsPriceInput = "";
     let ReferralAmountInput = "";
     let ReferralCommentsInput = "";
+
     let filesExtension = [
         "gif", "svg", "jpg", "jpeg", "png",
         "doc", "docx", "pdf", "xls", "xlsx", "pptx"
@@ -749,34 +811,40 @@ quarryViolationReferral.addReferralNumberPopup = (ReferralID, ViolationID, Viola
     // Remove English & Arabic letters only
     $("#referralNumber").on("input", (e) => {
         let value = $(e.currentTarget).val();
-
         value = value.replace(/[a-zA-Z\u0600-\u06FF]/g, "");
-
         $(e.currentTarget).val(value);
-
         ReferralNumberInput = value.trim();
     });
 
-    // Allow only numbers and decimal point in referredAmount
-    $("#referredAmount").on("keypress", (e) => {
-        return functions.isDecimalNumberKey(e);
-    });
+    const calculateReferredAmount = () => {
+        let quarryMaterialValue = Number($("#QuarryMaterialValue").val().replace(/,/g, "") || 0);
+        let lawRoyalty = Number($("#LawRoyalty").val().replace(/,/g, "") || 0);
+        let totalEquipmentsPrice = Number($("#TotalEquipmentsPrice").val().replace(/,/g, "") || 0);
 
-    // Format the referred amount with commas as the user types
-    $("#referredAmount").on("input", (e) => {
-        let rawValue = $(e.currentTarget).val().replace(/\,/g, "");
+        let total = quarryMaterialValue + lawRoyalty + totalEquipmentsPrice;
 
-        // Remove any non-numeric characters except decimal point
-        rawValue = rawValue.replace(/[^0-9.]/g, '');
+        ReferralAmountInput = total;
 
-        // Store the raw value for later use
-        ReferralAmountInput = rawValue;
+        $("#referredAmount").val(
+            total.toLocaleString("en-US", {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 2
+            })
+        );
+    };
 
-        // Format with commas for display
-        if (rawValue) {
-            let formatted = rawValue.replace(/\B(?=(?:\d{3})+(?!\d))/g, ",");
-            $(e.currentTarget).val(formatted);
-        }
+    $("#QuarryMaterialValue, #LawRoyalty, #TotalEquipmentsPrice").on("input", (e) => {
+        let value = $(e.currentTarget).val().replace(/,/g, "");
+
+        value = value.replace(/[^0-9.]/g, "");
+
+        $(e.currentTarget).val(value ? value.replace(/\B(?=(?:\d{3})+(?!\d))/g, ",") : "");
+
+        QuarryMaterialValueInput = $("#QuarryMaterialValue").val().replace(/,/g, "") || 0;
+        LawRoyaltyInput = $("#LawRoyalty").val().replace(/,/g, "") || 0;
+        TotalEquipmentsPriceInput = $("#TotalEquipmentsPrice").val().replace(/,/g, "") || 0;
+
+        calculateReferredAmount();
     });
 
     // Handle referralComments input
@@ -837,10 +905,14 @@ quarryViolationReferral.addReferralNumberPopup = (ReferralID, ViolationID, Viola
                         ViolationId: ViolationID,
                         ReferralNumber: ReferralNumberInput,
                         ReferredAmount: ReferralAmountInput,
+                        QuarryMaterialValue: Number(QuarryMaterialValueInput || 0),
+                        LawRoyalty: Number(LawRoyaltyInput || 0),
+                        TotalEquipmentsPrice: Number(TotalEquipmentsPriceInput || 0),
                         TaskId: TaskID,
                         ID: ReferralID
                     },
                 };
+
                 $(".overlay").addClass("active");
                 quarryViolationReferral.editReferralAPIResponse(
                     request,
@@ -850,6 +922,7 @@ quarryViolationReferral.addReferralNumberPopup = (ReferralID, ViolationID, Viola
                     "تم إضافة رقم الإحالة",
                     TaskID,
                     ViolationID,
+                    false,
                     false,
                 );
             } else {
@@ -1073,7 +1146,7 @@ quarryViolationReferral.editReferralAPIResponse = (
     TaskID = null,
     ViolationID = null,
     caseStatus = null,
-    isEditViolationAmount = false  // Default parameter
+    isEditViolationAmount = false
 ) => {
     functions
         .requester(
@@ -2259,11 +2332,13 @@ quarryViolationReferral.payCaseBeforeEditPopup = (
     violationCode,
     totalPrice
 ) => {
+    let referralNumberCondition = referralNumber ? `الإحالة رقم (${referralNumber})` : `الإحالة رقم -`;
+
     $(".overlay").removeClass("active");
     let popupHtml = `
         <div class="popupHeader" style="display: flex; justify-content: space-between;">
             <div class="violationsCode">
-                <p>سداد على نموذج التقييم - الإحالة رقم (${referralNumber})</p>
+                <p>سداد على نموذج التقييم - ${referralNumberCondition}</p>
             </div>
             <div class="btnStyle cancelBtn popupBtn closePayCaseBeforeEditPopup" id="closePayCaseBeforeEditPopup" style="color: #fff; cursor: pointer;" data-dismiss="modal" aria-label="Close">
                 <i class="fa-solid fa-x"></i>
@@ -2380,20 +2455,34 @@ quarryViolationReferral.payCaseBeforeEditPopup = (
             // Calculate actual amount paid (remove commas for calculation)
             let actualAmountPaid = totalPrice.toString().replace(/\,/g, "");
 
-            // FIX: Get caseStatus from the table row directly instead of jQuery selector
-            // Look for the violation code element that matches this referral
-            let caseStatus = $("#QuarryViolationReferralTable").find(`[data-referralid="${ReferralID}"]`).data('referralstatus');
+            // let caseStatus = $("#QuarryViolationReferralTable").find(`[data-referralid="${ReferralID}"]`).data('referralstatus');
+            let caseStatus = "محفوظة"
 
-            // First change task status, then upload attachment in the success callback
-            quarryViolationReferral.changeTaskStatusAfterPayCase(
-                TaskID,
-                ViolationID,
-                "#payCaseAttachment",
-                parseFloat(actualAmountPaid),
+            quarryViolationReferral.updateReferralCaseStatus(
                 ReferralID,
-                caseStatus,
-            );
+                ViolationID,
+                TaskID,
+                caseStatus
+            )
+                .then((caseUpdated) => {
+                    if (caseUpdated) {
+                        // After Cases API succeeds, update Tasks API
+                        quarryViolationReferral.changeTaskStatusAfterPayCase(
+                            TaskID,
+                            ViolationID,
+                            "#payCaseAttachment",
+                            parseFloat(actualAmountPaid),
+                            ReferralID,
+                            caseStatus
+                        );
+                    } else {
+                        functions.warningAlert(
+                            "حدث خطأ أثناء تحديث حالة الإحالة"
+                        );
 
+                        $(".overlay").removeClass("active");
+                    }
+                });
         } else {
             functions.warningAlert("من فضلك قم بإرفاق إيصال السداد");
         }
@@ -2530,16 +2619,33 @@ quarryViolationReferral.payCaseAfterEditPopup = (
             let actualAmountPaid = totalPrice.toString().replace(/\,/g, "");
 
             // FIX: Get caseStatus from the table row directly
-            let caseStatus = $("#QuarryViolationReferralTable").find(`[data-referralid="${ReferralID}"]`).data('referralstatus');
+            // let caseStatus = $("#QuarryViolationReferralTable").find(`[data-referralid="${ReferralID}"]`).data('referralstatus');
+            let caseStatus = "مسددة"
 
-            quarryViolationReferral.changeTaskStatusAfterPayCase(
-                TaskID,
-                ViolationID,
-                "#payCaseAfterEditAttachment",
-                parseFloat(actualAmountPaid),
+            quarryViolationReferral.updateReferralCaseStatus(
                 ReferralID,
-                caseStatus,
-            );
+                ViolationID,
+                TaskID,
+                caseStatus
+            )
+                .then((caseUpdated) => {
+                    if (caseUpdated) {
+                        quarryViolationReferral.changeTaskStatusAfterPayCase(
+                            TaskID,
+                            ViolationID,
+                            "#payCaseAfterEditAttachment",
+                            parseFloat(actualAmountPaid),
+                            ReferralID,
+                            caseStatus,
+                        );
+                    } else {
+                        functions.warningAlert(
+                            "حدث خطأ أثناء تحديث حالة الإحالة"
+                        );
+
+                        $(".overlay").removeClass("active");
+                    }
+                });
         } else {
             functions.warningAlert("من فضلك قم بإرفاق إيصال السداد");
         }
@@ -2564,9 +2670,13 @@ quarryViolationReferral.changeTaskStatusAfterPayCase = (
             Data: {
                 ID: TaskID,
                 ViolationId: ViolationID,
-                ActualAmountPaid: ActualAmountPaid,
+                ActualAmountPaid: Number(ActualAmountPaid),
                 Status: "Paid",  // Always set task status to Paid
-                ReferralStatus: caseStatus  // Use the actual case status from the table
+                ReferralStatus: caseStatus,  // Use the actual case status from the table
+                Violation: {
+                    RemainingAmount: 0,
+                    TotalInstallmentsPaidAmount: Number(ActualAmountPaid),
+                },
             }
         }
     };
@@ -2591,6 +2701,49 @@ quarryViolationReferral.changeTaskStatusAfterPayCase = (
             console.error("Error updating task status:", err);
             $(".overlay").removeClass("active");
             functions.warningAlert("حدث خطأ أثناء عملية السداد");
+        });
+};
+quarryViolationReferral.updateReferralCaseStatus = (
+    ReferralID,
+    ViolationID,
+    TaskID,
+    CaseStatus
+) => {
+    let request = {
+        Request: {
+            ViolationId: ViolationID,
+            ID: ReferralID,
+            TaskId: TaskID,
+            Status: CaseStatus
+        }
+    };
+
+    return functions
+        .requester(
+            "/_layouts/15/Uranium.Violations.SharePoint/Cases.aspx/Save",
+            request
+        )
+        .then((response) => {
+            if (response.ok) {
+                return response.json();
+            }
+
+            throw new Error("Failed to update referral case status");
+        })
+        .then((data) => {
+            if (data.d && data.d.Status) {
+                return true;
+            }
+
+            return false;
+        })
+        .catch((err) => {
+            console.error(
+                "Error updating referral case status:",
+                err
+            );
+
+            return false;
         });
 };
 quarryViolationReferral.uploadTaskAttachment = (TaskId, attachInput, ListName = "ViolationsCycle") => {
@@ -2918,7 +3071,11 @@ quarryViolationReferral.cancelViolation = (ReferralID, ViolationID, TaskID) => {
         });
 };
 ////////////////// update Violation TaskStatus function //////////////////////////
-quarryViolationReferral.updateViolationTaskStatus = (TaskID, ViolationID, CaseStatus) => {
+quarryViolationReferral.updateViolationTaskStatus = (
+    TaskID,
+    ViolationID,
+    CaseStatus,
+) => {
     let request = {
         request: {
             Data: {
@@ -2948,7 +3105,10 @@ quarryViolationReferral.updateViolationTaskStatus = (TaskID, ViolationID, CaseSt
             }
         })
         .catch((err) => {
-            console.error("Error updating violation task status:", err);
+            console.error(
+                "Error updating violation task status:",
+                err
+            );
             return false;
         });
 };
