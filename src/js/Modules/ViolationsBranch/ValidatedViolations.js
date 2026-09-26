@@ -1706,6 +1706,33 @@ validatedViolations.callSharePointListApi = (ListName, modifiedBy = null) => {
     });
   });
 };
+const parseEquipmentsCount = (raw) => {
+  if (!raw) return [];
+  if (Array.isArray(raw)) return raw;
+
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (e) {
+    return [];
+  }
+};
+const formatEquipments = (equipments, equipmentsCount) => {
+  const counts = parseEquipmentsCount(equipmentsCount);
+  const list = (Array.isArray(equipments) ? equipments : [equipments]).filter(Boolean);
+
+  if (list.length === 0) return "-";
+
+  return list
+    .map((equipment) => {
+      const found = counts.find((c) => Number(c.id) === Number(equipment.ID));
+      const count = found ? found.count : 1;
+      const name = equipment.Title || equipment.Name || equipment.ID;
+
+      return `• ${escapeHtml(name)} (العدد: ${escapeHtml(count)})`;
+    })
+    .join("<br>");
+};
 const getChanges = (changes, governrates = []) => {
   if (!changes || Object.keys(changes).length === 0) {
     return `
@@ -1726,6 +1753,14 @@ const getChanges = (changes, governrates = []) => {
     }
 
     if (key === "Governrate" && changes.Governrates) {
+      return false;
+    }
+
+    // Equipment IDs / raw counts are merged into the Equipments display
+    if (
+      (key === "EquipmentsCount" || key === "EquipmentsIDs") &&
+      changes.Equipments
+    ) {
       return false;
     }
 
@@ -1763,7 +1798,7 @@ const getChanges = (changes, governrates = []) => {
                 ${changeLabels[key] || key}
               </div>
               <div class="versionChangeValue">
-                ${formatObjectValue(value, key, governrates)}
+                ${formatObjectValue(value, key, governrates, changes)}
               </div>
             </div>
           `)
@@ -1778,9 +1813,25 @@ const getChanges = (changes, governrates = []) => {
     </div>
   `;
 };
-const formatObjectValue = (value, key = "", governrates = []) => {
+const formatObjectValue = (value, key = "", governrates = [], changes = {}) => {
   if (value === null || value === undefined || value === "") {
     return "-";
+  }
+
+  // Equipments: must come BEFORE the generic Array branch
+  if (key === "Equipments" || key === "Equipment") {
+    return formatEquipments(value, changes.EquipmentsCount);
+  }
+
+  // Fallback: only the counts changed, no Equipments array in this version
+  if (key === "EquipmentsCount") {
+    const counts = parseEquipmentsCount(value);
+
+    if (counts.length === 0) return "-";
+
+    return counts
+      .map((c) => `معدة رقم ${escapeHtml(c.id)} (العدد: ${escapeHtml(c.count)})`)
+      .join("<br>");
   }
 
   // Boolean
@@ -2024,7 +2075,7 @@ const changeLabels = {
 
   // Payment
   ActualAmountPaid: "المبلغ المدفوع فعليًا",
-  BonsNumber: "رقم الإيصال",
+  BonsNumber: "عدد البونات",
   PaymentDurationMonths: "مدة السداد بالشهور",
   InstallmentDate: "تاريخ التقسيط",
   InstallmentAmount: "قيمة القسط",

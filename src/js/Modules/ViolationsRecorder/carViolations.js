@@ -6,6 +6,7 @@ let carViolation = {}
 var urlParams = new URLSearchParams(window.location.search);
 var editViolationId;
 let isPresidencyUser = false;
+var originalViolationData = null;
 
 carViolation.getCurrentUserConfiguration = () => {
     let UserId = _spPageContextInfo.userId;
@@ -519,8 +520,6 @@ carViolation.formActions = () => {
     let numberOfDaysBefore = functions.getViolationStartDate(3)
     functions.inputDateFormat(".inputDate", numberOfDaysBefore, "today", 'dd/mm/yyyy')
 
-    // Add this after your existing formActions code
-
     // Clear previous violations display when car number fields are cleared
     $("#carLicenseLetters, #carLicenseNumbres").on("input", function () {
         let letters = $("#carLicenseLetters").val();
@@ -758,166 +757,84 @@ carViolation.formActions = () => {
     })
 
     $("#submitCarViolation").on("click", (e) => {
-        carViolation.validateForm(e)
+        if (urlParams.get("isViolationEdit") === "true") {
+            carViolation.validateViolationEditForm(e);
+        } else {
+            carViolation.validateForm(e); // create + isRejectedBefore, unchanged
+        }
     })
 
     $("#cancelCarViolation").on("click", (e) => {
         window.location.href = "/ViolationsRecorder/Pages/Registered-Violations.aspx"
     })
 
-    $(".dropFilesArea").hide()
-    let violationFiles;
-    let countOfFiles;
-    let oldFiles;
-    let countOfOldFiles;
-    let filesExtension = ["gif", "svg", "jpg", "jpeg", "png", "doc", "docx", "pdf", "xls", "xlsx", "pptx"]
-    $(".attachViolationFiles").on("change", (e) => {
-        violationFiles = $(e.currentTarget)[0].files
-        if (violationFiles.length > 0) {
-            $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").show().empty()
-        }
+    let filesExtension = [
+        "gif",
+        "svg",
+        "jpg",
+        "jpeg",
+        "png",
+        "doc",
+        "docx",
+        "pdf",
+        "xls",
+        "xlsx",
+        "pptx",
+    ];
+    $(".dropFilesArea").hide();
 
-        for (let i = 0; i < violationFiles.length; i++) {
-            $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").append(`
-                <div class="file">
-                    <p class="fileName">${violationFiles[i].name}</p>
-                    <span class="deleteFile" data-index="${i}"><i class="fa-sharp fa-solid fa-x"></i></span>
-                </div>
-            `);
-        }
-        $(".deleteFile").on("click", (event) => {
-            $(e.currentTarget).val()
-            let index = $(event.currentTarget).closest(".file").index()
-            $(event.currentTarget).closest(".file").remove()
-            let fileBuffer = new DataTransfer()
-            for (let i = 0; i < violationFiles.length; i++) {
-                if (index !== i) {
-                    fileBuffer.items.add(violationFiles[i]);
-                }
-            }
-            violationFiles = fileBuffer.files
-            countOfFiles = violationFiles.length
-            // console.log(violationFiles)
+    const bindFileInput = (selector) => {
+        const $input = $(selector);
+        const input = $input[0];
+        if (!input) return;
+        const $area = $input.parents(".fileBox").siblings(".dropFilesArea");
 
-            if (countOfFiles == 0) {
-                // $(e.currentTarget).closest(".dropFilesArea").hide()
-                $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").hide()
+        // Draw the names under THIS input only
+        const render = () => {
+            $area.empty();
+            if (!input.files.length) {
+                $area.hide();
+                return;
             }
-        })
-        for (let i = 0; i < violationFiles.length; i++) {
-            let fileSplited = violationFiles[i].name.split(".")
-            let fileExt = fileSplited[fileSplited.length - 1].toLowerCase()
-            if ($.inArray(fileExt, filesExtension) == -1) {
-                functions.warningAlert("من فضلك أدخل الملفات بالمرفقات المسموح بها فقط")
-                $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").hide()
-                // violationFiles = fileBuffer
-                $(e.currentTarget).val("")
-            }
-        }
-    })
-
-    let violationReportFiles;
-    let countOfReportFiles;
-    $(".attachViolationReportFile").on("change", (e) => {
-        violationReportFiles = $(e.currentTarget)[0].files
-        if (violationReportFiles.length > 0) {
-            $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").show().empty()
-        }
-
-        for (let i = 0; i < violationReportFiles.length; i++) {
-            $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").append(`
-                <div class="file">
-                    <p class="fileName">${violationReportFiles[i].name}</p>
-                    <span class="deleteFile" data-index="${i}"><i class="fa-sharp fa-solid fa-x"></i></span>
-                </div>
-            `);
-        }
-        $(".deleteFile").on("click", (event) => {
-            $(event.currentTarget).val('')
-            let index = $(event.currentTarget).closest(".file").index()
-            $(event.currentTarget).closest(".file").remove()
-            let fileBuffer = new DataTransfer()
-            for (let i = 0; i < violationReportFiles.length; i++) {
-                if (index !== i) {
-                    fileBuffer.items.add(violationReportFiles[i]);
-                }
-            }
-            violationReportFiles = fileBuffer.files
-            countOfReportFiles = violationReportFiles.length
-            // console.log(violationFiles)
-
-            if (countOfReportFiles == 0) {
-                // $(e.currentTarget).closest(".dropFilesArea").hide()
-                $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").hide()
-            }
-        })
-        for (let i = 0; i < violationReportFiles.length; i++) {
-            let fileSplited = violationReportFiles[i].name.split(".")
-            let fileExt = fileSplited[fileSplited.length - 1].toLowerCase()
-            if ($.inArray(fileExt, filesExtension) == -1) {
-                functions.warningAlert("من فضلك أدخل الملفات بالمرفقات المسموح بها فقط")
-                $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").hide()
-                $(e.currentTarget).val("")
-            }
-        }
-    })
-
-    let violationOldFiles;
-    let countOfOldFilesFiles;
-    $(".attachOldFiles").on("change", (e) => {
-        violationOldFiles = $(e.currentTarget)[0].files;
-        if (violationOldFiles.length > 0) {
-            $(e.currentTarget)
-                .parents(".fileBox")
-                .siblings(".dropFilesArea")
-                .show()
-                .empty();
-        }
-
-        for (let i = 0; i < violationOldFiles.length; i++) {
-            $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").append(`
-                    <div class="file">
-                        <p class="fileName">${violationOldFiles[i].name}</p>
-                        <span class="deleteFile" data-index="${i}"><i class="fa-sharp fa-solid fa-x"></i></span>
-                    </div>
-                `);
-        }
-        $(".deleteFile").on("click", (event) => {
-            $(event.currentTarget).val("");
-            let index = $(event.currentTarget).closest(".file").index();
-            $(event.currentTarget).closest(".file").remove();
-            let fileBuffer = new DataTransfer();
-            for (let i = 0; i < violationOldFiles.length; i++) {
-                if (index !== i) {
-                    fileBuffer.items.add(violationOldFiles[i]);
-                }
-            }
-            violationOldFiles = fileBuffer.files;
-            countOfOldFilesFiles = violationOldFiles.length;
-
-            if (countOfOldFilesFiles == 0) {
-                // $(e.currentTarget).closest(".dropFilesArea").hide()
-                $(e.currentTarget)
-                    .parents(".fileBox")
-                    .siblings(".dropFilesArea")
-                    .hide();
-            }
-        });
-        for (let i = 0; i < violationOldFiles.length; i++) {
-            let fileSplited = violationOldFiles[i].name.split(".");
-            let fileExt = fileSplited[fileSplited.length - 1].toLowerCase();
-            if ($.inArray(fileExt, filesExtension) == -1) {
-                functions.warningAlert(
-                    "من فضلك أدخل الملفات بالمرفقات المسموح بها فقط"
+            Array.from(input.files).forEach((f, i) => {
+                const $file = $(
+                    `<div class="file">
+             <p class="fileName"></p>
+             <span class="deleteFile" data-index="${i}"><i class="fa-sharp fa-solid fa-x"></i></span>
+           </div>`
                 );
-                $(e.currentTarget)
-                    .parents(".fileBox")
-                    .siblings(".dropFilesArea")
-                    .hide();
-                $(e.currentTarget).val("");
+                $file.find(".fileName").text(f.name); // .text() avoids HTML injection
+                $area.append($file);
+            });
+            $area.show();
+        };
+
+        $input.on("change", () => {
+            const hasInvalid = Array.from(input.files).some(
+                (f) => !filesExtension.includes(f.name.split(".").pop().toLowerCase())
+            );
+            if (hasInvalid) {
+                functions.warningAlert("من فضلك أدخل الملفات بالمرفقات المسموح بها فقط");
+                input.value = "";
             }
-        }
-    });
+            render();
+        });
+
+        // Delete handler bound once, scoped to this input's own area
+        $area.on("click", ".deleteFile", (ev) => {
+            const idx = Number($(ev.currentTarget).data("index"));
+            const dt = new DataTransfer();
+            Array.from(input.files).forEach((f, i) => {
+                if (i !== idx) dt.items.add(f);
+            });
+            input.files = dt.files; // keeps the real input in sync with what is shown
+            render();
+        });
+    };
+
+    bindFileInput(".attachViolationFiles");
+    bindFileInput(".attachViolationReportFile");
+    bindFileInput(".attachOldFiles");
 
 
     // let tableRows = $("#coordinatesTable tr:not(:first-child)")
@@ -1192,38 +1109,32 @@ carViolation.GetCoordinates = () => {
         return false;
     }
 }
-carViolation.uploadAttachment = (NewCarViolationID, ListName) => {
+carViolation.uploadAttachment = (NewViolationID, ListName) => {
     $(".overlay").addClass("active");
 
     let Data = new FormData();
 
-    Data.append("itemId", NewCarViolationID);
+    Data.append("itemId", NewViolationID);
     Data.append("listName", ListName);
     Data.append("Method", urlParams.get("taskId") !== null ? "Edit" : "");
 
     let fileIndex = 0;
+    const P = functions.ATTACHMENT_PREFIX;
 
-    // Original violation files
-    const violationFiles = $("#attachViolationFiles")[0]?.files || [];
-    for (let i = 0; i < violationFiles.length; i++) {
-        Data.append(`file${fileIndex}`, violationFiles[i]);
-        fileIndex++;
-    }
-
-    // Violation report files
-    const reportFiles = $("#attachViolationReportFile")[0]?.files || [];
-    for (let i = 0; i < reportFiles.length; i++) {
-        Data.append(`file${fileIndex}`, reportFiles[i]);
-        fileIndex++;
-    }
-
-    // Old files - only available during edit
-    if (urlParams.get("taskId") !== null) {
-        const oldFiles = $("#attachOldFiles")[0]?.files || [];
-        for (let i = 0; i < oldFiles.length; i++) {
-            Data.append(`file${fileIndex}`, oldFiles[i]);
+    const appendFiles = (selector, prefix) => {
+        const files = $(selector)[0]?.files || [];
+        for (let i = 0; i < files.length; i++) {
+            // 3rd argument = the file name the server will store
+            Data.append(`file${fileIndex}`, files[i], prefix + files[i].name);
             fileIndex++;
         }
+    };
+
+    appendFiles("#attachViolationFiles", P.original);
+    appendFiles("#attachViolationReportFile", P.report);
+    // Old files - only available during edit
+    if (urlParams.get("taskId") !== null) {
+        appendFiles("#attachOldFiles", P.old);
     }
 
     $.ajax({
@@ -1236,32 +1147,25 @@ carViolation.uploadAttachment = (NewCarViolationID, ListName) => {
         success: (data) => {
             $(".overlay").removeClass("active");
 
-            let redirectUrl =
-                urlParams.get("isViolationEdit") === "true"
-                    ? "/ViolationsBranch/Pages/ValidatedViolations.aspx"
-                    : urlParams.get("isRejectedBefore") === "true"
-                        ? "/ViolationsRecorder/Pages/Registered-Violations.aspx"
-                        : "/ViolationsRecorder/Pages/Registered-Violations.aspx";
+            let redirectUrl = "/ViolationsRecorder/Pages/Registered-Violations.aspx";
 
             functions.sucessAlert(
                 urlParams.get("taskId")
-                    ? "تم تعديل مخالفة محجر بنجاح"
-                    : "تم إضافة مخالفة محجر جديدة بنجاح",
+                    ? "تم تعديل مخالفة عربة بنجاح"
+                    : "تم إضافة مخالفة عربة جديدة بنجاح",
                 false,
                 redirectUrl
             );
         },
 
         error: (err) => {
-            functions.warningAlert(
-                "خطأ في إرسال البيانات لقاعدة البيانات"
-            );
-
+            functions.warningAlert("خطأ في إرسال البيانات لقاعدة البيانات");
             $(".overlay").removeClass("active");
             console.log(err.responseText);
         },
     });
 };
+
 carViolation.drawCoordinates = (Coords) => {
     let pointLat;
     let pointLng;
@@ -1314,6 +1218,7 @@ carViolation.drawCoordinates = (Coords) => {
     //     })
     // }
 }
+////////////////  edit ////////////////////////
 carViolation.editViolation = () => {
     if (urlParams.get("taskId") !== null) {
         $(".overlay").addClass("active");
@@ -1333,7 +1238,7 @@ carViolation.editViolation = () => {
                 let violationDataParentObj = data.d;
                 let violationData = data.d.Violation;
                 editViolationId = data.d.ViolationId
-                functions.commonEditData(violationData, data.d.ViolationId, 1, violationDataParentObj);
+                let commonEditResult = functions.commonEditData(violationData, data.d.ViolationId, 1, violationDataParentObj);
 
                 $("#violatorMobileNumber").val(violationData.MobileNumber || "");
                 $("#BonesCount").val(violationData.BonsNumber).trigger("change");
@@ -1361,10 +1266,183 @@ carViolation.editViolation = () => {
                 $("#distanceToNearQuarry").val(violationData.DistanceToNearestQuarry);
                 $("#NearestQuarryNumber").val(violationData.NearestQuarryCode);
                 $("#s4-workspace").scrollTop(0, 0);
+
+                if (urlParams.get("isViolationEdit") === "true") {
+                    Promise.resolve(commonEditResult).then(() => carViolation.captureOriginalData());
+                }
                 $(".overlay").removeClass("active");
             });
     }
 };
+// Runs fn without showing validation alerts (used only for the baseline snapshot)
+const withSilentAlerts = (fn) => {
+    const original = functions.warningAlert;
+    functions.warningAlert = () => { };
+    try {
+        return fn();
+    } finally {
+        functions.warningAlert = original;
+    }
+};
+// Builds the full payload (edit flow only)
+carViolation.buildViolationEditData = (sections, sectorMembers, isCalculateByTon) => {
+    const { violatorCar, violation, coords, other, violator } = sections;
+
+    let violationDate, violationTime;
+    if (violation && violation.violationDate) {
+        const d = violation.violationDate.split("/");
+        violationDate = `${d[1]}-${d[0]}-${d[2]}`;
+        const t = violation.violationTime.split("/");
+        violationTime = `${t[1]}-${t[0]}-${t[2]}`;
+    }
+
+    const hasTrailer = violator?.carType == "عربة بمقطورة";
+
+    const data = {
+        ID: editViolationId,
+        IsEdit: false,
+        IsRejectedBefore: false,
+        IsViolationEdit: true,
+
+        Title: "New Car Violation",
+        OffenderType: "Vehicle",
+        ViolatorName: violator?.violatorName,
+        NationalID: violator?.violatorNationalId,
+        MobileNumber: violator?.violatorMobileNumber,
+        NumOfPreviousViolations: violator?.violationPrevCount,
+        ViolatorCompany: violator?.companyName,
+        CommercialRegister: violator?.commercialRegister,
+        Governrate: violator?.violationGov,
+        ViolationsZone: violator?.violationAreaName,
+        VehicleType: violator?.carType,
+        TrailerNum: hasTrailer ? violator.TractorNumber : "",
+        VehicleIdentificationNumber: violatorCar?.vehicleIdentificationNumber || "",
+
+        CarNumber: violatorCar?.carLicenseFullNumbers,
+        CarColor: violatorCar?.carLicenceColor,
+        VehicleBrand: violatorCar?.carBrand,
+        TrafficName: violatorCar?.carLicenseTraffic,
+        DrivingLicense: violatorCar?.driverLicenceNumber != "" ? violatorCar?.driverLicenceNumber : "",
+        TrafficLicense: violatorCar?.driverLicenceTraffic,
+
+        MaterialType: violation?.violationMaterail,
+        MaterialAmount: violation?.violationMaterailQuantity,
+        ViolationDate: violationDate,
+        ViolationTime: violationTime,
+
+        SkipCalculation: isPresidencyUser ? true : false,
+
+        Coordinates: coords?.Decimal,
+        CoordinatesDegrees: coords?.Degree,
+
+        Description: other?.violationDescription,
+        LeaderOpinion: other?.violationLeaderOpinion,
+        CommiteeMember: other?.membersNamesText ? other.membersNamesText : "-",
+        SectorMembers: sectorMembers,
+        Sector: 0,
+    };
+
+    if (hasTrailer && violator.NumOfPreviousViolationsTrailer) {
+        data.NumOfPreviousViolationsTrailer = violator.NumOfPreviousViolationsTrailer;
+    }
+
+    if (isCalculateByTon) {
+        data.MaterialUnit = "طن";
+    }
+
+    return data;
+};
+// Reads the form sections (edit flow only)
+// Coordinates are read directly because carViolation.violationDimensionsCoordsDetails
+// also requires attachments, which would make the snapshot fail.
+carViolation.collectViolationEditSections = () => ({
+    violatorCar: carViolation.violatorCarDetails(),
+    coords: carViolation.GetCoordinates(),
+    other: carViolation.otherViolationDetails(),
+    violation: carViolation.violationDetails(),
+    violator: carViolation.violatorDetails(),
+});
+// Snapshot of the form right after it was filled with the saved data
+carViolation.captureOriginalData = () => {
+    originalViolationData = withSilentAlerts(() => {
+        const sections = carViolation.collectViolationEditSections();
+        if (Object.values(sections).some((s) => s === false)) {
+            console.warn("Edit snapshot: some sections are invalid, fields may be reported as changed", sections);
+        }
+        return carViolation.buildViolationEditData(
+            sections,
+            $(".membersText").val(),
+            $("#calculateByTon").is(":checked")
+        );
+    });
+};
+// Returns only the fields that changed compared to the snapshot
+carViolation.getChangedData = (current) => {
+    if (!originalViolationData) return current; // safety: fall back to full data
+
+    const alwaysSend = ["ID", "Title", "OffenderType", "IsEdit", "IsRejectedBefore", "IsViolationEdit"];
+    const result = {};
+    const changedFields = [];
+    const keys = new Set([...Object.keys(current), ...Object.keys(originalViolationData)]);
+
+    alwaysSend.forEach((k) => (result[k] = current[k]));
+
+    keys.forEach((key) => {
+        if (alwaysSend.includes(key)) return;
+        if (JSON.stringify(current[key]) !== JSON.stringify(originalViolationData[key])) {
+            result[key] = current[key] === undefined ? "" : current[key];
+            changedFields.push(key);
+        }
+    });
+
+    console.log("changedFields", changedFields);
+    return result;
+};
+// Validation + submit for isViolationEdit=true only
+carViolation.validateViolationEditForm = (e) => {
+    let sections = carViolation.collectViolationEditSections();
+    let SectorMembers = $(".membersText").val();
+    let isCalculateByTon = $("#calculateByTon").is(":checked");
+
+    if (SectorMembers == "") {
+        functions.warningAlert("من فضلك قم بادخال اعضاء اللجنة");
+        return;
+    }
+    if (!sections.violator || !sections.violatorCar || !sections.violation) return;
+
+    if (!sections.coords) {
+        functions.warningAlert("من فضلك قم بإدخال جميع الاحداثيات وبشكل صحيح");
+        return;
+    }
+
+    let attachedFiles = $(".attachViolationFiles")[0]?.files;
+    let attachedReportFiles = $(".attachViolationReportFile")[0]?.files;
+    if (!attachedFiles || attachedFiles.length === 0) {
+        functions.warningAlert("من فضلك قم بإرفاق أصل محضر الضبط");
+        return;
+    }
+    if (!attachedReportFiles || attachedReportFiles.length === 0) {
+        functions.warningAlert("من فضلك قم بإرفاق التقرير المصور");
+        return;
+    }
+
+    if (!sections.other) return;
+
+    let isOldFilesRequired = $("#oldFilesBox").is(":visible");
+    let attachedOldFiles = $("#attachOldFiles")[0]?.files || [];
+    if (isOldFilesRequired && attachedOldFiles.length === 0) {
+        functions.warningAlert("من فضلك قم بإرفاق الملفات القديمة", "#attachOldFiles");
+        return;
+    }
+
+    functions.disableButton(e);
+
+    let currentData = carViolation.buildViolationEditData(sections, SectorMembers, isCalculateByTon);
+    let changedData = carViolation.getChangedData(currentData);
+
+    carViolation.submitNewViolation(changedData);
+};
+//////////////////////////////////////////////
 carViolation.getPreviousViolationsCount = () => {
     // Get car number - combine letters and numbers if they exist
     let carLicenseLetters = $("#carLicenseLetters").val();

@@ -1417,6 +1417,7 @@ functions.getCurrentUserActions = async () => {
       }
     });
 };
+////////////////////// edit ///////////////////
 functions.commonEditData = (
   violationData,
   ViolationId,
@@ -1539,45 +1540,17 @@ functions.commonEditData = (
           id: ViolationId,
           listName: "Violations",
         }),
-        success: (data) => {
-          async function fetchAndAssignFileOnClick(fileObj, fileInput) {
-            try {
-              const response = await fetch(fileObj.Url);
-              const blob = await response.blob();
-
-              const fileName = fileObj.Name;
-              const file = new File([blob], fileName, { type: blob.type });
-
-              button.addEventListener("click", () => {
-                const fileList = new DataTransfer();
-                fileList.items.add(file);
-                fileInput.files = fileList.files;
-                $(fileInput).trigger("change");
-              });
-              $("#fetchAttachmentsBtn").trigger("click");
-            } catch (error) {
-              console.error("Error fetching file:", error);
-            }
+        success: async (data) => {
+          try {
+            await functions.fillAttachmentInputs(data.d);
+            resolve(data);
+          } catch (err) {
+            reject(err);
           }
-
-          const fileInputs = [
-            document.getElementById("attachViolationFiles"),
-            document.getElementById("attachViolationReportFile"),
-            document.getElementById("attachOldFiles"),
-          ];
-
-          const button = document.getElementById("fetchAttachmentsBtn");
-
-          data.d.forEach((element, index) => {
-            let file = data.d[index];
-            fetchAndAssignFileOnClick(file, fileInputs[index]);
-          });
-
-          resolve(data); // ✅ signal that attachments are done
         },
         error: (xhr) => {
           console.log(xhr.responseText);
-          reject(xhr); // ✅ signal failure too, so caller's .catch/.finally can react
+          reject(xhr);
         },
       });
     });
@@ -1586,6 +1559,100 @@ functions.commonEditData = (
   // 🔹 propagate the promise up out of commonEditData
   return getViolationCoords(violationData.CoordinatesDegrees, defaultCoordinatesDots);
 };
+functions.ATTACHMENT_PREFIX = {
+  original: "original__",
+  report: "report__",
+  old: "old__",
+};
+functions.fillAttachmentInputs = async (attachments) => {
+  const P = functions.ATTACHMENT_PREFIX;
+  const inputs = {
+    original: document.getElementById("attachViolationFiles"),
+    report: document.getElementById("attachViolationReportFile"),
+    old: document.getElementById("attachOldFiles"),
+  };
+  const buckets = { original: [], report: [], old: [] };
+  const legacyOrder = ["original", "report", "old"];
+
+  (attachments || []).forEach((att, index) => {
+    let type = Object.keys(P).find((k) => att.Name.startsWith(P[k]));
+    let name = att.Name;
+    if (type) {
+      name = att.Name.slice(P[type].length); // strip the tag
+    } else {
+      type = legacyOrder[index] || "original"; // old records saved without a tag
+    }
+    buckets[type].push({ url: att.Url, name });
+  });
+
+  await Promise.all(
+    Object.keys(buckets).map(async (type) => {
+      const input = inputs[type];
+      if (!input || buckets[type].length === 0) return;
+
+      const dt = new DataTransfer();
+      for (const f of buckets[type]) {
+        try {
+          const res = await fetch(f.url);
+          const blob = await res.blob();
+          dt.items.add(new File([blob], f.name, { type: blob.type }));
+        } catch (err) {
+          console.error("Error fetching file:", f.name, err);
+        }
+      }
+      input.files = dt.files;
+      $(input).trigger("change"); // once per input -> renders the names
+    })
+  );
+};
+// Returns File[] of every "old__" attachment of a violation (names without the prefix)
+functions.getViolationOldFiles = (violationId) => {
+  const prefix = functions.ATTACHMENT_PREFIX.old;
+
+  return new Promise((resolve) => {
+    $.ajax({
+      type: "POST",
+      url: "/_layouts/15/Uranium.Violations.SharePoint/Attachments.aspx/Get",
+      contentType: "application/json; charset=utf-8",
+      dataType: "json",
+      data: JSON.stringify({ id: violationId, listName: "Violations" }),
+      success: async (data) => {
+        const oldOnes = (data?.d || []).filter((a) => a.Name.startsWith(prefix));
+
+        const files = await Promise.all(
+          oldOnes.map(async (att) => {
+            try {
+              const res = await fetch(att.Url);
+              const blob = await res.blob();
+              return new File([blob], att.Name.slice(prefix.length), {
+                type: blob.type,
+              });
+            } catch (err) {
+              console.error("Error fetching old file:", att.Name, err);
+              return null;
+            }
+          })
+        );
+
+        resolve(files.filter(Boolean));
+      },
+      error: (xhr) => {
+        console.log(xhr.responseText);
+        resolve([]); // never block the popup
+      },
+    });
+  });
+};
+
+// Use this anywhere a violation's attachment names are displayed
+// (e.g. the Registered-Violations attachments popup) so "old__x.png" shows as "x.png"
+functions.stripAttachmentPrefix = (name) => {
+  const P = functions.ATTACHMENT_PREFIX;
+  const key = Object.keys(P).find((k) => name.startsWith(P[k]));
+  return key ? name.slice(P[key].length) : name;
+};
+
+////////////////////////////////////
 functions.getPetitionsStatus = (petitionStatus) => {
   let statusHtml = ``;
   switch (petitionStatus) {

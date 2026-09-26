@@ -1003,6 +1003,7 @@ petitionsLog.getPetitionsAttachmentsById = (petitionsId) => {
 
 ///////////////////////
 
+petitionsLog.preloadedOldFileNames = new Set();
 petitionsLog.approvePetition = (
   petitionID,
   violationID,
@@ -1074,6 +1075,27 @@ petitionsLog.approvePetition = (
   setupCloseHandlers();
   setupFileUploadHandlers();
   setupInputHandlers(state);
+
+  $(".overlay").addClass("active");
+  functions
+    .getViolationOldFiles(violationID)
+    .then((files) => {
+      const input = document.getElementById("approvePetitionOldFiles");
+      if (!input || files.length === 0) return; // popup closed, or nothing to show
+
+      const dt = new DataTransfer();
+      files.forEach((f) => dt.items.add(f));
+      input.files = dt.files;
+
+      // remember them so they are not uploaded to the violation a second time
+      petitionsLog.preloadedOldFileNames = new Set(files.map((f) => f.name));
+
+      // your existing handleOldFilesUpload renders every name under the input
+      // and fills state.oldFilesAttachments
+      $(input).trigger("change");
+    })
+    .finally(() => $(".overlay").removeClass("active"));
+
 
   functions.inputDateFormat(".inputDate", "today", "", "dd-mm-yyyy");
 
@@ -1288,36 +1310,26 @@ petitionsLog.approvePetition = (
     }
   }
   function setupOldFilesDeleteHandlers(e) {
-    $(".deleteOldFile")
-      .off("click")
-      .on("click", (event) => {
+    const $area = $("#dropFilesAreaOldFiles");
 
-        const index = Number(
-          $(event.currentTarget).attr("data-index")
-        );
+    $area.find(".deleteOldFile").off("click").on("click", (event) => {
+      // position in the list right now (data-index goes stale after a delete)
+      const index = $(event.currentTarget).closest(".file").index();
+      $(event.currentTarget).closest(".file").remove();
 
-        $(event.currentTarget)
-          .closest(".file")
-          .remove();
-
-        const fileBuffer = new DataTransfer();
-
-        Array.from(state.oldFilesAttachments).forEach((file, i) => {
-          if (index !== i) {
-            fileBuffer.items.add(file);
-          }
-        });
-
-        state.oldFilesAttachments = fileBuffer.files;
-
-        if (state.oldFilesAttachments.length === 0) {
-          $(e.currentTarget)
-            .parents(".fileBox")
-            .siblings("#dropFilesAreaOldFiles")
-            .hide();
-        }
+      const fileBuffer = new DataTransfer();
+      Array.from(state.oldFilesAttachments).forEach((file, i) => {
+        if (index !== i) fileBuffer.items.add(file);
       });
+
+      state.oldFilesAttachments = fileBuffer.files;
+
+      if (state.oldFilesAttachments.length === 0) {
+        $area.hide();
+      }
+    });
   }
+
   ////////////////////////////////////////////////////////
 
   function createFileElement(fileName, index) {
@@ -1343,11 +1355,12 @@ petitionsLog.approvePetition = (
   }
 
   function setupDeleteHandlers(e) {
-    $(".deleteFile").on("click", (event) => {
+    const $area = $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea");
+
+    $area.find(".deleteFile").off("click").on("click", (event) => {
       const index = $(event.currentTarget).closest(".file").index();
       $(event.currentTarget).closest(".file").remove();
 
-      // Update files collection
       const fileBuffer = new DataTransfer();
       Array.from(state.allAttachments).forEach((file, i) => {
         if (index !== i) fileBuffer.items.add(file);
@@ -1356,7 +1369,7 @@ petitionsLog.approvePetition = (
       state.allAttachments = fileBuffer.files;
 
       if (state.allAttachments.length === 0) {
-        $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").hide();
+        $area.hide();
       }
     });
   }
@@ -1778,11 +1791,11 @@ petitionsLog.uploadApprovePetitionAttachments = (
   oldFilesAttachments,
   successMessage
 ) => {
+  const P = functions.ATTACHMENT_PREFIX;
+  const preloaded = petitionsLog.preloadedOldFileNames || new Set();
 
-  // =========================
-  // Upload files to a list
-  // =========================
-  const uploadFiles = (itemId, listName, files) => {
+  // Upload files to a list (optional prefix is added to the stored file name)
+  const uploadFiles = (itemId, listName, files, prefix = "") => {
     if (!files || files.length === 0) {
       return Promise.resolve();
     }
@@ -1794,7 +1807,7 @@ petitionsLog.uploadApprovePetitionAttachments = (
       Data.append("listName", listName);
 
       for (let i = 0; i < files.length; i++) {
-        Data.append(`file${i}`, files[i]);
+        Data.append(`file${i}`, files[i], prefix + files[i].name);
       }
 
       $.ajax({
@@ -1803,85 +1816,36 @@ petitionsLog.uploadApprovePetitionAttachments = (
         processData: false,
         contentType: false,
         data: Data,
-
-        success: (data) => {
-          resolve(data);
-        },
-
-        error: (xhr) => {
-          reject(xhr);
-        }
+        success: (data) => resolve(data),
+        error: (xhr) => reject(xhr),
       });
     });
   };
 
+  // Old files that came from the violation already exist there -> upload only the new ones
+  const newOldFiles = Array.from(oldFilesAttachments || []).filter(
+    (f) => !preloaded.has(f.name)
+  );
 
-  // ==========================================
-  // 1. Upload approval attachments to Petitions
-  // ==========================================
-  const uploadPetitionFiles = () => {
-    return uploadFiles(
-      petitionID,
-      "Petitions",
-      petitionAttachments
-    );
-  };
+  // 1. Approval attachments -> Petitions
+  uploadFiles(petitionID, "Petitions", petitionAttachments)
 
+    // 2. All old files -> Petitions (petition record keeps a full copy, no prefix)
+    .then(() => uploadFiles(petitionID, "Petitions", oldFilesAttachments))
 
-  // ==================================================
-  // 2. Upload old files to Petitions
-  // ==================================================
-  const uploadOldFilesToPetition = () => {
-    return uploadFiles(
-      petitionID,
-      "Petitions",
-      oldFilesAttachments
-    );
-  };
+    // 3. Only NEW old files -> Violations, tagged "old__" so the edit form
+    //    and the next petition put them under the old-files input
+    .then(() => uploadFiles(violationID, "Violations", newOldFiles, P.old))
 
-
-  // ==================================================
-  // 3. Upload old files to Violations
-  // ==================================================
-  const uploadOldFilesToViolation = () => {
-    return uploadFiles(
-      violationID,
-      "Violations",
-      oldFilesAttachments
-    );
-  };
-
-
-  // ==========================================
-  // Execute uploads sequentially
-  // ==========================================
-  uploadPetitionFiles()
-
-    // Approval attachments → Petitions
-    .then(() => uploadOldFilesToPetition())
-
-    // Old files → Petitions
-    .then(() => uploadOldFilesToViolation())
-
-    // Old files → Violations
     .then(() => {
-
       $(".overlay").removeClass("active");
-
       functions.sucessAlert(successMessage);
-
     })
 
     .catch((error) => {
-
       console.error("Attachment upload error:", error);
-
       $(".overlay").removeClass("active");
-
-      functions.warningAlert(
-        "تم تحديث الالتماس ولكن حدث خطأ أثناء إرفاق الملفات"
-      );
-
+      functions.warningAlert("تم تحديث الالتماس ولكن حدث خطأ أثناء إرفاق الملفات");
     });
 };
 // petitionsLog.uploadApprovePetitionAttachments = (
