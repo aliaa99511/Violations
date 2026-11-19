@@ -423,45 +423,7 @@ validatedViolations.exportToExcel = () => {
       render: (record) =>
         record?.ReferralStatus || "-",
     },
-    {
-      title: "الإحداثيات",
-      exportOnly: true,
-      render: (record) => {
-        const violation = record.Violation;
-        if (!violation) return "-";
-
-        // Try to get coordinates in degrees format first, fallback to regular format
-        const coordinatesDegrees = violation.CoordinatesDegrees;
-        const coordinates = violation.Coordinates;
-
-        if (coordinatesDegrees) {
-          // Parse the coordinates array and format them nicely
-          try {
-            const coordsArray = JSON.parse(coordinatesDegrees);
-            if (Array.isArray(coordsArray) && coordsArray.length > 0) {
-              return coordsArray.join(" | ");
-            }
-            return coordinatesDegrees;
-          } catch (e) {
-            return coordinatesDegrees;
-          }
-        }
-
-        if (coordinates) {
-          try {
-            const coordsArray = JSON.parse(coordinates);
-            if (Array.isArray(coordsArray) && coordsArray.length > 0) {
-              return coordsArray.join(" | ");
-            }
-            return coordinates;
-          } catch (e) {
-            return coordinates;
-          }
-        }
-
-        return "-";
-      },
-    },
+    { title: "الإحداثيات", coordinates: true },
   ];
 
   functions.exportFromAPI({
@@ -3015,7 +2977,6 @@ validatedViolations.reffereViolationAPIResponse = (
   LawRoyalty,
   Equipments_Count
 ) => {
-  // Get the stored referral status
   let referralStatus = $("body").data("currentReferralStatus") || "";
 
   let TotalPriceDueEquation = TotalPrice;
@@ -3026,27 +2987,33 @@ validatedViolations.reffereViolationAPIResponse = (
   let DoupleLawRoyalty = LawRoyalty * 2;
   let DoupleQuarryMaterialValue = (QuarryMaterialValue * 2) + 10000;
 
-  let equipmentsCount = 0;
-
-  if (Array.isArray(Equipments_Count)) {
-    equipmentsCount = Equipments_Count.reduce(
-      (sum, item) => sum + (item.count || 0),
-      0
-    );
+  // Calculate ReferredAmount for Equipment only
+  let ReferredAmountEquation = 0;
+  if (OffenderType === "Equipment") {
+    const equipmentsCount = Array.isArray(Equipments_Count)
+      ? Equipments_Count.reduce((sum, item) => sum + (Number(item.count) || 0), 0)
+      : 0;
+    ReferredAmountEquation = Number(TotalPrice || 0) + (equipmentsCount * 10000);
   }
 
   if (OffenderType === "Vehicle") {
     TotalPriceDueEquation = IsDublicated ? TotalPrice : DouplePrice;
     LawRoyaltyEquation = IsDublicated ? LawRoyalty : DoupleLawRoyalty;
-    QuarryMaterialValueEquation = IsDublicated ? QuarryMaterialValue : DoupleQuarryMaterialValue;
+    QuarryMaterialValueEquation = IsDublicated
+      ? QuarryMaterialValue
+      : DoupleQuarryMaterialValue;
   } else if (OffenderType === "Equipment") {
-    TotalPriceDueEquation = TotalPrice + (equipmentsCount * 10000);
+    TotalPriceDueEquation = TotalPrice;
   }
 
   let request = {
     Data: {
       ID: TaskId,
-      Title: OffenderType == "Vehicle" ? "تم حظر عربة" : OffenderType == "Equipment" ? "تم حظر معدة" : "تم إحالة الطلب للنيابة المختصة",
+      Title: OffenderType == "Vehicle"
+        ? "تم حظر عربة"
+        : OffenderType == "Equipment"
+          ? "تم حظر معدة"
+          : "تم إحالة الطلب للنيابة المختصة",
       ViolationId: ViolationId,
       Status: "UnderReview",
       TotalPriceDue: TotalPriceDueEquation,
@@ -3057,6 +3024,9 @@ validatedViolations.reffereViolationAPIResponse = (
         QuarryMaterialValue: QuarryMaterialValueEquation,
         LawRoyalty: LawRoyaltyEquation,
         ID: ViolationId,
+        ...(OffenderType === "Equipment" && {
+          ReferredAmount: ReferredAmountEquation
+        }),
       }
     },
   };
@@ -3069,65 +3039,65 @@ validatedViolations.reffereViolationAPIResponse = (
       if (response.ok) {
         return response.json();
       }
+      throw new Error("Failed to save task");
     })
     .then((data) => {
-      // First upload task attachment
       validatedViolations.uploadEditTaskAttachment(
         TaskId,
         "ViolationsCycle",
         attachInput,
       );
 
-      // Then add new case with appropriate payload based on offender type
       validatedViolations.addNewCase(
         TaskId,
         ViolationId,
         violationRefferedDate,
-        // ReferralNumber,
         Comments,
-        OffenderType,
+        OffenderType
       );
     })
-    .catch((err) => { });
+    .catch((err) => {
+      console.error(err);
+      $(".overlay").removeClass("active");
+    });
 };
 
 validatedViolations.addNewCase = (
   TaskId,
   violationId,
   violationRefferedDate,
-  // ReferralNumber,
   Comments = "",
-  OffenderType,
+  OffenderType
 ) => {
-  // Determine payload based on offender type
   let request;
   let caseStatus = "";
 
   if (OffenderType === "Quarry") {
     caseStatus = "قيد انتظار رقم الإحالة";
+
     request = {
       Request: {
         Title: "إحالة محجر إلى النيابة",
-        // Status: "قيد الانتظار القطاع",
         Status: caseStatus,
         ViolationId: violationId,
         TaskId: TaskId,
-        // ReferralNumber: ReferralNumber,
         RefferedDate: violationRefferedDate,
         Comments: Comments,
         OffenderType: OffenderType
       },
     };
+
   } else if (OffenderType === "Vehicle" || OffenderType === "Equipment") {
     caseStatus = "قيد انتظار رقم القيد";
+
     request = {
       Request: {
-        Title: OffenderType === "Vehicle" ? "تم حظر عربة" : "تم حظر معدة",
-        // Status: "قيد انتظار الرقم القضائي",
+        Title: OffenderType === "Vehicle"
+          ? "تم حظر عربة"
+          : "تم حظر معدة",
         Status: caseStatus,
         ViolationId: violationId,
         TaskId: TaskId,
-        // VehicleRegistrationNumber: ReferralNumber,
         RefferedDate: violationRefferedDate,
         Comments: Comments,
         OffenderType: OffenderType
@@ -3144,13 +3114,13 @@ validatedViolations.addNewCase = (
       if (response.ok) {
         return response.json();
       }
+      throw new Error("Failed to save case");
     })
     .then((data) => {
       if (data.d.Status) {
-        // Get the Case ID from response
         let CaseId = data.d.Result?.Id;
+
         if (CaseId) {
-          // Add attachment record for the case 
           validatedViolations.addNewCaseAttachmentRecord(
             CaseId,
             "إحالة إلى النيابة",
@@ -3168,10 +3138,12 @@ validatedViolations.addNewCase = (
       }
     })
     .catch((err) => {
+      console.error(err);
       $(".overlay").removeClass("active");
       functions.warningAlert("حدث خطأ في الاتصال بالخادم");
     });
 };
+
 validatedViolations.addNewCaseAttachmentRecord = (
   CaseId,
   uploadPhase,
@@ -3249,6 +3221,7 @@ validatedViolations.uploadCaseAttachments = (
     },
   });
 };
+
 //////////////////////////////////////////////////////
 
 validatedViolations.requestNewPetition = (

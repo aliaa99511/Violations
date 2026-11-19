@@ -452,45 +452,7 @@ validatedViolationsRecords.exportToExcel = () => {
       render: (record) =>
         record?.ReferralStatus || "-",
     },
-    {
-      title: "الإحداثيات",
-      exportOnly: true,
-      render: (record) => {
-        const violation = record.Violation;
-        if (!violation) return "-";
-
-        // Try to get coordinates in degrees format first, fallback to regular format
-        const coordinatesDegrees = violation.CoordinatesDegrees;
-        const coordinates = violation.Coordinates;
-
-        if (coordinatesDegrees) {
-          // Parse the coordinates array and format them nicely
-          try {
-            const coordsArray = JSON.parse(coordinatesDegrees);
-            if (Array.isArray(coordsArray) && coordsArray.length > 0) {
-              return coordsArray.join(" | ");
-            }
-            return coordinatesDegrees;
-          } catch (e) {
-            return coordinatesDegrees;
-          }
-        }
-
-        if (coordinates) {
-          try {
-            const coordsArray = JSON.parse(coordinates);
-            if (Array.isArray(coordsArray) && coordsArray.length > 0) {
-              return coordsArray.join(" | ");
-            }
-            return coordinates;
-          } catch (e) {
-            return coordinates;
-          }
-        }
-
-        return "-";
-      },
-    },
+    { title: "الإحداثيات", coordinates: true },
   ];
   // Call the common export function with export button selector
   functions.exportFromAPI({
@@ -523,8 +485,6 @@ validatedViolationsRecords.dashBoardTable = (violationsData, destroyTable) => {
       }
     });
 
-    const isAdminAccount = UserDetails?.Type === "AdminAccount";
-
     if (validatedViolationsRecords.destroyTable || destroyTable) {
       $("#validatedViolationsRecords").DataTable().destroy();
     }
@@ -535,16 +495,6 @@ validatedViolationsRecords.dashBoardTable = (violationsData, destroyTable) => {
 
         let createdDate = functions.getFormatedDate(record.Created);
         let caseStatus = record?.ReferralStatus || "";
-
-        let editLink = "";
-
-        if (taskViolation?.OffenderType === "Quarry") {
-          editLink = "/ViolationsRecorder/Pages/quarryViolationForm.aspx?taskId=" + record.ID + "&isViolationEdit=true";
-        } else if (taskViolation?.OffenderType === "Vehicle") {
-          editLink = "/ViolationsRecorder/Pages/CarViolationForm.aspx?taskId=" + record.ID + "&isViolationEdit=true";
-        } else if (taskViolation?.OffenderType === "Equipment") {
-          editLink = "/ViolationsRecorder/Pages/EquipmentViolationForm.aspx?taskId=" + record.ID + "&isViolationEdit=true";
-        }
 
         data.push([
           `<div class="violationId"
@@ -567,14 +517,6 @@ validatedViolationsRecords.dashBoardTable = (violationsData, destroyTable) => {
                 <div class='arrow'></div>
                 <ul class='list-unstyled controlsList'>
                     <li><a href="#" class="itemDetails">المزيد من التفاصيل</a></li>
-
-                    ${isAdminAccount ? `
-                      <li>
-                        <a href="${editLink}" class="editValidatedViolation">
-                          تعديل المخالفة
-                        </a>
-                      </li>
-                    ` : ""}
 
                     <li>
                       <a href="#"

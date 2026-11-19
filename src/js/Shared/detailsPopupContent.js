@@ -1529,7 +1529,7 @@ DetailsPopup.getCommitteeRecorder = (SectorConfigId) => {
             console.error("Error fetching committee recorder:", err);
         });
 };
-DetailsPopup.printPaymentForm = (TaskData) => {
+DetailsPopup.printPaymentForm = (TaskData, hideVersionsButton = false) => {
     let violationData = TaskData.Violation != null ? TaskData.Violation : "-";
     let PrintedCount = TaskData.PrintedCount;
     let offenderType = violationData.OffenderType;
@@ -1586,12 +1586,13 @@ DetailsPopup.printPaymentForm = (TaskData) => {
                     <div class="violationsMetaBox"> 
                         <p class="violationCode">${functions.getViolationPaymentArabicName(offenderType)} (${violationData.ViolationCode})</p>
                         <p class="violationPrintTime">${PrintedCount == 0 ? "تاريخ وتوقيت الطباعة :" + ExpirationDate : "تاريخ انتهاء فترة التصالح :" + ExpirationDate}</p>
+                        ${hideVersionsButton ? "" : `
                         <div class="violationVersionsButtonBox">
                             <a href="#" class="violationVersionsButton">
-                                سجل التعديلات 
+                                سجل التعديلات
                                 <i class="fa-solid fa-arrow-left-long"></i>
                             </a>
-                        </div>
+                        </div>`}
                     </div>
                 </div>
 
@@ -1801,7 +1802,7 @@ DetailsPopup.printPaymentForm = (TaskData) => {
 
     return printPaymentFormHtml;
 };
-DetailsPopup.printConfirmationFormOnly = (TaskData) => {
+DetailsPopup.printConfirmationFormOnly = (TaskData, hideVersionsButton = false) => {
     let violationData = TaskData.Violation != null ? TaskData.Violation : "-";
     let PrintedCount = TaskData.PrintedCount;
     let offenderType = violationData.OffenderType;
@@ -1854,12 +1855,13 @@ DetailsPopup.printConfirmationFormOnly = (TaskData) => {
                     <div class="violationsMetaBox">
                         <p class="violationCode">${functions.getViolationPaymentArabicName(offenderType)} (${violationData.ViolationCode})</p>
                         <p class="violationPrintTime">${PrintedCount == 0 ? "تاريخ وتوقيت الطباعة :" + ExpirationDate : "تاريخ انتهاء فترة التصالح :" + ExpirationDate}</p>
+                        ${hideVersionsButton ? "" : `
                         <div class="violationVersionsButtonBox">
                             <a href="#" class="violationVersionsButton">
-                                سجل التعديلات 
+                                سجل التعديلات
                                 <i class="fa-solid fa-arrow-left-long"></i>
                             </a>
-                        </div>
+                        </div>`}
                     </div>
                 </div>
 

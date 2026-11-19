@@ -7,6 +7,7 @@ var urlParams = new URLSearchParams(window.location.search);
 var editViolationId;
 let isPresidencyUser = false;
 var originalViolationData = null;
+let existingEvaluationFiles = [];
 
 carViolation.getCurrentUserConfiguration = () => {
     let UserId = _spPageContextInfo.userId;
@@ -487,8 +488,16 @@ carViolation.otherViolationDetails = () => {
 carViolation.formActions = () => {
     carViolation.getCurrentUserConfiguration();
 
-    if (urlParams.get("taskId") !== null) {
-        $("#oldFilesBox").show();
+    const isEdit = urlParams.get("taskId") !== null;
+    const isViolationEdit = urlParams.get("isViolationEdit") === "true";
+
+    // Old evaluation form is edit-only
+    $("#oldFilesBox").toggle(isEdit);
+
+    // Reconciliation date is violation-edit only
+    $(".reconciliationDateBox").toggle(isViolationEdit);
+    if (isViolationEdit) {
+        functions.inputDateFormat(".reconciliationDate", "today", "", "dd/mm/yyyy");
     }
 
     let unmarkedCheckbox = document.querySelector("#unmarkedCheckbox");
@@ -765,7 +774,11 @@ carViolation.formActions = () => {
     })
 
     $("#cancelCarViolation").on("click", (e) => {
-        window.location.href = "/ViolationsRecorder/Pages/Registered-Violations.aspx"
+        const redirectUrl = isViolationEdit ?
+            "/PetitionsOfficer/Pages/PetitionsLog.aspx"
+            : "/ViolationsRecorder/Pages/Registered-Violations.aspx";
+
+        window.location.href = redirectUrl
     })
 
     let filesExtension = [
@@ -933,11 +946,10 @@ carViolation.validateForm = (e) => {
                 if (dimensionsOtherDetails != false) {
                     if (otherViolationDetails != false) {
                         let isOldFilesRequired = $("#oldFilesBox").is(":visible");
-                        let attachedOldFiles = $("#attachOldFiles")[0]?.files || [];
 
-                        if (isOldFilesRequired && attachedOldFiles.length === 0) {
+                        if (isOldFilesRequired && !carViolation.hasOldEvaluationForm()) {
                             functions.warningAlert(
-                                "من فضلك قم بإرفاق الملفات القديمة",
+                                "من فضلك قم بإرفاق نموذج التقييم السابق",
                                 "#attachOldFiles"
                             );
                             return;
@@ -1111,12 +1123,14 @@ carViolation.GetCoordinates = () => {
 }
 carViolation.uploadAttachment = (NewViolationID, ListName) => {
     $(".overlay").addClass("active");
+    const isViolationEdit = urlParams.get("isViolationEdit") === "true";
+    const petitionId = urlParams.get("petitionId");
+    const isEdit = urlParams.get("taskId") !== null;
 
-    let Data = new FormData();
-
+    const Data = new FormData();
     Data.append("itemId", NewViolationID);
     Data.append("listName", ListName);
-    Data.append("Method", urlParams.get("taskId") !== null ? "Edit" : "");
+    Data.append("Method", isEdit ? "Edit" : "");
 
     let fileIndex = 0;
     const P = functions.ATTACHMENT_PREFIX;
@@ -1124,7 +1138,6 @@ carViolation.uploadAttachment = (NewViolationID, ListName) => {
     const appendFiles = (selector, prefix) => {
         const files = $(selector)[0]?.files || [];
         for (let i = 0; i < files.length; i++) {
-            // 3rd argument = the file name the server will store
             Data.append(`file${fileIndex}`, files[i], prefix + files[i].name);
             fileIndex++;
         }
@@ -1132,10 +1145,15 @@ carViolation.uploadAttachment = (NewViolationID, ListName) => {
 
     appendFiles("#attachViolationFiles", P.original);
     appendFiles("#attachViolationReportFile", P.report);
-    // Old files - only available during edit
-    if (urlParams.get("taskId") !== null) {
-        appendFiles("#attachOldFiles", P.old);
-    }
+    // Old evaluation files are uploaded separately via AddEvaluationFile
+
+    const redirectUrl = isViolationEdit ?
+        "/PetitionsOfficer/Pages/PetitionsLog.aspx"
+        : "/ViolationsRecorder/Pages/Registered-Violations.aspx";
+
+    const successMessage = isEdit
+        ? "تم قبول الإلتماس وتعديل المخالفة بنجاح"
+        : "تم إضافة مخالفة عربة جديدة بنجاح";
 
     $.ajax({
         type: "POST",
@@ -1143,27 +1161,38 @@ carViolation.uploadAttachment = (NewViolationID, ListName) => {
         processData: false,
         contentType: false,
         data: Data,
-
-        success: (data) => {
+    })
+        .then(() =>
+            isEdit
+                ? carViolation.uploadEvaluationFiles(NewViolationID).catch((err) => {
+                    console.log(err?.responseText || err);
+                    throw { evaluationFailed: true };
+                })
+                : null
+        )
+        .then(() =>
+            isViolationEdit && petitionId
+                ? functions.updatePetitionStatusAfterEdit(petitionId, NewViolationID).catch((err) => {
+                    console.log(err);
+                    throw { petitionFailed: true };
+                })
+                : null
+        )
+        .then(() => {
             $(".overlay").removeClass("active");
-
-            let redirectUrl = "/ViolationsRecorder/Pages/Registered-Violations.aspx";
-
-            functions.sucessAlert(
-                urlParams.get("taskId")
-                    ? "تم تعديل مخالفة عربة بنجاح"
-                    : "تم إضافة مخالفة عربة جديدة بنجاح",
-                false,
-                redirectUrl
-            );
-        },
-
-        error: (err) => {
-            functions.warningAlert("خطأ في إرسال البيانات لقاعدة البيانات");
+            functions.sucessAlert(successMessage, false, redirectUrl);
+        })
+        .catch((err) => {
             $(".overlay").removeClass("active");
-            console.log(err.responseText);
-        },
-    });
+            if (err?.evaluationFailed) {
+                functions.warningAlert("تم حفظ المخالفة ولكن حدث خطأ أثناء رفع نموذج التقييم السابق");
+            } else if (err?.petitionFailed) {
+                functions.warningAlert("تم حفظ المخالفة ولكن لم يتم تحديث حالة الالتماس");
+            } else {
+                functions.warningAlert("خطأ في إرسال البيانات لقاعدة البيانات");
+                console.log(err?.responseText || err);
+            }
+        });
 };
 
 carViolation.drawCoordinates = (Coords) => {
@@ -1220,59 +1249,75 @@ carViolation.drawCoordinates = (Coords) => {
 }
 ////////////////  edit ////////////////////////
 carViolation.editViolation = () => {
-    if (urlParams.get("taskId") !== null) {
-        $(".overlay").addClass("active");
-        functions
-            .requester(
-                "/_layouts/15/Uranium.Violations.SharePoint/Tasks.aspx/FindbyId",
-                {
-                    Id: urlParams.get("taskId"),
-                }
-            )
-            .then((response) => {
-                if (response.ok) {
-                    return response.json();
-                }
-            })
-            .then((data) => {
-                let violationDataParentObj = data.d;
-                let violationData = data.d.Violation;
-                editViolationId = data.d.ViolationId
-                let commonEditResult = functions.commonEditData(violationData, data.d.ViolationId, 1, violationDataParentObj);
+    if (urlParams.get("taskId") === null) return;
 
-                $("#violatorMobileNumber").val(violationData.MobileNumber || "");
-                $("#BonesCount").val(violationData.BonsNumber).trigger("change");
-                $("#quarryType").val(violationData.QuarryType).trigger("change");
-                $("#quarryCode").val(violationData.QuarryCode);
+    const isViolationEdit = urlParams.get("isViolationEdit") === "true";
+    $(".overlay").addClass("active");
 
-                // Set trailer previous violations count if it exists
-                if (violationData.NumOfPreviousViolationsTrailer) {
-                    $(".trailer-previous-violations-count-value").text(violationData.NumOfPreviousViolationsTrailer);
-                    $(".trailer-previous-violations-display").show();
-                }
+    functions
+        .requester(
+            "/_layouts/15/Uranium.Violations.SharePoint/Tasks.aspx/FindbyId",
+            { Id: urlParams.get("taskId") }
+        )
+        .then((response) => {
+            if (response.ok) return response.json();
+        })
+        .then((data) => {
+            const violationDataParentObj = data.d;
+            const violationData = data.d.Violation;
+            editViolationId = data.d.ViolationId;
 
-                violationData.Equipments.forEach((equipment, index) => {
-                    let selectedInput = $(`label[for="${equipment.Name}"]`);
-                    selectedInput.trigger("click");
-                    selectedInput
-                        .siblings("#toolCount")
-                        .val(violationData.Equipments_Count[index].count);
+            return functions
+                .commonEditData(violationData, data.d.ViolationId, 1, violationDataParentObj)
+                .then(async () => {
+                    $("#violatorMobileNumber").val(violationData.MobileNumber || "");
+                    $("#BonesCount").val(violationData.BonsNumber).trigger("change");
+                    $("#quarryType").val(violationData.QuarryType).trigger("change");
+                    $("#quarryCode").val(violationData.QuarryCode);
+
+                    // Trailer previous violations count
+                    if (violationData.NumOfPreviousViolationsTrailer) {
+                        $(".trailer-previous-violations-count-value").text(violationData.NumOfPreviousViolationsTrailer);
+                        $(".trailer-previous-violations-display").show();
+                    }
+
+                    violationData.Equipments.forEach((equipment, index) => {
+                        const selectedInput = $(`label[for="${equipment.Name}"]`);
+                        selectedInput.trigger("click");
+                        selectedInput
+                            .siblings("#toolCount")
+                            .val(violationData.Equipments_Count[index].count);
+                    });
+
+                    $("#violationDepth").val(violationData.Depth);
+                    $("#AreaSpace").val(violationData.Area);
+                    $(".totalAreaSpace").val(
+                        ($("#violationDepth").val() * $("#AreaSpace").val()).toFixed(3)
+                    );
+                    $("#distanceToNearQuarry").val(violationData.DistanceToNearestQuarry);
+                    $("#NearestQuarryNumber").val(violationData.NearestQuarryCode);
+                    $("#s4-workspace").scrollTop(0, 0);
+
+                    // Old evaluation files: edit-only, loaded from GetEvaluationFiles
+                    await carViolation.loadEvaluationFiles(editViolationId);
+
+                    if (isViolationEdit) {
+                        // ReconciliationExpiredDate lives on the task
+                        $("#ReconciliationExpiredDate").val(
+                            data.d.ReconciliationExpiredDate
+                                ? moment(data.d.ReconciliationExpiredDate).format("DD/MM/YYYY")
+                                : ""
+                        );
+                        carViolation.captureOriginalData();
+                    }
                 });
-                $("#violationDepth").val(violationData.Depth);
-                $("#AreaSpace").val(violationData.Area);
-                $(".totalAreaSpace").val(
-                    ($("#violationDepth").val() * $("#AreaSpace").val()).toFixed(3)
-                );
-                $("#distanceToNearQuarry").val(violationData.DistanceToNearestQuarry);
-                $("#NearestQuarryNumber").val(violationData.NearestQuarryCode);
-                $("#s4-workspace").scrollTop(0, 0);
-
-                if (urlParams.get("isViolationEdit") === "true") {
-                    Promise.resolve(commonEditResult).then(() => carViolation.captureOriginalData());
-                }
-                $(".overlay").removeClass("active");
-            });
-    }
+        })
+        .catch((err) => {
+            console.error("Error loading violation for edit:", err);
+        })
+        .finally(() => {
+            $(".overlay").removeClass("active");
+        });
 };
 // Runs fn without showing validation alerts (used only for the baseline snapshot)
 const withSilentAlerts = (fn) => {
@@ -1287,6 +1332,11 @@ const withSilentAlerts = (fn) => {
 // Builds the full payload (edit flow only)
 carViolation.buildViolationEditData = (sections, sectorMembers, isCalculateByTon) => {
     const { violatorCar, violation, coords, other, violator } = sections;
+
+    const reconciliationInput = $("#ReconciliationExpiredDate").val();
+    const reconciliationExpiredDate = reconciliationInput
+        ? moment(reconciliationInput, "DD/MM/YYYY").format("MM-DD-YYYY")
+        : "";
 
     let violationDate, violationTime;
     if (violation && violation.violationDate) {
@@ -1340,6 +1390,7 @@ carViolation.buildViolationEditData = (sections, sectorMembers, isCalculateByTon
         CommiteeMember: other?.membersNamesText ? other.membersNamesText : "-",
         SectorMembers: sectorMembers,
         Sector: 0,
+        ReconciliationExpiredDate: reconciliationExpiredDate,
     };
 
     if (hasTrailer && violator.NumOfPreviousViolationsTrailer) {
@@ -1429,9 +1480,10 @@ carViolation.validateViolationEditForm = (e) => {
     if (!sections.other) return;
 
     let isOldFilesRequired = $("#oldFilesBox").is(":visible");
-    let attachedOldFiles = $("#attachOldFiles")[0]?.files || [];
-    if (isOldFilesRequired && attachedOldFiles.length === 0) {
-        functions.warningAlert("من فضلك قم بإرفاق الملفات القديمة", "#attachOldFiles");
+    if (isOldFilesRequired && !carViolation.hasOldEvaluationForm()) {
+        functions.warningAlert(
+            "من فضلك قم بإرفاق نموذج التقييم السابق",
+            "#attachOldFiles");
         return;
     }
 
@@ -1641,5 +1693,72 @@ carViolation.OrderTableRow = () => {
         CurrentRow.find("th").html(CurrentIndex);
     });
 };
+carViolation.hasOldEvaluationForm = () => {
+    const newFiles = $("#attachOldFiles")[0]?.files || [];
+    return newFiles.length > 0 || existingEvaluationFiles.length > 0;
+};
 
+// Upload only the newly selected old files to the evaluation log
+carViolation.uploadEvaluationFiles = (violationId) => {
+    const files = $("#attachOldFiles")[0]?.files || [];
+    if (files.length === 0) return Promise.resolve();
+
+    const Data = new FormData();
+    Data.append("Method", "AddEvaluationFile");
+    Data.append("violationId", violationId);
+    for (let i = 0; i < files.length; i++) {
+        Data.append(`file${i}`, files[i], files[i].name);
+    }
+
+    return $.ajax({
+        type: "POST",
+        url: "/_layouts/15/Uranium.Violations.SharePoint/Attachments.aspx/AddEvaluationFile",
+        processData: false,
+        contentType: false,
+        data: Data,
+    });
+};
+
+// Draw the names of files that are already stored (read-only)
+carViolation.renderExistingEvaluationFiles = () => {
+    const $box = $("#existingEvaluationFiles");
+    $box.empty();
+
+    existingEvaluationFiles.forEach((file) => {
+        const $row = $(`
+      <div class="file">
+        <a class="fileName" target="_blank" rel="noopener noreferrer"></a>
+        <span class="deleteFile">
+          <i class="fa-sharp fa-solid fa-x"></i>
+        </span>
+      </div>
+    `);
+
+        $row.find(".fileName").attr("href", file.Url).text(file.Name);
+
+        $box.append($row);
+    });
+
+    $box.toggle(existingEvaluationFiles.length > 0);
+};
+
+// Load the old evaluation file names for this violation
+carViolation.loadEvaluationFiles = (violationId) => {
+    return $.ajax({
+        type: "POST",
+        url: "/_layouts/15/Uranium.Violations.SharePoint/Attachments.aspx/GetEvaluationFiles",
+        contentType: "application/json; charset=utf-8",
+        dataType: "json",
+        data: JSON.stringify({ id: Number(violationId) }),
+    })
+        .then((data) => {
+            existingEvaluationFiles = Array.isArray(data?.d) ? data.d : [];
+            carViolation.renderExistingEvaluationFiles();
+        })
+        .catch((err) => {
+            console.error("Error loading evaluation files:", err);
+            existingEvaluationFiles = [];
+            carViolation.renderExistingEvaluationFiles();
+        });
+};
 export default carViolation;

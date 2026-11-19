@@ -181,8 +181,97 @@ functions.tableDeclare = (
 
   return Table;
 };
+//////////////////////////// export ////////////////////////////////////////
+// Quarry referral export. Sends { Request: ... } as-is.
+functions.exportCasesFromAPI = (options) =>
+  functions.exportTableToExcel({
+    tableSelector: "#QuarryViolationReferralTable",
+    ...options,
+  });
 
-functions.exportCasesFromAPI = async (options) => {
+// Validated and pending exports. Wraps the body as { request: ... }.
+functions.exportFromAPI = (options) =>
+  functions.exportTableToExcel({
+    tableSelector: "#PendingViolation",
+    buildRequestBody: (body) => ({ request: body }),
+    ...options,
+  });
+
+// Petition export. Sends the body as-is.
+functions.exportPetitionFromAPI = (options) =>
+  functions.exportTableToExcel({
+    tableSelector: "#PendingViolation",
+    ...options,
+  });
+// Extracts each [a,b] point from the raw string. Works for both
+// CoordinatesDegrees ([[32° 0' 0",25° 0' 0"],...]) and Coordinates ([[32,25],...]),
+// which are not valid JSON once the degree symbols are present.
+functions.parseCoordinates = (raw) => {
+  if (!raw || typeof raw !== "string") return [];
+
+  const points = [];
+  const pointRegex = /\[([^\[\]]+)\]/g;
+  let match;
+
+  while ((match = pointRegex.exec(raw)) !== null) {
+    const parts = match[1].split(",").map((part) => part.trim());
+    if (parts.length >= 2 && parts[0] && parts[1]) {
+      points.push(`[${parts[0]},${parts[1]}]`);
+    }
+  }
+
+  return points;
+};
+
+// Uses CoordinatesDegrees first, then falls back to Coordinates.
+functions.getViolationCoordinates = (violation) => {
+  if (!violation) return [];
+
+  const degrees = functions.parseCoordinates(violation.CoordinatesDegrees);
+  if (degrees.length) return degrees;
+
+  return functions.parseCoordinates(violation.Coordinates);
+};
+
+// Replaces the "coordinates" placeholder with one column per point.
+// Each cell holds one point, e.g. [32° 0' 0",25° 0' 0"].
+functions.resolveExportColumns = (columns, gridData, table) => {
+  const getViolation = (record) => record?.Violation ?? record?.Task?.Violation;
+  const pointsOf = (record) => functions.getViolationCoordinates(getViolation(record));
+
+  const result = [];
+
+  columns.forEach((col, index) => {
+    if (col.skip) return;
+
+    if (col.coordinates) {
+      const maxPoints = gridData.reduce((max, record) => Math.max(max, pointsOf(record).length), 0);
+
+      for (let i = 0; i < maxPoints; i++) {
+        result.push({
+          title: `النقطة ${i + 1}`,
+          render: (record) => pointsOf(record)[i] ?? "-",
+        });
+      }
+      return;
+    }
+
+    if (col.exportOnly) {
+      result.push({ ...col });
+      return;
+    }
+
+    if (table) {
+      const dtColumn = table.settings()[0].aoColumns[index];
+      if (!dtColumn || !table.column(index).visible()) return;
+    }
+
+    result.push({ ...col });
+  });
+
+  return result;
+};
+functions.exportTableToExcel = async (options) => {
   const {
     searchUrl,
     requestData,
@@ -192,8 +281,10 @@ functions.exportCasesFromAPI = async (options) => {
     columnWidths = 25,
     rtl = true,
     dataPath = "d.Result.GridData",
+    dataMapper = null,
+    buildRequestBody = (body) => body,
     exportButtonSelector = "#exportBtn",
-    tableSelector = "#QuarryViolationReferralTable"
+    tableSelector = null,
   } = options;
 
   const $exportBtn = $(exportButtonSelector);
@@ -201,367 +292,65 @@ functions.exportCasesFromAPI = async (options) => {
   const showExportLoading = () => {
     $exportBtn.addClass("loading");
     $exportBtn.find(".btn-text").text("جاري التصدير...");
+    $exportBtn.find(".fa-download").hide();
+    $exportBtn.find(".spinner-border").show();
   };
 
   const hideExportLoading = () => {
     $exportBtn.removeClass("loading");
     $exportBtn.find(".btn-text").text("تصدير");
+    $exportBtn.find(".fa-download").show();
+    $exportBtn.find(".spinner-border").hide();
   };
 
   showExportLoading();
 
   try {
-    const table = $.fn.DataTable.isDataTable(tableSelector)
-      ? $(tableSelector).DataTable()
-      : null;
-
-    // NEW CLEAN LOGIC (skip instead of index hack)
-    const visibleColumns = [];
-
-    columns.forEach((col, index) => {
-      if (col.skip) return; // ignore control column
-
-      const isVisible = table
-        ? table.column(index).visible()
-        : true;
-
-      if (isVisible) {
-        visibleColumns.push({ ...col, originalIndex: index });
-      }
-    });
-
-    const response = await functions.requester(searchUrl, requestData);
-
-    if (!response.ok) throw new Error("API Error");
+    const response = await functions.requester(searchUrl, buildRequestBody(requestData));
+    if (!response.ok) throw new Error("Failed to fetch data");
 
     const data = await response.json();
-
-    let apiData = data;
-    dataPath.split(".").forEach(part => {
-      apiData = apiData?.[part];
-    });
-
-    const gridData = apiData || [];
+    const gridData = dataPath.split(".").reduce((obj, key) => obj?.[key], data) || [];
 
     if (!gridData.length) {
       functions.warningAlert("لا توجد بيانات للتصدير");
       return;
     }
 
-    let exportData = [];
+    const table = tableSelector && $.fn.DataTable.isDataTable(tableSelector)
+      ? $(tableSelector).DataTable()
+      : null;
 
-    // Headers
-    exportData.push(visibleColumns.map(col => col.title));
+    const visibleColumns = functions.resolveExportColumns(columns, gridData, table);
 
-    // Rows
-    gridData.forEach(record => {
-      let row = [];
+    const exportData = [visibleColumns.map((col) => col.title)];
 
-      visibleColumns.forEach(column => {
-        let value = "";
+    gridData.forEach((record) => {
+      const row = visibleColumns.map((column) => {
+        let value;
 
-        if (column.data) {
-          value = column.data
-            .split(".")
-            .reduce((obj, key) => obj?.[key], record);
+        if (dataMapper) {
+          value = dataMapper(record, column);
+        } else if (column.data) {
+          value = column.data.split(".").reduce((obj, key) => obj?.[key], record);
         } else if (column.render) {
           value = column.render(record);
         }
 
-        // تنظيف البيانات
-        if (value == null) {
-          value = "";
-        } else if (typeof value === "string") {
-          value = functions.stripHTML(value);
+        if (value == null) return "";
 
-          if (value.includes("/Date(")) {
-            value = functions.parseSharePointDate(value);
-          }
-        } else if (value instanceof Date) {
-          // keep as is
-        } else if (typeof value === "object") {
-          value = JSON.stringify(value);
-        }
-
-        row.push(value);
-      });
-
-      exportData.push(row);
-    });
-
-    const ws = XLSX.utils.aoa_to_sheet(exportData);
-
-    if (rtl) ws["!dir"] = "rtl";
-
-    ws["!cols"] = visibleColumns.map(() => ({ wch: columnWidths }));
-
-    // Date format
-    exportData.forEach((row, r) => {
-      row.forEach((cell, c) => {
-        if (cell instanceof Date) {
-          const ref = XLSX.utils.encode_cell({ r, c });
-          if (ws[ref]) {
-            ws[ref].t = "d";
-            ws[ref].z = "dd-mm-yyyy";
-          }
-        }
-      });
-    });
-
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, sheetName);
-
-    XLSX.writeFile(wb, fileName);
-
-  } catch (err) {
-    console.error(err);
-    functions.warningAlert("خطأ في التصدير");
-  } finally {
-    hideExportLoading();
-  }
-};
-functions.exportFromAPI = async (options) => {
-  const {
-    searchUrl,
-    requestData,
-    columns,
-    fileName = "export.xlsx",
-    sheetName = "Sheet1",
-    columnWidths = 25,
-    rtl = true,
-    dataMapper = null,
-    dataPath = "d.Result.GridData",
-    exportButtonSelector = "#exportBtn",
-    tableSelector = "#PendingViolation"
-  } = options;
-
-  const $exportBtn = $(exportButtonSelector);
-
-  const showExportLoading = () => {
-    $exportBtn.addClass("loading");
-    $exportBtn.find(".btn-text").text("جاري التصدير...");
-    $exportBtn.find(".fa-download").hide();
-    $exportBtn.find(".spinner-border").show();
-  };
-
-  const hideExportLoading = () => {
-    $exportBtn.removeClass("loading");
-    $exportBtn.find(".btn-text").text("تصدير");
-    $exportBtn.find(".fa-download").show();
-    $exportBtn.find(".spinner-border").hide();
-  };
-
-  showExportLoading();
-
-  try {
-    const table = $(tableSelector).DataTable();
-
-    const visibleColumns = [];
-
-    // FIX: indexes now match DataTable EXACTLY
-    columns.forEach((col, index) => {
-      if (col.skip) return;
-
-      if (col.exportOnly) {
-        visibleColumns.push({ ...col, originalIndex: index });
-        return;
-      }
-
-      if (table.column(index).visible()) {
-        visibleColumns.push({ ...col, originalIndex: index });
-      }
-    });
-
-    const response = await functions.requester(searchUrl, { request: requestData });
-
-    if (!response.ok) throw new Error("Failed to fetch data");
-
-    const data = await response.json();
-
-    let apiData = data;
-    const dataPathParts = dataPath.split(".");
-    for (const part of dataPathParts) {
-      apiData = apiData?.[part];
-    }
-
-    const gridData = apiData || [];
-
-    if (!gridData.length) {
-      functions.warningAlert("لا توجد بيانات للتصدير");
-      hideExportLoading();
-      return;
-    }
-
-    let exportData = [];
-
-    // Headers
-    exportData.push(visibleColumns.map(col => col.title));
-
-    // Rows
-    gridData.forEach((record) => {
-      const row = [];
-
-      visibleColumns.forEach((column) => {
-        let cellValue = "";
-
-        if (dataMapper) {
-          cellValue = dataMapper(record, column, column.originalIndex);
-        } else {
-          if (column.data) {
-            cellValue = column.data.split('.').reduce((obj, key) => obj?.[key], record);
-          } else if (column.render) {
-            cellValue = column.render(record);
-          }
-        }
-
-        if (cellValue == null) {
-          cellValue = "";
-        } else if (typeof cellValue === "string") {
-          cellValue = functions.stripHTML(cellValue);
-
-          if (cellValue.includes("/Date(")) {
-            cellValue = functions.parseSharePointDate(cellValue);
-          }
-        } else if (cellValue instanceof Date) {
-          // keep as Date
-        } else if (typeof cellValue === "object") {
-          cellValue = JSON.stringify(cellValue);
-        }
-
-        row.push(cellValue);
-      });
-
-      exportData.push(row);
-    });
-
-    const ws = XLSX.utils.aoa_to_sheet(exportData);
-
-    if (rtl) ws["!dir"] = "rtl";
-
-    ws["!cols"] = visibleColumns.map(() => ({ wch: columnWidths }));
-
-    // format dates
-    exportData.forEach((row, r) => {
-      row.forEach((cell, c) => {
-        if (cell instanceof Date) {
-          const ref = XLSX.utils.encode_cell({ r, c });
-          if (ws[ref]) {
-            ws[ref].t = "d";
-            ws[ref].z = "dd-mm-yyyy";
-          }
-        }
-      });
-    });
-
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, sheetName);
-
-    setTimeout(() => {
-      XLSX.writeFile(wb, fileName);
-    }, 100);
-
-  } catch (error) {
-    console.error("Export error:", error);
-  } finally {
-    hideExportLoading();
-  }
-};
-functions.exportPetitionFromAPI = async (options) => {
-  const {
-    searchUrl,
-    requestData,
-    columns,
-    fileName = "export.xlsx",
-    sheetName = "Sheet1",
-    columnWidths = 25,
-    rtl = true,
-    dataMapper = null,
-    dataPath = "d.Result.GridData",
-    exportButtonSelector = "#exportBtn",
-    tableSelector = "#PendingViolation"
-  } = options;
-
-  const $exportBtn = $(exportButtonSelector);
-
-  const showExportLoading = () => {
-    $exportBtn.addClass("loading");
-    $exportBtn.find(".btn-text").text("جاري التصدير...");
-    $exportBtn.find(".fa-download").hide();
-    $exportBtn.find(".spinner-border").show();
-  };
-
-  const hideExportLoading = () => {
-    $exportBtn.removeClass("loading");
-    $exportBtn.find(".btn-text").text("تصدير");
-    $exportBtn.find(".fa-download").show();
-    $exportBtn.find(".spinner-border").hide();
-  };
-
-  showExportLoading();
-
-  try {
-    const response = await functions.requester(searchUrl, requestData);
-    if (!response.ok) throw new Error("Failed to fetch data");
-
-    const data = await response.json();
-
-    let apiData = data;
-    const parts = dataPath.split(".");
-    for (const p of parts) apiData = apiData?.[p];
-
-    const gridData = apiData || [];
-
-    if (!gridData.length) {
-      functions.warningAlert("لا توجد بيانات للتصدير");
-      hideExportLoading();
-      return;
-    }
-
-    const table = $(tableSelector).DataTable();
-
-    const visibleColumns = columns
-      .map((col, index) => ({ ...col, index }))
-      .filter(col => {
-
-        if (col.skip) return false;
-
-        if (col.exportOnly) return true;
-
-        const dtColumn = table.settings()[0].aoColumns[col.index];
-
-        if (!dtColumn) {
-          return false;
-        }
-
-        return table.column(col.index).visible();
-      });
-
-    let exportData = [];
-
-    // headers
-    exportData.push(visibleColumns.map(c => c.title));
-
-    // rows
-    gridData.forEach(record => {
-      const row = [];
-
-      visibleColumns.forEach(column => {
-        let value = "";
-
-        if (dataMapper) {
-          value = dataMapper(record, column);
-        }
-
-        if (value == null) value = "";
         if (typeof value === "string") {
           value = functions.stripHTML(value);
-
           if (value.includes("/Date(")) {
             value = functions.parseSharePointDate(value);
           }
+          return value;
         }
 
-        row.push(value);
+        if (value instanceof Date) return value;
+        if (typeof value === "object") return JSON.stringify(value);
+
+        return value;
       });
 
       exportData.push(row);
@@ -570,10 +359,19 @@ functions.exportPetitionFromAPI = async (options) => {
     const ws = XLSX.utils.aoa_to_sheet(exportData);
 
     if (rtl) ws["!dir"] = "rtl";
+    ws["!cols"] = visibleColumns.map(() => ({ wch: columnWidths }));
 
-    ws["!cols"] = visibleColumns.map(() => ({
-      wch: columnWidths
-    }));
+    exportData.forEach((row, r) => {
+      row.forEach((cell, c) => {
+        if (cell instanceof Date) {
+          const ref = XLSX.utils.encode_cell({ r, c });
+          if (ws[ref]) {
+            ws[ref].t = "d";
+            ws[ref].z = "dd-mm-yyyy";
+          }
+        }
+      });
+    });
 
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, sheetName);
@@ -583,10 +381,12 @@ functions.exportPetitionFromAPI = async (options) => {
     }, 100);
   } catch (err) {
     console.error("Export error:", err);
+    functions.warningAlert("خطأ في التصدير");
   } finally {
     hideExportLoading();
   }
 };
+////////////////////////////////////////////////////////////////////
 functions.stripHTML = (html) => {
   if (!html) return "";
   let div = document.createElement("div");
@@ -900,14 +700,15 @@ functions.redirectUser = () => {
 
   functions.callSharePointListApi("Configurations").then((Users) => {
     let UsersData = Users.value;
-
     UsersData.forEach((User) => {
       if (User.UserIdId.find((id) => id == UserId)) {
         if (User.Type === "PresidencyUser") {
           window.location.href = _spPageContextInfo.siteAbsoluteUrl + "/ViolationsRecorder/Pages/ValidatedViolationsRecords.aspx";
-        } else if (User.Type === "AdminAccount") {
-          window.location.href = _spPageContextInfo.siteAbsoluteUrl + "/ViolationsRecorder/Pages/quarryViolationForm.aspx";
-        } else {
+        }
+        // else if (User.Type === "AdminAccount") {
+        //   window.location.href = _spPageContextInfo.siteAbsoluteUrl + "/ViolationsRecorder/Pages/quarryViolationForm.aspx";
+        // } 
+        else {
           switch (User.JobTitle1) {
             case "القائم بالضبط": {
               window.location.href = _spPageContextInfo.siteAbsoluteUrl + "/ViolationsRecorder";
@@ -918,9 +719,13 @@ functions.redirectUser = () => {
             case "مسئول مالي":
             case "مسئول قضايا":
             case "مسئول احالة":
-            case "مسؤل الإلتماسات":
             case "الأرشيف": {
               window.location.href = _spPageContextInfo.siteAbsoluteUrl + "/ViolationsBranch";
+              break;
+            }
+
+            case "مسؤل الإلتماسات": {
+              window.location.href = _spPageContextInfo.siteAbsoluteUrl + "/PetitionsOfficer";
               break;
             }
 
@@ -1097,75 +902,7 @@ functions.getNameInTriple = (Input) => {
   }
   return validName;
 };
-functions.uploadAttachmentsByInput = (AttchInput) => {
-  $(".dropFilesArea").hide();
-  let filesExtension = [
-    "gif",
-    "svg",
-    "jpg",
-    "jpeg",
-    "png",
-    "doc",
-    "docx",
-    "pdf",
-    "xls",
-    "xlsx",
-    "pptx",
-  ];
-  let allAttachments;
-  let countOfFiles;
-  $(AttchInput).on("change", (e) => {
-    allAttachments = $(e.currentTarget)[0].files;
-    if (allAttachments.length > 0) {
-      $(e.currentTarget)
-        .parents(".fileBox")
-        .siblings(".dropFilesArea")
-        .show()
-        .empty();
-    }
-    for (let i = 0; i < allAttachments.length; i++) {
-      $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").append(`
-                <div class="file">
-                    <p class="fileName">${allAttachments[i].name}</p>
-                    <span class="deleteFile" data-index="${i}"><i class="fa-sharp fa-solid fa-x"></i></span>
-                </div>
-            `);
-    }
-    $(".deleteFile").on("click", (event) => {
-      let index = $(event.currentTarget).closest(".file").index();
-      $(event.currentTarget).closest(".file").remove();
-      let fileBuffer = new DataTransfer();
-      for (let i = 0; i < allAttachments.length; i++) {
-        if (index !== i) {
-          fileBuffer.items.add(allAttachments[i]);
-        }
-      }
-      allAttachments = fileBuffer.files;
-      countOfFiles = allAttachments.length;
-      if (countOfFiles == 0) {
-        $(e.currentTarget)
-          .parents(".fileBox")
-          .siblings(".dropFilesArea")
-          .hide();
-      }
-    });
-    for (let i = 0; i < allAttachments.length; i++) {
-      let fileSplited = allAttachments[i].name.split(".");
-      let fileExt = fileSplited[fileSplited.length - 1].toLowerCase();
-      if ($.inArray(fileExt, filesExtension) == -1) {
-        functions.warningAlert(
-          "من فضلك أدخل الملفات بالمرفقات المسموح بها فقط"
-        );
-        $(e.currentTarget)
-          .parents(".fileBox")
-          .siblings(".dropFilesArea")
-          .hide();
-        $(e.currentTarget).val("");
-      }
-    }
-  });
-  return allAttachments;
-};
+
 // functions.test = (ListName)=>{
 //   let dataX={};
 //   $.ajax({
@@ -1418,6 +1155,75 @@ functions.getCurrentUserActions = async () => {
     });
 };
 ////////////////////// edit ///////////////////
+functions.uploadAttachmentsByInput = (AttchInput) => {
+  $(".dropFilesArea").hide();
+  let filesExtension = [
+    "gif",
+    "svg",
+    "jpg",
+    "jpeg",
+    "png",
+    "doc",
+    "docx",
+    "pdf",
+    "xls",
+    "xlsx",
+    "pptx",
+  ];
+  let allAttachments;
+  let countOfFiles;
+  $(AttchInput).on("change", (e) => {
+    allAttachments = $(e.currentTarget)[0].files;
+    if (allAttachments.length > 0) {
+      $(e.currentTarget)
+        .parents(".fileBox")
+        .siblings(".dropFilesArea")
+        .show()
+        .empty();
+    }
+    for (let i = 0; i < allAttachments.length; i++) {
+      $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").append(`
+                <div class="file">
+                    <p class="fileName">${allAttachments[i].name}</p>
+                    <span class="deleteFile" data-index="${i}"><i class="fa-sharp fa-solid fa-x"></i></span>
+                </div>
+            `);
+    }
+    $(".deleteFile").on("click", (event) => {
+      let index = $(event.currentTarget).closest(".file").index();
+      $(event.currentTarget).closest(".file").remove();
+      let fileBuffer = new DataTransfer();
+      for (let i = 0; i < allAttachments.length; i++) {
+        if (index !== i) {
+          fileBuffer.items.add(allAttachments[i]);
+        }
+      }
+      allAttachments = fileBuffer.files;
+      countOfFiles = allAttachments.length;
+      if (countOfFiles == 0) {
+        $(e.currentTarget)
+          .parents(".fileBox")
+          .siblings(".dropFilesArea")
+          .hide();
+      }
+    });
+    for (let i = 0; i < allAttachments.length; i++) {
+      let fileSplited = allAttachments[i].name.split(".");
+      let fileExt = fileSplited[fileSplited.length - 1].toLowerCase();
+      if ($.inArray(fileExt, filesExtension) == -1) {
+        functions.warningAlert(
+          "من فضلك أدخل الملفات بالمرفقات المسموح بها فقط"
+        );
+        $(e.currentTarget)
+          .parents(".fileBox")
+          .siblings(".dropFilesArea")
+          .hide();
+        $(e.currentTarget).val("");
+      }
+    }
+  });
+  return allAttachments;
+};
 functions.commonEditData = (
   violationData,
   ViolationId,
@@ -1643,7 +1449,6 @@ functions.getViolationOldFiles = (violationId) => {
     });
   });
 };
-
 // Use this anywhere a violation's attachment names are displayed
 // (e.g. the Registered-Violations attachments popup) so "old__x.png" shows as "x.png"
 functions.stripAttachmentPrefix = (name) => {
@@ -2055,5 +1860,25 @@ functions.getDisplayValue = (value, formatNumber = false) => {
     ? functions.splitBigNumbersByComma(value)
     : value;
 };
+functions.updatePetitionStatusAfterEdit = (petitionId, violationId) => {
+  return functions
+    .requester("/_layouts/15/Uranium.Violations.SharePoint/Petitions.aspx/Save", {
+      Request: {
+        ID: Number(petitionId),
+        Title: "التماس موافق عليه",
+        Status: "قبول مع التعديل",
+        ViolationId: Number(violationId),
+      },
+    })
+    .then((response) => {
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      return response.json();
+    })
+    .then((data) => {
+      if (!data?.d?.Status) throw new Error("Petition status was not updated");
+      return data;
+    });
+};
+
 
 export default functions;

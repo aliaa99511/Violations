@@ -189,6 +189,36 @@
         </div>
 
 
+        <!-- evaluation Log Modal -->
+        <div class="modal evaluation-history-modal fade" id="evaluationLogModal" tabindex="-1" aria-hidden="true">
+          <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+              <div class="modal-header" style="display: flex !important; justify-content: space-between !important;">
+                <h5 class="modal-title-style">
+                  سجل نماذج التقييم السابقة للمخالفة رقم <span class="ms-3 evaluation-log-violation-code"></span>
+                </h5>
+                <div class="btnStyle cancelBtn closeViolationEvaluationPopup" id="closeViolationEvaluationPopup"
+                  style="color: #fff; cursor: pointer;" data-dismiss="modal" aria-label="Close">
+                  <i class="fa-solid fa-x"></i>
+                </div>
+              </div>
+              <div class="modal-body">
+                <div class="evaluation-history-table-node">
+                  <table id="evaluationLogTable" class="evaluation-history-table display" style="width: 100%">
+                    <thead>
+                      <tr class="data-header">
+                        <th>الملف</th>
+                        <th>التاريخ</th>
+                        <th>طباعة الملف</th>
+                      </tr>
+                    </thead>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
   </div>

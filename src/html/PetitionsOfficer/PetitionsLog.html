@@ -10,21 +10,21 @@
 
 <body>
   <div class="PetitionsLog" id="PetitionsLog">
-    <div id="identify" page-name="PendingPetitionsLog" site-name="ViolationsBranch" hidden></div>
+    <div id="identify" page-name="PetitionsLog" site-name="PetitionsOfficer" hidden></div>
     <div class="mainContainer">
       <div class="contentContainer">
-        <div class="filterBox greenFilterBox">
+        <div class="filterBox blueFilterBox">
           <div class="row">
             <div class="col-6 col-md-4">
               <div class="form-group customFormGroup">
-                <label for="violationCode" class="customLabel greenLabel">رقم المخالفة</label>
+                <label for="violationCode" class="customLabel blueLabel">رقم المخالفة</label>
                 <input class="form-control customInput violationCode" id="violationCode" type="text"
                   placeholder="ادخل رقم المخالفة" />
               </div>
             </div>
             <div class="col-6 col-md-4">
               <div class="form-group customFormGroup">
-                <label for="violationCategory" class="customLabel greenLabel">تصنيف المخالفة
+                <label for="violationCategory" class="customLabel blueLabel">تصنيف المخالفة
                 </label>
                 <div class="selectBox smallSelectBox">
                   <select class="form-control violationCategory" id="violationCategory">
@@ -37,7 +37,7 @@
             </div>
             <div class="col-6 col-md-4">
               <div class="form-group customFormGroup">
-                <label for="theCode" class="customLabel greenLabel">رقم المحجر \ عربة
+                <label for="theCode" class="customLabel blueLabel">رقم المحجر \ عربة
                 </label>
                 <div class="selectBox smallSelectBox">
                   <input id="theCode" type="text" class="form-control" placeholder="ادخل الرقم" />
@@ -46,7 +46,7 @@
             </div>
             <div class="col-6 col-md-4">
               <div class="form-group customFormGroup">
-                <label for="trailerNum" class="customLabel greenLabel">رقم المقطورة
+                <label for="trailerNum" class="customLabel blueLabel">رقم المقطورة
                 </label>
                 <div class="selectBox smallSelectBox">
                   <input id="trailerNum" type="text" class="form-control" placeholder="ادخل الرقم" />
@@ -55,7 +55,19 @@
             </div>
             <div class="col-6 col-md-4">
               <div class="form-group customFormGroup">
-                <label for="ViolatorCompany" class="customLabel greenLabel">اسم الشركة</label>
+                <label for="petitionStatus" class="customLabel blueLabel">حالة الالتماس
+                </label>
+                <div class="selectBox smallSelectBox">
+                  <select class="form-control petitionStatus blueSelect" id="petitionStatus">
+                    <option value="" disabled selected hidden>الكل</option>
+                  </select>
+                  <i class="fa-solid fa-sort-down"></i>
+                </div>
+              </div>
+            </div>
+            <div class="col-6 col-md-4">
+              <div class="form-group customFormGroup">
+                <label for="ViolatorCompany" class="customLabel blueLabel">اسم الشركة</label>
                 <div class="selectBox smallSelectBox">
                   <input id="ViolatorCompany" type="text" class="form-control" placeholder="ادخل اسم الشركة" />
                 </div>
@@ -63,7 +75,7 @@
             </div>
             <div class="col-6 col-md-4">
               <div class="form-group customFormGroup">
-                <label for="ViolatorName" class="customLabel greenLabel">اسم المخالف</label>
+                <label for="ViolatorName" class="customLabel blueLabel">اسم المخالف</label>
                 <div class="selectBox smallSelectBox">
                   <input id="ViolatorName" type="text" class="form-control" placeholder="ادخل اسم المخالف" />
                 </div>
@@ -71,7 +83,7 @@
             </div>
             <div class="col-6 col-md-4">
               <div class="form-group customFormGroup">
-                <label for="createdFrom" class="customLabel greenLabel">من</label>
+                <label for="createdFrom" class="customLabel blueLabel">من</label>
                 <div class="inputIconBox">
                   <input class="form-control customInput inputDate createdFrom" id="createdFrom" type="text"
                     placeholder="DD-MM-YYYY" />
@@ -79,9 +91,10 @@
                 </div>
               </div>
             </div>
+
             <div class="col-6 col-md-4">
               <div class="form-group customFormGroup">
-                <label for="createdTo" class="customLabel greenLabel">إلى
+                <label for="createdTo" class="customLabel blueLabel">إلى
                 </label>
                 <div class="inputIconBox">
                   <input id="createdTo" type="text" class="form-control customInput inputDate createdTo"
@@ -92,10 +105,10 @@
             </div>
             <div class="col-6 col-md-1 FilterationBtnsBox">
               <div class="buttonsBox pt-3">
-                <div class="btnStyle resetBtn resetGreenBtn">
+                <div class="btnStyle resetBtn resetBlueBtn">
                   <i class="fa-solid fa-rotate-left"></i>
                 </div>
-                <div class="btnStyle searchBtn searchGreenBtn">
+                <div class="btnStyle searchBtn searchBlueBtn">
                   <i class="fa-solid fa-magnifying-glass"></i>
                 </div>
 
@@ -112,25 +125,24 @@
           <div class="btnContainer">
             <!-- Column Selector -->
             <div class="columnSelectorWrapper">
-              <button type="button" id="columnToggleBtn" class="outlineGreenBtn selectColumnBtn">
+              <button type="button" id="columnToggleBtn" class="outlineBlueBtn selectColumnBtn">
                 تحديد الأعمدة
                 <i class="fa-solid fa-grip-lines-vertical"></i>
               </button>
               <div id="columnSelector" class="columnDropdown"></div>
             </div>
             <!-- Export Button -->
-            <div id="exportBtn" class="outlineGreenBtn exportBtn">
+            <div id="exportBtn" class="outlineBlueBtn exportBtn">
               <span class="btn-text">تصدير</span>
               <i class="fa-solid fa-download"></i>
               <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"
                 style="display: none;"></span>
             </div>
           </div>
-          <table id="PetitionsTable" class="table tableWithIcons greenTable"></table>
+          <table id="PetitionsTable" class="table tableWithIcons blueTable"></table>
         </div>
 
         <div id="paginationID" class="paginationBox" current="" total="" style="display: flex"></div>
-
 
         <!-- Tracking Modal -->
         <div class="modal track-history-modal fade" id="trackHistoryModal" tabindex="-1" aria-labelledby="trackHistory"
@@ -177,10 +189,39 @@
         </div>
 
 
+        <!-- evaluation Log Modal -->
+        <div class="modal evaluation-history-modal fade" id="evaluationLogModal" tabindex="-1" aria-hidden="true">
+          <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+              <div class="modal-header" style="display: flex !important; justify-content: space-between !important;">
+                <h5 class="modal-title-style">
+                  سجل نماذج التقييم السابقة للمخالفة رقم <span class="ms-3 evaluation-log-violation-code"></span>
+                </h5>
+                <div class="btnStyle cancelBtn closeViolationEvaluationPopup" id="closeViolationEvaluationPopup"
+                  style="color: #fff; cursor: pointer;" data-dismiss="modal" aria-label="Close">
+                  <i class="fa-solid fa-x"></i>
+                </div>
+              </div>
+              <div class="modal-body">
+                <div class="evaluation-history-table-node">
+                  <table id="evaluationLogTable" class="evaluation-history-table display" style="width: 100%">
+                    <thead>
+                      <tr class="data-header">
+                        <th>الملف</th>
+                        <th>التاريخ</th>
+                        <th>طباعة الملف</th>
+                      </tr>
+                    </thead>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
   </div>
-
 </body>
 
 </html>

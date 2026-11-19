@@ -189,29 +189,7 @@ quarryViolationReferral.exportToExcel = () => {
             render: (record) =>
                 functions.getCaseStatus(record.Status) || "-",
         },
-        {
-            title: "الإحداثيات",
-            exportOnly: true,
-            render: (record) => {
-                const coordinates = record.Coordinates;
-
-                if (!coordinates) return "-";
-
-                try {
-                    const coordsArray = JSON.parse(coordinates);
-
-                    if (Array.isArray(coordsArray)) {
-                        return coordsArray
-                            .map(coord => Array.isArray(coord) ? coord.join(" , ") : coord)
-                            .join(" | ");
-                    }
-
-                    return coordinates;
-                } catch {
-                    return coordinates;
-                }
-            }
-        }
+        { title: "الإحداثيات", coordinates: true },
     ];
 
     functions.exportCasesFromAPI({
@@ -1562,12 +1540,6 @@ quarryViolationReferral.getReferralDetails = (referralData) => {
                                     <div class="form-group customFormGroup">
                                         <label for="caseNumber" class="customLabel">رقم القضية</label>
                                         <input class="form-control customInput caseNumber" id="caseNumber" type="text" value="${referralData.CaseNumber || "-"}" disabled>
-                                    </div>
-                                </div>
-                                <div class="col-md-4">
-                                    <div class="form-group customFormGroup">
-                                        <label for="taskId" class="customLabel">رقم المهمة</label>
-                                        <input class="form-control customInput taskId" id="taskId" type="text" value="${referralData.TaskId || "-"}" disabled>
                                     </div>
                                 </div>
                                 <div class="col-md-12">

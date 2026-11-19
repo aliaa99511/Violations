@@ -170,45 +170,7 @@ runningSectorTask.exportToExcel = () => {
       title: "المنطقة",
       data: "Violation.ViolationsZone",
     },
-    {
-      title: "الإحداثيات",
-      exportOnly: true,
-      render: (record) => {
-        const violation = record.Violation;
-        if (!violation) return "-";
-
-        // Try to get coordinates in degrees format first, fallback to regular format
-        const coordinatesDegrees = violation.CoordinatesDegrees;
-        const coordinates = violation.Coordinates;
-
-        if (coordinatesDegrees) {
-          // Parse the coordinates array and format them nicely
-          try {
-            const coordsArray = JSON.parse(coordinatesDegrees);
-            if (Array.isArray(coordsArray) && coordsArray.length > 0) {
-              return coordsArray.join(" | ");
-            }
-            return coordinatesDegrees;
-          } catch (e) {
-            return coordinatesDegrees;
-          }
-        }
-
-        if (coordinates) {
-          try {
-            const coordsArray = JSON.parse(coordinates);
-            if (Array.isArray(coordsArray) && coordsArray.length > 0) {
-              return coordsArray.join(" | ");
-            }
-            return coordinates;
-          } catch (e) {
-            return coordinates;
-          }
-        }
-
-        return "-";
-      },
-    },
+    { title: "الإحداثيات", coordinates: true },
   ];
 
   functions.exportFromAPI({
@@ -262,10 +224,13 @@ runningSectorTask.runningSectorTaskTable = (runningTasks) => {
         `${createdDate}`,
         `${functions.getFormatedDate(taskViolation?.ViolationDate)}`,
         `<div class="companyName">${taskViolation?.ViolatorCompany != "" ? taskViolation?.ViolatorCompany : "-"}</div>`,
-        `<div class="violationCode" >${taskViolation?.OffenderType == "Quarry"
-          ? taskViolation?.QuarryCode
-          : taskViolation?.CarNumber
-        }</div>`,
+        `<div class="violationCode">
+          ${taskViolation?.OffenderType == "Vehicle"
+          ? taskViolation?.CarNumber
+          : taskViolation?.QuarryCode != undefined
+            ? taskViolation?.QuarryCode
+            : "-"}
+        </div>`,
         `<div class="trailerNumber">${taskViolation?.TrailerNumber || "-"}</div>`,
         `<div class="violationZone">${taskViolation?.ViolationsZone || "-"}</div>`,
 
@@ -417,7 +382,7 @@ runningSectorTask.findViolationByID = (event, taskID, print = false, UserJopTitl
         if (violationOffenderType == "Quarry") {
           if (popupType == "ConfirmationFormPrint") {
             $(".overlay").removeClass("active");
-            Content = DetailsPopup.printPaymentForm(TaskData)
+            Content = DetailsPopup.printPaymentForm(TaskData, true);
             functions.declarePopup(["generalPopupStyle", "paymentFormDetailsPopup"], Content);
           } else {
             Content = DetailsPopup.quarryDetailsPopupContent(violationData, "القائمة");
@@ -428,7 +393,7 @@ runningSectorTask.findViolationByID = (event, taskID, print = false, UserJopTitl
           let VehcleType = violationData.VehicleType;
           if (popupType == "ConfirmationFormPrint") {
             $(".overlay").removeClass("active");
-            Content = DetailsPopup.printPaymentForm(TaskData)
+            Content = DetailsPopup.printPaymentForm(TaskData, true);
             functions.declarePopup(["generalPopupStyle", "paymentFormDetailsPopup"], Content);
           } else {
             Content = DetailsPopup.vehicleDetailsPopupContent(violationData, "القائمة");
@@ -443,7 +408,7 @@ runningSectorTask.findViolationByID = (event, taskID, print = false, UserJopTitl
         } else if (violationOffenderType == "Equipment") {
           if (popupType == "ConfirmationFormPrint") {
             $(".overlay").removeClass("active");
-            Content = DetailsPopup.printPaymentForm(TaskData)
+            Content = DetailsPopup.printPaymentForm(TaskData, true);
             functions.declarePopup(["generalPopupStyle", "paymentFormDetailsPopup"], Content);
           } else {
             Content = DetailsPopup.equipmentDetailsPopupContent(violationData, "القائمة");
@@ -601,7 +566,7 @@ runningSectorTask.printPaymentFormOnly = (event, taskID) => {
         violationData = TaskData.Violation;
 
         $(".overlay").removeClass("active");
-        Content = DetailsPopup.printConfirmationFormOnly(TaskData);
+        Content = DetailsPopup.printConfirmationFormOnly(TaskData, true);
         functions.declarePopup(["generalPopupStyle", "paymentFormDetailsPopup"], Content);
 
         // Add print and close button handlers

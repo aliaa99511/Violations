@@ -458,28 +458,28 @@ $(window).on("load", () => {
         });
       }
 
-      if (functions.getPageName() === "PendingPetitionsLog") {
-        functions.setPageMetaData("سجل الإلتماسات قيد الإنتظار");
+      // if (functions.getPageName() === "PendingPetitionsLog") {
+      //   functions.setPageMetaData("سجل الإلتماسات قيد الإنتظار");
 
-        sharedApis.getOffenderType("#violationCategory");
-        sharedApis.getPetitionsStatus("#petitionStatus");
-        functions.inputDateFormat("#createdFrom", "", "", "dd-mm-yyyy");
-        functions.inputDateFormat("#createdTo", "", "", "dd-mm-yyyy");
+      //   sharedApis.getOffenderType("#violationCategory");
+      //   sharedApis.getPetitionsStatus("#petitionStatus");
+      //   functions.inputDateFormat("#createdFrom", "", "", "dd-mm-yyyy");
+      //   functions.inputDateFormat("#createdTo", "", "", "dd-mm-yyyy");
 
-        petitionsLog.handleViolationCategoryChange()
+      //   petitionsLog.handleViolationCategoryChange()
 
-        // Initial load with pending status
-        petitionsLog.getPetitions("التماس قيد الإنتظار", 1, false);
+      //   // Initial load with pending status
+      //   petitionsLog.getPetitions("التماس قيد الإنتظار", 1, false);
 
-        $(".searchBtn").on("click", (e) => {
-          e.preventDefault();
-          petitionsLog.filterPetitionsLog(e, "التماس قيد الإنتظار");
-        });
+      //   $(".searchBtn").on("click", (e) => {
+      //     e.preventDefault();
+      //     petitionsLog.filterPetitionsLog(e, "التماس قيد الإنتظار");
+      //   });
 
-        $(".resetBtn").on("click", (e) => {
-          petitionsLog.resetFilter(e, "التماس قيد الإنتظار");
-        });
-      }
+      //   $(".resetBtn").on("click", (e) => {
+      //     petitionsLog.resetFilter(e, "التماس قيد الإنتظار");
+      //   });
+      // }
 
       if (functions.getPageName() === "PetitionsLog") {
         functions.setPageMetaData("سجل الالتماسات");
@@ -695,28 +695,28 @@ $(window).on("load", () => {
           certificationCases.filterViolationsLog(e);
         });
       }
-      if (functions.getPageName() === "PendingPetitionsLog") {
-        functions.setPageMetaData("سجل الإلتماسات قيد الإنتظار");
+      // if (functions.getPageName() === "PendingPetitionsLog") {
+      //   functions.setPageMetaData("سجل الإلتماسات قيد الإنتظار");
 
-        sharedApis.getOffenderType("#violationCategory");
-        sharedApis.getPetitionsStatus("#petitionStatus");
-        functions.inputDateFormat("#createdFrom", "", "", "dd-mm-yyyy");
-        functions.inputDateFormat("#createdTo", "", "", "dd-mm-yyyy");
+      //   sharedApis.getOffenderType("#violationCategory");
+      //   sharedApis.getPetitionsStatus("#petitionStatus");
+      //   functions.inputDateFormat("#createdFrom", "", "", "dd-mm-yyyy");
+      //   functions.inputDateFormat("#createdTo", "", "", "dd-mm-yyyy");
 
-        petitionsLog.handleViolationCategoryChange()
+      //   petitionsLog.handleViolationCategoryChange()
 
-        // Initial load with pending status
-        petitionsLog.getPetitions("التماس قيد الإنتظار", 1, false);
+      //   // Initial load with pending status
+      //   petitionsLog.getPetitions("التماس قيد الإنتظار", 1, false);
 
-        $(".searchBtn").on("click", (e) => {
-          e.preventDefault();
-          petitionsLog.filterPetitionsLog(e, "التماس قيد الإنتظار");
-        });
+      //   $(".searchBtn").on("click", (e) => {
+      //     e.preventDefault();
+      //     petitionsLog.filterPetitionsLog(e, "التماس قيد الإنتظار");
+      //   });
 
-        $(".resetBtn").on("click", (e) => {
-          petitionsLog.resetFilter(e, "التماس قيد الإنتظار");
-        });
-      }
+      //   $(".resetBtn").on("click", (e) => {
+      //     petitionsLog.resetFilter(e, "التماس قيد الإنتظار");
+      //   });
+      // }
       if (functions.getPageName() === "PetitionsLog") {
         functions.setPageMetaData("سجل الالتماسات");
 
@@ -790,6 +790,76 @@ $(window).on("load", () => {
       }
 
 
+    }
+    if (functions.getSiteName() === "PetitionsOfficer") {
+      sharedApis.getUserDetails();
+      $(".SideMenu")
+        .find(".userBackImageBox")
+        .children("img")
+        .attr("src", "/Style Library/MiningViolations/images/blueSideMenu.png");
+      $(".SideMenu").addClass("blueMunu");
+      $(".header").addClass("blueHeader");
+      $(".header")
+        .find(".userDetailsImg")
+        .children("img")
+        .attr("src", "/Style Library/MiningViolations/images/userIconBlue.png");
+      // $(".PreLoader").find("span").addClass("blueLoader");
+      // $(".PreLoader").addClass("active");
+      $(".overlay").addClass("active");
+      $("#s4-workspace").addClass("blueScroller");
+      // $(".popupHeader").find(".printBtn").children("img").attr("src","/Style Library/MiningViolations/images/BluePrintBtn.png")
+
+      if (functions.getPageName() === "PendingPetitionsLog") {
+        functions.setPageMetaData("سجل الإلتماسات قيد الإنتظار");
+
+        sharedApis.getOffenderType("#violationCategory");
+        sharedApis.getPetitionsStatus("#petitionStatus");
+        functions.inputDateFormat("#createdFrom", "", "", "dd-mm-yyyy");
+        functions.inputDateFormat("#createdTo", "", "", "dd-mm-yyyy");
+
+        petitionsLog.handleViolationCategoryChange()
+
+        // Initial load with pending status
+        petitionsLog.getPetitions("التماس قيد الإنتظار", 1, false);
+
+        $(".searchBtn").on("click", (e) => {
+          e.preventDefault();
+          petitionsLog.filterPetitionsLog(e, "التماس قيد الإنتظار");
+        });
+
+        $(".resetBtn").on("click", (e) => {
+          petitionsLog.resetFilter(e, "التماس قيد الإنتظار");
+        });
+      }
+
+      if (functions.getPageName() === "PetitionsLog") {
+        functions.setPageMetaData("سجل الالتماسات");
+
+        sharedApis.getOffenderType("#violationCategory");
+        sharedApis.getPetitionsStatus("#petitionStatus");
+        functions.inputDateFormat("#createdFrom", "", "", "dd-mm-yyyy");
+        functions.inputDateFormat("#createdTo", "", "", "dd-mm-yyyy");
+
+        petitionsLog.handleViolationCategoryChange()
+
+        // Initial load with all petitions
+        petitionsLog.getPetitions("All", 1, false);
+
+        $(".searchBtn").on("click", (e) => {
+          e.preventDefault();
+          petitionsLog.filterPetitionsLog(e, "All");
+        });
+
+        $(".resetBtn").on("click", (e) => {
+          petitionsLog.resetFilter(e, "All");
+        });
+      }
+
+      if (functions.getPageName() === "DashBoard") {
+        functions.setPageMetaData("الصفحة الرئيسية");
+        // $(".PreLoader").removeClass("active");
+        $(".overlay").removeClass("active");
+      }
     }
   }
 });

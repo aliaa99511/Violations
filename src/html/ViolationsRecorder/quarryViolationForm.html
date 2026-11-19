@@ -161,6 +161,16 @@
                     </div>
                   </div>
                 </div>
+                <div class="col-md-6 reconciliationDateBox" style="display: none;">
+                  <div class="form-group customFormGroup">
+                    <label for="ReconciliationExpiredDate" class="customLabel">المدة الجديدة</label>
+                    <div class="inputIconBox">
+                      <input class="form-control customInput reconciliationDate ReconciliationExpiredDate"
+                        id="ReconciliationExpiredDate" type="text" placeholder="DD/MM/YYYY" />
+                      <i class="fa-solid fa-calendar-days"></i>
+                    </div>
+                  </div>
+                </div>
                 <div class="col-md-6">
                   <div class="form-group customFormGroup">
                     <label for="quarryType" class="customLabel">نوع المحجر<span class="redAstric">*</span></label>
@@ -434,7 +444,7 @@
                 <div class="col-md-4 oldFilesBox" id="oldFilesBox" style="display: none;">
                   <div class="form-group customFormGroup">
                     <label for="attachOldFiles" class="customLabel">
-                      إرفاق الملفات القديمة <span class="redAstric">*</span>
+                      نموذج التقييم السابق <span class="redAstric">*</span>
                     </label>
                     <div class="fileBox" id="dropContainer">
                       <div class="inputFileBox">
@@ -449,6 +459,7 @@
                           multiple />
                       </div>
                     </div>
+                    <div class="existingEvaluationFilesBox" id="existingEvaluationFiles" style="display: none;"></div>
                     <div class="dropFilesArea"></div>
                   </div>
                 </div>

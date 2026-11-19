@@ -10,6 +10,7 @@ let isPresidencyUser = false;
 var urlParams = new URLSearchParams(window.location.search);
 var editViolationId;
 var originalViolationData = null; // put next to editViolationId
+let existingEvaluationFiles = [];
 
 quarryViolation.getCurrentUserConfiguration = () => {
   let UserId = _spPageContextInfo.userId;
@@ -484,6 +485,11 @@ quarryViolation.formActions = () => {
   if (urlParams.get("taskId") !== null) {
     $("#oldFilesBox").show();
   }
+  if (urlParams.get("isViolationEdit") === "true") {
+    $(".reconciliationDateBox").show();
+    // Future-only is not enforced for the existing value, matching the petition flow
+    functions.inputDateFormat(".reconciliationDate", "today", "", "dd/mm/yyyy");
+  }
 
   functions.inputDateFormat(
     ".inputDate",
@@ -693,8 +699,11 @@ quarryViolation.formActions = () => {
     }
   });
   $("#cancelQuarryViolation").on("click", (e) => {
-    window.location.href =
-      "/ViolationsRecorder/Pages/Registered-Violations.aspx";
+    const redirectUrl = isViolationEdit ?
+      "/PetitionsOfficer/Pages/PetitionsLog.aspx"
+      : "/ViolationsRecorder/Pages/Registered-Violations.aspx";
+
+    window.location.href = redirectUrl
   });
 
   let filesExtension = [
@@ -907,11 +916,10 @@ quarryViolation.validateForm = (e) => {
             ) {
               if (otherViolationDetails != false) {
                 let isOldFilesRequired = $("#oldFilesBox").is(":visible");
-                let attachedOldFiles = $("#attachOldFiles")[0]?.files || [];
 
-                if (isOldFilesRequired && attachedOldFiles.length === 0) {
+                if (isOldFilesRequired && !quarryViolation.hasOldEvaluationForm()) {
                   functions.warningAlert(
-                    "من فضلك قم بإرفاق الملفات القديمة",
+                    "من فضلك قم بإرفاق نموذج التقييم السابق",
                     "#attachOldFiles"
                   );
                   return;
@@ -1026,11 +1034,14 @@ quarryViolation.submitNewViolation = (e, ViolationData) => {
 quarryViolation.uploadAttachment = (NewViolationID, ListName) => {
   $(".overlay").addClass("active");
 
-  let Data = new FormData();
+  const isEdit = urlParams.get("taskId") !== null;
+  const isViolationEdit = urlParams.get("isViolationEdit") === "true";
+  const petitionId = urlParams.get("petitionId");
 
+  let Data = new FormData();
   Data.append("itemId", NewViolationID);
   Data.append("listName", ListName);
-  Data.append("Method", urlParams.get("taskId") !== null ? "Edit" : "");
+  Data.append("Method", isEdit ? "Edit" : "");
 
   let fileIndex = 0;
   const P = functions.ATTACHMENT_PREFIX;
@@ -1038,7 +1049,6 @@ quarryViolation.uploadAttachment = (NewViolationID, ListName) => {
   const appendFiles = (selector, prefix) => {
     const files = $(selector)[0]?.files || [];
     for (let i = 0; i < files.length; i++) {
-      // 3rd argument = the file name the server will store
       Data.append(`file${fileIndex}`, files[i], prefix + files[i].name);
       fileIndex++;
     }
@@ -1046,10 +1056,14 @@ quarryViolation.uploadAttachment = (NewViolationID, ListName) => {
 
   appendFiles("#attachViolationFiles", P.original);
   appendFiles("#attachViolationReportFile", P.report);
-  // Old files - only available during edit
-  if (urlParams.get("taskId") !== null) {
-    appendFiles("#attachOldFiles", P.old);
-  }
+
+  const redirectUrl = isViolationEdit ?
+    "/PetitionsOfficer/Pages/PetitionsLog.aspx"
+    : "/ViolationsRecorder/Pages/Registered-Violations.aspx";
+
+  const successMessage = isEdit
+    ? "تم قبول الإلتماس وتعديل المخالفة بنجاح"
+    : "تم إضافة مخالفة محجر جديدة بنجاح";
 
   $.ajax({
     type: "POST",
@@ -1057,27 +1071,38 @@ quarryViolation.uploadAttachment = (NewViolationID, ListName) => {
     processData: false,
     contentType: false,
     data: Data,
-
-    success: (data) => {
+  })
+    .then(() =>
+      isEdit
+        ? quarryViolation.uploadEvaluationFiles(NewViolationID).catch((err) => {
+          console.log(err?.responseText || err);
+          throw { evaluationFailed: true };
+        })
+        : null
+    )
+    .then(() =>
+      isViolationEdit && petitionId
+        ? functions.updatePetitionStatusAfterEdit(petitionId, NewViolationID).catch((err) => {
+          console.log(err);
+          throw { petitionFailed: true };
+        })
+        : null
+    )
+    .then(() => {
       $(".overlay").removeClass("active");
-
-      let redirectUrl = "/ViolationsRecorder/Pages/Registered-Violations.aspx";
-
-      functions.sucessAlert(
-        urlParams.get("taskId")
-          ? "تم تعديل مخالفة محجر بنجاح"
-          : "تم إضافة مخالفة محجر جديدة بنجاح",
-        false,
-        redirectUrl
-      );
-    },
-
-    error: (err) => {
-      functions.warningAlert("خطأ في إرسال البيانات لقاعدة البيانات");
+      functions.sucessAlert(successMessage, false, redirectUrl);
+    })
+    .catch((err) => {
       $(".overlay").removeClass("active");
-      console.log(err.responseText);
-    },
-  });
+      if (err?.evaluationFailed) {
+        functions.warningAlert("تم حفظ المخالفة ولكن حدث خطأ أثناء رفع نموذج التقييم السابق");
+      } else if (err?.petitionFailed) {
+        functions.warningAlert("تم حفظ المخالفة ولكن لم يتم تحديث حالة الالتماس");
+      } else {
+        functions.warningAlert("خطأ في إرسال البيانات لقاعدة البيانات");
+        console.log(err?.responseText || err);
+      }
+    });
 };
 quarryViolation.GetCoordinates = () => {
   var Rows = $("#coordinatesTable tr:not(:first-child)");
@@ -1367,7 +1392,7 @@ quarryViolation.editViolation = () => {
         // 🔹 chain on the returned promise instead of firing-and-forgetting
         return functions
           .commonEditData(violationData, data.d.ViolationId, 4)
-          .then(() => {
+          .then(async () => {
             $("#violatorMobileNumber").val(violationData.MobileNumber || "");
 
             $("#BonesCount").val(violationData.BonsNumber).trigger("change");
@@ -1388,6 +1413,18 @@ quarryViolation.editViolation = () => {
             $("#distanceToNearQuarry").val(violationData.DistanceToNearestQuarry);
             $("#NearestQuarryNumber").val(violationData.NearestQuarryCode);
             $("#s4-workspace").scrollTop(0, 0);
+
+            if (urlParams.get("isViolationEdit") === "true") {
+              // ReconciliationExpiredDate lives on the task, not on the violation
+              $("#ReconciliationExpiredDate").val(
+                data.d.ReconciliationExpiredDate
+                  ? moment(data.d.ReconciliationExpiredDate).format("DD/MM/YYYY")
+                  : ""
+              );
+            }
+
+            // Load old evaluation file names for the old-files box
+            await quarryViolation.loadEvaluationFiles(editViolationId);
 
             if (urlParams.get("isViolationEdit") === "true") {
               quarryViolation.captureOriginalData();
@@ -1416,6 +1453,11 @@ const withSilentAlerts = (fn) => {
 // Builds the full payload (edit flow only)
 quarryViolation.buildViolationEditData = (sections, sectorMembers, isCalculateByTon) => {
   const { violator, violation, dimensions, other } = sections;
+
+  const reconciliationInput = $("#ReconciliationExpiredDate").val();
+  const reconciliationExpiredDate = reconciliationInput
+    ? moment(reconciliationInput, "DD/MM/YYYY").format("MM-DD-YYYY")
+    : "";
 
   let violationDate, violationTime;
   if (violation && violation.violationDate) {
@@ -1463,6 +1505,7 @@ quarryViolation.buildViolationEditData = (sections, sectorMembers, isCalculateBy
     CommiteeMember: other?.membersNamesText ? other.membersNamesText : "-",
     SectorMembers: sectorMembers,
     Sector: 0,
+    ReconciliationExpiredDate: reconciliationExpiredDate,
   };
 
   if (isCalculateByTon) {
@@ -1536,9 +1579,10 @@ quarryViolation.validateViolationEditForm = (e) => {
   if (!sections.other) return;
 
   let isOldFilesRequired = $("#oldFilesBox").is(":visible");
-  let attachedOldFiles = $("#attachOldFiles")[0]?.files || [];
-  if (isOldFilesRequired && attachedOldFiles.length === 0) {
-    functions.warningAlert("من فضلك قم بإرفاق الملفات القديمة", "#attachOldFiles");
+  if (isOldFilesRequired && !quarryViolation.hasOldEvaluationForm()) {
+    functions.warningAlert(
+      "من فضلك قم بإرفاق نموذج التقييم السابق",
+      "#attachOldFiles");
     return;
   }
 
@@ -1600,5 +1644,73 @@ quarryViolation.getPreviousViolationsCount = () => {
     }
   });
 };
+quarryViolation.hasOldEvaluationForm = () => {
+  const newFiles = $("#attachOldFiles")[0]?.files || [];
+  return newFiles.length > 0 || existingEvaluationFiles.length > 0;
+};
+// Upload only the newly selected old files to the evaluation log
+quarryViolation.uploadEvaluationFiles = (violationId) => {
+  const files = $("#attachOldFiles")[0]?.files || [];
+  if (files.length === 0) return Promise.resolve();
+
+  const Data = new FormData();
+  Data.append("Method", "AddEvaluationFile");
+  Data.append("violationId", violationId);
+  for (let i = 0; i < files.length; i++) {
+    Data.append(`file${i}`, files[i], files[i].name);
+  }
+
+  return $.ajax({
+    type: "POST",
+    url: "/_layouts/15/Uranium.Violations.SharePoint/Attachments.aspx/AddEvaluationFile",
+    processData: false,
+    contentType: false,
+    data: Data,
+  });
+};
+
+// Draw the names of files that are already stored (read-only)
+quarryViolation.renderExistingEvaluationFiles = () => {
+  const $box = $("#existingEvaluationFiles");
+  $box.empty();
+
+  existingEvaluationFiles.forEach((file) => {
+    const $row = $(`
+      <div class="file">
+        <a class="fileName" target="_blank" rel="noopener noreferrer"></a>
+        <span class="deleteFile">
+          <i class="fa-sharp fa-solid fa-x"></i>
+        </span>
+      </div>
+    `);
+
+    $row.find(".fileName").attr("href", file.Url).text(file.Name);
+
+    $box.append($row);
+  });
+
+  $box.toggle(existingEvaluationFiles.length > 0);
+};
+
+// Load the old evaluation file names for this violation
+quarryViolation.loadEvaluationFiles = (violationId) => {
+  return $.ajax({
+    type: "POST",
+    url: "/_layouts/15/Uranium.Violations.SharePoint/Attachments.aspx/GetEvaluationFiles",
+    contentType: "application/json; charset=utf-8",
+    dataType: "json",
+    data: JSON.stringify({ id: Number(violationId) }),
+  })
+    .then((data) => {
+      existingEvaluationFiles = Array.isArray(data?.d) ? data.d : [];
+      quarryViolation.renderExistingEvaluationFiles();
+    })
+    .catch((err) => {
+      console.error("Error loading evaluation files:", err);
+      existingEvaluationFiles = [];
+      quarryViolation.renderExistingEvaluationFiles();
+    });
+};
+
 
 export default quarryViolation;

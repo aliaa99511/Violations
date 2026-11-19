@@ -35,7 +35,6 @@ const counterMapping = {
   "/ViolationsBranch/Pages/ExternalViolationLog.aspx": { type: "Violations", key: "ExternalReviewed" },
 
   // Petitions
-  "/ViolationsBranch/Pages/PendingPetitionsLog.aspx": { type: "Petitions", key: "التماس قيد الإنتظار" },
   "/ViolationsBranch/Pages/PetitionsLog.aspx": {
     type: "Petitions",
     keys: ["التماس مرفوض", "قبول مع التعديل", "قبول وإلغاء المخالفة", "التماس مقبول"]
@@ -60,7 +59,6 @@ const counterMapping = {
     keys: ["Vehicle", "Equipment"]  // Changed from key to keys with both
   },
 
-  "/CertificationOfficer/Pages/Pending-Petitions.aspx": { type: "Petitions", key: "التماس قيد الإنتظار" },
   "/CertificationOfficer/Pages/PetitionsLog.aspx": {
     type: "Petitions",
     keys: ["التماس مرفوض", "قبول مع التعديل", "قبول وإلغاء المخالفة", "التماس مقبول"]
@@ -81,10 +79,24 @@ const counterMapping = {
   "/ViolationsRecorder/Pages/QuarryViolationReferralRecords.aspx": { type: "Cases", key: "Quarry" },
   "/ViolationsRecorder/Pages/CarViolationReferralRecords.aspx": {
     type: "Cases",
-    keys: ["Vehicle", "Equipment"]  // Changed from key to keys with both
+    keys: ["Vehicle", "Equipment"],  // Changed from key to keys with both
+
+    "/ViolationsRecorder/Pages/PetitionsLog.aspx": {
+      type: "Petitions",
+      keys: ["التماس مرفوض", "قبول مع التعديل", "قبول وإلغاء المخالفة", "التماس مقبول"]
+    },
   },
 
+  // ==========================
+  // Petitions Officer
+  // ==========================
 
+  // Petitions
+  "/PetitionsOfficer/Pages/PendingPetitionsLog.aspx": { type: "Petitions", key: "التماس قيد الإنتظار" },
+  "/PetitionsOfficer/Pages/PetitionsLog.aspx": {
+    type: "Petitions",
+    keys: ["التماس مرفوض", "قبول مع التعديل", "قبول وإلغاء المخالفة", "التماس مقبول"]
+  },
 };
 
 // ==========================

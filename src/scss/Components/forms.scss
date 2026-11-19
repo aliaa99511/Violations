@@ -1,13 +1,16 @@
 .formContent {
   .formBox {
     margin-bottom: 1.5rem;
+
     .formBoxHeader {
       margin-bottom: 1.5rem;
+
       .formBoxTitle {
         @include flexRow;
         font-size: 16px;
         font-family: CairoSB;
         color: $customBlue;
+
         .formNumber {
           width: 20px;
           height: 20px;
@@ -21,18 +24,22 @@
         }
       }
     }
+
     .formElements {
       margin: 0 1.5rem;
       padding-bottom: 0.3rem;
       border-bottom: 1px solid #ccd6e3;
+
       .customFormGroup {
         margin-bottom: 1.25rem;
       }
+
       .toolsBox {
         display: flex;
         flex-direction: row;
         align-items: flex-start;
         flex-wrap: wrap;
+
         // .tool {
         //     width: calc(100% / 4);
         //     margin-bottom: 1rem;
@@ -42,6 +49,7 @@
           height: 56px;
           cursor: pointer;
           display: none;
+
           .addNewToolText {
             @include flexRow;
             justify-content: center;
@@ -49,11 +57,13 @@
             height: 100%;
             border: 2px dashed $customBlue;
             border-radius: 5px;
+
             i {
               font-size: 16px;
               color: $customBlue;
               margin-inline-end: 0.4rem;
             }
+
             span {
               color: $customBlue;
               font-size: 13px;
@@ -61,6 +71,7 @@
             }
           }
         }
+
         .noEquipments {
           @include flexRow;
           justify-content: center;
@@ -72,13 +83,16 @@
           border-radius: 5px;
         }
       }
+
       .addToolHiddenBox {
         display: none;
         margin-bottom: 1.25rem;
       }
+
       .feildInfoBox {
         @include flexRow;
         justify-content: space-between;
+
         .metaDataSpan {
           color: #707070;
           font-size: 13px;
@@ -86,6 +100,7 @@
           margin-bottom: 0.5rem;
         }
       }
+
       .fileBox {
         @include flexCol;
         height: 115px;
@@ -94,12 +109,15 @@
         border: 2px dashed #707070;
         padding: 1.5rem 1rem;
         position: relative;
+
         .inputFileBox {
           @include flexCol;
           align-items: center;
+
           img {
             margin-bottom: 0.5rem;
           }
+
           .dragDropFilesLabel {
             // @include flexRow;
             text-align: center;
@@ -107,12 +125,14 @@
             font-family: CairoSB;
             color: #0c0c0c;
             margin-bottom: 0 !important;
+
             a {
               text-decoration: none;
               margin-inline-start: 0.25rem;
               color: #3c62c4;
             }
           }
+
           .attachFilesInput {
             position: absolute;
             top: 0;
@@ -123,38 +143,75 @@
           }
         }
       }
-      .dropFilesArea {
-        @include flexCol;
-        border-radius: 4px;
-        background-color: #fafafa;
-        border: 2px dashed #707070;
-        padding: 0.75rem;
-        margin-top: 1rem;
-        display: none;
-        opacity: 1 !important;
-        max-height: 175px;
-        overflow: auto;
-        &::-webkit-scrollbar {
-          width: 6px;
-          background: transparent;
+
+      .dropFilesArea,
+      .existingEvaluationFilesBox {
+        .file {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 0.75rem;
+          padding: 0.5rem 0.75rem;
+          margin-bottom: 0.5rem;
+          background-color: #fff;
+          border: 1px solid #ddd;
+          border-radius: 4px;
+
+          &:last-child {
+            margin-bottom: 0;
+          }
         }
-        &::-webkit-scrollbar-thumb {
-          background: $customBlue;
-          border-radius: 5px;
-          border: 1px solid $customBlue;
+
+        .fileName {
+          flex: 1;
+          min-width: 0;
+          overflow-wrap: anywhere;
+          color: #015642;
+          text-decoration: underline;
+        }
+
+        .deleteFile {
+          flex-shrink: 0;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          width: 28px;
+          height: 28px;
+          padding: 0;
+          color: #dc3545;
+          background: transparent;
+          border: 1px solid #dc3545;
+          border-radius: 4px;
+          cursor: pointer;
+
+          &:hover {
+            color: #fff;
+            background-color: #dc3545;
+          }
         }
       }
+
+      // Existing files: no upload-area dotted border
+      .existingEvaluationFilesBox {
+        border: none;
+        background: transparent;
+        padding: 0;
+      }
+
       .ShowOnMapBox {
         display: none;
+
         .coordinatesMap {
           height: 300px;
           border: 2px solid #efefef;
           border-radius: 5px;
+
           .embed-container {
             position: relative;
             padding-bottom: 0;
             height: 100%;
             max-width: 100%;
+
             & iframe,
             & object {
               position: absolute;
@@ -163,6 +220,7 @@
               width: 100%;
               height: 100%;
             }
+
             small {
               position: absolute;
               z-index: 40;
@@ -172,25 +230,31 @@
           }
         }
       }
+
       .tractorBox,
       .BonesBox {
         display: none;
       }
+
       .formSectionLabel {
         @include flexRow;
         font-size: 14px;
         font-family: CairoB;
         margin: 1rem 0;
+
         &.greenSectionLabel {
           color: $customGreen;
         }
+
         &.blueSectionLabel {
           color: $customBlue;
         }
       }
     }
+
     &:last-child {
       margin-bottom: 0;
+
       .formElements {
         border-bottom: none;
       }

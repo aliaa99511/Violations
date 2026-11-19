@@ -423,19 +423,22 @@
   box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
 }
 
-///// track-history-modal ///
-.track-history-modal .modal-body {
+///// track-history-modal , evaluation-history-modal ///
+.track-history-modal .modal-body,
+.evaluation-history-modal .modal-body {
   max-height: 80vh;
   overflow-y: auto;
   padding: 1rem;
 }
 
-.track-history-table-node {
+.track-history-table-node,
+.evaluation-history-table-node {
   width: 100%;
   overflow-x: auto;
 }
 
-.track-history-table {
+.track-history-table,
+.evaluation-history-table {
   width: 100% !important;
 }
 

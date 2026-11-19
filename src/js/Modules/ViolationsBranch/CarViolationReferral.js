@@ -197,29 +197,7 @@ vehicleViolationReferral.exportToExcel = () => {
             render: (record) =>
                 functions.getCaseStatus(record.Status) || "-",
         },
-        {
-            title: "الإحداثيات",
-            exportOnly: true,
-            render: (record) => {
-                const coordinates = record.Coordinates;
-
-                if (!coordinates) return "-";
-
-                try {
-                    const coordsArray = JSON.parse(coordinates);
-
-                    if (Array.isArray(coordsArray)) {
-                        return coordsArray
-                            .map(coord => Array.isArray(coord) ? coord.join(" , ") : coord)
-                            .join(" | ");
-                    }
-
-                    return coordinates;
-                } catch {
-                    return coordinates;
-                }
-            }
-        }
+        { title: "الإحداثيات", coordinates: true },
     ];
 
     functions.exportCasesFromAPI({
@@ -244,7 +222,6 @@ vehicleViolationReferral.VehicleViolationReferralTable = (Referrals, destroyTabl
 
     if (Referrals && Referrals.length > 0) {
         Referrals.forEach((referral) => {
-            let violation = referral?.Violation;
             let refferedDate = functions.getFormatedDate(referral.RefferedDate);
             let violationStatus = referral.ViolationStatus || "";
             let caseStatus = referral.Status || "";
@@ -253,15 +230,12 @@ vehicleViolationReferral.VehicleViolationReferralTable = (Referrals, destroyTabl
             let vehicleRegistrationNumber = referral.VehicleRegistrationNumber || "";
             let courtCaseNumber = referral.CourtCaseNumber || "";
 
-            // Determine which actions to show based on business rules
             let hasAddRegistrationNumberAction = false;
-            // let hasAddCourtCaseNumberAction = false;
             let hasPayCaseAction = false;
             let hasPayCaseAfterEditAction = false;
             let hasSaveAction = false;
             let canShowDetailsOnly = false;
 
-            // Business Rule 1: Add Registration Number
             if (!vehicleRegistrationNumber &&
                 !courtCaseNumber &&
                 caseStatus == "قيد انتظار رقم القيد" &&
@@ -269,43 +243,28 @@ vehicleViolationReferral.VehicleViolationReferralTable = (Referrals, destroyTabl
                 hasAddRegistrationNumberAction = true;
             }
 
-            // // Business Rule 2: Add Court Case Number
-            // if (vehicleRegistrationNumber &&
-            //     !courtCaseNumber &&
-            //     caseStatus == "قيد انتظار الرقم القضائي" &&
-            //     violationStatus == "UnderReview") {
-            //     hasAddCourtCaseNumberAction = true;
-            // }
-
-            // Business Rule 4: Pay Case (تسديد القضية)
             if (
-                // vehicleRegistrationNumber &&
                 (caseStatus == "قيد انتظار رقم القيد" || caseStatus == "قيد انتظار الرقم القضائي") &&
                 violationStatus == "UnderReview") {
                 hasPayCaseAction = true;
             }
 
-            // Business Rule 4: Pay Case After Edit (سداد على الإحالة)
             if (
-                // vehicleRegistrationNumber &&
                 caseStatus == "قيد انتظار الرقم القضائي" &&
                 violationStatus == "UnderReview") {
                 hasPayCaseAfterEditAction = true;
             }
 
-            // Business Rule 5: Save Action (حفظ القضية)
             if (
                 (caseStatus == "قيد انتظار رقم القيد" || caseStatus == "قيد انتظار الرقم القضائي") &&
                 violationStatus !== "Paid") {
                 hasSaveAction = true;
             }
 
-            // Business Rule 6: Paid - show details only
             if (violationStatus == "Paid") {
                 canShowDetailsOnly = true;
             }
 
-            // Build actions menu HTML without data attributes
             let actionsMenuHTML = '';
             if (canShowDetailsOnly) {
                 actionsMenuHTML = `
@@ -323,11 +282,6 @@ vehicleViolationReferral.VehicleViolationReferralTable = (Referrals, destroyTabl
                     actionsMenuHTML += `
                     <li><a href="#" class="addRegistrationNumberAction">إضافة رقم القيد</a></li>`;
                 }
-
-                // if (hasAddCourtCaseNumberAction) {
-                //     actionsMenuHTML += `
-                //     <li><a href="#" class="addCourtCaseNumberAction">إضافة الرقم القضائي</a></li>`;
-                // }
 
                 if (hasPayCaseAction) {
                     actionsMenuHTML += `
@@ -349,7 +303,6 @@ vehicleViolationReferral.VehicleViolationReferralTable = (Referrals, destroyTabl
 
             let displayViolationStatus = functions.getVehicleViolationStatus(violationStatus);
 
-            // Prepare all data attributes in a single object
             const violationCodeData = {
                 'referralid': referral.ID,
                 'violationid': referral.ViolationId,
@@ -361,22 +314,19 @@ vehicleViolationReferral.VehicleViolationReferralTable = (Referrals, destroyTabl
                 'violationcode': referral.ViolationCode,
                 'oldprice': referral?.TotalOldPrice || 0,
                 'newprice': referral?.TotalPriceDue || 0,
-                'referredamount': referral?.ReferredAmount,
+                'referredamount': referral?.ReferredAmount ?? 0,
                 'offendertype': referral?.OffenderType,
                 'casenumber': caseNumber,
                 'violationstatus': violationStatus,
                 'hasaddregistrationnumber': hasAddRegistrationNumberAction,
-                // 'hasaddcourtcasenumber': hasAddCourtCaseNumberAction,
                 'haspaycaseafteredit': hasPayCaseAfterEditAction,
                 'haspaycase': hasPayCaseAction,
                 'hassavecase': hasSaveAction,
                 'canshowdetailsonly': canShowDetailsOnly,
                 'totalprice': referral?.TotalPriceDue || 0,
                 'totaloldprice': referral?.TotalOldPrice || 0,
-                'courtcasenumber': courtCaseNumber
             };
 
-            // Convert data object to data-attributes string
             const dataAttributes = Object.entries(violationCodeData)
                 .map(([key, value]) => `data-${key.toLowerCase()}="${value}"`)
                 .join(' ');
@@ -403,8 +353,6 @@ vehicleViolationReferral.VehicleViolationReferralTable = (Referrals, destroyTabl
                 `<div class="referralStatus">${functions.getCaseStatus(caseStatus)}</div>`,
                 `<div class="referralAttachments caseAttachments"><a href="#!" style="color: black;">المرفقات</a></div>`,
             ]);
-            // `<div class="referralStatus">${vehicleViolationReferral.getCaseStatus(caseStatus)}</div>`,
-
         });
     }
 
@@ -429,7 +377,6 @@ vehicleViolationReferral.VehicleViolationReferralTable = (Referrals, destroyTabl
         "سجل إحالات مخالفات المركبات"
     );
 
-    // 🔹 create column selector
     functions.createColumnSelector(Table, "#columnSelector", 'green');
 
     vehicleViolationReferral.destroyTable = true;
@@ -438,11 +385,6 @@ vehicleViolationReferral.VehicleViolationReferralTable = (Referrals, destroyTabl
         vehicleViolationReferral.exportToExcel();
     });
 
-    // $(".ellipsisButton").on("click", (e) => {
-    //     $(".hiddenListBox").hide(300);
-    //     $(e.currentTarget).siblings(".hiddenListBox").toggle(300);
-    // });
-
     let referralsLog = Table.rows().nodes().to$();
 
     $.each(referralsLog, (index, record) => {
@@ -450,9 +392,7 @@ vehicleViolationReferral.VehicleViolationReferralTable = (Referrals, destroyTabl
         let violationCodeElement = jQueryRecord.find(".violationCode");
         let referralID = violationCodeElement.data("referralid");
         let referralNumber = violationCodeElement.data("referralnumber");
-        let hiddenListBox = jQueryRecord.find(".controls").children(".hiddenListBox");
 
-        // Toggle menu
         jQueryRecord.find(".controls").children(".ellipsisButton").on("click", (e) => {
             e.stopPropagation();
             const currentBox = $(e.currentTarget).siblings(".hiddenListBox");
@@ -460,14 +400,12 @@ vehicleViolationReferral.VehicleViolationReferralTable = (Referrals, destroyTabl
             currentBox.stop(true, true).toggle(300);
         });
 
-        // Attachments click handler
         jQueryRecord.find(".referralAttachments").find("a").off('click').on('click', function (e) {
             e.preventDefault();
             $(".overlay").addClass("active");
             vehicleViolationReferral.getReferralAttachmentsByReferralId(referralID, referralNumber);
         });
 
-        // Details click handler
         jQueryRecord.find(".itemDetails").off('click').on('click', function (e) {
             e.preventDefault();
             e.stopPropagation();
@@ -475,134 +413,73 @@ vehicleViolationReferral.VehicleViolationReferralTable = (Referrals, destroyTabl
             vehicleViolationReferral.FindReferralById(referralID);
             $(".hiddenListBox").hide(300);
         });
-
-        // if (
-        //     referralsLog.length > 4 &&
-        //     hiddenListBox.height() > 110 &&
-        //     jQueryRecord.is(":nth-last-child(-n + 4)")
-        // ) {
-        //     hiddenListBox.addClass("toTopDDL");
-        // }
-
     });
 
-    // Add Registration Number Action
     $(document).off('click', '.addRegistrationNumberAction').on('click', '.addRegistrationNumberAction', function (e) {
         e.preventDefault();
         e.stopPropagation();
 
-        let $row = $(this).closest('tr');
-        let $violationCode = $row.find('.violationCode');
+        let $violationCode = $(this).closest('tr').find('.violationCode');
 
-        let referralId = $violationCode.data('referralid');
-        let violationId = $violationCode.data('violationid');
-        let taskId = $violationCode.data('taskid');
-        let violationCode = $violationCode.data('violationcode');
-        let totalPrice = $violationCode.data('totalprice');
+        vehicleViolationReferral.addRegistrationNumberPopup(
+            $violationCode.data('referralid'),
+            $violationCode.data('violationid'),
+            $violationCode.data('violationcode'),
+            $violationCode.data('taskid'),
+            $violationCode.data('referredamount')
+        );
 
-        vehicleViolationReferral.addRegistrationNumberPopup(referralId, violationId, violationCode, taskId, totalPrice);
         $(".hiddenListBox").hide(300);
     });
 
-    // // Add Court Case Number Action
-    // $(document).off('click', '.addCourtCaseNumberAction').on('click', '.addCourtCaseNumberAction', function (e) {
-    //     e.preventDefault();
-    //     e.stopPropagation();
-
-    //     let $row = $(this).closest('tr');
-    //     let $violationCode = $row.find('.violationCode');
-
-    //     let referralId = $violationCode.data('referralid');
-    //     let violationId = $violationCode.data('violationid');
-    //     let taskId = $violationCode.data('taskid');
-    //     let violationCode = $violationCode.data('violationcode');
-
-    //     vehicleViolationReferral.addCourtCaseNumberPopup(referralId, violationId, violationCode, taskId);
-    //     $(".hiddenListBox").hide(300);
-    // });
-
-    // Pay Case Action (تسديد القضية)
     $(document).off('click', '.payCaseAction').on('click', '.payCaseAction', function (e) {
         e.preventDefault();
         e.stopPropagation();
 
-        let $row = $(this).closest('tr');
-        let $violationCode = $row.find('.violationCode');
-
-        let referralId = $violationCode.data('referralid');
-        let violationId = $violationCode.data('violationid');
-        let taskId = $violationCode.data('taskid');
-        let violationCode = $violationCode.data('violationcode');
-        let courtCaseNumber = $violationCode.data('courtcasenumber');
-        let totalPrice = $violationCode.data('totalprice');
-        let oldPrice = $violationCode.data('oldprice');
+        let $violationCode = $(this).closest('tr').find('.violationCode');
 
         vehicleViolationReferral.payCasePopup(
-            referralId,
-            violationId,
-            taskId,
-            violationCode,
-            courtCaseNumber,
-            totalPrice
+            $violationCode.data('referralid'),
+            $violationCode.data('violationid'),
+            $violationCode.data('taskid'),
+            $violationCode.data('violationcode'),
+            $violationCode.data('courtcasenumber'),
+            $violationCode.data('totalprice'),
+            $violationCode.data('referredamount')
         );
         $(".hiddenListBox").hide(300);
     });
 
-    // Pay Case After Edit Action
     $(document).off('click', '.payCaseAfterEditAction').on('click', '.payCaseAfterEditAction', function (e) {
         e.preventDefault();
         e.stopPropagation();
 
-        let $row = $(this).closest('tr');
-        let $violationCode = $row.find('.violationCode');
-
-        let referralId = $violationCode.data('referralid');
-        let violationId = $violationCode.data('violationid');
-        let taskId = $violationCode.data('taskid');
-        let referralNumber = $violationCode.data('referralnumber');
-        let violationCode = $violationCode.data('violationcode');
-        let totalPrice = $violationCode.data('totalprice');
-        // let oldPrice = $violationCode.data('oldprice');
-        let referredAmount = $violationCode.data('referredamount');
+        let $violationCode = $(this).closest('tr').find('.violationCode');
 
         vehicleViolationReferral.payCaseAfterEditPopup(
-            referralId,
-            violationId,
-            taskId,
-            referralNumber,
-            violationCode,
-            totalPrice,
-            // oldPrice,
-            referredAmount
+            $violationCode.data('referralid'),
+            $violationCode.data('violationid'),
+            $violationCode.data('taskid'),
+            $violationCode.data('violationcode'),
+            $violationCode.data('totalprice'),
+            $violationCode.data('referredamount')
         );
-
         $(".hiddenListBox").hide(300);
     });
 
-    // Save Case Action Handler
     $(document).off('click', '.saveCaseAction').on('click', '.saveCaseAction', function (e) {
         e.preventDefault();
         e.stopPropagation();
 
-        let $row = $(this).closest('tr');
-        let $violationCode = $row.find('.violationCode');
-
-        let referralId = $violationCode.data('referralid');
-        let violationId = $violationCode.data('violationid');
-        let taskId = $violationCode.data('taskid');
-        let violationCode = $violationCode.data('violationcode');
-        let referralNumber = $violationCode.data('referralnumber');
-        let vehicleRegistrationNumber = $violationCode.data('vehicleregistrationnumber');
-        let courtCaseNumber = $violationCode.data('courtcasenumber');
-        let caseStatus = $violationCode.data('referralstatus');
+        let $violationCode = $(this).closest('tr').find('.violationCode');
 
         vehicleViolationReferral.saveCaseAndCancelViolationPopup(
-            referralId,
-            violationId,
-            taskId,
-            referralNumber,
-            violationCode,
-            caseStatus
+            $violationCode.data('referralid'),
+            $violationCode.data('violationid'),
+            $violationCode.data('taskid'),
+            $violationCode.data('referralnumber'),
+            $violationCode.data('violationcode'),
+            $violationCode.data('referralstatus')
         );
 
         $(".hiddenListBox").hide(300);
@@ -611,203 +488,271 @@ vehicleViolationReferral.VehicleViolationReferralTable = (Referrals, destroyTabl
     functions.hideTargetElement(".controls", ".hiddenListBox");
 };
 
-vehicleViolationReferral.addRegistrationNumberPopup = (ReferralID, ViolationID, ViolationCode, TaskID, TotalPrice) => {
-    $(".overlay").removeClass("active");
-    let popupHtml = `
-        <div class="popupHeader" style="display: flex; justify-content: space-between;">
-            <div class="violationsCode"> 
-                <p>إضافة رقم القيد للمخالفة رقم (${ViolationCode})</p>
+vehicleViolationReferral.addRegistrationNumberPopup = (
+    ReferralID,
+    ViolationID,
+    ViolationCode,
+    TaskID,
+    ReferredAmount
+) => {
+
+    let popupState = {
+        registrationNumber: "",
+        registrationComments: "",
+        referredAmount: ReferredAmount ?? 0,
+        attachments: null,
+        filesExtension: [
+            "gif", "svg", "jpg", "jpeg", "png",
+            "doc", "docx", "pdf", "xls", "xlsx", "pptx"
+        ]
+    };
+
+    renderPopup();
+    setupEventHandlers();
+
+    function renderPopup() {
+        let popupHtml = `
+            <div class="popupHeader" style="display: flex; justify-content: space-between;">
+                <div class="violationsCode">
+                    <p>إضافة رقم القيد للمخالفة رقم (${ViolationCode})</p>
+                </div>
+                <div class="btnStyle cancelBtn popupBtn closeRegistrationNumberPopup"
+                    id="closeRegistrationNumberPopup"
+                    style="color: #fff; cursor: pointer;"
+                    data-dismiss="modal" aria-label="Close">
+                    <i class="fa-solid fa-x"></i>
+                </div>
             </div>
-            <div class="btnStyle cancelBtn popupBtn closeRegistrationNumberPopup" id="closeRegistrationNumberPopup" style="color: #fff; cursor: pointer;" data-dismiss="modal" aria-label="Close">
-                <i class="fa-solid fa-x"></i>
-            </div>
-        </div>
-        <div class="popupBody">
-            <div class="popupForm detailsPopupForm" id="detailsPopupForm">
-                <div class="formContent">
-                    <div class="formBox">
-                        <div class="formElements">
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="form-group customFormGroup">
-                                        <label for="registrationNumber" class="customLabel">رقم القيد</label>
-                                        <input class="form-control customInput registrationNumber" id="registrationNumber" type="text" placeholder="أدخل رقم القيد">
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="form-group customFormGroup">
-                                        <label for="referredAmount" class="customLabel">مبلغ الحظر</label>
-                                        <input class="form-control customInput referredAmount" id="referredAmount" type="text" placeholder="أدخل مبلغ الحظر" value="${functions.getDisplayValue(TotalPrice, true)}"  value="${functions.getDisplayValue(TotalPrice, true)}" disabled>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="form-group customFormGroup">
-                                        <label for="registrationComments" class="customLabel">ملاحظات</label>
-                                        <textarea class="form-control customTextArea registrationComments" id="registrationComments" rows="3" placeholder="أدخل الملاحظات"></textarea>
-                                    </div>
-                                </div>
-                                <div class="col-12">
-                                    <div class="form-group customFormGroup">
-                                        <label for="registrationNumberAttach" class="customLabel">إرفاق مستند رقم القيد <span class="required-star">*</span></label>
-                                        <div class="fileBox" id="dropContainer">
-                                            <div class="inputFileBox">
-                                                <img src="/Style Library/MiningViolations/images/fileIcon.svg" alt="File Icon">
-                                                <p class="dragDropFilesLabel">قم بالسحب والإفلات لرفع الملف , أو <a href="#!" class="attachFileLink">استعراض ملفاتي</a></p>
-                                                <input type="file" class="customInput attachFilesInput registrationNumberAttach form-control" id="registrationNumberAttach" accept="image/gif,image/svg,image/jpg,image/jpeg,image/png,.doc,.docx,.pdf,.xls,.xlsx,.pptx" multiple>
-                                            </div>
+
+            <div class="popupBody">
+                <div class="popupForm detailsPopupForm" id="detailsPopupForm">
+                    <div class="formContent">
+                        <div class="formBox">
+                            <div class="formElements">
+                                <div class="row">
+
+                                    <div class="col-md-6">
+                                        <div class="form-group customFormGroup">
+                                            <label for="registrationNumber" class="customLabel">
+                                                رقم القيد
+                                            </label>
+                                            <input class="form-control customInput registrationNumber"
+                                                id="registrationNumber"
+                                                type="text"
+                                                placeholder="أدخل رقم القيد">
                                         </div>
-                                        <div class="dropFilesArea" id="dropFilesArea"></div>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <div class="form-group customFormGroup">
+                                            <label for="referredAmount" class="customLabel">
+                                                مبلغ الحظر
+                                            </label>
+                                            <input class="form-control disabled customInput referredAmount"
+                                                id="referredAmount"
+                                                type="text"
+                                                value="${functions.getDisplayValue(popupState.referredAmount, true)}"
+                                                disabled>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <div class="form-group customFormGroup">
+                                            <label for="registrationComments" class="customLabel">
+                                                ملاحظات
+                                            </label>
+                                            <textarea class="form-control customTextArea registrationComments"
+                                                id="registrationComments"
+                                                rows="3"
+                                                placeholder="أدخل الملاحظات"></textarea>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-12">
+                                        <div class="form-group customFormGroup">
+                                            <label for="registrationNumberAttach" class="customLabel">
+                                                إرفاق مستند رقم القيد
+                                                <span class="required-star">*</span>
+                                            </label>
+
+                                            <div class="fileBox" id="dropContainer">
+                                                <div class="inputFileBox">
+                                                    <img src="/Style Library/MiningViolations/images/fileIcon.svg"
+                                                        alt="File Icon">
+                                                    <p class="dragDropFilesLabel">
+                                                        قم بالسحب والإفلات لرفع الملف , أو
+                                                        <a href="#!" class="attachFileLink">استعراض ملفاتي</a>
+                                                    </p>
+                                                    <input type="file"
+                                                        class="customInput attachFilesInput registrationNumberAttach form-control"
+                                                        id="registrationNumberAttach"
+                                                        accept="image/gif,image/svg,image/jpg,image/jpeg,image/png,.doc,.docx,.pdf,.xls,.xlsx,.pptx"
+                                                        multiple>
+                                                </div>
+                                            </div>
+
+                                            <div class="dropFilesArea" id="dropFilesArea"></div>
+                                        </div>
+                                    </div>
+
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="formButtonsBox">
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="buttonsBox centerButtonsBox">
+                                    <div class="btnStyle confirmBtnGreen popupBtn AddRegistrationNumberBtn"
+                                        id="AddRegistrationNumberBtn">
+                                        تأكيد
+                                    </div>
+                                    <div class="btnStyle cancelBtn popupBtn"
+                                        id="closeRegistrationNumberPopupFooter"
+                                        data-dismiss="modal"
+                                        aria-label="Close">
+                                        إلغاء
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
+
                 </div>
+            </div>`;
 
-                <div class="formButtonsBox">
-                    <div class="row">
-                        <div class="col-12">
-                            <div class="buttonsBox centerButtonsBox">
-                                <div class="btnStyle confirmBtnGreen popupBtn AddRegistrationNumberBtn" id="AddRegistrationNumberBtn">تأكيد</div>
-                                <div class="btnStyle cancelBtn popupBtn" id="closeRegistrationNumberPopupFooter" data-dismiss="modal" aria-label="Close">إلغاء</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+        functions.declarePopup(
+            ["generalPopupStyle", "greenPopup", "editPopup"],
+            popupHtml
+        );
 
-            </div>
-        </div>`;
+        $("#closeRegistrationNumberPopup, #closeRegistrationNumberPopupFooter")
+            .on("click", function () {
+                functions.closePopup();
+            });
+    }
 
-    functions.declarePopup(
-        ["generalPopupStyle", "greenPopup", "editPopup"],
-        popupHtml
-    );
-
-    // Add close button handlers
-    $("#closeRegistrationNumberPopup, #closeRegistrationNumberPopupFooter").on("click", function () {
-        functions.closePopup();
-    });
-
-    let RegistrationNumberInput = $("#registrationNumber").val();
-    let ReferralAmountInput = $("#referredAmount").val();
-    let RegistrationCommentsInput = $("#registrationComments").val();
-    let filesExtension = [
-        "gif", "svg", "jpg", "jpeg", "png",
-        "doc", "docx", "pdf", "xls", "xlsx", "pptx"
-    ];
-    let allAttachments;
-    let countOfFiles;
-    let request = {};
-
-    // File attachment handling
-    $("#registrationNumberAttach").on("change", (e) => {
-        allAttachments = $(e.currentTarget)[0].files;
-        if (allAttachments.length > 0) {
-            $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").show().empty();
-        }
-        for (let i = 0; i < allAttachments.length; i++) {
-            $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").append(`
-                <div class="file">
-                    <p class="fileName">${allAttachments[i].name}</p>
-                    <span class="deleteFile" data-index="${i}"><i class="fa-sharp fa-solid fa-x"></i></span>
-                </div>
-            `);
-        }
-
-        $(".deleteFile").on("click", (event) => {
-            let index = $(event.currentTarget).closest(".file").index();
-            $(event.currentTarget).closest(".file").remove();
-            let fileBuffer = new DataTransfer();
-            for (let i = 0; i < allAttachments.length; i++) {
-                if (index !== i) {
-                    fileBuffer.items.add(allAttachments[i]);
-                }
-            }
-            allAttachments = fileBuffer.files;
-            countOfFiles = allAttachments.length;
-            if (countOfFiles == 0) {
-                $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").hide();
-            }
+    function setupEventHandlers() {
+        $("#registrationNumber").on("input", (e) => {
+            let value = $(e.currentTarget).val();
+            value = value.replace(/[a-zA-Z\u0600-\u06FF]/g, "");
+            $(e.currentTarget).val(value);
+            popupState.registrationNumber = value.trim();
         });
 
-        for (let i = 0; i < allAttachments.length; i++) {
-            let fileSplited = allAttachments[i].name.split(".");
-            let fileExt = fileSplited[fileSplited.length - 1].toLowerCase();
-            if ($.inArray(fileExt, filesExtension) == -1) {
-                functions.warningAlert("من فضلك أدخل الملفات بالمرفقات المسموح بها فقط");
-                $(e.currentTarget).parents(".fileBox").siblings(".dropFilesArea").hide();
-                $(e.currentTarget).val("");
-            }
+        $("#registrationComments").on("keyup", (e) => {
+            popupState.registrationComments = $(e.currentTarget).val().trim();
+        });
+
+        $("#registrationNumberAttach").on("change", handleFileAttachment);
+
+        $(".AddRegistrationNumberBtn").on("click", handleSubmit);
+    }
+
+    function handleFileAttachment(e) {
+        const files = Array.from(e.currentTarget.files);
+        const $dropFilesArea = $(e.currentTarget)
+            .parents(".fileBox")
+            .siblings(".dropFilesArea");
+
+        let invalidFiles = files.some(file => {
+            const fileExt = file.name.split(".").pop().toLowerCase();
+            return !popupState.filesExtension.includes(fileExt);
+        });
+
+        if (invalidFiles) {
+            functions.warningAlert("من فضلك أدخل الملفات بالمرفقات المسموح بها فقط");
+            $(e.currentTarget).val("");
+            $dropFilesArea.hide().empty();
+            popupState.attachments = null;
+            return;
         }
-    });
 
-    // ADDED: Allow only numbers and decimal point in referredAmount
-    $("#referredAmount").on("keypress", (e) => {
-        return functions.isDecimalNumberKey(e);
-    });
+        popupState.attachments = e.currentTarget.files;
 
-    // ADDED: Format the referred amount with commas as the user types
-    $("#referredAmount").on("keyup", (e) => {
-        let rawValue = $(e.currentTarget).val().replace(/\,/g, "");
-
-        // Store the raw value for later use
-        ReferralAmountInput = rawValue;
-
-        // Format with commas for display
-        if (rawValue) {
-            $(e.currentTarget).val(
-                rawValue.replace(/\B(?=(?:\d{3})+(?!\d))/g, ",")
-            );
+        if (files.length > 0) {
+            $dropFilesArea.show().empty();
         }
-    });
-    $("#registrationNumber").on("input", (e) => {
-        let value = $(e.currentTarget).val();
 
-        // Remove English & Arabic letters only, keep numbers and symbols
-        value = value.replace(/[a-zA-Z\u0600-\u06FF]/g, "");
+        files.forEach((file, index) => {
+            $dropFilesArea.append(`
+                <div class="file" data-file-index="${index}">
+                    <p class="fileName">${file.name}</p>
+                    <span class="deleteFile">
+                        <i class="fa-sharp fa-solid fa-x"></i>
+                    </span>
+                </div>
+            `);
+        });
 
-        $(e.currentTarget).val(value);
+        $(".deleteFile").off("click").on("click", handleFileDelete);
+    }
 
-        RegistrationNumberInput = value.trim();
-    });
+    function handleFileDelete(event) {
+        const $fileElement = $(event.currentTarget).closest(".file");
+        const index = $fileElement.data("file-index");
 
-    $("#registrationComments").on("keyup", (e) => {
-        RegistrationCommentsInput = $(e.currentTarget).val().trim();
-    });
+        $fileElement.remove();
 
-    $(".AddRegistrationNumberBtn").on("click", (e) => {
-        if (RegistrationNumberInput != "") {
-            if (allAttachments != null && allAttachments.length > 0) {
-                request = {
-                    Request: {
-                        Title: "Test",
-                        Comments: RegistrationCommentsInput,
-                        ViolationId: ViolationID,
-                        TaskId: TaskID,
-                        VehicleRegistrationNumber: RegistrationNumberInput,
-                        ReferredAmount: ReferralAmountInput,
-                        ID: ReferralID,
-                        Status: "قيد انتظار الرقم القضائي"
-                    }
-                };
-                $(".overlay").addClass("active");
-                vehicleViolationReferral.editReferralAPIResponse(
-                    request,
-                    ReferralID,
-                    "إضافة رقم القيد",
-                    "#registrationNumberAttach",
-                    "تم إضافة رقم القيد",
-                    TaskID,      // Pass TaskID
-                    ViolationID  // Pass ViolationID
-                );
-            } else {
-                functions.warningAlert("من فضلك قم بإرفاق المستند المرفق برقم القيد");
+        if (popupState.attachments) {
+            const fileBuffer = new DataTransfer();
+            for (let i = 0; i < popupState.attachments.length; i++) {
+                if (index !== i) {
+                    fileBuffer.items.add(popupState.attachments[i]);
+                }
             }
-        } else {
+            popupState.attachments = fileBuffer.files;
+
+            $(".dropFilesArea .file").each(function (newIndex) {
+                $(this).attr("data-file-index", newIndex);
+            });
+        }
+
+        if (!popupState.attachments || popupState.attachments.length === 0) {
+            $("#dropFilesArea").hide();
+        }
+    }
+
+    function handleSubmit() {
+        if (!popupState.registrationNumber) {
             functions.warningAlert("من فضلك قم بإضافة رقم القيد بشكل صحيح");
+            return;
         }
-    });
+
+        if (!popupState.attachments || popupState.attachments.length === 0) {
+            functions.warningAlert("من فضلك قم بإرفاق المستند المرفق برقم القيد");
+            return;
+        }
+
+        const request = {
+            Request: {
+                Title: "Test",
+                Comments: popupState.registrationComments,
+                ViolationId: ViolationID,
+                TaskId: TaskID,
+                VehicleRegistrationNumber: popupState.registrationNumber,
+                ReferredAmount: Number(String(popupState.referredAmount ?? 0).replace(/,/g, "")),
+                ID: ReferralID,
+                Status: "قيد انتظار الرقم القضائي"
+            }
+        };
+
+        $(".overlay").addClass("active");
+
+        vehicleViolationReferral.editReferralAPIResponse(
+            request,
+            ReferralID,
+            "إضافة رقم القيد",
+            "#registrationNumberAttach",
+            "تم إضافة رقم القيد",
+            TaskID,
+            ViolationID
+        );
+    }
 };
+
+
 
 ///////////////////////////////////////////////
 // Add Court Case Number Popup
@@ -815,7 +760,7 @@ vehicleViolationReferral.addRegistrationNumberPopup = (ReferralID, ViolationID, 
 //     $(".overlay").removeClass("active");
 //     let popupHtml = `
 //         <div class="popupHeader">
-//             <div class="violationsCode"> 
+//             <div class="violationsCode">
 //                 <p>إضافة الرقم القضائي للمخالفة رقم (${ViolationCode})</p>
 //             </div>
 //         </div>
@@ -971,7 +916,7 @@ vehicleViolationReferral.addRegistrationNumberPopup = (ReferralID, ViolationID, 
 //     $(".overlay").removeClass("active");
 //     let popupHtml = `
 //         <div class="popupHeader">
-//             <div class="violationsCode"> 
+//             <div class="violationsCode">
 //                 <p>إحالة إلى المدعي العام</p>
 //             </div>
 //         </div>
@@ -1127,7 +1072,7 @@ vehicleViolationReferral.payCasePopup = (
     $(".overlay").removeClass("active");
     let popupHtml = `
         <div class="popupHeader" style="display: flex; justify-content: space-between;">
-            <div class="violationsCode"> 
+            <div class="violationsCode">
                 <p>سداد المخالفة على النموذج</p>
             </div>
             <div class="btnStyle cancelBtn popupBtn closePayCasePopup" id="closePayCasePopup" style="color: #fff; cursor: pointer;" data-dismiss="modal" aria-label="Close">
@@ -1289,19 +1234,15 @@ vehicleViolationReferral.payCasePopup = (
         }
     });
 };
-
 vehicleViolationReferral.payCaseAfterEditPopup = (
     ReferralID,
     ViolationID,
     TaskID,
-    referralNumber,
     violationCode,
     totalPrice,
-    referredAmount
+    ReferredAmount
 ) => {
-    $(".overlay").removeClass("active");
 
-    // State management
     let popupState = {
         courtCaseNumber: "",
         courtCaseComments: "",
@@ -1309,21 +1250,21 @@ vehicleViolationReferral.payCaseAfterEditPopup = (
         referralID: ReferralID,
         violationID: ViolationID,
         taskID: TaskID,
-        referredAmount: referredAmount,
+        referredAmount: ReferredAmount ?? 0,
         totalPrice: totalPrice,
-        filesExtension: ["gif", "svg", "jpg", "jpeg", "png", "doc", "docx", "pdf", "xls", "xlsx", "pptx"]
+        filesExtension: [
+            "gif", "svg", "jpg", "jpeg", "png",
+            "doc", "docx", "pdf", "xls", "xlsx", "pptx"
+        ]
     };
 
-    // Render popup HTML
     renderPopup();
-
-    // Setup event handlers
     setupEventHandlers();
 
     function renderPopup() {
         let popupHtml = `
             <div class="popupHeader" style="display: flex; justify-content: space-between;">
-                <div class="violationsCode"> 
+                <div class="violationsCode">
                     <p>سداد على الحظر - المخالفة رقم (${violationCode})</p>
                 </div>
                 <div class="btnStyle cancelBtn popupBtn closePayCaseAfterEditPopup" id="closePayCaseAfterEditPopup" style="color: #fff; cursor: pointer;" data-dismiss="modal" aria-label="Close">
@@ -1345,8 +1286,12 @@ vehicleViolationReferral.payCaseAfterEditPopup = (
                                     </div>
                                     <div class="col-md-4">
                                         <div class="form-group customFormGroup">
-                                            <label for="referredAmountValue" class="customLabel">مبلغ الإحالة</label>
-                                            <input class="form-control disabled customInput referredAmountValue" id="referredAmountValue" type="text" value="${functions.getDisplayValue(referredAmount, true)}" disabled>
+                                            <label for="referredAmountValue" class="customLabel">مبلغ الحظر</label>
+                                            <input class="form-control disabled customInput referredAmountValue"
+                                                id="referredAmountValue"
+                                                type="text"
+                                                value="${functions.getDisplayValue(popupState.referredAmount, true)}"
+                                                disabled>
                                         </div>
                                     </div>
                                     <div class="col-md-4">
@@ -1394,34 +1339,25 @@ vehicleViolationReferral.payCaseAfterEditPopup = (
 
         functions.declarePopup(["generalPopupStyle", "greenPopup", "editPopup"], popupHtml);
 
-        // Add close button handlers
         $("#closePayCaseAfterEditPopup, #closePayCaseAfterEditPopupFooter").on("click", function () {
             functions.closePopup();
         });
     }
 
     function setupEventHandlers() {
-        // Court case number input handler - allow symbols and numbers only
         $("#courtCaseNumber").on("input", (e) => {
             let value = $(e.currentTarget).val();
-
-            // Remove English & Arabic letters only, keep numbers and symbols
             value = value.replace(/[a-zA-Z\u0600-\u06FF]/g, "");
-
             $(e.currentTarget).val(value);
-
             popupState.courtCaseNumber = value.trim();
         });
 
-        // Comments input handler
         $("#courtCaseComments").on("keyup", (e) => {
             popupState.courtCaseComments = $(e.currentTarget).val().trim();
         });
 
-        // File attachment handler
         $("#payCaseAfterEditAttachment").on("change", handleFileAttachment);
 
-        // Submit button handler
         $(".payCaseAfterEditBtn").on("click", handleSubmit);
     }
 
@@ -1434,7 +1370,6 @@ vehicleViolationReferral.payCaseAfterEditPopup = (
             $dropFilesArea.show().empty();
         }
 
-        // Validate file extensions
         let invalidFiles = false;
         for (let i = 0; i < popupState.attachments.length; i++) {
             const file = popupState.attachments[i];
@@ -1461,7 +1396,6 @@ vehicleViolationReferral.payCaseAfterEditPopup = (
             return;
         }
 
-        // Attach delete handler to new file elements
         $(".deleteFile").off("click").on("click", handleFileDelete);
     }
 
@@ -1470,7 +1404,6 @@ vehicleViolationReferral.payCaseAfterEditPopup = (
         const index = $fileElement.data("file-index");
         $fileElement.remove();
 
-        // Remove file from FileList
         if (popupState.attachments && popupState.attachments.length > 0) {
             const fileBuffer = new DataTransfer();
             for (let i = 0; i < popupState.attachments.length; i++) {
@@ -1481,14 +1414,12 @@ vehicleViolationReferral.payCaseAfterEditPopup = (
             popupState.attachments = fileBuffer.files;
         }
 
-        // Hide drop area if no files left
         if (popupState.attachments && popupState.attachments.length === 0) {
             $(event.currentTarget).parents(".fileBox").siblings(".dropFilesArea").hide();
         }
     }
 
-    function handleSubmit(e) {
-        // Validation
+    function handleSubmit() {
         if (!popupState.courtCaseNumber) {
             functions.warningAlert("من فضلك قم بإضافة الرقم القضائي بشكل صحيح");
             return;
@@ -1504,44 +1435,27 @@ vehicleViolationReferral.payCaseAfterEditPopup = (
         // Calculate actual amount paid (remove commas for calculation)
         const actualAmountPaid = parseFloat(popupState.referredAmount.toString().replace(/,/g, ""));
 
-        // Execute operations in sequence
         executePaymentProcess(actualAmountPaid);
     }
 
     function executePaymentProcess(actualAmountPaid) {
-        // Step 1: Update case with court case number (Cases.aspx/Save)
         updateCaseWithCourtNumber()
-            .then(() => {
-                // Step 2: Update task status
-                return updateTaskStatus(actualAmountPaid);
-            })
-            .then(() => {
-                // Step 3: Create referral attachment record
-                return createReferralAttachmentRecord();
-            })
+            .then(() => updateTaskStatus(actualAmountPaid))
+            .then(() => createReferralAttachmentRecord())
             .then((recordId) => {
-                // Step 4: Upload referral attachments (only if files exist)
                 if (popupState.attachments && popupState.attachments.length > 0) {
                     return uploadReferralAttachments(recordId);
                 }
             })
             .then(() => {
-                // Step 5: Upload task attachments (only if files exist)
                 if (popupState.attachments && popupState.attachments.length > 0) {
                     return uploadTaskAttachments();
                 }
             })
             .then(() => {
-                // All operations completed successfully
                 $(".overlay").removeClass("active");
                 functions.sucessAlert("تم السداد بنجاح");
                 functions.closePopup();
-
-                // Refresh the table
-                // vehicleViolationReferral.getVehicleViolationReferrals(
-                //     vehicleViolationReferral.pageIndex,
-                //     true
-                // );
             })
             .catch((error) => {
                 console.error("Payment process failed:", error);
@@ -1551,6 +1465,9 @@ vehicleViolationReferral.payCaseAfterEditPopup = (
     }
 
     function updateCaseWithCourtNumber() {
+        const totalPriceDue = Number(String(popupState.totalPrice ?? 0).replace(/,/g, ""));
+        const referredAmount = Number(String(popupState.referredAmount ?? 0).replace(/,/g, ""));
+        console.log('referredAmount', referredAmount)
         const request = {
             Request: {
                 Comments: popupState.courtCaseComments || "",
@@ -1558,7 +1475,9 @@ vehicleViolationReferral.payCaseAfterEditPopup = (
                 TaskId: popupState.taskID,
                 CourtCaseNumber: popupState.courtCaseNumber,
                 ID: popupState.referralID,
-                Status: "مسددة"
+                Status: "مسددة",
+                TotalOldPrice: totalPriceDue,
+                TotalPriceDue: referredAmount
             }
         };
 
@@ -1629,7 +1548,7 @@ vehicleViolationReferral.payCaseAfterEditPopup = (
                 if (!data.d || !data.d.Status) {
                     throw new Error("Attachment record creation failed");
                 }
-                return data.d.Result.Id; // Return record ID for next step
+                return data.d.Result.Id;
             });
     }
 
@@ -1643,7 +1562,6 @@ vehicleViolationReferral.payCaseAfterEditPopup = (
 
     function uploadAttachments(itemId, files, listName) {
         return new Promise((resolve, reject) => {
-            // If no files to upload, resolve immediately
             if (!files || files.length === 0) {
                 resolve({ message: "No files to upload" });
                 return;
@@ -1653,7 +1571,6 @@ vehicleViolationReferral.payCaseAfterEditPopup = (
             formData.append("itemId", itemId);
             formData.append("listName", listName);
 
-            // Append all files
             for (let i = 0; i < files.length; i++) {
                 formData.append("file" + i, files[i]);
             }
@@ -1664,12 +1581,8 @@ vehicleViolationReferral.payCaseAfterEditPopup = (
                 processData: false,
                 contentType: false,
                 data: formData,
-                success: (data) => {
-                    resolve(data);
-                },
-                error: (err) => {
-                    reject(new Error(`Failed to upload attachments to ${listName}`));
-                }
+                success: (data) => resolve(data),
+                error: () => reject(new Error(`Failed to upload attachments to ${listName}`))
             });
         });
     }
@@ -1973,13 +1886,13 @@ vehicleViolationReferral.referralAttachmentsDetailsPopup = (
 ) => {
     let popupHtml = `
         <div class="popupHeader attachPopup" style="display: flex; justify-content: space-between;">
-            <div class="violationsCode"> 
+            <div class="violationsCode">
                 <p>مرفقات الإحالة رقم (${referralNumber || "-"})</p>
             </div>
             <div class="btnStyle cancelBtn popupBtn closeReferralAttachPopup" id="closeReferralAttachPopup" style="color: #fff; cursor: pointer;" data-dismiss="modal" aria-label="Close">
                 <i class="fa-solid fa-x"></i>
             </div>
-        </div> 
+        </div>
         <div class="popupBody">
             <div class="popupTableBox">
                 <table id="referralAttachmentsTable" class="table tableWithIcons popupTable"></table>
@@ -2159,7 +2072,6 @@ vehicleViolationReferral.FindReferralById = (ReferralID, popupType = "") => {
             functions.warningAlert("حدث خطأ في جلب تفاصيل الإحالة");
         });
 };
-
 ///////////////////////////////////////////
 vehicleViolationReferral.getReferralDetails = (referralData) => {
     let violation = referralData.Violation;
@@ -2177,13 +2089,13 @@ vehicleViolationReferral.getReferralDetails = (referralData) => {
     <div class="popupHeader">
         <div class="popupTitleBox">
             <div class="CaseNumberBox">
-                <p class="caseNumber">${popupTitle}</p>  
+                <p class="caseNumber">${popupTitle}</p>
                 <div class="printBtn"><img src="/Style Library/MiningViolations/images/WhitePrintBtn.png" alt="Print Button"></div>
             </div>
             <div class="btnStyle cancelBtn popupBtn closeReferralDetailsPopup" id="closeReferralDetailsPopup" style="color: #fff; cursor: pointer;" data-dismiss="modal" aria-label="Close">
                 <i class="fa-solid fa-x"></i>
             </div>
-        </div> 
+        </div>
     </div>
     <div class="popupBody" style="overflow-y: auto; max-height: 80vh;"> <!-- Added inline styles -->
         <div class="popupForm detailsPopupForm" id="detailsPopupForm">
@@ -2234,12 +2146,6 @@ vehicleViolationReferral.getReferralDetails = (referralData) => {
                                     <div class="form-group customFormGroup">
                                         <label for="caseNumber" class="customLabel">رقم القضية</label>
                                         <input class="form-control customInput caseNumber" id="caseNumber" type="text" value="${referralData.CaseNumber || "-"}" disabled>
-                                    </div>
-                                </div>
-                                <div class="col-md-4">
-                                    <div class="form-group customFormGroup">
-                                        <label for="taskId" class="customLabel">رقم المهمة</label>
-                                        <input class="form-control customInput taskId" id="taskId" type="text" value="${referralData.TaskId || "-"}" disabled>
                                     </div>
                                 </div>
                                 <div class="col-md-12">
@@ -2848,3 +2754,7 @@ ViolationHistoryLogs.init(".contentContainer");
 
 
 export default vehicleViolationReferral;
+
+
+
+

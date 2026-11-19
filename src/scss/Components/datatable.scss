@@ -177,7 +177,8 @@ table.table {
     }
 }
 
-.track-history-table-node {
+.track-history-table-node,
+.evaluation-history-table-node {
 
     .dataTables_length,
     .dataTables_filter,
@@ -185,7 +186,8 @@ table.table {
         display: none;
     }
 
-    .track-history-table {
+    .track-history-table,
+    .evaluation-history-table {
         padding: 0px 34px;
         border: 0px !important;
 
